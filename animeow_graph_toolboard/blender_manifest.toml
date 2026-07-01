@@ -1,0 +1,13 @@
+schema_version = "1.0.0"
+id = "animeow_graph_toolboard"
+version = "1.0.0"
+name = "Animeow Graph Toolboard"
+tagline = "Animator helper tools for Blender's Graph Editor"
+maintainer = "AI Assistant"
+type = "add-on"
+website = "https://github.com/example/animeow_graph_toolboard"
+tags = ["Animation"]
+blender_version_min = "4.2.0"
+license = [
+    "SPDX:GPL-2.0-or-later",
+]

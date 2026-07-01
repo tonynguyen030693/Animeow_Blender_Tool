@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+*.blend
+*.blend1
+*.zip
+.git/
+.vscode/
+.idea/

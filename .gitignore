@@ -1,0 +1,17 @@
+# Ignore archives
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Ignore python cache
+**/__pycache__/
+**/*.pyc
+
+# Ignore Blender backup files
+**/*.blend1
+**/*.blend2
+
+# Ignore nested git backup
+.git_backup/
+**/ .git_backup/
