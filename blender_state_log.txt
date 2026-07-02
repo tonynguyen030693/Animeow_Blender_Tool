@@ -1,0 +1,420 @@
+=== KIỂM TRA ĐĂNG KÝ CLASS TRONG BLENDER ===
+
+Class: ANIMEOW_OT_copy_anim
+  bl_idname: animeow.copy_anim
+  bl_label: Copy Anim
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_get_active_bone
+  bl_idname: animeow.get_active_bone
+  bl_label: Lấy đối tượng đang chọn
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_paste_anim
+  bl_idname: animeow.paste_anim
+  bl_label: Paste Anim
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_paste_connect
+  bl_idname: animeow.paste_connect
+  bl_label: Paste Connect
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_quick_bake
+  bl_idname: animeow.quick_bake
+  bl_label: Bake & Clean
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_quick_link
+  bl_idname: animeow.quick_link
+  bl_label: Quick Link
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_round_transforms
+  bl_idname: animeow.round_transforms
+  bl_label: Round Transforms
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_OT_switch_parent
+  bl_idname: animeow.switch_parent
+  bl_label: Switch Parent
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_PT_copy_panel
+  bl_idname: ANIMEOW_PT_copy_panel
+  bl_label: 📋 Anim Copy & Paste
+  bl_category: Animeow
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: ANIMEOW_PT_linker_panel
+  bl_idname: ANIMEOW_PT_linker_panel
+  bl_label: 🎯 Anim Linker
+  bl_category: Animeow
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: ANIMEOW_PT_tab_selector
+  bl_idname: ANIMEOW_PT_tab_selector
+  bl_label: 😸 Animeow Toolkit
+  bl_category: Animeow
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: ANIMEOW_PT_transform_rounder
+  bl_idname: ANIMEOW_PT_transform_rounder
+  bl_label: 🔢 Transform Rounder
+  bl_category: Animeow
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_copy_paste
+  bl_idname: GRAPH_PT_toolboard_copy_paste
+  bl_label: Copy & Paste Keys
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_infinity
+  bl_idname: GRAPH_PT_toolboard_infinity
+  bl_label: Infinity Curves (Loop)
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_interactive
+  bl_idname: GRAPH_PT_toolboard_interactive
+  bl_label: Interactive Sliders
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_main
+  bl_idname: GRAPH_PT_toolboard_main
+  bl_label: ⚡ Animeow Graph Toolboard
+  bl_category: Tool Board
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: GRAPH_PT_toolboard_mirror
+  bl_idname: GRAPH_PT_toolboard_mirror
+  bl_label: Mirror Keys
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_nudge
+  bl_idname: GRAPH_PT_toolboard_nudge
+  bl_label: Nudge Keys
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_snap_clean
+  bl_idname: GRAPH_PT_toolboard_snap_clean
+  bl_label: Snap & Clean
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: GRAPH_PT_toolboard_tween
+  bl_idname: GRAPH_PT_toolboard_tween
+  bl_label: Tween Slider
+  bl_category: N/A
+  bl_space_type: GRAPH_EDITOR
+  bl_region_type: UI
+  bl_parent_id: GRAPH_PT_toolboard_main
+  has_poll: True
+
+Class: PICKER_OT_add_button
+  bl_idname: picker.add_button
+  bl_label: Add Button
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_add_tab
+  bl_idname: picker.add_tab
+  bl_label: Add Tab
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_align_buttons
+  bl_idname: picker.align_buttons
+  bl_label: Align Buttons
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: PICKER_OT_assign_bones
+  bl_idname: picker.assign_bones
+  bl_label: Assign Selected Bones
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_auto_create_from_bones
+  bl_idname: picker.auto_create_from_bones
+  bl_label: Auto-Create from Bones
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_clear_all_buttons
+  bl_idname: picker.clear_all_buttons
+  bl_label: Clear All Buttons
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_create_float_window
+  bl_idname: picker.create_float_window
+  bl_label: Float Viewport
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: PICKER_OT_delete_button
+  bl_idname: picker.delete_button
+  bl_label: Delete Button
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_distribute_buttons
+  bl_idname: picker.distribute_buttons
+  bl_label: Distribute Buttons
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: PICKER_OT_duplicate_button
+  bl_idname: picker.duplicate_button
+  bl_label: Duplicate Button
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_export_all_json
+  bl_idname: picker.export_all_json
+  bl_label: Export All Tabs
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_export_json
+  bl_idname: picker.export_json
+  bl_label: Export Picker
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_import_json
+  bl_idname: picker.import_json
+  bl_label: Import Picker
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_interact
+  bl_idname: picker.interact
+  bl_label: Picker Interact
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: PICKER_OT_remove_tab
+  bl_idname: picker.remove_tab
+  bl_label: Remove Tab
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_rename_tab
+  bl_idname: picker.rename_tab
+  bl_label: Rename Tab
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_set_button_color
+  bl_idname: picker.set_button_color
+  bl_label: Set Button Color
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_OT_toggle_mode
+  bl_idname: picker.toggle_mode
+  bl_label: Toggle Picker Mode
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_PT_buttons
+  bl_idname: PICKER_PT_buttons
+  bl_label: Buttons
+  bl_category: Picker
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: PICKER_PT_main
+  has_poll: False
+
+Class: PICKER_PT_edit_tools
+  bl_idname: PICKER_PT_edit_tools
+  bl_label: Edit Tools
+  bl_category: Picker
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: PICKER_PT_main
+  has_poll: True
+
+Class: PICKER_PT_io
+  bl_idname: PICKER_PT_io
+  bl_label: Import / Export
+  bl_category: Picker
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: PICKER_PT_main
+  has_poll: False
+
+Class: PICKER_PT_main
+  bl_idname: PICKER_PT_main
+  bl_label: 🦴 Bone Picker
+  bl_category: Animeow
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: N/A
+  has_poll: True
+
+Class: PICKER_PT_tabs
+  bl_idname: PICKER_PT_tabs
+  bl_label: Tabs
+  bl_category: Picker
+  bl_space_type: VIEW_3D
+  bl_region_type: UI
+  bl_parent_id: PICKER_PT_main
+  has_poll: False
+
+Class: PICKER_UL_buttons
+  bl_idname: PICKER_UL_buttons
+  bl_label: N/A
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+Class: PICKER_UL_tabs
+  bl_idname: PICKER_UL_tabs
+  bl_label: N/A
+  bl_category: N/A
+  bl_space_type: N/A
+  bl_region_type: N/A
+  bl_parent_id: N/A
+  has_poll: False
+
+
+=== KIỂM TRA SCENE PROPERTIES ===
+Scene Property: animeow_active_tab
+Scene Property: animeow_clear_parents
+Scene Property: animeow_copy_mirror
+Scene Property: animeow_round_decimals
+Scene Property: animeow_round_location
+Scene Property: animeow_round_rotation
+Scene Property: animeow_round_scale
+Scene Property: animeow_target_bone
+Scene Property: animeow_target_object
+Scene Property: animeow_use_locator
+Scene Property: bone_picker

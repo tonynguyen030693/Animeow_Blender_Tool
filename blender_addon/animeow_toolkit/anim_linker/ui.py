@@ -22,89 +22,101 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        active_obj = context.active_object
+        try:
+            scene = context.scene
+            active_obj = context.active_object
 
-        # UX CẢNH BÁO ĐỘNG DỰA TRÊN SELECTION
-        if not active_obj:
-            box_warn = layout.box()
-            box_warn.label(text="Hãy chọn vật thể/xương để diễn!", icon='INFO')
-            return
+            # UX CẢNH BÁO ĐỘNG DỰA TRÊN SELECTION
+            if not active_obj:
+                box_warn = layout.box()
+                box_warn.label(text="Hãy chọn vật thể/xương để diễn!", icon='INFO')
+                return
 
-        # Kiểm tra trạng thái liên kết hiện tại của đối tượng hoạt động
-        is_linked = False
-        has_anim = False
-        constrained_target = active_obj
-        armature_obj = None
+            # Kiểm tra trạng thái liên kết hiện tại của đối tượng hoạt động
+            is_linked = False
+            has_anim = False
+            constrained_target = active_obj
+            armature_obj = None
 
-        if active_obj.type == 'ARMATURE' and context.active_pose_bone:
-            constrained_target = context.active_pose_bone
-            armature_obj = active_obj
+            if active_obj.type == 'ARMATURE' and context.active_pose_bone:
+                constrained_target = context.active_pose_bone
+                armature_obj = active_obj
 
-        # 1. Check link
-        if any(c.name.startswith("ChildOf_loc_child_") for c in constrained_target.constraints):
-            is_linked = True
+            # 1. Check link
+            if any(c.name.startswith("ChildOf_loc_child_") for c in constrained_target.constraints):
+                is_linked = True
 
-        # 2. Check animation
-        if armature_obj:
-            if armature_obj.animation_data and armature_obj.animation_data.action:
-                action = armature_obj.animation_data.action
-                prefix = f'pose.bones["{constrained_target.name}"]'
-                has_anim = any(fc.data_path.startswith(prefix) for fc in action.fcurves)
-        else:
-            if constrained_target.animation_data and constrained_target.animation_data.action:
-                has_anim = True
+            # 2. Check animation
+            if armature_obj:
+                if armature_obj.animation_data and armature_obj.animation_data.action:
+                    action = armature_obj.animation_data.action
+                    prefix = f'pose.bones["{constrained_target.name}"]'
+                    has_anim = any(fc.data_path.startswith(prefix) for fc in action.fcurves)
+            else:
+                if constrained_target.animation_data and constrained_target.animation_data.action:
+                    has_anim = True
 
-        # Hộp trạng thái phản hồi động (Dynamic Feedback Header)
-        box_status = layout.box()
-        col_status = box_status.column(align=True)
-        if is_linked:
-            col_status.label(text=f"Trạng thái: Đang Liên Kết ({constrained_target.name})", icon='SOLO_ON')
-        else:
-            col_status.label(text=f"Trạng thái: Sẵn Sàng ({constrained_target.name})", icon='INFO')
-            if has_anim:
-                col_status.label(text="⚠️ Đang có Anim - Tự động chuyển sang Locator!", icon='WARNING')
+            # Hộp trạng thái phản hồi động (Dynamic Feedback Header)
+            box_status = layout.box()
+            col_status = box_status.column(align=True)
+            if is_linked:
+                col_status.label(text=f"Trạng thái: Đang Liên Kết ({constrained_target.name})", icon='LINKED')
+            else:
+                col_status.label(text=f"Trạng thái: Sẵn Sàng ({constrained_target.name})", icon='INFO')
+                if has_anim:
+                    col_status.label(text="Dang co Anim cu - Se tu dong chuyen sang Locator", icon='WARNING')
 
-        # --- SECTION 1: TARGET DEFINITION ---
-        box = layout.box()
-        row_target = box.row(align=True)
-        row_target.label(text="Thiết lập Target", icon='CONSTRAINT_BONE')
-        row_target.operator("animeow.get_active_bone", text="", icon='EYEDROPPER')
+            # --- SECTION 1: TARGET DEFINITION ---
+            box = layout.box()
+            row_target = box.row(align=True)
+            row_target.label(text="Thiết lập Target", icon='CONSTRAINT_BONE')
+            row_target.operator("animeow.get_active_bone", text="", icon='EYEDROPPER')
 
-        col = box.column(align=True)
-        col.prop(scene, "animeow_target_object", text="Target Obj")
+            col = box.column(align=True)
+            col.prop(scene, "animeow_target_object", text="Target Obj")
 
-        target_obj = scene.animeow_target_object
-        if target_obj and target_obj.type == 'ARMATURE':
-            col.prop(scene, "animeow_target_bone", text="Target Bone")
+            target_obj = scene.animeow_target_object
+            if target_obj and target_obj.type == 'ARMATURE':
+                col.prop(scene, "animeow_target_bone", text="Target Bone")
 
-        # --- SECTION 2: QUICK LINK ---
-        box_link = layout.box()
-        box_link.label(text="Gán Ràng Buộc Nhanh", icon='LINKED')
-        
-        # Grid layout gọn gàng
-        row_link = box_link.row(align=True)
-        row_link.prop(scene, "animeow_use_locator", text="Locator", toggle=True)
-        row_link.operator("animeow.quick_link", text="Link", icon='ADD')
+            # --- SECTION 2: QUICK LINK ---
+            box_link = layout.box()
+            box_link.label(text="Gán Ràng Buộc Nhanh", icon='LINKED')
+            
+            # Grid layout gọn gàng
+            row_link = box_link.row(align=True)
+            row_link.prop(scene, "animeow_use_locator", text="Locator", toggle=True)
+            row_link.operator("animeow.quick_link", text="Link", icon='ADD')
 
-        # --- SECTION 3: SPACE SWITCHER ---
-        box_switch = layout.box()
-        box_switch.label(text="Chuyển Đổi Không Gian", icon='FILE_REFRESH')
-        
-        col_switch = box_switch.column(align=True)
-        col_switch.label(text="Chọn Target mới rồi Click:")
-        col_switch.operator("animeow.switch_parent", text="Switch Parent", icon='FILE_REFRESH')
-        # Grey-out nút Switch nếu không ở trạng thái liên kết locator
-        if not is_linked:
-            col_switch.active = False
+            # --- SECTION 3: SPACE SWITCHER ---
+            box_switch = layout.box()
+            box_switch.label(text="Chuyển Đổi Không Gian", icon='FILE_REFRESH')
+            
+            col_switch = box_switch.column(align=True)
+            col_switch.label(text="Chọn Target mới rồi Click:")
+            col_switch.operator("animeow.switch_parent", text="Switch Parent", icon='FILE_REFRESH')
+            # Grey-out nút Switch nếu không ở trạng thái liên kết locator
+            if not is_linked:
+                col_switch.active = False
 
-        # --- SECTION 4: BAKE ANIMATION ---
-        box_bake = layout.box()
-        box_bake.label(text="Khóa Keyframe (Bake Animation)", icon='REC')
-        
-        row_bake = box_bake.row(align=True)
-        row_bake.prop(scene, "animeow_clear_parents", text="Clear Loc", toggle=True)
-        row_bake.operator("animeow.quick_bake", text="Bake & Clean", icon='NONE')
-        # Grey-out nút Bake nếu không ở trạng thái liên kết
-        if not is_linked:
-            row_bake.active = False
+            # --- SECTION 4: BAKE ANIMATION ---
+            box_bake = layout.box()
+            box_bake.label(text="Khóa Keyframe (Bake Animation)", icon='REC')
+            
+            row_bake = box_bake.row(align=True)
+            row_bake.prop(scene, "animeow_clear_parents", text="Clear Loc", toggle=True)
+            row_bake.operator("animeow.quick_bake", text="Bake & Clean", icon='NONE')
+            # Grey-out nút Bake nếu không ở trạng thái liên kết
+            if not is_linked:
+                row_bake.active = False
+                
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            box = layout.box()
+            box.alert = True
+            box.label(text="Loi ve UI (UI Draw Error):", icon='ERROR')
+            for line in tb.split("\n")[:5]:
+                if line.strip():
+                    box.label(text=line[:50], icon='NONE')
+

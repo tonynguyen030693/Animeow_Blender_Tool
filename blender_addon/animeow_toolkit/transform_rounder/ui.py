@@ -21,17 +21,28 @@ class ANIMEOW_PT_transform_rounder(AnimeowBasePanel, bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
+        try:
+            scene = context.scene
 
-        col = layout.column(align=True)
-        col.prop(scene, "animeow_round_decimals", text="Chữ số thập phân")
-        
-        col.separator()
-        col.label(text="Mục tiêu làm tròn:")
-        row = col.row(align=True)
-        row.prop(scene, "animeow_round_location", text="Loc", toggle=True)
-        row.prop(scene, "animeow_round_rotation", text="Rot", toggle=True)
-        row.prop(scene, "animeow_round_scale", text="Scale", toggle=True)
+            col = layout.column(align=True)
+            col.prop(scene, "animeow_round_decimals", text="Chữ số thập phân")
+            
+            col.separator()
+            col.label(text="Mục tiêu làm tròn:")
+            row = col.row(align=True)
+            row.prop(scene, "animeow_round_location", text="Loc", toggle=True)
+            row.prop(scene, "animeow_round_rotation", text="Rot", toggle=True)
+            row.prop(scene, "animeow_round_scale", text="Scale", toggle=True)
 
-        col.separator()
-        col.operator("animeow.round_transforms", text="Làm tròn đối tượng chọn", icon='FILE_REFRESH')
+            col.separator()
+            col.operator("animeow.round_transforms", text="Làm tròn đối tượng chọn", icon='FILE_REFRESH')
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            box = layout.box()
+            box.alert = True
+            box.label(text="Loi ve UI (UI Draw Error):", icon='ERROR')
+            for line in tb.split("\n")[:5]:
+                if line.strip():
+                    box.label(text=line[:50], icon='NONE')
+
