@@ -21,12 +21,26 @@ Bộ công cụ diễn hoạt (animation) chuyên nghiệp dành cho Blender 4.2
 4. **🔢 Transform Rounder:**
    * Làm tròn nhanh toạ độ Location, Rotation (độ), và Scale của các đối tượng hoặc xương đang chọn về số thập phân mong muốn, hỗ trợ Auto Keying.
 
+5. **📋 Anim Copy & Paste (Advanced Copy/Paste):**
+   * **Copy Anim**: Sao chép keyframe và đường cong Bezier của xương/object vào bộ nhớ tạm.
+   * **Paste Normal**: Dán keyframe bắt đầu tại vị trí frame hiện tại của con trỏ Timeline.
+   * **Paste Connect**: Dán nối tiếp mượt mà khử giật chuyển động (tự động bù đắp khoảng lệch offset giữa hai chuỗi).
+   * **Mirror (Lật đối xứng)**: Sao chép chuyển động và lật đối xứng từ bên này sang bên kia của cơ thể.
+
+---
+
+## Phím tắt nhanh (Pie Menu)
+
+* Nhấn tổ hợp phím **`Alt + Shift + A`** trong cửa sổ 3D Viewport để mở Pie Menu hình tròn ngay tại vị trí con trỏ chuột.
+* Giúp gọi nhanh các lệnh: **Link Object**, **Switch Parent**, **Bake & Clean**, và các lệnh **Copy/Paste/Connect Anim**.
+
 ---
 
 ## Giao diện hiển thị
 
 * **Trong 3D Viewport (Sidebar - phím N)**: Tab **Animeow** chứa các bảng điều khiển cho:
   * `🎯 Anim Linker`
+  * `📋 Anim Copy & Paste`
   * `🔢 Transform Rounder`
   * `🦴 Picker`
 * **Trong Graph Editor (Sidebar - phím N)**: Tab **Animeow** chứa bảng:
