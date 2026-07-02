@@ -121,3 +121,70 @@ def mirror_keyframe_value(data_path, array_index, value):
 
     return value
 
+
+def get_action_fcurves(action):
+    """Lấy tất cả các FCurves từ Action (hỗ trợ cả Layered Action và Legacy Action)."""
+    fcurves = []
+    if not action:
+        return fcurves
+        
+    # Hỗ trợ Legacy Action (Blender cũ hoặc NLA Legacy)
+    if hasattr(action, "fcurves") and action.fcurves:
+        fcurves.extend(action.fcurves)
+        
+    # Hỗ trợ Layered Action (Blender 5.1/4.2+)
+    if hasattr(action, "layers"):
+        for layer in action.layers:
+            for strip in layer.strips:
+                if hasattr(strip, "channelbags"):
+                    for bag in strip.channelbags:
+                        if hasattr(bag, "fcurves"):
+                            fcurves.extend(bag.fcurves)
+                elif hasattr(strip, "channelbag") and strip.channelbag:
+                    bag = strip.channelbag
+                    if hasattr(bag, "fcurves"):
+                        fcurves.extend(bag.fcurves)
+                        
+    return fcurves
+
+
+def clean_fcurve_keyframes(fcurve, threshold=0.001):
+    """Đơn giản hóa F-curve bằng cách loại bỏ các keyframe thừa nằm trên đường thẳng."""
+    points = fcurve.keyframe_points
+    if len(points) <= 2:
+        return
+        
+    indices_to_remove = []
+    i = 1
+    while i < len(points) - 1:
+        prev_p = points[i - 1]
+        curr_p = points[i]
+        next_p = points[i + 1]
+        
+        t1 = prev_p.co[0]
+        t2 = curr_p.co[0]
+        t3 = next_p.co[0]
+        
+        v1 = prev_p.co[1]
+        v2 = curr_p.co[1]
+        v3 = next_p.co[1]
+        
+        if t3 - t1 == 0:
+            val_interp = v1
+        else:
+            val_interp = v1 + (v3 - v1) * ((t2 - t1) / (t3 - t1))
+            
+        if abs(v2 - val_interp) < threshold:
+            indices_to_remove.append(i)
+            # Nhảy sang điểm kế tiếp để không bị trùng lặp khoảng kiểm tra
+            i += 2
+        else:
+            i += 1
+            
+    # Xóa các điểm từ dưới lên trên để không làm lệch chỉ mục (index)
+    for idx in reversed(indices_to_remove):
+        points.remove(points[idx])
+        
+    fcurve.update()
+
+

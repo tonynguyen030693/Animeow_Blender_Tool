@@ -207,7 +207,15 @@ class ANIMEOW_OT_quick_bake(bpy.types.Operator):
         baker = AnimationBaker(constrained_target, obj)
 
         loc_parent_name, loc_child_name = baker.find_locator_names()
-        baker.bake(context, scene.frame_start, scene.frame_end, True)
+        baker.bake(
+            context=context,
+            start_frame=scene.frame_start,
+            end_frame=scene.frame_end,
+            clear_parents=True,
+            step=scene.animeow_bake_step,
+            smart_clean=scene.animeow_smart_clean,
+            clean_threshold=scene.animeow_clean_threshold
+        )
         baker.cleanup_locators(loc_parent_name, loc_child_name)
 
         self.report({'INFO'}, f"Đã bake thành công và dọn dẹp locators cho {constrained_target.name}!")

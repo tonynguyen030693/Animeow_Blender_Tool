@@ -103,12 +103,27 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
             box_bake = layout.box()
             box_bake.label(text="Khóa Keyframe (Bake Animation)", icon='REC')
             
-            row_bake = box_bake.row(align=True)
-            row_bake.scale_y = 1.2
-            row_bake.operator("animeow.quick_bake", text="Bake & Clean", icon='NONE')
-            # Grey-out nút Bake nếu không ở trạng thái liên kết
+            col_bake = box_bake.column(align=True)
+            # Thiết lập bước bake nhảy frame
+            col_bake.prop(scene, "animeow_bake_step", text="Bước Bake (Step)")
+            
+            col_bake.separator()
+            # Thiết lập Smart Clean lọc keyframe thừa
+            row_clean = col_bake.row(align=True)
+            row_clean.prop(scene, "animeow_smart_clean", text="Smart Clean", toggle=True)
+            if scene.animeow_smart_clean:
+                row_clean.prop(scene, "animeow_clean_threshold", text="Ngưỡng lọc")
+                
+            col_bake.separator()
+            
+            # Nút Bake & Clean chính
+            row_btn = col_bake.row(align=True)
+            row_btn.scale_y = 1.2
+            row_btn.operator("animeow.quick_bake", text="Bake & Clean", icon='FILE_REFRESH')
+            
+            # Grey-out toàn bộ khối cấu hình nếu không ở trạng thái liên kết
             if not is_linked:
-                row_bake.active = False
+                col_bake.active = False
                 
         except Exception as e:
             import traceback

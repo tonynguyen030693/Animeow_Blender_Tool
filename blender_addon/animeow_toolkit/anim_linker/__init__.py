@@ -36,4 +36,24 @@ properties = [
         default=True,
         description="Tạo cặp Empty (Hook & Offset) làm trung gian để giữ Transform sạch sẽ"
     )),
+    ("animeow_bake_step", bpy.props.IntProperty(
+        name="Bước Bake (Step)",
+        default=1,
+        min=1,
+        max=10,
+        description="Số lượng frame nhảy khi bake (1 = bake mọi frame)"
+    )),
+    ("animeow_smart_clean", bpy.props.BoolProperty(
+        name="Smart Clean",
+        default=False,
+        description="Tự động lọc bỏ các keyframe thừa, giữ đồ thị mượt mà sau khi bake"
+    )),
+    ("animeow_clean_threshold", bpy.props.FloatProperty(
+        name="Ngưỡng lọc",
+        default=0.001,
+        min=0.0001,
+        max=0.1,
+        precision=4,
+        description="Độ sai lệch cho phép khi lọc keyframe (nhỏ = chính xác hơn)"
+    )),
 ]

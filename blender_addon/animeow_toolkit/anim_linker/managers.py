@@ -349,7 +349,7 @@ class AnimationBaker:
                 return None, loc_child_name
         return None, None
 
-    def bake(self, context, start_frame, end_frame, clear_parents=False):
+    def bake(self, context, start_frame, end_frame, clear_parents=False, step=1, smart_clean=False, clean_threshold=0.001):
         """Thực hiện Bake Action với Visual Keying.
 
         Args:
@@ -357,6 +357,9 @@ class AnimationBaker:
             start_frame: Frame bắt đầu.
             end_frame: Frame kết thúc.
             clear_parents: Có gỡ bỏ liên kết cha-con sau khi bake hay không.
+            step: Bước nhảy khi bake (mặc định là 1).
+            smart_clean: Tự động tối ưu/lọc keyframe thừa sau khi bake.
+            clean_threshold: Độ nhạy để lọc keyframe thừa.
         """
         is_bone = isinstance(self.owner, bpy.types.PoseBone)
 
@@ -374,16 +377,36 @@ class AnimationBaker:
             self.owner.select_set(True)
             bake_type_set = {'OBJECT'}
 
+        # Thực hiện Bake NLA gốc của Blender với tham số step tùy chỉnh
         bpy.ops.nla.bake(
             frame_start=start_frame,
             frame_end=end_frame,
-            step=1,
+            step=step,
             only_selected=True,
             visual_keying=True,
             clear_constraints=True,
             clear_parents=clear_parents,
             bake_types=bake_type_set
         )
+
+        # Thực hiện Smart Clean nếu được yêu cầu
+        if smart_clean:
+            action = None
+            if is_bone:
+                if armature_obj.animation_data and armature_obj.animation_data.action:
+                    action = armature_obj.animation_data.action
+            else:
+                if self.owner.animation_data and self.owner.animation_data.action:
+                    action = self.owner.animation_data.action
+
+            if action:
+                from ..core.utils import get_action_fcurves, clean_fcurve_keyframes
+                fcurves = get_action_fcurves(action)
+                # Chỉ lọc những F-curves thuộc về xương/vật thể hiện tại để tránh ảnh hưởng đến các đối tượng khác trong cùng Action
+                prefix = f'pose.bones["{self.owner.name}"]' if is_bone else ""
+                for fc in fcurves:
+                    if not is_bone or fc.data_path.startswith(prefix):
+                        clean_fcurve_keyframes(fc, clean_threshold)
 
         context.view_layer.objects.active = self.owner_obj
 
