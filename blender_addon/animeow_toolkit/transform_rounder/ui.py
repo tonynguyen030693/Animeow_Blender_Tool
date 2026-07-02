@@ -28,7 +28,7 @@ class ANIMEOW_PT_transform_rounder(AnimeowBasePanel, bpy.types.Panel):
             col.prop(scene, "animeow_round_decimals", text="Chữ số thập phân")
             
             col.separator()
-            col.label(text="Mục tiêu làm tròn:")
+            col.label("Mục tiêu làm tròn:")
             row = col.row(align=True)
             row.prop(scene, "animeow_round_location", text="Loc", toggle=True)
             row.prop(scene, "animeow_round_rotation", text="Rot", toggle=True)

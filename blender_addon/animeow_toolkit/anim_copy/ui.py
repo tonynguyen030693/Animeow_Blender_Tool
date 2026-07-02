@@ -25,7 +25,7 @@ class ANIMEOW_PT_copy_panel(AnimeowBasePanel, bpy.types.Panel):
             scene = context.scene
 
             box = layout.box()
-            box.label(text="Sao Chép Chuyển Động", icon='COPYDOWN')
+            box.label("Sao Chép Chuyển Động", icon='COPYDOWN')
 
             # Nút Copy chính
             row_copy = box.row(align=True)
