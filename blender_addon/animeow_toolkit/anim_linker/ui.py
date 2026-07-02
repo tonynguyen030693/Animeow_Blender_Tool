@@ -14,6 +14,12 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
     bl_label = "🎯 Anim Linker"
     bl_idname = "ANIMEOW_PT_linker_panel"
 
+    @classmethod
+    def poll(cls, context):
+        if not hasattr(context.scene, "animeow_active_tab"):
+            return True
+        return context.scene.animeow_active_tab == 'LINKER'
+
     def draw(self, context):
         layout = self.layout
         scene = context.scene

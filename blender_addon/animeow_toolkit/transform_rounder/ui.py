@@ -13,6 +13,12 @@ class ANIMEOW_PT_transform_rounder(AnimeowBasePanel, bpy.types.Panel):
     bl_label = "🔢 Transform Rounder"
     bl_idname = "ANIMEOW_PT_transform_rounder"
 
+    @classmethod
+    def poll(cls, context):
+        if not hasattr(context.scene, "animeow_active_tab"):
+            return True
+        return context.scene.animeow_active_tab == 'ROUNDER'
+
     def draw(self, context):
         layout = self.layout
         scene = context.scene

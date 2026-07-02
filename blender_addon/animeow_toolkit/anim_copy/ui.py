@@ -13,6 +13,12 @@ class ANIMEOW_PT_copy_panel(AnimeowBasePanel, bpy.types.Panel):
     bl_label = "📋 Anim Copy & Paste"
     bl_idname = "ANIMEOW_PT_copy_panel"
 
+    @classmethod
+    def poll(cls, context):
+        if not hasattr(context.scene, "animeow_active_tab"):
+            return True
+        return context.scene.animeow_active_tab == 'COPY'
+
     def draw(self, context):
         layout = self.layout
         scene = context.scene

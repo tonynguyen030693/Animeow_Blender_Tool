@@ -18,7 +18,6 @@ bl_info = {
 
 import bpy
 from .core.base_module import ToolkitModule
-from .core.pie_menu import ANIMEOW_MT_pie_menu, register_keymap, unregister_keymap
 
 # Import các module con
 from . import anim_linker
@@ -26,6 +25,25 @@ from . import graph_toolboard
 from . import bone_picker
 from . import transform_rounder
 from . import anim_copy
+
+
+class ANIMEOW_PT_tab_selector(bpy.types.Panel):
+    """Thanh Tab Ngang chuyển đổi giữa các công cụ trong Animeow Toolkit"""
+    bl_label = "😸 Animeow Toolkit"
+    bl_idname = "ANIMEOW_PT_tab_selector"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'Animeow'
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        # Vẽ thanh tab ngang dạng nút bấm liền kề
+        row = layout.row(align=True)
+        row.scale_y = 1.2
+        row.prop(scene, "animeow_active_tab", expand=True)
+
 
 # Tạo thực thể ToolkitModule cho các module khai báo cấu trúc classes/properties tiêu chuẩn
 modules = [
@@ -51,33 +69,48 @@ modules = [
 
 
 def register():
-    # 1. Đăng ký các module sử dụng ToolkitModule
+    # 1. Đăng ký tab property trên Scene
+    bpy.types.Scene.animeow_active_tab = bpy.props.EnumProperty(
+        name="Active Tab",
+        description="Chọn công cụ hoạt hình cần hiển thị",
+        items=[
+            ('LINKER', "Linker", "Công cụ liên kết locator", 'CONSTRAINT_BONE', 0),
+            ('COPY', "Copy", "Sao chép/Dán keyframes", 'COPYDOWN', 1),
+            ('ROUNDER', "Rounder", "Làm tròn toạ độ", 'FILE_REFRESH', 2),
+            ('PICKER', "Picker", "Chọn xương trực quan", 'POSE_HLT', 3),
+        ],
+        default='LINKER'
+    )
+
+    # 2. Đăng ký Tab Selector Panel chính
+    bpy.utils.register_class(ANIMEOW_PT_tab_selector)
+
+    # 3. Đăng ký các module sử dụng ToolkitModule
     for mod in modules:
         mod.register()
 
-    # 2. Đăng ký các module tự quản lý (Graph Toolboard và Bone Picker)
+    # 4. Đăng ký các module tự quản lý (Graph Toolboard và Bone Picker)
     graph_toolboard.module_register()
     bone_picker.module_register()
-
-    # 3. Đăng ký Pie Menu và phím tắt
-    bpy.utils.register_class(ANIMEOW_MT_pie_menu)
-    register_keymap()
 
     print("[Animeow Toolkit] Registered successfully.")
 
 
 def unregister():
-    # 1. Huỷ đăng ký Pie Menu và phím tắt
-    unregister_keymap()
-    bpy.utils.unregister_class(ANIMEOW_MT_pie_menu)
-
-    # 2. Huỷ đăng ký các module tự quản lý (ngược thứ tự)
+    # 1. Huỷ đăng ký các module tự quản lý (ngược thứ tự)
     bone_picker.module_unregister()
     graph_toolboard.module_unregister()
 
-    # 3. Huỷ đăng ký các module qua ToolkitModule (ngược thứ tự)
+    # 2. Huỷ đăng ký các module qua ToolkitModule (ngược thứ tự)
     for mod in reversed(modules):
         mod.unregister()
+
+    # 3. Huỷ đăng ký Tab Selector Panel chính
+    bpy.utils.unregister_class(ANIMEOW_PT_tab_selector)
+
+    # 4. Huỷ đăng ký tab property trên Scene
+    if hasattr(bpy.types.Scene, "animeow_active_tab"):
+        del bpy.types.Scene.animeow_active_tab
 
     print("[Animeow Toolkit] Unregistered successfully.")
 

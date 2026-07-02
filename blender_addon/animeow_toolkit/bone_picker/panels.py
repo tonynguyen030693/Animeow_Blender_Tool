@@ -47,7 +47,13 @@ class PICKER_PT_main(bpy.types.Panel):
     bl_idname = "PICKER_PT_main"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Picker"
+    bl_category = "Animeow"
+
+    @classmethod
+    def poll(cls, context):
+        if not hasattr(context.scene, "animeow_active_tab"):
+            return True
+        return context.scene.animeow_active_tab == 'PICKER'
 
     def draw(self, context):
         layout = self.layout
