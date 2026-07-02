@@ -90,3 +90,34 @@ def record_world_matrix(target, armature_obj=None):
     if armature_obj:
         return armature_obj.matrix_world @ target.matrix
     return target.matrix_world.copy()
+
+
+def mirror_keyframe_value(data_path, array_index, value):
+    """Tính toán đảo ngược giá trị đối xứng (Mirroring) cho một kênh keyframe cụ thể.
+
+    Args:
+        data_path: Đường dẫn thuộc tính (ví dụ: "location", "rotation_euler").
+        array_index: Vị trí kênh (0=X, 1=Y, 2=Z, v.v.).
+        value: Giá trị gốc cần lật.
+
+    Returns:
+        float: Giá trị đã được đối xứng hóa.
+    """
+    # 1. Location: Đảo ngược trục X (array_index == 0)
+    if data_path.endswith("location") and array_index == 0:
+        return -value
+
+    # 2. Rotation Euler: Đảo ngược trục Y và Z (array_index == 1 hoặc 2)
+    elif data_path.endswith("rotation_euler") and array_index in (1, 2):
+        return -value
+
+    # 3. Rotation Quaternion: Đảo ngược Y và Z (chỉ số 2 và 3 trong [w, x, y, z])
+    elif data_path.endswith("rotation_quaternion") and array_index in (2, 3):
+        return -value
+
+    # 4. Rotation Axis Angle: Đảo ngược trục Y và Z của Axis (chỉ số 2 và 3 trong [angle, x, y, z])
+    elif data_path.endswith("rotation_axis_angle") and array_index in (2, 3):
+        return -value
+
+    return value
+
