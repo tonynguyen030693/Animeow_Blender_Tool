@@ -29,7 +29,7 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
             # UX CẢNH BÁO ĐỘNG DỰA TRÊN SELECTION
             if not active_obj:
                 box_warn = layout.box()
-                box_warn.label("Hãy chọn vật thể/xương để diễn!", icon='INFO')
+                box_warn.label(text="Hãy chọn vật thể/xương để diễn!", icon='INFO')
                 return
 
             # Kiểm tra trạng thái liên kết hiện tại của đối tượng hoạt động
@@ -60,16 +60,16 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
             box_status = layout.box()
             col_status = box_status.column(align=True)
             if is_linked:
-                col_status.label(f"Trạng thái: Đang Liên Kết ({constrained_target.name})", icon='LINKED')
+                col_status.label(text=f"Trạng thái: Đang Liên Kết ({constrained_target.name})", icon='LINKED')
             else:
-                col_status.label(f"Trạng thái: Sẵn Sàng ({constrained_target.name})", icon='INFO')
+                col_status.label(text=f"Trạng thái: Sẵn Sàng ({constrained_target.name})", icon='INFO')
                 if has_anim:
-                    col_status.label("Dang co Anim cu - Se tu dong chuyen sang Locator", icon='WARNING')
+                    col_status.label(text="Dang co Anim cu - Se tu dong chuyen sang Locator", icon='INFO')
 
             # --- SECTION 1: TARGET DEFINITION ---
             box = layout.box()
             row_target = box.row(align=True)
-            row_target.label("Thiết lập Target", icon='CONSTRAINT_BONE')
+            row_target.label(text="Thiết lập Target", icon='CONSTRAINT_BONE')
             row_target.operator("animeow.get_active_bone", text="", icon='EYEDROPPER')
 
             col = box.column(align=True)
@@ -81,7 +81,7 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # --- SECTION 2: QUICK LINK ---
             box_link = layout.box()
-            box_link.label("Gán Ràng Buộc Nhanh", icon='LINKED')
+            box_link.label(text="Gán Ràng Buộc Nhanh", icon='LINKED')
             
             # Grid layout gọn gàng
             row_link = box_link.row(align=True)
@@ -90,10 +90,10 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # --- SECTION 3: SPACE SWITCHER ---
             box_switch = layout.box()
-            box_switch.label("Chuyển Đổi Không Gian", icon='FILE_REFRESH')
+            box_switch.label(text="Chuyển Đổi Không Gian", icon='FILE_REFRESH')
             
             col_switch = box_switch.column(align=True)
-            col_switch.label("Chọn Target mới rồi Click:")
+            col_switch.label(text="Chọn Target mới rồi Click:")
             col_switch.operator("animeow.switch_parent", text="Switch Parent", icon='FILE_REFRESH')
             # Grey-out nút Switch nếu không ở trạng thái liên kết locator
             if not is_linked:
@@ -101,7 +101,7 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # --- SECTION 4: BAKE ANIMATION ---
             box_bake = layout.box()
-            box_bake.label("Khóa Keyframe (Bake Animation)", icon='REC')
+            box_bake.label(text="Khóa Keyframe (Bake Animation)", icon='REC')
             
             row_bake = box_bake.row(align=True)
             row_bake.prop(scene, "animeow_clear_parents", text="Clear Loc", toggle=True)
