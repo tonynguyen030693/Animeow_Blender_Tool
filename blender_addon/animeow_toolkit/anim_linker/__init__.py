@@ -36,9 +36,4 @@ properties = [
         default=True,
         description="Tạo cặp Empty (Hook & Offset) làm trung gian để giữ Transform sạch sẽ"
     )),
-    ("animeow_clear_parents", bpy.props.BoolProperty(
-        name="Clear Parents",
-        default=False,
-        description="Gỡ bỏ liên kết cha-con (Empty) sau khi bake xong"
-    )),
 ]

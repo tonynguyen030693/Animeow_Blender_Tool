@@ -104,7 +104,7 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
             box_bake.label(text="Khóa Keyframe (Bake Animation)", icon='REC')
             
             row_bake = box_bake.row(align=True)
-            row_bake.prop(scene, "animeow_clear_parents", text="Clear Loc", toggle=True)
+            row_bake.scale_y = 1.2
             row_bake.operator("animeow.quick_bake", text="Bake & Clean", icon='NONE')
             # Grey-out nút Bake nếu không ở trạng thái liên kết
             if not is_linked:
