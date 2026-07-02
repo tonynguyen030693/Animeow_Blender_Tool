@@ -1,0 +1,13 @@
+schema_version = "1.0.0"
+id = "animeow_toolkit"
+version = "1.0.0"
+name = "Animeow Toolkit"
+tagline = "Bộ công cụ diễn hoạt chuyên nghiệp hợp nhất: Anim Linker, Graph Toolboard, Bone Picker, và Transform Rounder"
+maintainer = "Antigravity & Tony Meow"
+type = "add-on"
+website = "https://github.com/tonynguyen030693/Animeow_Blender_Tool"
+tags = ["Animation", "Rigging", "Interface", "Graph Editor"]
+blender_version_min = "4.2.0"
+license = [
+    "SPDX:GPL-2.0-or-later",
+]
