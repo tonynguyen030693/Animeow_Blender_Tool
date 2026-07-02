@@ -363,7 +363,11 @@ class AnimationBaker:
         if is_bone:
             armature_obj = context.active_object
             context.view_layer.objects.active = armature_obj
-            self.owner.bone.select = True
+            # Hỗ trợ cả Blender 4.0+ (PoseBone.select) và các bản cũ hơn (Bone.select)
+            if hasattr(self.owner, "select"):
+                self.owner.select = True
+            elif hasattr(self.owner, "bone") and hasattr(self.owner.bone, "select"):
+                self.owner.bone.select = True
             bake_type_set = {'POSE'}
         else:
             context.view_layer.objects.active = self.owner
