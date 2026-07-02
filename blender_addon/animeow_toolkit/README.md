@@ -29,22 +29,15 @@ Bộ công cụ diễn hoạt (animation) chuyên nghiệp dành cho Blender 4.2
 
 ---
 
-## Phím tắt nhanh (Pie Menu)
+## Giao diện hiển thị (Tab Editor Layout)
 
-* Nhấn tổ hợp phím **`Alt + Shift + A`** trong cửa sổ 3D Viewport để mở Pie Menu hình tròn ngay tại vị trí con trỏ chuột.
-* Giúp gọi nhanh các lệnh: **Link Object**, **Switch Parent**, **Bake & Clean**, và các lệnh **Copy/Paste/Connect Anim**.
-
----
-
-## Giao diện hiển thị
-
-* **Trong 3D Viewport (Sidebar - phím N)**: Tab **Animeow** chứa các bảng điều khiển cho:
-  * `🎯 Anim Linker`
-  * `📋 Anim Copy & Paste`
-  * `🔢 Transform Rounder`
-  * `🦴 Picker`
+* **Trong 3D Viewport (Sidebar - phím N)**: Tab **Animeow** chứa một Panel chính tích hợp thanh chuyển Tab Ngang trên cùng:
+  * `[ 🎯 Linker ]`: Công cụ liên kết và Locator thông minh.
+  * `[ 📋 Copy ]`: Sao chép, dán nối tiếp và dán đối xứng (Mirror).
+  * `[ 🔢 Rounder ]`: Làm tròn nhanh toạ độ transform.
+  * `[ 🦴 Picker ]`: Canvas chọn xương rig trực quan.
 * **Trong Graph Editor (Sidebar - phím N)**: Tab **Animeow** chứa bảng:
-  * `⚡ Animeow Graph Toolboard`
+  * `⚡ Animeow Graph Toolboard` (các công cụ Tween/Ease curves)
 
 ---
 
