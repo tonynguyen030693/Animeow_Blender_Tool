@@ -52,6 +52,12 @@ class ANIMEOW_OT_quick_link(bpy.types.Operator):
         use_locator = scene.animeow_use_locator
 
         if use_locator:
+            # Kiểm tra xem đối tượng đã có liên kết locator chưa để tránh trùng lặp
+            is_already_linked = any(c.name.startswith("ChildOf_loc_child_") for c in constrained_target.constraints)
+            if is_already_linked:
+                self.report({'WARNING'}, "Vui lòng Bake & Clean hoặc Clear Loc liên kết hiện tại trước khi tạo liên kết mới!")
+                return {'CANCELLED'}
+
             manager = SmartLocatorManager(constrained_target, armature_obj)
             start_frame = scene.frame_start
             end_frame = scene.frame_end

@@ -388,12 +388,35 @@ class AnimationBaker:
         context.view_layer.objects.active = self.owner_obj
 
     def cleanup_locators(self, loc_parent_name, loc_child_name):
-        """Xóa cặp Locator khỏi file Blender.
+        """Xóa toàn bộ các locator liên quan khỏi file Blender.
 
         Args:
             loc_parent_name: Tên Empty loc_parent.
             loc_child_name: Tên Empty loc_child.
         """
-        for name in [loc_child_name, loc_parent_name]:
+        names_to_delete = {loc_child_name, loc_parent_name}
+
+        # Quét toàn bộ objects để tìm locator cũ/mới liên quan đến owner
+        base_name = self.owner.name
+        prefix_parent = f"loc_parent_{base_name}"
+        prefix_child = f"loc_child_{base_name}"
+
+        # Lấy tên sạch không có phần đuôi mở rộng .00x
+        clean_base_name = base_name.split('.')[0] if '.' in base_name else base_name
+        clean_parent = f"loc_parent_{clean_base_name}"
+        clean_child = f"loc_child_{clean_base_name}"
+
+        for obj in bpy.data.objects:
+            # Khớp tên chính xác hoặc bản sao (.001, .002...)
+            if obj.name.startswith(prefix_parent) or obj.name.startswith(prefix_child):
+                names_to_delete.add(obj.name)
+            elif obj.name.startswith(clean_parent) or obj.name.startswith(clean_child):
+                names_to_delete.add(obj.name)
+
+        # Xóa an toàn khỏi cơ sở dữ liệu Blender
+        for name in names_to_delete:
             if name and name in bpy.data.objects:
-                bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
+                try:
+                    bpy.data.objects.remove(bpy.data.objects[name], do_unlink=True)
+                except Exception:
+                    pass
