@@ -1,0 +1,67 @@
+// -*- mode: mel -*-
+// Animeow Maya Pipeline Drag-and-Drop Installer
+// Drag and drop this file into Maya viewport to install the toolkit shelf button.
+
+global proc string animeow_get_installer_path() {
+    string $whatIs = `whatIs animeow_get_installer_path`;
+    string $prefix = "Mel procedure found in: ";
+    string $path = "";
+    if (`gmatch $whatIs ($prefix + "*")`) {
+        $path = `substring $whatIs (size($prefix) + 1) (size($whatIs))`;
+    }
+    return $path;
+}
+
+global proc animeow_toolkit_install() {
+    string $filePath = `animeow_get_installer_path`;
+    if ($filePath == "") {
+        error "Khong the tu dong tim thay duong dan installer. Vui long cai dat thu cong.";
+        return;
+    }
+    
+    // Chuẩn hoá đường dẫn
+    $filePath = `substituteAllString $filePath "\\" "/"`;
+    
+    // Lấy thư mục cha của installer (ví dụ: E:/AI_Work/Blender/Maya_script/animeow_Maya_pipeline/)
+    string $installDir = `match "^.*/" $filePath`;
+    
+    // Thư mục chứa gói python (thư mục cha của animeow_Maya_pipeline, tức là E:/AI_Work/Blender/Maya_script/)
+    // Ta cắt bỏ "animeow_Maya_pipeline/" ở cuối
+    string $parentDir = `substitute "animeow_Maya_pipeline/" $installDir ""`;
+    
+    // Tạo script Python để khởi chạy
+    string $pyCmd = "import sys\n";
+    $pyCmd += "path = '" + $parentDir + "'\n";
+    $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
+    $pyCmd += "import animeow_Maya_pipeline\n";
+    $pyCmd += "import animeow_Maya_pipeline.menu as menu\n";
+    $pyCmd += "menu.create_menu()\n";
+    $pyCmd += "animeow_Maya_pipeline.show()\n";
+    
+    // Tìm Shelf hiện tại để thêm nút
+    global string $gShelfTopLevel;
+    if (`tabLayout -exists $gShelfTopLevel`) {
+        string $currentShelf = `tabLayout -q -selectTab $gShelfTopLevel`;
+        setParent $currentShelf;
+        
+        // Tạo nút bấm mới trên Shelf
+        shelfButton
+            -label "Animeow Pipeline"
+            -annotation "Mở bộ công cụ quản lý File & Playblast Animeow"
+            -image1 "fileOpen.png"
+            -command $pyCmd
+            -sourceType "python"
+            -style "iconOnly"
+            -imageOverlayLabel "AMP";
+            
+        confirmDialog 
+            -title "Thanh Cong" 
+            -message "Da tao nut bam 'AMP' thanh cong tren Shelf hien hanh va kich hoat menu Animeow!" 
+            -button "Tuyet voi";
+    } else {
+        error "Khong tim thay thanh Shelf hien hanh. Vui long chay thu cong bang ma Python.";
+    }
+}
+
+// Thực thi cài đặt
+animeow_toolkit_install();
