@@ -25,6 +25,7 @@ from . import graph_toolboard
 from . import bone_picker
 from . import transform_rounder
 from . import anim_copy
+from . import anim_bake
 
 
 class ANIMEOW_PT_tab_selector(bpy.types.Panel):
@@ -64,6 +65,12 @@ modules = [
         name="Anim Copy",
         classes=anim_copy.classes,
         properties=anim_copy.properties
+    ),
+    # 4. Anim Bake
+    ToolkitModule(
+        name="Anim Bake",
+        classes=anim_bake.classes,
+        properties=anim_bake.properties
     )
 ]
 
@@ -77,7 +84,8 @@ def register():
             ('LINKER', "Linker", "Công cụ liên kết locator", 'CONSTRAINT_BONE', 0),
             ('COPY', "Copy", "Sao chép/Dán keyframes", 'COPYDOWN', 1),
             ('ROUNDER', "Rounder", "Làm tròn toạ độ", 'FILE_REFRESH', 2),
-            ('PICKER', "Picker", "Chọn xương trực quan", 'POSE_HLT', 3),
+            ('BAKER', "Baker", "Bake & tối ưu keyframe", 'REC', 3),
+            ('PICKER', "Picker", "Chọn xương trực quan", 'POSE_HLT', 4),
         ],
         default='LINKER'
     )
