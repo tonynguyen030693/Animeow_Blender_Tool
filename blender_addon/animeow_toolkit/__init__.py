@@ -26,6 +26,7 @@ from . import bone_picker
 from . import transform_rounder
 from . import anim_copy
 from . import anim_bake
+from . import anim_layers
 
 
 class ANIMEOW_PT_tab_selector(bpy.types.Panel):
@@ -71,6 +72,12 @@ modules = [
         name="Anim Bake",
         classes=anim_bake.classes,
         properties=anim_bake.properties
+    ),
+    # 5. Anim Layers
+    ToolkitModule(
+        name="Anim Layers",
+        classes=anim_layers.classes,
+        properties=anim_layers.properties
     )
 ]
 
@@ -85,7 +92,8 @@ def register():
             ('COPY', "Copy", "Sao chép/Dán keyframes", 'COPYDOWN', 1),
             ('ROUNDER', "Rounder", "Làm tròn toạ độ", 'FILE_REFRESH', 2),
             ('BAKER', "Baker", "Bake & tối ưu keyframe", 'REC', 3),
-            ('PICKER', "Picker", "Chọn xương trực quan", 'POSE_HLT', 4),
+            ('LAYERS', "Layers", "Animation Layers kiểu Maya", 'NLA', 4),
+            ('PICKER', "Picker", "Chọn xương trực quan", 'POSE_HLT', 5),
         ],
         default='LINKER'
     )

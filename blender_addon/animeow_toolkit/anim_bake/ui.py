@@ -40,7 +40,7 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
                     is_valid_selection = True
                 else:
                     box_target.alert = True
-                    box_target.label(text="Chưa chọn xương nào trong Rig!", icon='WARNING')
+                    box_target.label(text="Chưa chọn xương nào trong Rig!", icon='ERROR')
                     is_valid_selection = False
             elif mode in ('OBJECT', 'NUMBERS'):
                 selected_objs = context.selected_objects
@@ -49,7 +49,7 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
                     is_valid_selection = True
                 else:
                     box_target.alert = True
-                    box_target.label(text="Chưa chọn vật thể nào!", icon='WARNING')
+                    box_target.label(text="Chưa chọn vật thể nào!", icon='ERROR')
                     is_valid_selection = False
             else:
                 box_target.alert = True
