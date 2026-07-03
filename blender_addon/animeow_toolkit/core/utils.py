@@ -69,7 +69,7 @@ def insert_auto_keyframe(context, target, data_path, armature_obj=None):
 
         has_fcurve = any(
             fc.data_path == full_path
-            for fc in anim_target.animation_data.action.fcurves
+            for fc in get_action_fcurves(anim_target.animation_data.action)
         )
         if not has_fcurve:
             return
@@ -92,38 +92,61 @@ def record_world_matrix(target, armature_obj=None):
     return target.matrix_world.copy()
 
 
-def mirror_keyframe_value(data_path, array_index, value):
+def mirror_keyframe_value(data_path, array_index, value, mirror_axes=(True, False, False, False, True, True)):
     """Tính toán đảo ngược giá trị đối xứng (Mirroring) cho một kênh keyframe cụ thể.
 
     Args:
         data_path: Đường dẫn thuộc tính (ví dụ: "location", "rotation_euler").
         array_index: Vị trí kênh (0=X, 1=Y, 2=Z, v.v.).
         value: Giá trị gốc cần lật.
+        mirror_axes: Tuple chứa trạng thái bật/tắt lật của 6 trục (tx, ty, tz, rx, ry, rz).
 
     Returns:
         float: Giá trị đã được đối xứng hóa.
     """
-    # 1. Location: Đảo ngược trục X (array_index == 0)
-    if data_path.endswith("location") and array_index == 0:
-        return -value
+    tx, ty, tz, rx, ry, rz = mirror_axes
 
-    # 2. Rotation Euler: Đảo ngược trục Y và Z (array_index == 1 hoặc 2)
-    elif data_path.endswith("rotation_euler") and array_index in (1, 2):
-        return -value
+    # 1. Location
+    if data_path.endswith("location"):
+        if array_index == 0 and tx:
+            return -value
+        if array_index == 1 and ty:
+            return -value
+        if array_index == 2 and tz:
+            return -value
 
-    # 3. Rotation Quaternion: Đảo ngược Y và Z (chỉ số 2 và 3 trong [w, x, y, z])
-    elif data_path.endswith("rotation_quaternion") and array_index in (2, 3):
-        return -value
+    # 2. Rotation Euler
+    elif data_path.endswith("rotation_euler"):
+        if array_index == 0 and rx:
+            return -value
+        if array_index == 1 and ry:
+            return -value
+        if array_index == 2 and rz:
+            return -value
 
-    # 4. Rotation Axis Angle: Đảo ngược trục Y và Z của Axis (chỉ số 2 và 3 trong [angle, x, y, z])
-    elif data_path.endswith("rotation_axis_angle") and array_index in (2, 3):
-        return -value
+    # 3. Rotation Quaternion (w, x, y, z)
+    elif data_path.endswith("rotation_quaternion"):
+        if array_index == 1 and rx:
+            return -value
+        if array_index == 2 and ry:
+            return -value
+        if array_index == 3 and rz:
+            return -value
+
+    # 4. Rotation Axis Angle (angle, x, y, z)
+    elif data_path.endswith("rotation_axis_angle"):
+        if array_index == 1 and rx:
+            return -value
+        if array_index == 2 and ry:
+            return -value
+        if array_index == 3 and rz:
+            return -value
 
     return value
 
 
 def get_action_fcurves(action):
-    """Lấy tất cả các FCurves từ Action (hỗ trợ cả Layered Action và Legacy Action)."""
+    """Lấy tất cả các FCurves từ Action (hỗ trợ cả Layered Action, Slotted Action và Legacy Action)."""
     fcurves = []
     if not action:
         return fcurves
@@ -131,6 +154,12 @@ def get_action_fcurves(action):
     # Hỗ trợ Legacy Action (Blender cũ hoặc NLA Legacy)
     if hasattr(action, "fcurves") and action.fcurves:
         fcurves.extend(action.fcurves)
+
+    # Hỗ trợ Blender 4.3+ Slotted Action (bindings)
+    if hasattr(action, "bindings"):
+        for binding in action.bindings:
+            if hasattr(binding, "fcurves") and binding.fcurves:
+                fcurves.extend(binding.fcurves)
         
     # Hỗ trợ Layered Action (Blender 5.1/4.2+)
     if hasattr(action, "layers"):
@@ -146,6 +175,85 @@ def get_action_fcurves(action):
                         fcurves.extend(bag.fcurves)
                         
     return fcurves
+
+
+def ensure_fcurve(action, datablock, data_path, index):
+    """Find or create an FCurve in action, compatible with Blender 3.x, 4.x, and 5.x."""
+    if not action:
+        return None
+
+    # 1. Try new Blender 5.0+ method
+    if hasattr(action, "fcurve_ensure_for_datablock"):
+        try:
+            return action.fcurve_ensure_for_datablock(datablock=datablock, data_path=data_path, index=index)
+        except Exception:
+            pass
+
+    # 2. Legacy fallback
+    if hasattr(action, "fcurves") and action.fcurves:
+        try:
+            fc = action.fcurves.find(data_path=data_path, index=index)
+            if not fc:
+                fc = action.fcurves.new(data_path=data_path, index=index)
+            return fc
+        except Exception:
+            pass
+
+    return None
+
+
+def remove_action_fcurve(action, fcurve):
+    """Safely remove an FCurve from its owner collection (legacy Action, Binding, or Channelbag)."""
+    if not action or not fcurve:
+        return False
+        
+    # 1. Try removing from action.fcurves directly
+    if hasattr(action, "fcurves") and action.fcurves:
+        try:
+            action.fcurves.remove(fcurve)
+            return True
+        except Exception:
+            pass
+            
+    # 2. Try removing from action.bindings or other collections
+    if hasattr(action, "bindings"):
+        for binding in action.bindings:
+            if hasattr(binding, "fcurves") and binding.fcurves:
+                try:
+                    binding.fcurves.remove(fcurve)
+                    return True
+                except Exception:
+                    pass
+
+    # 3. Try removing from strips/channelbags (layered action)
+    if hasattr(action, "layers"):
+        for layer in action.layers:
+            for strip in layer.strips:
+                if hasattr(strip, "channelbags"):
+                    for bag in strip.channelbags:
+                        if hasattr(bag, "fcurves") and bag.fcurves:
+                            try:
+                                bag.fcurves.remove(fcurve)
+                                return True
+                            except Exception:
+                                pass
+                elif hasattr(strip, "channelbag") and strip.channelbag:
+                    bag = strip.channelbag
+                    if hasattr(bag, "fcurves") and bag.fcurves:
+                        try:
+                            bag.fcurves.remove(fcurve)
+                            return True
+                        except Exception:
+                            pass
+                            
+    # Fallback
+    try:
+        action.fcurves.remove(fcurve)
+        return True
+    except Exception:
+        pass
+        
+    return False
 
 
 def clean_fcurve_keyframes(fcurve, threshold=0.001, step=1, start_frame=1):

@@ -8,6 +8,7 @@ giúp tách biệt giữa giao diện (UI/Operator) và xử lý (Logic).
 
 import bpy
 from mathutils import Matrix
+from ..core.utils import get_action_fcurves, remove_action_fcurve
 
 
 class SmartLocatorManager:
@@ -36,7 +37,7 @@ class SmartLocatorManager:
             if self.armature_obj.animation_data and self.armature_obj.animation_data.action:
                 action = self.armature_obj.animation_data.action
                 prefix = f'pose.bones["{self.owner.name}"]'
-                return any(fc.data_path.startswith(prefix) for fc in action.fcurves)
+                return any(fc.data_path.startswith(prefix) for fc in get_action_fcurves(action))
         else:
             if self.owner.animation_data and self.owner.animation_data.action:
                 return True
@@ -73,9 +74,9 @@ class SmartLocatorManager:
         if self.armature_obj:
             action = self.armature_obj.animation_data.action
             prefix = f'pose.bones["{self.owner.name}"]'
-            fcurves_to_remove = [fc for fc in action.fcurves if fc.data_path.startswith(prefix)]
+            fcurves_to_remove = [fc for fc in get_action_fcurves(action) if fc.data_path.startswith(prefix)]
             for fc in fcurves_to_remove:
-                action.fcurves.remove(fc)
+                remove_action_fcurve(action, fc)
         else:
             self.owner.animation_data_clear()
 

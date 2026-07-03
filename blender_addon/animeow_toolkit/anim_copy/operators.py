@@ -7,7 +7,7 @@ và dán đối xứng (Mirror) chuyển động cho các Control.
 
 import bpy
 from mathutils import Matrix
-from ..core.utils import get_constrained_target, mirror_keyframe_value
+from ..core.utils import get_constrained_target, mirror_keyframe_value, get_action_fcurves, ensure_fcurve
 
 # Bộ nhớ tạm lưu trữ keyframe trong Python
 animeow_clipboard = {}
@@ -38,36 +38,63 @@ class ANIMEOW_OT_copy_anim(bpy.types.Operator):
 
         # Lọc F-Curves thuộc về đối tượng đang chọn
         fcurves = []
+        all_fcurves = get_action_fcurves(action)
         if is_bone:
             prefix = f'pose.bones["{constrained_target.name}"]'
-            fcurves = [fc for fc in action.fcurves if fc.data_path.startswith(prefix)]
+            fcurves = [fc for fc in all_fcurves if fc.data_path.startswith(prefix)]
         else:
             # Đối với Object, các data_path thường là "location", "rotation_euler", v.v.
             # Tránh lấy nhầm các data_path trỏ tới sub-objects hoặc custom properties khác
             valid_paths = {"location", "rotation_euler", "rotation_quaternion", "rotation_axis_angle", "scale"}
-            fcurves = [fc for fc in action.fcurves if fc.data_path in valid_paths]
+            fcurves = [fc for fc in all_fcurves if fc.data_path in valid_paths]
 
         if not fcurves:
             self.report({'WARNING'}, f"Không tìm thấy keyframe hợp lệ cho '{constrained_target.name}'!")
             return {'CANCELLED'}
 
+        # 1b. Determine frame range to copy
+        scene = context.scene
+        range_type = scene.animeow_copy_range_type
+        if range_type == 'TIMELINE':
+            start_f = scene.frame_start
+            end_f = scene.frame_end
+        elif range_type == 'CUSTOM':
+            start_f = scene.animeow_copy_frame_start
+            end_f = scene.animeow_copy_frame_end
+        else:
+            start_f = None
+            end_f = None
+
         # Đọc dữ liệu keyframe
         curves_data = []
+        total_copied_keys = 0
         for fc in fcurves:
             clean_path = fc.data_path.split(".")[-1] if is_bone else fc.data_path
             keyframes = []
             for kp in fc.keyframe_points:
+                frame_val = kp.co[0]
+                if start_f is not None and frame_val < start_f:
+                    continue
+                if end_f is not None and frame_val > end_f:
+                    continue
                 keyframes.append({
                     "co": (kp.co[0], kp.co[1]),
                     "handle_left": (kp.handle_left[0], kp.handle_left[1]),
                     "handle_right": (kp.handle_right[0], kp.handle_right[1]),
                     "interpolation": kp.interpolation
                 })
-            curves_data.append({
-                "data_path": clean_path,
-                "array_index": fc.array_index,
-                "keyframes": keyframes
-            })
+            
+            if keyframes:
+                total_copied_keys += len(keyframes)
+                curves_data.append({
+                    "data_path": clean_path,
+                    "array_index": fc.array_index,
+                    "keyframes": keyframes
+                })
+
+        if not curves_data:
+            self.report({'WARNING'}, "Không tìm thấy keyframe nào trong phạm vi được chọn!")
+            return {'CANCELLED'}
 
         animeow_clipboard = {
             "is_bone": is_bone,
@@ -75,7 +102,7 @@ class ANIMEOW_OT_copy_anim(bpy.types.Operator):
             "curves": curves_data
         }
 
-        self.report({'INFO'}, f"Đã copy anim của {constrained_target.name} ({len(fcurves)} kênh)!")
+        self.report({'INFO'}, f"Đã copy anim của {constrained_target.name} ({total_copied_keys} keyframe)!")
         return {'FINISHED'}
 
 
@@ -107,7 +134,8 @@ class ANIMEOW_OT_paste_anim(bpy.types.Operator):
 
         action = anim_target.animation_data.action
         is_bone = (armature_obj is not None)
-        current_frame = context.scene.frame_current
+        scene = context.scene
+        current_frame = scene.frame_current
 
         # Tính toán offset thời gian
         # Tìm frame đầu tiên trong đống keyframe đã copy
@@ -132,9 +160,7 @@ class ANIMEOW_OT_paste_anim(bpy.types.Operator):
                 full_path = curve["data_path"]
 
             # Tìm hoặc tạo mới F-Curve
-            fc = action.fcurves.find(data_path=full_path, index=curve["array_index"])
-            if not fc:
-                fc = action.fcurves.new(data_path=full_path, index=curve["array_index"])
+            fc = ensure_fcurve(action, anim_target, full_path, curve["array_index"])
 
             for kp in curve["keyframes"]:
                 new_frame = kp["co"][0] + time_offset
@@ -147,9 +173,17 @@ class ANIMEOW_OT_paste_anim(bpy.types.Operator):
                 h_right_dy = kp["handle_right"][1] - kp["co"][1]
 
                 if self.mirror:
-                    new_val = mirror_keyframe_value(curve["data_path"], curve["array_index"], new_val)
-                    h_left_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_left_dy)
-                    h_right_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_right_dy)
+                    mirror_axes = (
+                        scene.animeow_mirror_tx,
+                        scene.animeow_mirror_ty,
+                        scene.animeow_mirror_tz,
+                        scene.animeow_mirror_rx,
+                        scene.animeow_mirror_ry,
+                        scene.animeow_mirror_rz,
+                    )
+                    new_val = mirror_keyframe_value(curve["data_path"], curve["array_index"], new_val, mirror_axes)
+                    h_left_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_left_dy, mirror_axes)
+                    h_right_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_right_dy, mirror_axes)
 
                 # Chèn keyframe
                 new_kp = fc.keyframe_points.insert(frame=new_frame, value=new_val)
@@ -220,7 +254,7 @@ class ANIMEOW_OT_paste_connect(bpy.types.Operator):
                 first_kp_val = curve["keyframes"][0]["co"][1]
 
             # Đánh giá giá trị của đối tượng đích tại frame hiện tại trước khi dán
-            fc_existing = action.fcurves.find(data_path=full_path, index=curve["array_index"])
+            fc_existing = ensure_fcurve(action, anim_target, full_path, curve["array_index"])
             if fc_existing:
                 v_target_end = fc_existing.evaluate(current_frame)
             else:
@@ -238,9 +272,7 @@ class ANIMEOW_OT_paste_connect(bpy.types.Operator):
             value_offset = v_target_end - first_kp_val
 
             # Tìm hoặc tạo F-Curve
-            fc = action.fcurves.find(data_path=full_path, index=curve["array_index"])
-            if not fc:
-                fc = action.fcurves.new(data_path=full_path, index=curve["array_index"])
+            fc = ensure_fcurve(action, anim_target, full_path, curve["array_index"])
 
             # Chèn keyframes
             for kp in curve["keyframes"]:
@@ -255,9 +287,18 @@ class ANIMEOW_OT_paste_connect(bpy.types.Operator):
                 h_right_dy = kp["handle_right"][1] - kp["co"][1]
 
                 if self.mirror:
-                    new_val = mirror_keyframe_value(curve["data_path"], curve["array_index"], new_val)
-                    h_left_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_left_dy)
-                    h_right_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_right_dy)
+                    scene = context.scene
+                    mirror_axes = (
+                        scene.animeow_mirror_tx,
+                        scene.animeow_mirror_ty,
+                        scene.animeow_mirror_tz,
+                        scene.animeow_mirror_rx,
+                        scene.animeow_mirror_ry,
+                        scene.animeow_mirror_rz,
+                    )
+                    new_val = mirror_keyframe_value(curve["data_path"], curve["array_index"], new_val, mirror_axes)
+                    h_left_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_left_dy, mirror_axes)
+                    h_right_dy = mirror_keyframe_value(curve["data_path"], curve["array_index"], h_right_dy, mirror_axes)
 
                 new_kp = fc.keyframe_points.insert(frame=new_frame, value=new_val)
                 new_kp.interpolation = kp["interpolation"]

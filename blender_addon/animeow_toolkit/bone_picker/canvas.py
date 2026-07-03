@@ -6,11 +6,57 @@ Draws the picker canvas inside a Blender region using the `gpu` module
 for shapes and `blf` for text labels.
 """
 import math
+import os
 import bpy
 import gpu
 import blf
 from gpu_extras.batch import batch_for_shader
+from gpu_extras.presets import draw_texture_2d
 from mathutils import Vector
+
+
+# ── Background image texture cache ──────────────────────────
+_bg_texture_cache = {}  # {filepath: (gpu_texture, image_width, image_height)}
+
+
+def _get_background_texture(file_path):
+    """Load and cache a background image as a GPUTexture.
+
+    Returns (gpu_texture, width, height) or (None, 0, 0) if loading fails.
+    """
+    if not file_path or not os.path.isfile(bpy.path.abspath(file_path)):
+        return None, 0, 0
+
+    abs_path = bpy.path.abspath(file_path)
+
+    # Check cache
+    if abs_path in _bg_texture_cache:
+        tex, w, h = _bg_texture_cache[abs_path]
+        # Verify texture is still valid
+        try:
+            _ = tex.width
+            return tex, w, h
+        except Exception:
+            del _bg_texture_cache[abs_path]
+
+    # Load image into Blender data
+    img_name = f"_picker_bg_{os.path.basename(abs_path)}"
+    img = bpy.data.images.get(img_name)
+    if img is None:
+        try:
+            img = bpy.data.images.load(abs_path)
+            img.name = img_name
+        except Exception:
+            return None, 0, 0
+
+    # Create GPU texture
+    try:
+        tex = gpu.texture.from_image(img)
+        w, h = img.size[0], img.size[1]
+        _bg_texture_cache[abs_path] = (tex, w, h)
+        return tex, w, h
+    except Exception:
+        return None, 0, 0
 
 
 from .utils import (
@@ -161,7 +207,7 @@ def draw_button(btn, vm, hovered=False, selected=False):
 
 # ── Canvas background ──────────────────────────────────────
 
-def draw_canvas_background(vm, canvas_w, canvas_h, tab_name=""):
+def draw_canvas_background(vm, canvas_w, canvas_h, tab_name="", bg_image_path=""):
     """Draw a subtle background rectangle and a top header bar for dragging."""
     vx, vy = vm.to_viewport(0, 0)
     vw = canvas_w * vm.zoom
@@ -170,6 +216,13 @@ def draw_canvas_background(vm, canvas_w, canvas_h, tab_name=""):
     # 1. Main canvas area background (dark gray)
     bg_color = (0.16, 0.16, 0.16, 0.95)
     _draw_filled_rect(vx, vy, vw, vh, bg_color)
+
+    # 1b. Draw background image if available
+    if bg_image_path:
+        tex, img_w, img_h = _get_background_texture(bg_image_path)
+        if tex is not None:
+            gpu.state.blend_set('ALPHA')
+            draw_texture_2d(tex, (vx, vy), vw, vh)
     
     # 2. Header bar background (medium gray) with UI Scale
     ui_scale = bpy.context.preferences.system.ui_scale
@@ -322,7 +375,7 @@ def draw_picker_callback(context, target_area_ptr):
         _draw_filled_rect(0, 0, vm.region_width, vm.region_height, (0.16, 0.16, 0.16, 1.0))
 
     # Draw canvas background
-    draw_canvas_background(vm, tab.canvas_width, tab.canvas_height, tab.name)
+    draw_canvas_background(vm, tab.canvas_width, tab.canvas_height, tab.name, tab.background_image)
 
     # Determine which bones are currently selected
     armature_obj = None

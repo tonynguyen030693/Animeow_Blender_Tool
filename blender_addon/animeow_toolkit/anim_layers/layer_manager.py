@@ -64,6 +64,23 @@ def _track_name_for_layer(layer_name):
     return f"{ANL_PREFIX}{layer_name}"
 
 
+def _get_bone_select(pb):
+    """Retrieve the selection state of a PoseBone in a version-agnostic way."""
+    if hasattr(pb, "select"):
+        return pb.select
+    if hasattr(pb, "bone") and hasattr(pb.bone, "select"):
+        return pb.bone.select
+    return False
+
+
+def _set_bone_select(pb, select):
+    """Set the selection state of a PoseBone in a version-agnostic way."""
+    if hasattr(pb, "select"):
+        pb.select = select
+    elif hasattr(pb, "bone") and hasattr(pb.bone, "select"):
+        pb.bone.select = select
+
+
 class LayerManager:
     """Bộ não điều phối NLA backend cho hệ thống Global Animation Layers.
 
@@ -293,7 +310,7 @@ class LayerManager:
 
             # Đảm bảo tạo slot cho Action mới trong Blender 5.0+
             if hasattr(new_action, "slots"):
-                id_type = 'POSE' if obj.type == 'ARMATURE' else 'OBJECT'
+                id_type = 'OBJECT'
                 new_slot = new_action.slots.new(id_type=id_type, name=obj.name)
 
             # Tạo NLA track + strip
@@ -870,7 +887,26 @@ class LayerManager:
         layers = scene.animeow_global_layers
         below_index = layer_index - 1  # Index nhỏ hơn = layer dưới
 
+        # Save original active object, selection, and mode
+        context = bpy.context
+        orig_active = context.view_layer.objects.active
+        orig_selected_objs = list(context.selected_objects)
+        orig_mode = orig_active.mode if orig_active else 'OBJECT'
+
+        # Switch to OBJECT mode for safe execution of object selection and NLA bake
+        if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+            try:
+                bpy.ops.object.mode_set(mode='OBJECT')
+            except Exception:
+                pass
+
         if below_index < 0:
+            # Restore mode before returning False
+            if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode=orig_mode)
+                except Exception:
+                    pass
             return False
 
         upper_layer = layers[layer_index]
@@ -912,10 +948,30 @@ class LayerManager:
 
             # Bake
             bake_types = {'POSE'} if obj.type == 'ARMATURE' else {'OBJECT'}
+            # Deselect all objects first using low-level API to avoid context errors
+            for o in context.view_layer.objects:
+                o.select_set(False)
+ 
+            # Select target object only
+            obj.select_set(True)
+            context.view_layer.objects.active = obj
+ 
+            # Switch mode specifically for baking this object
+            target_mode = 'POSE' if obj.type == 'ARMATURE' else 'OBJECT'
+            if bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode=target_mode)
+                except Exception:
+                    pass
+
+            # Save and select all bones if Armature
+            selected_bone_names = []
+            if obj.type == 'ARMATURE' and obj.pose:
+                selected_bone_names = [b.name for b in obj.pose.bones if _get_bone_select(b)]
+                for b in obj.pose.bones:
+                    _set_bone_select(b, True)
+ 
             try:
-                # Chọn object tạm thời
-                obj.select_set(True)
-                bpy.context.view_layer.objects.active = obj
                 bpy.ops.nla.bake(
                     frame_start=int(frame_start),
                     frame_end=int(frame_end),
@@ -926,12 +982,54 @@ class LayerManager:
                     clear_parents=False,
                     bake_types=bake_types
                 )
-            except Exception:
+            except Exception as e:
+                # Restore bone selection
+                if obj.type == 'ARMATURE' and obj.pose:
+                    for b in obj.pose.bones:
+                        _set_bone_select(b, b.name in selected_bone_names)
+                # Switch back to OBJECT mode before restoring selections
+                if obj.type == 'ARMATURE' and bpy.ops.object.mode_set.poll():
+                    try:
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                    except Exception:
+                        pass
+                # Restore object selection
+                for o in context.view_layer.objects:
+                    o.select_set(False)
+                for o in orig_selected_objs:
+                    try:
+                        o.select_set(True)
+                    except Exception:
+                        pass
+                context.view_layer.objects.active = orig_active
+ 
                 # Khôi phục mute
                 for track in anim_data.nla_tracks:
                     if track.name in original_mute:
                         track.mute = original_mute[track.name]
                 continue
+ 
+            # Restore bone selection
+            if obj.type == 'ARMATURE' and obj.pose:
+                for b in obj.pose.bones:
+                    _set_bone_select(b, b.name in selected_bone_names)
+ 
+            # Switch back to OBJECT mode before restoring selections
+            if obj.type == 'ARMATURE' and bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                except Exception:
+                    pass
+
+            # Restore object selection
+            for o in context.view_layer.objects:
+                o.select_set(False)
+            for o in orig_selected_objs:
+                try:
+                    o.select_set(True)
+                except Exception:
+                    pass
+            context.view_layer.objects.active = orig_active
 
             # Lấy action baked
             merged_action = anim_data.action
@@ -966,12 +1064,23 @@ class LayerManager:
         layers.remove(layer_index)
 
         # Điều chỉnh active index
-        if scene.animeow_global_active_index >= len(layers):
-            scene.animeow_global_active_index = max(0, len(layers) - 1)
+        # Restore original active object, selection, and mode
+        for o in context.view_layer.objects:
+            o.select_set(False)
+        for o in orig_selected_objs:
+            try:
+                o.select_set(True)
+            except Exception:
+                pass
+        context.view_layer.objects.active = orig_active
 
-        # Re-select
-        if len(layers) > 0:
-            LayerManager.select_layer(scene, scene.animeow_global_active_index)
+        if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+            try:
+                # Switch active back to the original active object to restore its mode successfully
+                bpy.context.view_layer.objects.active = orig_active
+                bpy.ops.object.mode_set(mode=orig_mode)
+            except Exception:
+                pass
 
         return True
 
@@ -988,7 +1097,26 @@ class LayerManager:
             True nếu thành công.
         """
         layers = scene.animeow_global_layers
+        # Save original active object, selection, and mode
+        context = bpy.context
+        orig_active = context.view_layer.objects.active
+        orig_selected_objs = list(context.selected_objects)
+        orig_mode = orig_active.mode if orig_active else 'OBJECT'
+
+        # Switch to OBJECT mode for safe execution of object selection and NLA bake
+        if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+            try:
+                bpy.ops.object.mode_set(mode='OBJECT')
+            except Exception:
+                pass
+
         if len(layers) == 0:
+            # Restore mode before returning False
+            if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode=orig_mode)
+                except Exception:
+                    pass
             return False
 
         frame_start = scene.frame_start
@@ -1013,9 +1141,30 @@ class LayerManager:
                     track.mute = False
 
             bake_types = {'POSE'} if obj.type == 'ARMATURE' else {'OBJECT'}
+            # Deselect all objects first using low-level API to avoid context errors
+            for o in context.view_layer.objects:
+                o.select_set(False)
+ 
+            # Select target object only
+            obj.select_set(True)
+            context.view_layer.objects.active = obj
+ 
+            # Switch mode specifically for baking this object
+            target_mode = 'POSE' if obj.type == 'ARMATURE' else 'OBJECT'
+            if bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode=target_mode)
+                except Exception:
+                    pass
+
+            # Save and select all bones if Armature
+            selected_bone_names = []
+            if obj.type == 'ARMATURE' and obj.pose:
+                selected_bone_names = [b.name for b in obj.pose.bones if _get_bone_select(b)]
+                for b in obj.pose.bones:
+                    _set_bone_select(b, True)
+ 
             try:
-                obj.select_set(True)
-                bpy.context.view_layer.objects.active = obj
                 bpy.ops.nla.bake(
                     frame_start=int(frame_start),
                     frame_end=int(frame_end),
@@ -1026,8 +1175,49 @@ class LayerManager:
                     clear_parents=False,
                     bake_types=bake_types
                 )
-            except Exception:
+            except Exception as e:
+                # Restore bone selection
+                if obj.type == 'ARMATURE' and obj.pose:
+                    for b in obj.pose.bones:
+                        _set_bone_select(b, b.name in selected_bone_names)
+                # Switch back to OBJECT mode before restoring selections
+                if obj.type == 'ARMATURE' and bpy.ops.object.mode_set.poll():
+                    try:
+                        bpy.ops.object.mode_set(mode='OBJECT')
+                    except Exception:
+                        pass
+                # Restore object selection
+                for o in context.view_layer.objects:
+                    o.select_set(False)
+                for o in orig_selected_objs:
+                    try:
+                        o.select_set(True)
+                    except Exception:
+                        pass
+                context.view_layer.objects.active = orig_active
                 continue
+ 
+            # Restore bone selection
+            if obj.type == 'ARMATURE' and obj.pose:
+                for b in obj.pose.bones:
+                    _set_bone_select(b, b.name in selected_bone_names)
+ 
+            # Switch back to OBJECT mode before restoring selections
+            if obj.type == 'ARMATURE' and bpy.ops.object.mode_set.poll():
+                try:
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                except Exception:
+                    pass
+
+            # Restore object selection
+            for o in context.view_layer.objects:
+                o.select_set(False)
+            for o in orig_selected_objs:
+                try:
+                    o.select_set(True)
+                except Exception:
+                    pass
+            context.view_layer.objects.active = orig_active
 
             merged_action = anim_data.action
             if merged_action:
@@ -1067,6 +1257,24 @@ class LayerManager:
         # Xóa tất cả global layers
         layers.clear()
         scene.animeow_global_active_index = 0
+
+        # Restore original active object, selection, and mode
+        for o in context.view_layer.objects:
+            o.select_set(False)
+        for o in orig_selected_objs:
+            try:
+                o.select_set(True)
+            except Exception:
+                pass
+        context.view_layer.objects.active = orig_active
+
+        if orig_mode != 'OBJECT' and bpy.ops.object.mode_set.poll():
+            try:
+                # Switch active back to the original active object to restore its mode successfully
+                bpy.context.view_layer.objects.active = orig_active
+                bpy.ops.object.mode_set(mode=orig_mode)
+            except Exception:
+                pass
 
         return True
 

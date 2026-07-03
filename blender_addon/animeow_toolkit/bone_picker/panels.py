@@ -75,13 +75,18 @@ class PICKER_PT_main(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("picker.create_float_window", text="📺 Float Viewport", icon='WINDOW')
 
-        # ── Armature selector ───────────────────────────────
+        # ── Armature selector ─────────────────────────────────
         box = layout.box()
         row = box.row(align=True)
         row.label(text="Armature:", icon='ARMATURE_DATA')
         row.prop_search(picker, "armature_name", context.scene, "objects", text="")
 
-        # ── Zoom/Pan info ───────────────────────────────────
+        # ── Namespace ─────────────────────────────────────────
+        row = box.row(align=True)
+        row.label(text="Namespace:", icon='SYNTAX_OFF')
+        row.prop(picker, "namespace", text="")
+
+        # ── Zoom/Pan info ─────────────────────────────────────
         row = box.row(align=True)
         row.label(text=f"Zoom: {picker.zoom:.1f}x")
         row.label(text="Scroll=Zoom  |  MMB=Pan")
@@ -117,6 +122,16 @@ class PICKER_PT_tabs(bpy.types.Panel):
         col.operator("picker.remove_tab", text="", icon='REMOVE')
         col.separator()
         col.operator("picker.rename_tab", text="", icon='GREASEPENCIL')
+
+        # Tab canvas settings
+        if picker.tabs:
+            tab = picker.tabs[picker.active_tab_index]
+            box = layout.box()
+            box.label(text="Canvas Settings", icon='IMAGE_DATA')
+            row = box.row(align=True)
+            row.prop(tab, "canvas_width", text="Width")
+            row.prop(tab, "canvas_height", text="Height")
+            box.prop(tab, "background_image", text="Background")
 
 
 # ═════════════════════════════════════════════════════════════
@@ -188,24 +203,35 @@ class PICKER_PT_edit_tools(bpy.types.Panel):
         tab = picker.tabs[picker.active_tab_index]
         selected_buttons = [b for b in tab.buttons if b.selected]
 
+        # ── Mirror tool ───────────────────────────────────────
+        if selected_buttons:
+            row = layout.row(align=True)
+            row.operator("picker.mirror_buttons", text="Mirror Selected", icon='MOD_MIRROR')
+
         # ── Alignment & Spacing ──────────────────────────────
         if len(selected_buttons) >= 2:
             box_align = layout.box()
             box_align.label(text="Alignment & Spacing", icon='ALIGN_JUSTIFY')
-            
+
             col = box_align.column(align=True)
             row1 = col.row(align=True)
+            row1.operator("picker.align_buttons", text="Left", icon='ALIGN_LEFT').type = 'LEFT'
             row1.operator("picker.align_buttons", text="Center X", icon='ALIGN_CENTER').type = 'CENTER_X'
-            row1.operator("picker.align_buttons", text="Middle Y", icon='ALIGN_MIDDLE').type = 'CENTER_Y'
-            
+            row1.operator("picker.align_buttons", text="Right", icon='ALIGN_RIGHT').type = 'RIGHT'
+
             row2 = col.row(align=True)
-            row2.active = len(selected_buttons) >= 3
-            row2.operator("picker.distribute_buttons", text="Distribute Horiz", icon='ALIGN_JUSTIFY').type = 'HORIZONTAL'
-            row2.operator("picker.distribute_buttons", text="Distribute Vert", icon='ALIGN_JUSTIFY').type = 'VERTICAL'
-            
+            row2.operator("picker.align_buttons", text="Top", icon='ALIGN_TOP').type = 'TOP'
+            row2.operator("picker.align_buttons", text="Middle Y", icon='ALIGN_MIDDLE').type = 'CENTER_Y'
+            row2.operator("picker.align_buttons", text="Bottom", icon='ALIGN_BOTTOM').type = 'BOTTOM'
+
+            row3 = col.row(align=True)
+            row3.active = len(selected_buttons) >= 3
+            row3.operator("picker.distribute_buttons", text="Distribute Horiz", icon='ALIGN_JUSTIFY').type = 'HORIZONTAL'
+            row3.operator("picker.distribute_buttons", text="Distribute Vert", icon='ALIGN_JUSTIFY').type = 'VERTICAL'
+
             if len(selected_buttons) < 3:
-                row3 = col.row()
-                row3.label(text="Select 3+ buttons to distribute", icon='INFO')
+                row4 = col.row()
+                row4.label(text="Select 3+ buttons to distribute", icon='INFO')
 
         idx = tab.active_button_index
 
@@ -222,9 +248,16 @@ class PICKER_PT_edit_tools(bpy.types.Panel):
 
         col = box.column(align=True)
         col.prop(btn, "label")
+        col.prop(btn, "button_type")
         col.prop(btn, "shape")
         if btn.shape == 'ROUNDED_RECT':
             col.prop(btn, "corner_radius")
+
+        # Script text (only for RUN_SCRIPT type)
+        if btn.button_type == 'RUN_SCRIPT':
+            box_script = box.box()
+            box_script.label(text="Python Script", icon='SCRIPT')
+            box_script.prop(btn, "script_text", text="")
 
         # Position & Size
         box2 = box.box()

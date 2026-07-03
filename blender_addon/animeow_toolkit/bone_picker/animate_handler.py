@@ -17,6 +17,41 @@ from .utils import (
     select_bones_by_names,
 )
 
+def fit_canvas_to_region(picker, tab, region_width, region_height):
+    """Compute optimal zoom and pan coordinates to center and frame the canvas."""
+    if region_width <= 0 or region_height <= 0:
+        return
+    w = tab.canvas_width
+    h = tab.canvas_height
+    if w <= 0 or h <= 0:
+        return
+
+    ui_scale = bpy.context.preferences.system.ui_scale
+    header_h = 24 * ui_scale
+    margin = 15 * ui_scale
+
+    # Available width and height for fitting
+    avail_w = region_width - (margin * 2)
+    avail_h = region_height - (margin * 2) - header_h
+
+    zoom_x = avail_w / w
+    zoom_y = avail_h / h
+    zoom = min(zoom_x, zoom_y)
+
+    # Clamp zoom to picker limits [0.1, 5.0]
+    zoom = max(0.1, min(5.0, zoom))
+
+    vw = w * zoom
+    vh = h * zoom
+
+    pan_x = (region_width - vw) / 2.0
+    pan_y = (region_height - (vh + header_h)) / 2.0
+
+    picker.zoom = zoom
+    picker.pan_x = pan_x
+    picker.pan_y = pan_y
+
+
 
 class PICKER_OT_interact(bpy.types.Operator):
     """Interactive picker – click to select bones, middle-drag to pan, scroll to zoom"""
@@ -26,6 +61,9 @@ class PICKER_OT_interact(bpy.types.Operator):
 
     _draw_handler = None
     _is_running = False
+    _last_region_w = 0
+    _last_region_h = 0
+    _sidebar_closed = False
 
     # ── Transient state ─────────────────────────────────────
     _vm = None               # ViewportMapper
@@ -72,6 +110,9 @@ class PICKER_OT_interact(bpy.types.Operator):
         # Initialize viewport mapper
         PICKER_OT_interact._vm = ViewportMapper()
         PICKER_OT_interact._vm.update_from_props(picker)
+        PICKER_OT_interact._last_region_w = 0
+        PICKER_OT_interact._last_region_h = 0
+        PICKER_OT_interact._sidebar_closed = False
 
         # Install draw handler, passing target area pointer
         PICKER_OT_interact._draw_handler = bpy.types.SpaceView3D.draw_handler_add(
@@ -121,6 +162,31 @@ class PICKER_OT_interact(bpy.types.Operator):
             return {'PASS_THROUGH'}
 
         tab = picker.tabs[picker.active_tab_index]
+
+        # Check if this is a dedicated float viewport
+        is_dedicated = False
+        space = context.space_data
+        if space and space.type == 'VIEW_3D':
+            if not space.overlay.show_overlays and not space.show_region_toolbar and not space.show_region_header:
+                is_dedicated = True
+
+        # Force hide sidebar once in dedicated window on startup
+        if is_dedicated and not PICKER_OT_interact._sidebar_closed:
+            if space.show_region_ui:
+                space.show_region_ui = False
+            PICKER_OT_interact._sidebar_closed = True
+
+        # Monitor size changes for auto-fitting
+        region = context.region
+        if region:
+            w_changed = (region.width != PICKER_OT_interact._last_region_w)
+            h_changed = (region.height != PICKER_OT_interact._last_region_h)
+            if w_changed or h_changed:
+                if PICKER_OT_interact._last_region_w == 0 or is_dedicated:
+                    fit_canvas_to_region(picker, tab, region.width, region.height)
+                    vm.update_from_props(picker)
+                PICKER_OT_interact._last_region_w = region.width
+                PICKER_OT_interact._last_region_h = region.height
 
         # Check if mouse is in overlay panel regions (Sidebar, Toolbar, Header)
         in_sidebar = False
@@ -197,6 +263,14 @@ class PICKER_OT_interact(bpy.types.Operator):
         inside_canvas = (vx <= mx <= vx + vw) and (vy <= my <= vy + vh)
         inside_window = on_header or inside_canvas
 
+        # ── Frame Canvas Hotkey ─────────────────────────────
+        if event.type in {'HOME', 'F'} and event.value == 'PRESS':
+            if inside_window or mouse_in_viewport:
+                fit_canvas_to_region(picker, tab, region.width, region.height)
+                vm.update_from_props(picker)
+                context.area.tag_redraw()
+                return {'RUNNING_MODAL'}
+
         # ── Scroll wheel = Zoom ─────────────────────────────
         if event.type == 'WHEELUPMOUSE':
             if inside_window:
@@ -264,21 +338,76 @@ class PICKER_OT_interact(bpy.types.Operator):
                     context.area.tag_redraw()
                     return {'RUNNING_MODAL'}
                 else:
-                    # Animate mode: select bones
+                    # Animate mode: handle button action based on type
                     btn = tab.buttons[hovered_idx]
-                    bone_list = btn.get_bone_list()
+                    btn_type = btn.button_type if hasattr(btn, 'button_type') else 'SELECT'
                     arm_name = btn.armature_name or picker.armature_name
                     arm_obj = context.scene.objects.get(arm_name)
-                    if arm_obj and bone_list:
-                        if event.shift and event.ctrl:
-                            mode = 'INVERT'
-                        elif event.shift:
-                            mode = 'ADD'
-                        elif event.ctrl:
-                            mode = 'REMOVE'
-                        else:
-                            mode = 'REPLACE'
-                        select_bones_by_names(arm_obj, bone_list, mode=mode)
+                    namespace = getattr(picker, 'namespace', '')
+
+                    if btn_type == 'SELECT':
+                        bone_list = btn.get_bone_list()
+                        # Apply namespace prefix
+                        if namespace:
+                            bone_list = [namespace + n for n in bone_list]
+                        if arm_obj and bone_list:
+                            if event.shift and event.ctrl:
+                                mode = 'INVERT'
+                            elif event.shift:
+                                mode = 'ADD'
+                            elif event.ctrl:
+                                mode = 'REMOVE'
+                            else:
+                                mode = 'REPLACE'
+                            select_bones_by_names(arm_obj, bone_list, mode=mode)
+
+                    elif btn_type == 'RESET_POSE':
+                        bone_list = btn.get_bone_list()
+                        if namespace:
+                            bone_list = [namespace + n for n in bone_list]
+                        if arm_obj and bone_list:
+                            # Ensure pose mode
+                            if bpy.context.view_layer.objects.active != arm_obj:
+                                bpy.context.view_layer.objects.active = arm_obj
+                            if arm_obj.mode != 'POSE':
+                                bpy.ops.object.mode_set(mode='POSE')
+                            for name in bone_list:
+                                pb = arm_obj.pose.bones.get(name)
+                                if pb:
+                                    pb.location = (0, 0, 0)
+                                    pb.rotation_quaternion = (1, 0, 0, 0)
+                                    pb.rotation_euler = (0, 0, 0)
+                                    pb.scale = (1, 1, 1)
+
+                    elif btn_type == 'KEY_ALL':
+                        if arm_obj:
+                            # Ensure pose mode
+                            if bpy.context.view_layer.objects.active != arm_obj:
+                                bpy.context.view_layer.objects.active = arm_obj
+                            if arm_obj.mode != 'POSE':
+                                bpy.ops.object.mode_set(mode='POSE')
+                            # Collect all bone names from all buttons in the tab
+                            all_bones = set()
+                            for b in tab.buttons:
+                                for n in b.get_bone_list():
+                                    full_name = (namespace + n) if namespace else n
+                                    all_bones.add(full_name)
+                            for name in all_bones:
+                                pb = arm_obj.pose.bones.get(name)
+                                if pb:
+                                    pb.keyframe_insert(data_path="location", frame=context.scene.frame_current)
+                                    pb.keyframe_insert(data_path="rotation_quaternion", frame=context.scene.frame_current)
+                                    pb.keyframe_insert(data_path="rotation_euler", frame=context.scene.frame_current)
+                                    pb.keyframe_insert(data_path="scale", frame=context.scene.frame_current)
+
+                    elif btn_type == 'RUN_SCRIPT':
+                        script = getattr(btn, 'script_text', '')
+                        if script:
+                            try:
+                                exec(script)
+                            except Exception as e:
+                                print(f"[BonePicker] Script error: {e}")
+
                     context.area.tag_redraw()
                     return {'RUNNING_MODAL'}
             else:

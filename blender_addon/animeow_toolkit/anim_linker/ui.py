@@ -7,6 +7,7 @@ Cải tiến UX/UI với thiết kế compact, dynamic warnings và feedback th�
 
 import bpy
 from ..core.base_panel import AnimeowBasePanel
+from ..core.utils import get_action_fcurves
 
 
 class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
@@ -51,7 +52,7 @@ class ANIMEOW_PT_linker_panel(AnimeowBasePanel, bpy.types.Panel):
                 if armature_obj.animation_data and armature_obj.animation_data.action:
                     action = armature_obj.animation_data.action
                     prefix = f'pose.bones["{constrained_target.name}"]'
-                    has_anim = any(fc.data_path.startswith(prefix) for fc in action.fcurves)
+                    has_anim = any(fc.data_path.startswith(prefix) for fc in get_action_fcurves(action))
             else:
                 if constrained_target.animation_data and constrained_target.animation_data.action:
                     has_anim = True

@@ -107,6 +107,25 @@ class PickerButtonItem(bpy.types.PropertyGroup):
     # ── Label ───────────────────────────────────────────────
     label: StringProperty(name="Label", default="Button")
 
+    # ── Button type ─────────────────────────────────────────
+    button_type: EnumProperty(
+        name="Button Type",
+        items=[
+            ('SELECT', "Select", "Click to select assigned bones"),
+            ('RESET_POSE', "Reset Pose", "Reset transform of assigned bones to rest pose"),
+            ('KEY_ALL', "Key All", "Insert keyframe for all bones in the current tab"),
+            ('RUN_SCRIPT', "Run Script", "Execute a custom Python script on click"),
+        ],
+        default='SELECT',
+    )
+
+    # ── Custom script (for RUN_SCRIPT type) ─────────────────
+    script_text: StringProperty(
+        name="Script",
+        default="",
+        description="Python code to execute when this button is clicked (RUN_SCRIPT type only)",
+    )
+
     # ── Bone targets (comma-separated names) ────────────────
     bone_targets: StringProperty(
         name="Bone Targets", default="",
@@ -164,6 +183,13 @@ class PickerSceneProperties(bpy.types.PropertyGroup):
     armature_name: StringProperty(
         name="Armature",
         description="Name of the armature this picker is linked to",
+        default="",
+    )
+
+    # ── Namespace / Prefix ──────────────────────────────────
+    namespace: StringProperty(
+        name="Namespace",
+        description="Prefix to prepend to bone names (e.g. 'Character_A:') for linked rigs",
         default="",
     )
 

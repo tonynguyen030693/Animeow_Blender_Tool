@@ -27,6 +27,15 @@ class ANIMEOW_PT_copy_panel(AnimeowBasePanel, bpy.types.Panel):
             box = layout.box()
             box.label(text="Sao Chép Chuyển Động", icon='COPYDOWN')
 
+            # Cấu hình phạm vi Copy
+            col_range = box.column(align=True)
+            col_range.prop(scene, "animeow_copy_range_type", text="Phạm vi")
+            if scene.animeow_copy_range_type == 'CUSTOM':
+                row_frames = col_range.row(align=True)
+                row_frames.prop(scene, "animeow_copy_frame_start", text="Từ")
+                row_frames.prop(scene, "animeow_copy_frame_end", text="Đến")
+
+            box.separator()
             # Nút Copy chính
             row_copy = box.row(align=True)
             row_copy.scale_y = 1.2
@@ -48,6 +57,17 @@ class ANIMEOW_PT_copy_panel(AnimeowBasePanel, bpy.types.Panel):
             # Checkbox cấu hình Mirror lật đối xứng
             col.separator()
             col.prop(scene, "animeow_copy_mirror", text="Lật Đối Xứng (Mirror)")
+            
+            if scene.animeow_copy_mirror:
+                box_axes = col.box()
+                box_axes.label(text="Trục đối xứng:", icon='ORIENTATION_LOCAL')
+                grid = box_axes.grid_flow(columns=3, align=True)
+                grid.prop(scene, "animeow_mirror_tx", text="TX")
+                grid.prop(scene, "animeow_mirror_ty", text="TY")
+                grid.prop(scene, "animeow_mirror_tz", text="TZ")
+                grid.prop(scene, "animeow_mirror_rx", text="RX")
+                grid.prop(scene, "animeow_mirror_ry", text="RY")
+                grid.prop(scene, "animeow_mirror_rz", text="RZ")
         except Exception as e:
             import traceback
             tb = traceback.format_exc()

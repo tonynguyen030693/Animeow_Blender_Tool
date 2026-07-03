@@ -605,6 +605,98 @@ class PICKER_OT_distribute_buttons(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class PICKER_OT_mirror_buttons(bpy.types.Operator):
+    """Mirror selected buttons across the canvas center X-axis with automatic L/R name swapping"""
+    bl_idname = "picker.mirror_buttons"
+    bl_label = "Mirror Selected"
+    bl_description = "Duplicate selected buttons mirrored across the canvas center, swapping .L/.R bone names"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        picker = getattr(context.scene, "bone_picker", None)
+        if not picker or not picker.tabs:
+            return False
+        tab = picker.tabs[picker.active_tab_index]
+        return any(b.selected for b in tab.buttons)
+
+    @staticmethod
+    def _swap_lr(name):
+        """Swap .L/.R, .l/.r, _L/_R, _l/_r suffixes in a bone name."""
+        import re
+        # Patterns: .L <-> .R, .l <-> .r, _L <-> _R, _l <-> _r
+        swaps = [
+            (r'\.L$', '.R'), (r'\.R$', '.L'),
+            (r'\.l$', '.r'), (r'\.r$', '.l'),
+            (r'_L$', '_R'), (r'_R$', '_L'),
+            (r'_l$', '_r'), (r'_r$', '_l'),
+            (r'\.L\.', '.R.'), (r'\.R\.', '.L.'),
+            (r'_L_', '_R_'), (r'_R_', '_L_'),
+        ]
+        for pattern, replacement in swaps:
+            new_name = re.sub(pattern, replacement, name)
+            if new_name != name:
+                return new_name
+        return name
+
+    def execute(self, context):
+        picker = context.scene.bone_picker
+        tab = picker.tabs[picker.active_tab_index]
+        selected_buttons = [b for b in tab.buttons if b.selected]
+
+        if not selected_buttons:
+            self.report({'WARNING'}, "No buttons selected to mirror")
+            return {'CANCELLED'}
+
+        canvas_center_x = tab.canvas_width / 2.0
+
+        # Deselect old buttons
+        for b in tab.buttons:
+            b.selected = False
+
+        for src in selected_buttons:
+            new_btn = tab.buttons.add()
+
+            # Copy all visual properties
+            for prop_name in [
+                'width', 'height', 'shape', 'corner_radius',
+                'button_type', 'script_text',
+            ]:
+                setattr(new_btn, prop_name, getattr(src, prop_name))
+            for color_prop in [
+                'color_normal', 'color_hover', 'color_selected',
+                'border_color', 'text_color',
+            ]:
+                src_val = getattr(src, color_prop)
+                for i in range(4):
+                    getattr(new_btn, color_prop)[i] = src_val[i]
+
+            # Mirror X position across canvas center
+            src_center_x = src.pos_x + src.width / 2.0
+            mirror_center_x = 2 * canvas_center_x - src_center_x
+            new_btn.pos_x = mirror_center_x - src.width / 2.0
+            new_btn.pos_y = src.pos_y
+
+            # Swap L/R in bone names
+            src_bones = src.get_bone_list()
+            mirrored_bones = [self._swap_lr(n) for n in src_bones]
+            new_btn.set_bone_list(mirrored_bones)
+
+            # Swap L/R in label
+            new_btn.label = self._swap_lr(src.label)
+
+            # Copy armature reference
+            new_btn.armature_name = src.armature_name
+
+            # Select the new mirrored button
+            new_btn.selected = True
+
+        tab.active_button_index = len(tab.buttons) - 1
+        self.report({'INFO'}, f"Mirrored {len(selected_buttons)} button(s)")
+        context.area.tag_redraw()
+        return {'FINISHED'}
+
+
 # ═════════════════════════════════════════════════════════════
 #  Registration
 # ═════════════════════════════════════════════════════════════
@@ -624,6 +716,7 @@ classes = (
     PICKER_OT_create_float_window,
     PICKER_OT_align_buttons,
     PICKER_OT_distribute_buttons,
+    PICKER_OT_mirror_buttons,
 )
 
 
