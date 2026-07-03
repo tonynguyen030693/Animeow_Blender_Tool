@@ -377,11 +377,15 @@ class AnimationBaker:
             self.owner.select_set(True)
             bake_type_set = {'OBJECT'}
 
+        # Nếu bật Smart Clean, ta bắt buộc phải Bake mọi frame (step=1) để ghi nhận đầy đủ tất cả cực trị (extremes).
+        # Sau đó trong bộ lọc Smart Clean, ta mới tiến hành dọn các keyframe lệch mốc nhảy frame (step) và giữ lại cực trị.
+        bake_step = 1 if smart_clean else step
+
         # Thực hiện Bake NLA gốc của Blender với tham số step tùy chỉnh
         bpy.ops.nla.bake(
             frame_start=start_frame,
             frame_end=end_frame,
-            step=step,
+            step=bake_step,
             only_selected=True,
             visual_keying=True,
             clear_constraints=True,
@@ -406,7 +410,7 @@ class AnimationBaker:
                 prefix = f'pose.bones["{self.owner.name}"]' if is_bone else ""
                 for fc in fcurves:
                     if not is_bone or fc.data_path.startswith(prefix):
-                        clean_fcurve_keyframes(fc, clean_threshold)
+                        clean_fcurve_keyframes(fc, clean_threshold, step=step, start_frame=start_frame)
 
         context.view_layer.objects.active = self.owner_obj
 

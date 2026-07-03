@@ -148,8 +148,45 @@ def get_action_fcurves(action):
     return fcurves
 
 
-def clean_fcurve_keyframes(fcurve, threshold=0.001):
-    """Đơn giản hóa F-curve bằng cách loại bỏ các keyframe thừa nằm trên đường thẳng."""
+def clean_fcurve_keyframes(fcurve, threshold=0.001, step=1, start_frame=1):
+    """Đơn giản hóa F-curve bằng cách loại bỏ các keyframe thừa nằm trên đường thẳng,
+    đồng thời bảo vệ các điểm cực trị (extremes) và giữ mốc keyframe theo step.
+    Sử dụng thuật toán 2-Pass để đảm bảo độ chính xác tuyệt đối.
+    """
+    points = fcurve.keyframe_points
+    if len(points) <= 2:
+        return
+        
+    # --- PASS 1: XÓA CÁC FRAME LỆCH MỐC STEP MÀ KHÔNG PHẢI CỰC TRỊ ---
+    if step > 1:
+        indices_to_remove = []
+        for i in range(1, len(points) - 1):
+            prev_p = points[i - 1]
+            curr_p = points[i]
+            next_p = points[i + 1]
+            
+            t2 = curr_p.co[0]
+            v1 = prev_p.co[1]
+            v2 = curr_p.co[1]
+            v3 = next_p.co[1]
+            
+            # Kiểm tra cực trị (đảo chiều chuyển động)
+            is_extreme = (v2 - v1) * (v3 - v2) < 0
+            if is_extreme:
+                # Bảo vệ cực trị, không đưa vào danh sách xóa ở Pass 1
+                continue
+                
+            # Kiểm tra mốc nhảy frame (Bake Step)
+            frame_offset = int(t2) - start_frame
+            if frame_offset % step != 0:
+                indices_to_remove.append(i)
+                
+        # Thực hiện xóa ở Pass 1
+        for idx in reversed(indices_to_remove):
+            points.remove(points[idx])
+        fcurve.update()
+        
+    # --- PASS 2: LỌC TUYẾN TÍNH TRÊN CÁC KEYFRAME CÒN LẠI (LUÔN GIỮ CỰC TRỊ) ---
     points = fcurve.keyframe_points
     if len(points) <= 2:
         return
@@ -169,6 +206,13 @@ def clean_fcurve_keyframes(fcurve, threshold=0.001):
         v2 = curr_p.co[1]
         v3 = next_p.co[1]
         
+        # Luôn bảo vệ cực trị khỏi bộ lọc tuyến tính
+        is_extreme = (v2 - v1) * (v3 - v2) < 0
+        if is_extreme:
+            i += 1
+            continue
+            
+        # Lọc tuyến tính thông thường
         if t3 - t1 == 0:
             val_interp = v1
         else:
@@ -176,12 +220,12 @@ def clean_fcurve_keyframes(fcurve, threshold=0.001):
             
         if abs(v2 - val_interp) < threshold:
             indices_to_remove.append(i)
-            # Nhảy sang điểm kế tiếp để không bị trùng lặp khoảng kiểm tra
+            # Nhảy 2 bước để không tạo hiệu ứng chuỗi tuyến tính bị lọc dây chuyền gây méo dạng đồ thị
             i += 2
         else:
             i += 1
             
-    # Xóa các điểm từ dưới lên trên để không làm lệch chỉ mục (index)
+    # Thực hiện xóa ở Pass 2
     for idx in reversed(indices_to_remove):
         points.remove(points[idx])
         
