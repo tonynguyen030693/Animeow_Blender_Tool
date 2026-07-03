@@ -27,7 +27,7 @@ def create_menu():
     # Thêm nút mở Anim File Manager
     cmds.menuItem(
         label="Anim File Manager",
-        command="import animeow_Maya_pipeline; animeow_Maya_pipeline.show()",
+        command="import Animeow_Enjo_Pipeline; Animeow_Enjo_Pipeline.show()",
         image="fileOpen.png"
     )
     

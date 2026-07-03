@@ -99,31 +99,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.main_layout.setContentsMargins(10, 10, 10, 10)
         self.main_layout.setSpacing(10)
         
-        self.project_root = ""
+        self.project_root = "Z:\\"
         self.current_work_files = []
+        
+        # Khởi tạo class quản lý
+        self.file_manager = file_manager.FileManager(project_root=self.project_root)
+        self.playblast_manager = playblast_manager.PlayblastManager()
         
         self.build_ui()
         self.load_settings()
 
     def build_ui(self):
-        # 1. Khối Chọn Dự án (Project Root)
-        proj_group = QtWidgets.QGroupBox("Dự Án (Project Root)")
-        proj_layout = QtWidgets.QHBoxLayout(proj_group)
-        proj_layout.setContentsMargins(8, 8, 8, 8)
-        proj_layout.setSpacing(6)
-        
-        self.proj_path_txt = QtWidgets.QLineEdit()
-        self.proj_path_txt.setPlaceholderText("Đường dẫn đến thư mục dự án...")
-        self.proj_path_txt.setReadOnly(True)
-        proj_layout.addWidget(self.proj_path_txt)
-        
-        self.proj_browse_btn = QtWidgets.QPushButton("Browse")
-        self.proj_browse_btn.clicked.connect(self.on_browse_project)
-        proj_layout.addWidget(self.proj_browse_btn)
-        
-        self.main_layout.addWidget(proj_group)
-        
-        # 2. Khối Phân Cảnh (Shot Filter)
+        # 1. Khối Phân Cảnh (Shot Filter)
         shot_group = QtWidgets.QGroupBox("Cơ Cấu Cảnh (Shot Manager)")
         shot_layout = QtWidgets.QGridLayout(shot_group)
         shot_layout.setContentsMargins(8, 8, 8, 8)
@@ -191,34 +178,21 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # --- SỰ KIỆN & LOGIC ---
     
     def load_settings(self):
-        """Tải lại thư mục dự án được lưu gần nhất"""
-        if cmds.optionVar(exists=self.OPTION_VAR_PROJ):
-            saved_path = cmds.optionVar(query=self.OPTION_VAR_PROJ)
-            if os.path.exists(saved_path):
-                self.set_project_root(saved_path)
+        """Tải cấu hình dự án mặc định ổ Z"""
+        self.set_project_root("Z:\\")
 
     def set_project_root(self, path):
         self.project_root = path
-        self.proj_path_txt.setText(path)
-        cmds.optionVar(stringValue=(self.OPTION_VAR_PROJ, path))
+        self.file_manager.project_root = path
         
         # Cập nhật danh sách Sequence
         self.populate_sequences()
-
-    def on_browse_project(self):
-        """Mở hộp thoại chọn thư mục gốc dự án"""
-        current_dir = self.project_root if self.project_root else "/"
-        path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Chọn thư mục gốc của Dự án (Project Root)", current_dir
-        )
-        if path:
-            self.set_project_root(os.path.normpath(path))
 
     def populate_sequences(self):
         self.seq_combo.blockSignals(True)
         self.seq_combo.clear()
         
-        sequences = file_manager.get_sequences(self.project_root)
+        sequences = self.file_manager.get_sequences()
         self.seq_combo.addItems(sequences)
         
         self.seq_combo.blockSignals(False)
@@ -230,7 +204,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         current_seq = self.seq_combo.currentText()
         if current_seq:
-            shots = file_manager.get_shots(self.project_root, current_seq)
+            shots = self.file_manager.get_shots(current_seq)
             self.shot_combo.addItems(shots)
             
         self.shot_combo.blockSignals(False)
@@ -249,7 +223,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if not (self.project_root and current_seq and current_shot):
             return
             
-        files_info = file_manager.get_work_files(self.project_root, current_seq, current_shot)
+        files_info = self.file_manager.get_work_files(current_seq, current_shot)
         self.current_work_files = files_info
         
         for info in files_info:
@@ -304,14 +278,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if res == QtWidgets.QMessageBox.No:
             return
             
-        new_filepath = file_manager.create_new_shot(self.project_root, current_seq, current_shot)
+        new_filepath = self.file_manager.create_new_shot(current_seq, current_shot)
         if new_filepath:
             self.refresh_files_list()
             QtWidgets.QMessageBox.information(self, "Thành công", "Đã tạo và mở cảnh mới v001 thành công!")
 
     def on_increment_save(self):
         """Lưu tăng phiên bản"""
-        new_filepath = file_manager.increment_save()
+        new_filepath = self.file_manager.increment_save()
         if new_filepath:
             self.refresh_files_list()
             # Thử cập nhật lựa chọn combo box nếu khớp cấu trúc dự án
@@ -341,7 +315,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
             # Cập nhật danh sách shot cho sequence vừa đổi
             self.shot_combo.clear()
-            shots = file_manager.get_shots(self.project_root, seq)
+            shots = self.file_manager.get_shots(seq)
             self.shot_combo.addItems(shots)
             
             shot_idx = self.shot_combo.findText(shot)
@@ -366,7 +340,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             width, height = 640, 360
             
-        output_path = playblast_manager.run_playblast(
+        output_path = self.playblast_manager.run_playblast(
             format_ext=format_ext,
             percent=100,
             width=width,
