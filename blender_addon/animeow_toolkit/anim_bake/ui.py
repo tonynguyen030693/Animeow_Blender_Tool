@@ -27,38 +27,38 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # 1. Hộp thông tin lựa chọn hiện tại (Target Scope)
             box_target = layout.box()
-            box_target.label("Mục tiêu Bake (Target Scope)", icon='TRACKING')
+            box_target.label(text="Mục tiêu Bake (Target Scope)", icon='TRACKING')
             
             if not active_obj:
                 box_target.alert = True
-                box_target.label("Vui lòng chọn Xương hoặc Vật thể!", icon='ERROR')
+                box_target.label(text="Vui lòng chọn Xương hoặc Vật thể!", icon='ERROR')
                 is_valid_selection = False
             elif mode == 'POSE':
                 selected_bones = context.selected_pose_bones
                 if selected_bones:
-                    box_target.label(f"Pose Mode: {len(selected_bones)} xương được chọn", icon='POSE_HLT')
+                    box_target.label(text=f"Pose Mode: {len(selected_bones)} xương được chọn", icon='POSE_HLT')
                     is_valid_selection = True
                 else:
                     box_target.alert = True
-                    box_target.label("Chưa chọn xương nào trong Rig!", icon='WARNING')
+                    box_target.label(text="Chưa chọn xương nào trong Rig!", icon='WARNING')
                     is_valid_selection = False
             elif mode in ('OBJECT', 'NUMBERS'):
                 selected_objs = context.selected_objects
                 if selected_objs:
-                    box_target.label(f"Object Mode: {len(selected_objs)} vật thể được chọn", icon='OBJECT_DATAMODE')
+                    box_target.label(text=f"Object Mode: {len(selected_objs)} vật thể được chọn", icon='OBJECT_DATAMODE')
                     is_valid_selection = True
                 else:
                     box_target.alert = True
-                    box_target.label("Chưa chọn vật thể nào!", icon='WARNING')
+                    box_target.label(text="Chưa chọn vật thể nào!", icon='WARNING')
                     is_valid_selection = False
             else:
                 box_target.alert = True
-                box_target.label(f"Chế độ '{mode}' không hỗ trợ bake!", icon='ERROR')
+                box_target.label(text=f"Chế độ '{mode}' không hỗ trợ bake!", icon='ERROR')
                 is_valid_selection = False
 
             # 2. Cấu hình Frame Range
             box_range = layout.box()
-            box_range.label("Khoảng Frame (Bake Range)", icon='TIME')
+            box_range.label(text="Khoảng Frame (Bake Range)", icon='TIME')
             
             box_range.prop(scene, "animeow_bake_use_timeline", text="Sử dụng tầm Timeline", toggle=True)
             if not scene.animeow_bake_use_timeline:
@@ -68,7 +68,7 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # 3. Cấu hình Bake Options
             box_opts = layout.box()
-            box_opts.label("Cấu hình Bake (Bake Settings)", icon='PREFERENCES')
+            box_opts.label(text="Cấu hình Bake (Bake Settings)", icon='PREFERENCES')
             
             col_opts = box_opts.column(align=True)
             col_opts.prop(scene, "animeow_bake_step", text="Bước Bake (Step)")
@@ -78,7 +78,7 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
 
             # 4. Cấu hình Smart Clean
             box_clean = layout.box()
-            box_clean.label("Bộ lọc Keyframe (Smart Clean)", icon='REC')
+            box_clean.label(text="Bộ lọc Keyframe (Smart Clean)", icon='REC')
             
             row_clean = box_clean.row(align=True)
             row_clean.prop(scene, "animeow_bake_smart_clean", text="Smart Clean", toggle=True)
@@ -104,7 +104,7 @@ class ANIMEOW_PT_smart_bake_panel(AnimeowBasePanel, bpy.types.Panel):
             tb = traceback.format_exc()
             box = layout.box()
             box.alert = True
-            box.label("Lỗi vẽ giao diện (UI Draw Error):", icon='ERROR')
+            box.label(text="Lỗi vẽ giao diện (UI Draw Error):", icon='ERROR')
             for line in tb.split("\n")[:5]:
                 if line.strip():
-                    box.label(line[:50], icon='NONE')
+                    box.label(text=line[:50], icon='NONE')
