@@ -393,24 +393,34 @@ class AnimationBaker:
             bake_types=bake_type_set
         )
 
-        # Thực hiện Smart Clean nếu được yêu cầu
-        if smart_clean:
-            action = None
-            if is_bone:
-                if armature_obj.animation_data and armature_obj.animation_data.action:
-                    action = armature_obj.animation_data.action
-            else:
-                if self.owner.animation_data and self.owner.animation_data.action:
-                    action = self.owner.animation_data.action
+        # Thiết lập mặc định tangent và thực hiện Smart Clean
+        action = None
+        if is_bone:
+            if armature_obj.animation_data and armature_obj.animation_data.action:
+                action = armature_obj.animation_data.action
+        else:
+            if self.owner.animation_data and self.owner.animation_data.action:
+                action = self.owner.animation_data.action
 
-            if action:
-                from ..core.utils import get_action_fcurves, clean_fcurve_keyframes
-                fcurves = get_action_fcurves(action)
-                # Chỉ lọc những F-curves thuộc về xương/vật thể hiện tại để tránh ảnh hưởng đến các đối tượng khác trong cùng Action
-                prefix = f'pose.bones["{self.owner.name}"]' if is_bone else ""
-                for fc in fcurves:
-                    if not is_bone or fc.data_path.startswith(prefix):
+        if action:
+            from ..core.utils import get_action_fcurves, clean_fcurve_keyframes
+            fcurves = get_action_fcurves(action)
+            # Chỉ lọc những F-curves thuộc về xương/vật thể hiện tại
+            prefix = f'pose.bones["{self.owner.name}"]' if is_bone else ""
+            
+            for fc in fcurves:
+                if not is_bone or fc.data_path.startswith(prefix):
+                    # 1. Nếu có Smart Clean -> Thực hiện dọn dẹp lọc bớt key thừa trước
+                    if smart_clean:
                         clean_fcurve_keyframes(fc, clean_threshold, step=step, start_frame=start_frame)
+                    
+                    # 2. Luôn chuyển đổi tangent thành BEZIER và AUTO để đồ thị cong mượt mà tự động
+                    for kp in fc.keyframe_points:
+                        kp.interpolation = 'BEZIER'
+                        kp.handle_left_type = 'AUTO'
+                        kp.handle_right_type = 'AUTO'
+                    
+                    fc.update()
 
         context.view_layer.objects.active = self.owner_obj
 
