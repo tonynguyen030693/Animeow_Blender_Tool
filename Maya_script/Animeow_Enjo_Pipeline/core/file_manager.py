@@ -5,7 +5,32 @@ import os
 import re
 import getpass
 import time
+import sys
 import maya.cmds as cmds
+
+def to_sys_path(path):
+    if not path:
+        return path
+    if isinstance(path, unicode):
+        try:
+            return path.encode(sys.getfilesystemencoding())
+        except Exception:
+            return path.encode("utf-8")
+    return path
+
+def exception_to_unicode(e):
+    try:
+        msg = e.message if hasattr(e, 'message') and e.message else ""
+        if not msg and e.args:
+            msg = e.args[0]
+        if isinstance(msg, unicode):
+            return msg
+        return msg.decode('utf-8', errors='replace')
+    except Exception:
+        try:
+            return str(e).decode('utf-8', errors='replace')
+        except Exception:
+            return u"Lỗi ngoại lệ hệ thống"
 
 class FileManager(object):
     """
@@ -32,11 +57,39 @@ class FileManager(object):
             return prefix, task, int(ver_str), len(ver_str), ext
         return None
 
-    def get_episode_folder_name(self, episode_name):
-        """Chuẩn hoá tên tập phim thành dạng PascalCase cách nhau bằng dấu gạch dưới (Elevator_Safety_Song_V02)"""
+    def get_project_prefix(self, project):
+        """Lấy tiền tố dự án (KS, LL, EL, v.v.)"""
+        if not project:
+            return ""
+        proj_lower = project.lower()
+        if "kidsong" in proj_lower:
+            return "KS"
+        elif "lolo" in proj_lower:
+            return "LL"
+        elif "elementies" in proj_lower:
+            return "EL"
+        else:
+            proj_prefix = "".join([c for c in project if c.isupper()])
+            if not proj_prefix:
+                return project[:2].upper()
+            else:
+                return proj_prefix[:2]
+
+    def get_episode_folder_name(self, project, episode_name):
+        """
+        Chuẩn hoá tên tập phim thành dạng PascalCase kèm tiền tố dự án,
+        cách nhau bằng dấu gạch dưới (ví dụ: KS_Elevator_Safety_Song_V02).
+        """
         if not episode_name:
             return ""
+            
+        proj_prefix = self.get_project_prefix(project)
         words = re.split(r'[\s_\-]+', episode_name)
+        
+        # Bỏ qua từ đầu tiên nếu trùng với tiền tố dự án (tránh bị lặp lại KS_KS_...)
+        if words and words[0].upper() == proj_prefix.upper():
+            words = words[1:]
+            
         processed_words = []
         for word in words:
             if not word:
@@ -58,7 +111,11 @@ class FileManager(object):
                 processed_words.append(word)
             else:
                 processed_words.append(word.capitalize())
-        return "_".join(processed_words)
+                
+        folder_body = "_".join(processed_words)
+        if proj_prefix:
+            return "%s_%s" % (proj_prefix, folder_body)
+        return folder_body
 
     def get_episode_abbreviation(self, project, episode_folder_name):
         """Tính toán mã viết tắt chữ cái đầu từ file metadata.json (nếu có) hoặc tự động tính từ tên thư mục"""
@@ -79,23 +136,15 @@ class FileManager(object):
                 pass
                 
         # 2. Thuật toán tự động dự phòng (Fallback) nếu chưa có metadata.json
-        # 2.1 Tiền tố dự án
-        proj_lower = project.lower()
-        if "kidsong" in proj_lower:
-            proj_prefix = "KS"
-        elif "lolo" in proj_lower:
-            proj_prefix = "LL"
-        elif "elementies" in proj_lower:
-            proj_prefix = "EL"
-        else:
-            proj_prefix = "".join([c for c in project if c.isupper()])
-            if not proj_prefix:
-                proj_prefix = project[:2].upper()
-            else:
-                proj_prefix = proj_prefix[:2]
+        proj_prefix = self.get_project_prefix(project)
                 
-        # 2.2 Rút gọn tên tập phim
-        words = episode_folder_name.split("_")
+        # 2.2 Rút gọn tên tập phim (hỗ trợ cả dấu gạch dưới, gạch ngang và khoảng trắng)
+        words = re.split(r'[\s_\-]+', episode_folder_name)
+        
+        # Bỏ qua từ đầu tiên nếu trùng với tiền tố dự án (tránh bị lặp lại trong mã viết tắt, e.g. KS_KSAAA_25 -> KS_AAA_25)
+        if words and words[0].upper() == proj_prefix.upper():
+            words = words[1:]
+            
         ep_parts = []
         version_part = ""
         
@@ -103,11 +152,12 @@ class FileManager(object):
             if not word:
                 continue
             # Nếu là ký hiệu version (V02, V12, V01...)
-            if re.match(r'^[vV]\d+$', word):
-                version_part = word.upper()
+            ver_match = re.match(r'^[vV](?P<num>\d+)$', word)
+            if ver_match:
+                version_part = "V%02d" % int(ver_match.group("num"))
             # Nếu là số tập phim (25, 01...)
             elif re.match(r'^\d+$', word):
-                version_part = word
+                version_part = "%02d" % int(word) if len(word) == 1 else word
             # Nếu là từ viết hoa ngắn (<= 3 ký tự) như AAA, EP, v.v.
             elif word.isupper() and len(word) <= 3:
                 ep_parts.append(word)
@@ -120,6 +170,33 @@ class FileManager(object):
             ep_code = "%s_%s" % (ep_code, version_part)
             
         return "%s_%s" % (proj_prefix, ep_code)
+
+    def rename_episode_folder(self, project, old_ep_name, new_ep_name):
+        """Đổi tên thư mục tập phim trên Server"""
+        if not self.project_root or not project or not old_ep_name or not new_ep_name:
+            return False
+            
+        old_path = os.path.normpath(os.path.join(self.project_root, project, old_ep_name))
+        new_path = os.path.normpath(os.path.join(self.project_root, project, new_ep_name))
+        
+        if not os.path.exists(old_path):
+            cmds.warning(u"Thư mục nguồn không tồn tại: %s" % old_path)
+            return False
+            
+        if os.path.exists(new_path):
+            cmds.warning(u"Thư mục đích đã tồn tại: %s" % new_path)
+            return False
+            
+        try:
+            # Ở Windows, nếu có file đang mở/khóa, os.rename sẽ báo lỗi PermissionError
+            os.rename(old_path, new_path)
+            print("Đổi tên thư mục tập phim thành công từ %s thành %s" % (old_ep_name, new_ep_name))
+            return True
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            cmds.warning(u"Không thể đổi tên thư mục tập phim: %s" % str(e))
+            return False
 
     def get_projects(self):
         """Lấy danh sách các dự án trong project_root"""
@@ -190,7 +267,7 @@ class FileManager(object):
             cmds.warning("Vui lòng điền đầy đủ thông tin Project và Tên tập phim.")
             return None
             
-        ep_dir_name = self.get_episode_folder_name(episode_name)
+        ep_dir_name = self.get_episode_folder_name(project, episode_name)
         ep_dir = os.path.join(self.project_root, project, ep_dir_name)
         
         sub_dirs = [
@@ -253,11 +330,11 @@ class FileManager(object):
             return filepath
             
         cmds.file(new=True, force=True)
-        cmds.file(rename=filepath)
+        cmds.file(rename=to_sys_path(filepath))
         cmds.file(save=True, type="mayaAscii")
         
-        cmds.workspace(self.project_root, openWorkspace=True)
-        print("Khởi tạo file nháp mới thành công: %s" % filepath)
+        cmds.workspace(to_sys_path(self.project_root), openWorkspace=True)
+        print(u"Khởi tạo file nháp mới thành công: %s" % filepath)
         return filepath
 
     def increment_save(self, task):
@@ -285,11 +362,11 @@ class FileManager(object):
         # Lưu tại cùng thư mục chứa file hiện tại
         new_filepath = os.path.normpath(os.path.join(dirname, new_filename))
         
-        cmds.file(rename=new_filepath)
+        cmds.file(rename=to_sys_path(new_filepath))
         file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
         cmds.file(save=True, type=file_type)
         
-        print("Đã lưu phiên bản nháp mới thành công: %s" % new_filepath)
+        print(u"Đã lưu phiên bản nháp mới thành công: %s" % new_filepath)
         return new_filepath
 
     def publish_file(self, project, episode, task):
@@ -324,23 +401,23 @@ class FileManager(object):
         published_filepath = os.path.normpath(os.path.join(published_dir, published_filename))
         
         try:
-            cmds.file(rename=published_filepath)
-            print("Đang dọn dẹp file cho Publish...")
+            cmds.file(rename=to_sys_path(published_filepath))
+            print(u"Đang dọn dẹp file cho Publish...")
             try:
                 import maya.mel as mel
                 mel.eval("MLdeleteUnused;")
             except Exception as e:
-                print("Lỗi khi xóa unused nodes: %s" % str(e))
+                print(u"Lỗi khi xóa unused nodes: %s" % exception_to_unicode(e))
                 
             cmds.file(save=True, type="mayaAscii" if ext.lower() == ".ma" else "mayaBinary")
-            print("Đã lưu file publish sạch tại: %s" % published_filepath)
+            print(u"Đã lưu file publish sạch tại: %s" % published_filepath)
             return published_filepath
         except Exception as e:
-            cmds.error("Lỗi trong quá trình Publish file: %s" % str(e))
+            cmds.error(u"Lỗi trong quá trình Publish file: %s" % exception_to_unicode(e))
             return None
         finally:
             if current_filepath and os.path.exists(current_filepath):
-                cmds.file(current_filepath, open=True, force=True)
+                cmds.file(to_sys_path(current_filepath), open=True, force=True)
 
     def check_episode_filenames_naming(self, project, episode):
         """Quét toàn bộ file trong WorkingFile\Layout và WorkingFile\Anim để tìm file sai quy chuẩn"""
@@ -449,7 +526,7 @@ class FileManager(object):
                 is_current_open = (current_filepath and current_filepath == old_path)
                 if is_current_open:
                     cmds.file(save=True)
-                    cmds.file(rename=new_path)
+                    cmds.file(rename=to_sys_path(new_path))
                     cmds.file(save=True, type="mayaAscii" if new_path.lower().endswith(".ma") else "mayaBinary")
                     os.remove(old_path)
                     current_filepath = new_path
@@ -459,6 +536,78 @@ class FileManager(object):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                cmds.warning("Loi khi doi ten file %s: %s" % (file_info["old_filename"], str(e)))
+                cmds.warning(u"Lỗi khi đổi tên file %s: %s" % (file_info["old_filename"], exception_to_unicode(e)))
                 
         return success_count > 0
+
+    def debug_open_file(self, filepath):
+        """
+        Mở file ở chế độ debug:
+        1. Đo thời gian nạp file gốc (không load reference).
+        2. Quét danh sách reference và nạp từng file một, đo thời gian nạp của mỗi reference.
+        3. Quét danh sách script node trong scene.
+        Trả về dictionary báo cáo chi tiết.
+        """
+        import time
+        
+        report = {
+            "base_scene_time": 0.0,
+            "references": [],
+            "script_nodes": [],
+            "total_time": 0.0
+        }
+        
+        start_total = time.time()
+        
+        # Bước 1: Mở file không nạp reference
+        t0 = time.time()
+        cmds.file(to_sys_path(filepath), open=True, force=True, loadReferenceDepth="none")
+        report["base_scene_time"] = time.time() - t0
+        
+        # Bước 2: Quét các reference và nạp từng cái một
+        ref_files = cmds.file(q=True, reference=True) or []
+        
+        for ref_file in ref_files:
+            try:
+                ref_node = cmds.referenceQuery(ref_file, referenceNode=True)
+            except Exception:
+                ref_node = None
+                
+            t_ref_start = time.time()
+            try:
+                # Nạp reference
+                cmds.file(ref_file, loadReference=True)
+                ref_time = time.time() - t_ref_start
+                status = "Success"
+            except Exception as ref_err:
+                ref_time = time.time() - t_ref_start
+                status = "Failed: %s" % exception_to_unicode(ref_err)
+                
+            report["references"].append({
+                "filepath": ref_file,
+                "node": ref_node,
+                "time": ref_time,
+                "status": status
+            })
+            
+        # Bước 3: Kiểm tra các Script Nodes trong scene
+        script_nodes = cmds.ls(type="script") or []
+        for node in script_nodes:
+            try:
+                script_type = cmds.getAttr(node + ".scriptType")
+                script_val = cmds.getAttr(node + ".before") or ""
+                if not script_val:
+                    script_val = cmds.getAttr(node + ".after") or ""
+                
+                script_preview = script_val[:100] + "..." if len(script_val) > 100 else script_val
+                
+                report["script_nodes"].append({
+                    "name": node,
+                    "type": script_type,
+                    "preview": script_preview.strip()
+                })
+            except Exception:
+                pass
+                
+        report["total_time"] = time.time() - start_total
+        return report
