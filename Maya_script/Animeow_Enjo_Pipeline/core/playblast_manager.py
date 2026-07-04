@@ -8,6 +8,7 @@ import maya.mel as mel
 class PlayblastManager(object):
     """
     Class quản lý làm sạch viewport và tự động xuất playblast.
+    Hỗ trợ xuất video nháp và video publish.
     """
     FLAGS_TO_HIDE = {
         "nurbsCurves": False,      # Ẩn controls
@@ -97,7 +98,7 @@ class PlayblastManager(object):
         return active_sound
 
     def get_playblast_path(self):
-        """Tự động tính toán đường dẫn lưu video playblast"""
+        """Tự động tính toán đường dẫn lưu video playblast nháp hàng ngày"""
         current_filepath = cmds.file(q=True, sceneName=True)
         if not current_filepath:
             return None, None
@@ -106,52 +107,61 @@ class PlayblastManager(object):
         filename = os.path.basename(current_filepath)
         filename_no_ext, _ = os.path.splitext(filename)
         
-        parent_dir = os.path.basename(dirname)
-        grandparent_dir = os.path.basename(os.path.dirname(dirname))
+        parent_dir = os.path.basename(dirname) # "Layout" hoặc "Anim"
+        grandparent_dir = os.path.basename(os.path.dirname(dirname)) # "WorkingFile"
         
-        if parent_dir.lower() == "work" and grandparent_dir.lower() == "anim":
-            playblast_dir = os.path.join(os.path.dirname(dirname), "Playblast")
+        if parent_dir.lower() in ["layout", "anim"] and grandparent_dir.lower() == "workingfile":
+            # Đi ngược 3 cấp để lấy thư mục tập phim
+            ep_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_filepath)))
+            task_dir_name = "Layout" if parent_dir.lower() == "layout" else "Anim"
+            playblast_dir = os.path.join(ep_dir, "mov", task_dir_name)
         else:
-            playblast_dir = os.path.join(dirname, "Playblast")
+            playblast_dir = os.path.join(dirname, "mov")
             
         if not os.path.exists(playblast_dir):
             os.makedirs(playblast_dir)
             
         return playblast_dir, filename_no_ext
 
-    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080):
-        """Chạy playblast tự động"""
-        playblast_dir, base_name = self.get_playblast_path()
-        if not playblast_dir:
-            cmds.warning("Hãy lưu file trước khi chạy Playblast để tự động xác định thư mục.")
-            return None
-            
-        available_formats = cmds.playblast(query=True, format=True)
-        
-        fmt = "qt"
-        compression = "H.264"
-        ext = ".mov"
-        
-        if format_ext == "avi":
-            if "avi" in available_formats:
-                fmt = "avi"
-                compression = "none"
-                ext = ".avi"
-            else:
-                cmds.warning("Định dạng AVI không khả dụng. Chuyển sang QuickTime.")
+    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080, custom_path=None):
+        """Chạy playblast tự động (hỗ trợ lưu nháp hoặc publish tùy chọn)"""
+        if custom_path:
+            playblast_dir = os.path.dirname(custom_path)
+            output_filepath = custom_path
+            if not os.path.exists(playblast_dir):
+                os.makedirs(playblast_dir)
         else:
-            if "qt" not in available_formats:
+            playblast_dir, base_name = self.get_playblast_path()
+            if not playblast_dir:
+                cmds.warning("Hãy lưu file trước khi chạy Playblast để tự động xác định thư mục.")
+                return None
+                
+            available_formats = cmds.playblast(query=True, format=True)
+            
+            fmt = "qt"
+            compression = "H.264"
+            ext = ".mov"
+            
+            if format_ext == "avi":
                 if "avi" in available_formats:
                     fmt = "avi"
                     compression = "none"
                     ext = ".avi"
                 else:
-                    fmt = available_formats[0]
-                    compression = "none"
-                    ext = ".avi"
-                    
-        output_filename = base_name + ext
-        output_filepath = os.path.join(playblast_dir, output_filename)
+                    cmds.warning("Định dạng AVI không khả dụng. Chuyển sang QuickTime.")
+            else:
+                if "qt" not in available_formats:
+                    if "avi" in available_formats:
+                        fmt = "avi"
+                        compression = "none"
+                        ext = ".avi"
+                    else:
+                        fmt = available_formats[0]
+                        compression = "none"
+                        ext = ".avi"
+                        
+            output_filename = base_name + ext
+            output_filepath = os.path.join(playblast_dir, output_filename)
         
         panel = self.get_active_model_panel()
         original_states = self.setup_viewport(panel)
@@ -160,6 +170,22 @@ class PlayblastManager(object):
         end_frame = cmds.playbackOptions(query=True, maxTime=True)
         active_sound = self.get_active_sound()
         
+        # Xác định format dựa trên phần mở rộng của file
+        available_formats = cmds.playblast(query=True, format=True)
+        fmt = "qt"
+        compression = "H.264"
+        
+        if output_filepath.lower().endswith(".avi"):
+            fmt = "avi"
+            compression = "none"
+        else:
+            if "qt" not in available_formats:
+                fmt = "avi" if "avi" in available_formats else available_formats[0]
+                compression = "none"
+                # Đổi đuôi file
+                base, _ = os.path.splitext(output_filepath)
+                output_filepath = base + (".avi" if fmt == "avi" else ".mov")
+                
         playblast_args = {
             "filename": output_filepath,
             "format": fmt,
