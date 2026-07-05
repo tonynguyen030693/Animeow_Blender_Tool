@@ -124,9 +124,9 @@ class PlayblastManager(object):
                 active_sound = sounds[0]
         return active_sound
 
-    def get_playblast_path(self):
+    def get_playblast_path(self, scene_filepath=None):
         """Tự động tính toán đường dẫn lưu video playblast nháp hàng ngày"""
-        current_filepath = cmds.file(q=True, sceneName=True)
+        current_filepath = scene_filepath if scene_filepath else cmds.file(q=True, sceneName=True)
         if not current_filepath:
             return None, None
             
@@ -138,21 +138,33 @@ class PlayblastManager(object):
         is_layout = "/workingfile/layout/" in path_lower
         is_anim = "/workingfile/anim/" in path_lower
         
-        if is_layout or is_anim:
-            task_dir_name = "Layout" if is_layout else "Anim"
+        if is_layout:
+            # Layout mới: WorkingFile/Layout/[Shot_Name]/mov/
+            # Tìm vị trí thư mục layout trong parts
+            parts = os.path.normpath(current_filepath).split(os.sep)
+            try:
+                layout_idx = [p.lower() for p in parts].index("layout")
+                shot_dir = os.sep.join(parts[:layout_idx + 2])
+                playblast_dir = os.path.join(shot_dir, "mov")
+            except Exception:
+                playblast_dir = os.path.join(dirname, "mov")
+        elif is_anim:
+            # Anim giữ cấu trúc phẳng: [Episode]/mov/Anim/
             parts = os.path.normpath(current_filepath).split(os.sep)
             try:
                 wf_idx = [p.lower() for p in parts].index("workingfile")
-                # Thư mục tập phim ep_dir là phần đường dẫn trước "workingfile"
                 ep_dir = os.sep.join(parts[:wf_idx])
-                playblast_dir = os.path.join(ep_dir, "mov", task_dir_name)
+                playblast_dir = os.path.join(ep_dir, "mov", "Anim")
             except ValueError:
                 playblast_dir = os.path.join(dirname, "mov")
         else:
             playblast_dir = os.path.join(dirname, "mov")
             
         if not os.path.exists(playblast_dir):
-            os.makedirs(playblast_dir)
+            try:
+                os.makedirs(playblast_dir)
+            except Exception:
+                pass
             
         return playblast_dir, filename_no_ext
 
@@ -179,8 +191,38 @@ class PlayblastManager(object):
         except IOError:
             return True
 
-    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080, custom_path=None, camera=None, viewer=True):
-        """Chạy playblast tự động (hỗ trợ lưu nháp hoặc publish tùy chọn, hỗ trợ chọn camera và cấu hình viewer)"""
+    def archive_old_playblast(self, filepath):
+        """
+        Di chuyển file playblast hiện tại vào thư mục Old và đổi tên có hậu tố phiên bản.
+        """
+        if not os.path.exists(filepath):
+            return
+            
+        dirname = os.path.dirname(filepath)
+        filename = os.path.basename(filepath)
+        name_no_ext, ext = os.path.splitext(filename)
+        
+        old_dir = os.path.join(dirname, "Old")
+        if not os.path.exists(old_dir):
+            os.makedirs(old_dir)
+            
+        # Tìm hậu tố version thích hợp
+        i = 1
+        while True:
+            dest_filename = "%s_old%d%s" % (name_no_ext, i, ext)
+            dest_filepath = os.path.join(old_dir, dest_filename)
+            if not os.path.exists(dest_filepath):
+                break
+            i += 1
+            
+        try:
+            os.rename(filepath, dest_filepath)
+            print("[PLAYBLAST] Archived old playblast to: %s" % dest_filepath)
+        except Exception as e:
+            print("[PLAYBLAST] Cannot archive old playblast: %s" % str(e))
+
+    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080, custom_path=None, camera=None, viewer=True, overwrite=False):
+        """Chạy playblast tự động (hỗ trợ lưu nháp hoặc publish tùy chọn, hỗ trợ chọn camera và cấu hình viewer, hỗ trợ overwrite)"""
         if custom_path:
             playblast_dir = os.path.dirname(custom_path)
             output_filepath = custom_path
@@ -220,6 +262,10 @@ class PlayblastManager(object):
             output_filename = base_name + ext
             output_filepath = os.path.normpath(os.path.join(playblast_dir, output_filename))
         
+        # Nếu không overwrite, tự động di chuyển file cũ vào thư mục Old
+        if not overwrite and os.path.exists(output_filepath):
+            self.archive_old_playblast(output_filepath)
+            
         # Kiểm tra file video đầu ra có bị khóa bởi trình phát video không
         if self.is_file_locked(output_filepath):
             raise RuntimeError(

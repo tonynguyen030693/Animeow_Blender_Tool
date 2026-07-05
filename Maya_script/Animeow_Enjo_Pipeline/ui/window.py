@@ -353,7 +353,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.ref_load_combo = QtWidgets.QComboBox()
         self.ref_load_combo.addItems([
             u"⚡ Mở nhanh (Không load Ref)",
-            u"👤 Chọn nạp Nhân vật (Characters Only)",
+            u"👤 Nạp Nhân vật & Camera (Characters & Cameras)",
             u"📋 Tự chọn Ref (Selective Preload)",
             u"🔝 Chỉ nạp Ref cấp 1 (Top Level)",
             u"🔄 Mở bình thường (Nạp tất cả)"
@@ -366,7 +366,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         shot_layout.addLayout(files_label_layout, 5, 0, 1, 3)
         
-        # Hàng 6: Bố cục 2 bảng (Shot bên trái, Version bên phải)
+        # Hàng 6: Bố cục 3 bảng (Shot bên trái, Maya Version ở giữa, Playblast Videos bên phải)
         list_container_layout = QtWidgets.QHBoxLayout()
         list_container_layout.setSpacing(6)
         
@@ -380,11 +380,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.shot_list.itemSelectionChanged.connect(self.on_shot_selection_changed)
         shot_list_layout.addWidget(self.shot_list)
         
-        # Bảng bên phải: Version List
+        # Bảng ở giữa: Maya File Version List
         version_list_widget = QtWidgets.QWidget()
         version_list_layout = QtWidgets.QVBoxLayout(version_list_widget)
         version_list_layout.setContentsMargins(0, 0, 0, 0)
-        version_list_layout.addWidget(QtWidgets.QLabel(u"📂 Các phiên bản (Đúp click để Mở):"))
+        version_list_layout.addWidget(QtWidgets.QLabel(u"📂 File Maya (Đúp click mở):"))
         
         self.files_list = QtWidgets.QListWidget()
         self.files_list.itemDoubleClicked.connect(self.on_open_file)
@@ -393,8 +393,21 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.files_list.itemSelectionChanged.connect(self.update_playblast_count)
         version_list_layout.addWidget(self.files_list)
         
-        list_container_layout.addWidget(shot_list_widget, 4) # Chiếm 40% chiều rộng
-        list_container_layout.addWidget(version_list_widget, 6) # Chiếm 60% chiều rộng
+        # Bảng bên phải: Playblast Videos List
+        pb_list_widget = QtWidgets.QWidget()
+        pb_list_layout = QtWidgets.QVBoxLayout(pb_list_widget)
+        pb_list_layout.setContentsMargins(0, 0, 0, 0)
+        pb_list_layout.addWidget(QtWidgets.QLabel(u"🎥 Playblasts (Đúp click xem):"))
+        
+        self.pb_list = QtWidgets.QListWidget()
+        self.pb_list.itemDoubleClicked.connect(self.on_open_playblast_file)
+        self.pb_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.pb_list.customContextMenuRequested.connect(self.show_pb_list_context_menu)
+        pb_list_layout.addWidget(self.pb_list)
+        
+        list_container_layout.addWidget(shot_list_widget, 3) # Chiếm 30% chiều rộng
+        list_container_layout.addWidget(version_list_widget, 4) # Chiếm 40% chiều rộng
+        list_container_layout.addWidget(pb_list_widget, 3) # Chiếm 30% chiều rộng
         
         shot_layout.addLayout(list_container_layout, 6, 0, 1, 3)
         
@@ -433,12 +446,6 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.save_version_btn.setObjectName("accent_btn")
         self.save_version_btn.clicked.connect(self.on_increment_save)
         btn_layout.addWidget(self.save_version_btn)
-        
-        self.publish_btn = QtWidgets.QPushButton("🚀 Publish File")
-        self.publish_btn.setObjectName("publish_btn")
-        self.publish_btn.setToolTip("Xuất bản file sạch và video playblast lên Server")
-        self.publish_btn.clicked.connect(self.on_publish_file)
-        btn_layout.addWidget(self.publish_btn)
         
         shot_layout.addLayout(btn_layout, 8, 0, 1, 3)
         
@@ -500,10 +507,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_multi_cam_list.setFixedHeight(100)
         playblast_layout.addWidget(self.pb_multi_cam_list, 4, 0, 1, 2)
         
-        # Nhãn hiển thị số lượng Playblast trên Server
-        self.pb_count_label = QtWidgets.QLabel("Playblasts on Server: 0 files")
+        # Checkbox Đè lên bản cũ
+        self.pb_overwrite_checkbox = QtWidgets.QCheckBox(u"Đè lên bản cũ (Không lưu Old)")
+        self.pb_overwrite_checkbox.setToolTip(u"Nếu tích chọn, video mới sẽ ghi đè trực tiếp lên video cũ.\nNếu không tích, bản cũ sẽ được di chuyển vào thư mục Old.")
+        self.pb_overwrite_checkbox.setStyleSheet("margin-left: 2px;")
+        playblast_layout.addWidget(self.pb_overwrite_checkbox, 5, 0, 1, 2)
+        
+        # Nhãn hiển thị trạng thái Playblast
+        self.pb_count_label = QtWidgets.QLabel(u"Trạng thái Playblast: Chưa kiểm tra")
         self.pb_count_label.setStyleSheet("color: #4CAF50; font-weight: bold; margin-left: 2px;")
-        playblast_layout.addWidget(self.pb_count_label, 5, 0, 1, 2)
+        playblast_layout.addWidget(self.pb_count_label, 6, 0, 1, 2)
         
         # Hàng nút: Chạy Playblast và Mở thư mục
         pb_buttons_layout = QtWidgets.QHBoxLayout()
@@ -519,7 +532,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_open_folder_btn.clicked.connect(self.on_open_mov_dir)
         pb_buttons_layout.addWidget(self.pb_open_folder_btn, 3)
         
-        playblast_layout.addLayout(pb_buttons_layout, 6, 0, 1, 2)
+        playblast_layout.addLayout(pb_buttons_layout, 7, 0, 1, 2)
         
         # Trạng thái ẩn/hiện ban đầu
         self.pb_single_cam_widget.setVisible(False)
@@ -532,7 +545,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # --- SỰ KIỆN & LOGIC ---
     
     def is_character_reference(self, ref_path):
-        """Kiểm tra xem file reference có phải là nhân vật/rig dựa trên đường dẫn hoặc tên file hay không"""
+        """Kiểm tra xem file reference có phải là nhân vật/rig hoặc camera dựa trên đường dẫn hoặc tên file hay không"""
         if not ref_path:
             return False
             
@@ -544,6 +557,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         path_lower = ref_path.replace("\\", "/").lower()
         filename = os.path.basename(path_lower)
+        
+        # 0. Nhận diện Camera trước tiên (Ưu tiên nạp kèm với nhân vật)
+        camera_keywords = ["cam_rig", "camera_rig", "camera", "shot_cam"]
+        if "camera" in filename or filename.startswith("cam_") or any(ck in filename for ck in camera_keywords):
+            return True
         
         # 1. BỘ LỌC LOẠI TRỪ (EXCLUDE): Loại bỏ các thư mục và file thuộc về bối cảnh (BG), đạo cụ (Props), map...
         exclude_path_keywords = [
@@ -774,12 +792,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif mode == 3:  # Chỉ nạp Ref cấp 1
                 kwargs["loadReferenceDepth"] = "topOnly"
             # mode == 4 là Mở bình thường (nạp tất cả)
+            
+            # Gán optionVar của Maya để Preload Reference Editor mở đúng file hiện tại
+            normalized_path = os.path.normpath(filepath).replace("\\", "/")
+            cmds.optionVar(stringValue=("preloadRefEdTopLevelFile", normalized_path))
                 
             cmds.file(to_sys_path(filepath), **kwargs)
             
             if mode == 1:
-                # Quét và tích chọn sẵn các Rig nhân vật trong cấu hình tải
-                print(u"Đang quét các Reference để tích chọn sẵn nhân vật...")
+                # Quét và tích chọn sẵn các Rig nhân vật & camera trong cấu hình tải
+                print(u"Đang quét các Reference để tích chọn sẵn nhân vật & camera...")
                 num_settings = cmds.selLoadSettings(q=True, numSettings=True) or 0
                 char_count = 0
                 
@@ -790,11 +812,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     if self.is_character_reference(ref_path):
                         cmds.selLoadSettings(str(i), edit=True, deferReference=0)  # Tích chọn (Load)
                         char_count += 1
-                        print(u"-> Đã tích chọn Rig: %s" % os.path.basename(ref_path))
+                        print(u"-> Đã tích chọn Rig/Camera: %s" % os.path.basename(ref_path))
                     else:
                         cmds.selLoadSettings(str(i), edit=True, deferReference=1)  # Bỏ chọn (Defer)
                         
-                print(u"Đã chuẩn bị xong cấu hình nạp. Tự động tích chọn %d nhân vật." % char_count)
+                print(u"Đã chuẩn bị xong cấu hình nạp. Tự động tích chọn %d nhân vật & camera." % char_count)
                 
                 # Hiển thị bảng Preload Reference Editor của Maya để user xem và nhấn nạp
                 import maya.mel as mel
@@ -962,14 +984,17 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     break
 
     def update_playblast_count(self):
-        """Đếm số lượng file video playblast hiện có trên server cho file Maya đang chọn hoặc file đang mở"""
+        """Kiểm tra và hiển thị danh sách video Playblast nháp hiện có cho file Maya đang chọn"""
+        self.pb_list.clear()
         selected_items = self.files_list.selectedItems()
         if not selected_items:
             current_filepath = cmds.file(q=True, sceneName=True)
             if current_filepath:
+                filepath = current_filepath
                 filename = os.path.basename(current_filepath)
             else:
-                self.pb_count_label.setText("Playblasts on Server: No active file")
+                self.pb_count_label.setText(u"Trạng thái Playblast: Không có file hoạt động")
+                self.pb_count_label.setStyleSheet("color: gray; font-weight: bold; margin-left: 2px;")
                 self.pb_count_label.setToolTip("")
                 return
         else:
@@ -978,39 +1003,77 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         filename_no_ext, _ = os.path.splitext(filename)
         
-        current_proj = self.proj_combo.currentText()
-        current_ep = self.ep_combo.currentText()
-        current_task = self.task_combo.currentText()
-        
-        if not (current_proj and current_ep and current_task):
-            self.pb_count_label.setText("Playblasts on Server: Unknown")
+        # Gọi playblast_manager để lấy đúng thư mục playblast nháp của file này
+        playblast_dir, _ = self.playblast_manager.get_playblast_path(scene_filepath=filepath)
+        if not playblast_dir:
+            self.pb_count_label.setText(u"Trạng thái Playblast: Chưa kiểm tra")
+            self.pb_count_label.setStyleSheet("color: gray; font-weight: bold; margin-left: 2px;")
             self.pb_count_label.setToolTip("")
             return
             
-        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
-        mov_dir = os.path.join(self.project_root, current_proj, current_ep, "mov", task_dir_name)
-        
-        if not os.path.exists(mov_dir):
-            self.pb_count_label.setText("Playblasts on Server: 0 files")
-            self.pb_count_label.setToolTip("")
-            return
-            
-        count = 0
-        matching_files = []
+        # 1. Tìm toàn bộ video trong thư mục chính bắt đầu bằng filename_no_ext
+        found_active_videos = []
         try:
-            for f in os.listdir(mov_dir):
-                if f.lower().startswith(filename_no_ext.lower()) and (f.lower().endswith(".mov") or f.lower().endswith(".avi")):
-                    count += 1
-                    matching_files.append(f)
+            if os.path.exists(playblast_dir):
+                for f in os.listdir(playblast_dir):
+                    if f.lower().startswith(filename_no_ext.lower()) and (f.lower().endswith(".mov") or f.lower().endswith(".avi")):
+                        found_active_videos.append((f, os.path.join(playblast_dir, f)))
         except Exception:
             pass
+            
+        # Sắp xếp các video active theo bảng chữ cái
+        found_active_videos = sorted(found_active_videos, key=lambda x: x[0])
                 
-        if count == 0:
-            self.pb_count_label.setText("Playblasts on Server: 0 files")
-            self.pb_count_label.setToolTip("")
+        # 2. Tìm các video phiên bản cũ trong thư mục Old
+        found_old_videos = []
+        old_dir = os.path.join(playblast_dir, "Old")
+        if os.path.exists(old_dir) and os.path.isdir(old_dir):
+            try:
+                for f in os.listdir(old_dir):
+                    if f.lower().startswith(filename_no_ext.lower()) and (f.lower().endswith(".mov") or f.lower().endswith(".avi")):
+                        found_old_videos.append((f, os.path.join(old_dir, f)))
+            except Exception:
+                pass
+                
+        # Sắp xếp các video cũ theo bảng chữ cái/số version tăng dần
+        found_old_videos = sorted(found_old_videos, key=lambda x: x[0])
+        
+        # 3. Nạp dữ liệu lên self.pb_list
+        if found_active_videos:
+            for name, path in found_active_videos:
+                item = QtWidgets.QListWidgetItem(u"🟢 [Active] " + name)
+                item.setData(QtCore.Qt.UserRole, path)
+                item.setForeground(QtGui.QColor("#4CAF50")) # Chữ xanh lá
+                self.pb_list.addItem(item)
+            
+            # Cập nhật nhãn trạng thái lấy file video đầu tiên tìm được
+            first_name = found_active_videos[0][0]
+            self.pb_count_label.setText(u"🎬 Đã có Playblast (%s)" % first_name)
+            self.pb_count_label.setStyleSheet("color: #4CAF50; font-weight: bold; margin-left: 2px;")
+            self.pb_count_label.setToolTip(os.path.normpath(found_active_videos[0][1]))
         else:
-            self.pb_count_label.setText("Playblasts on Server: %d files" % count)
-            self.pb_count_label.setToolTip("Exported Playblasts:\n" + "\n".join(matching_files))
+            self.pb_count_label.setText(u"❌ Chưa có Playblast")
+            self.pb_count_label.setStyleSheet("color: #F44336; font-weight: bold; margin-left: 2px;")
+            self.pb_count_label.setToolTip("")
+            
+        for name, path in found_old_videos:
+            item = QtWidgets.QListWidgetItem(u"⚪ [Old] " + name)
+            item.setData(QtCore.Qt.UserRole, path)
+            item.setForeground(QtGui.QColor("#9E9E9E")) # Chữ xám nhạt
+            self.pb_list.addItem(item)
+
+    def on_open_playblast_file(self, item):
+        """Mở file video playblast bằng trình phát mặc định của hệ thống"""
+        import os
+        filepath = item.data(QtCore.Qt.UserRole)
+        if not filepath or not os.path.exists(filepath):
+            return
+            
+        try:
+            os.startfile(os.path.normpath(filepath))
+            print(u"Đã mở video playblast bằng trình phát mặc định: %s" % filepath)
+        except Exception as e:
+            cmds.warning(u"Không thể mở video playblast: %s" % str(e))
 
     def get_scene_cameras(self):
         """Lấy danh sách các camera transform trong scene, lọc camera mặc định và xếp camera custom lên trước"""
@@ -1074,6 +1137,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             width, height = 640, 360
             
         cam_mode = self.pb_cam_mode_combo.currentText()
+        overwrite = self.pb_overwrite_checkbox.isChecked()
         
         try:
             if cam_mode == u"Camera hiện hành (Active)":
@@ -1082,7 +1146,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     percent=100,
                     width=width,
                     height=height,
-                    viewer=True
+                    viewer=True,
+                    overwrite=overwrite
                 )
                 if output_path:
                     res = cmds.confirmDialog(
@@ -1107,7 +1172,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     width=width,
                     height=height,
                     camera=camera,
-                    viewer=True
+                    viewer=True,
+                    overwrite=overwrite
                 )
                 if output_path:
                     res = cmds.confirmDialog(
@@ -1155,7 +1221,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                             width=width,
                             height=height,
                             camera=cam,
-                            viewer=False  # Disable viewer in batch to avoid collision
+                            viewer=False,  # Disable viewer in batch to avoid collision
+                            overwrite=overwrite
                         )
                         if out_path:
                             success_paths.append(out_path)
@@ -1430,16 +1497,24 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.open_folder_explorer(work_dir)
 
     def on_open_mov_dir(self):
-        current_proj = self.proj_combo.currentText()
-        current_ep = self.ep_combo.currentText()
-        current_task = self.task_combo.currentText()
-        if not (current_proj and current_ep and current_task):
-            return
-        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
-        mov_dir = os.path.join(self.project_root, current_proj, current_ep, "mov", task_dir_name)
-        
-        # Tạo thư mục nếu chưa tồn tại
-        if not os.path.exists(mov_dir):
+        selected_items = self.files_list.selectedItems()
+        if not selected_items:
+            filepath = cmds.file(q=True, sceneName=True)
+        else:
+            filepath = selected_items[0].data(QtCore.Qt.UserRole)
+            
+        if filepath:
+            mov_dir, _ = self.playblast_manager.get_playblast_path(scene_filepath=filepath)
+        else:
+            current_proj = self.proj_combo.currentText()
+            current_ep = self.ep_combo.currentText()
+            current_task = self.task_combo.currentText()
+            if not (current_proj and current_ep and current_task):
+                return
+            task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
+            mov_dir = os.path.join(self.project_root, current_proj, current_ep, "mov", task_dir_name)
+            
+        if mov_dir and not os.path.exists(mov_dir):
             try:
                 os.makedirs(mov_dir)
             except Exception:
@@ -1454,20 +1529,26 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if not (current_proj and current_ep and current_task):
             return
         task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
-        pub_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+        
+        # Nếu là Layout, Published có thư mục con của từng shot
+        # Tìm shot đang chọn để mở đúng thư mục published của shot đó
+        selected_items = self.shot_list.selectedItems() if hasattr(self, 'shot_list') else []
+        if selected_items and task_dir_name == "Layout":
+            shot_name = selected_items[0].text()
+            pub_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name, shot_name)
+        else:
+            pub_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+            
+        if not os.path.exists(pub_dir):
+            try:
+                os.makedirs(pub_dir)
+            except Exception:
+                pass
+                
         self.open_folder_explorer(pub_dir)
 
-    def on_open_mov_dir(self):
-        current_proj = self.proj_combo.currentText()
-        current_ep = self.ep_combo.currentText()
-        current_task = self.task_combo.currentText()
-        if not (current_proj and current_ep and current_task):
-            return
-        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
-        mov_dir = os.path.join(self.project_root, current_proj, current_ep, "mov", task_dir_name)
-        self.open_folder_explorer(mov_dir)
-
     def show_file_list_context_menu(self, pos):
+        import os
         item = self.files_list.itemAt(pos)
         if not item:
             return
@@ -1481,27 +1562,28 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         action_open_folder = menu.addAction(u"Mở thư mục chứa file")
         action_copy_path = menu.addAction(u"Sao chép đường dẫn file")
         action_debug_open = menu.addAction(u"Mở và Debug hiệu năng (Đo thời gian tải)")
+        menu.addSeparator()
         
-        # Thêm action xem playblast tương ứng nếu có
+        # Thêm action Publish file này offline
+        action_publish = menu.addAction(u"🚀 Publish File này (Copy nhanh)")
+        
+        # Tìm video playblast nháp tương ứng (quét động theo shot cho cả Layout)
         filename = os.path.basename(filepath)
         filename_no_ext = os.path.splitext(filename)[0]
         
-        current_proj = self.proj_combo.currentText()
-        current_ep = self.ep_combo.currentText()
-        current_task = self.task_combo.currentText()
-        
-        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
-        mov_dir = os.path.join(self.project_root, current_proj, current_ep, "mov", task_dir_name)
-        
-        mov_path = os.path.join(mov_dir, filename_no_ext + ".mov")
-        avi_path = os.path.join(mov_dir, filename_no_ext + ".avi")
+        # Gọi playblast_manager để lấy đúng thư mục playblast nháp của file này
+        playblast_dir, _ = self.playblast_manager.get_playblast_path(scene_filepath=filepath)
         
         active_video_path = None
-        if os.path.exists(mov_path):
-            active_video_path = mov_path
-        elif os.path.exists(avi_path):
-            active_video_path = avi_path
-            
+        if playblast_dir and os.path.exists(playblast_dir):
+            try:
+                for f in os.listdir(playblast_dir):
+                    if f.lower().startswith(filename_no_ext.lower()) and (f.lower().endswith(".mov") or f.lower().endswith(".avi")):
+                        active_video_path = os.path.join(playblast_dir, f)
+                        break
+            except Exception:
+                pass
+                
         action_open_video = None
         if active_video_path:
             action_open_video = menu.addAction(u"Xem video Playblast nháp")
@@ -1515,6 +1597,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             clipboard = QtWidgets.QApplication.clipboard()
             clipboard.setText(os.path.normpath(filepath))
             print("Đã sao chép đường dẫn file vào Clipboard: %s" % filepath)
+        elif action == action_publish:
+            self.on_publish_file_offline(filepath)
         elif action == action_debug_open:
             res = QtWidgets.QMessageBox.question(
                 self, u"Xác nhận Debug mở file",
@@ -1549,6 +1633,160 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def show_debug_report_dialog(self, filepath, report):
         dialog = DebugReportDialog(filepath, report, parent=self)
         dialog.exec_()
+
+    def on_publish_file_offline(self, filepath):
+        """Publish nhanh file Maya và video playblast nháp tương ứng bằng cách copy offline (tốc độ dưới 1 giây)"""
+        if not filepath or not os.path.exists(filepath):
+            return
+            
+        current_proj = self.proj_combo.currentText()
+        current_ep = self.ep_combo.currentText()
+        current_task = self.task_combo.currentText()
+        
+        if not (current_proj and current_ep and current_task):
+            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim.")
+            return
+            
+        filename = os.path.basename(filepath)
+        parsed = self.file_manager.parse_scene_name(filename)
+        if not parsed:
+            QtWidgets.QMessageBox.warning(self, u"Lỗi tên file", u"Tên file không đúng quy chuẩn, không thể Publish.")
+            return
+            
+        prefix, file_task, ver, padding, ext = parsed
+        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
+        task_short = "Lay" if task_dir_name == "Layout" else "Anim"
+        
+        # Xác định thư mục published
+        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+        if task_short == "Lay":
+            published_dir = os.path.join(published_dir, prefix)
+            
+        if not os.path.exists(published_dir):
+            try:
+                os.makedirs(published_dir)
+            except Exception:
+                pass
+                
+        published_filename = "%s_%s_pub%s" % (prefix, task_short, ext)
+        published_filepath = os.path.normpath(os.path.join(published_dir, published_filename))
+        
+        # Tiến hành copy file Maya
+        import shutil
+        try:
+            shutil.copy2(filepath, published_filepath)
+            print(u"[PUBLISH OFFLINE] Đã copy file Maya sang Published: %s" % published_filepath)
+            
+            # Thông báo thành công
+            msg = u"Đã xuất bản (Publish) thành công thành file sạch trên server!\n\n"
+            msg += u"📁 File Maya: %s\n\n" % os.path.basename(published_filepath)
+            msg += u"💡 Gợi ý: Nhấp chuột phải vào video ở cột thứ 3 và chọn 'Publish Video này' nếu bạn muốn đẩy video playblast tương ứng lên server.\n"
+                
+            res = cmds.confirmDialog(
+                title="Publish Success",
+                message=msg,
+                button=["OK", "Open Published Folder"],
+                defaultButton="OK",
+                cancelButton="OK"
+            )
+            if res == "Open Published Folder":
+                self.open_folder_explorer(published_dir)
+                
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy file lên server:\n%s" % str(e))
+
+    def show_pb_list_context_menu(self, pos):
+        item = self.pb_list.itemAt(pos)
+        if not item:
+            return
+            
+        filepath = item.data(QtCore.Qt.UserRole)
+        if not filepath or not os.path.exists(filepath):
+            return
+            
+        menu = QtWidgets.QMenu(self)
+        
+        action_open_video = menu.addAction(u"Xem video Playblast")
+        action_open_folder = menu.addAction(u"Mở thư mục chứa video")
+        menu.addSeparator()
+        action_publish_video = menu.addAction(u"🚀 Publish Video này")
+        
+        action = menu.exec_(self.pb_list.mapToGlobal(pos))
+        if action == action_open_video:
+            self.on_open_playblast_file(item)
+        elif action == action_open_folder:
+            self.open_folder_explorer(os.path.dirname(filepath))
+        elif action == action_publish_video:
+            self.on_publish_video_offline(filepath)
+
+    def on_publish_video_offline(self, filepath):
+        """Publish nhanh video playblast được chọn lên server Published (offline copy)"""
+        if not filepath or not os.path.exists(filepath):
+            return
+            
+        current_proj = self.proj_combo.currentText()
+        current_ep = self.ep_combo.currentText()
+        current_task = self.task_combo.currentText()
+        
+        if not (current_proj and current_ep and current_task):
+            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim.")
+            return
+            
+        # Lấy định danh của file Maya đang chọn ở cột 2
+        selected_items = self.files_list.selectedItems()
+        if not selected_items:
+            current_filepath = cmds.file(q=True, sceneName=True)
+            if not current_filepath:
+                QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn file Maya tương ứng ở cột 2 để xác định tên Publish.")
+                return
+            maya_filename = os.path.basename(current_filepath)
+        else:
+            maya_filename = os.path.basename(selected_items[0].data(QtCore.Qt.UserRole))
+            
+        parsed = self.file_manager.parse_scene_name(maya_filename)
+        if not parsed:
+            QtWidgets.QMessageBox.warning(self, u"Lỗi tên file", u"Tên file Maya không hợp lệ, không thể xác định tên Publish.")
+            return
+            
+        prefix, file_task, ver, padding, ext = parsed
+        task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
+        task_short = "Lay" if task_dir_name == "Layout" else "Anim"
+        
+        # Xác định thư mục published video
+        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+        if task_short == "Lay":
+            published_dir = os.path.join(published_dir, prefix)
+            
+        dest_mov_dir = os.path.join(published_dir, "mov")
+        if not os.path.exists(dest_mov_dir):
+            try:
+                os.makedirs(dest_mov_dir)
+            except Exception:
+                pass
+                
+        # Lấy đuôi file video nguồn (.mov hoặc .avi)
+        mov_ext = os.path.splitext(filepath)[1]
+        dest_mov_filename = "%s_%s_pub%s" % (prefix, task_short, mov_ext)
+        dest_mov_path = os.path.normpath(os.path.join(dest_mov_dir, dest_mov_filename))
+        
+        # Thực hiện copy offline
+        import shutil
+        try:
+            shutil.copy2(filepath, dest_mov_path)
+            print(u"[PUBLISH VIDEO] Đã copy video playblast sang Published: %s" % dest_mov_path)
+            
+            res = cmds.confirmDialog(
+                title="Publish Video Success",
+                message=u"Đã xuất bản (Publish) video playblast thành công lên server!\n\n"
+                        u"🎬 Video: %s" % os.path.basename(dest_mov_path),
+                button=["OK", "Open Published Folder"],
+                defaultButton="OK",
+                cancelButton="OK"
+            )
+            if res == "Open Published Folder":
+                self.open_folder_explorer(published_dir)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy video lên server:\n%s" % str(e))
 
 def show_window():
     import sys

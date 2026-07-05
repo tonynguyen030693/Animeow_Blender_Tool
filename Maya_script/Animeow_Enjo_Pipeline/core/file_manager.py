@@ -247,6 +247,15 @@ class FileManager(object):
             for item in os.listdir(work_dir):
                 shot_dir_path = os.path.join(work_dir, item)
                 if os.path.isdir(shot_dir_path) and not item.startswith("."):
+                    # Quét trong folder con "file"
+                    file_dir_path = os.path.join(shot_dir_path, "file")
+                    if os.path.exists(file_dir_path) and os.path.isdir(file_dir_path):
+                        for filename in os.listdir(file_dir_path):
+                            filepath = os.path.join(file_dir_path, filename)
+                            if os.path.isfile(filepath):
+                                files_to_scan.append((filename, filepath))
+                                
+                    # Quét dự phòng trực tiếp trong thư mục shot để tương thích ngược
                     for filename in os.listdir(shot_dir_path):
                         filepath = os.path.join(shot_dir_path, filename)
                         if os.path.isfile(filepath):
@@ -344,8 +353,8 @@ class FileManager(object):
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
         if task_short == "Lay":
-            # Layout: lưu vào thư mục con đặt tên theo shot
-            work_dir = os.path.join(work_dir, file_prefix)
+            # Layout: lưu vào thư mục con đặt tên theo shot -> tiếp tục lưu vào folder 'file'
+            work_dir = os.path.join(work_dir, file_prefix, "file")
             
         if not os.path.exists(work_dir):
             os.makedirs(work_dir)
@@ -443,6 +452,7 @@ class FileManager(object):
                 
             cmds.file(save=True, type="mayaAscii" if ext.lower() == ".ma" else "mayaBinary")
             print(u"Đã lưu file publish sạch tại: %s" % published_filepath)
+            
             return published_filepath
         except Exception as e:
             cmds.error(u"Lỗi trong quá trình Publish file: %s" % exception_to_unicode(e))
@@ -491,6 +501,15 @@ class FileManager(object):
                 for item in os.listdir(work_dir):
                     shot_dir_path = os.path.join(work_dir, item)
                     if os.path.isdir(shot_dir_path) and not item.startswith("."):
+                        # Quét trong shot_dir_path/file/
+                        file_dir_path = os.path.join(shot_dir_path, "file")
+                        if os.path.exists(file_dir_path) and os.path.isdir(file_dir_path):
+                            for filename in os.listdir(file_dir_path):
+                                filepath = os.path.join(file_dir_path, filename)
+                                if os.path.isfile(filepath):
+                                    files_to_check.append((filename, filepath, file_dir_path))
+                                    
+                        # Quét dự phòng trực tiếp trong shot_dir_path (cho các file cũ)
                         for filename in os.listdir(shot_dir_path):
                             filepath = os.path.join(shot_dir_path, filename)
                             if os.path.isfile(filepath):
@@ -515,7 +534,7 @@ class FileManager(object):
                 if match and t_dir == "Layout":
                     shot_val = match.group("shot")
                     proposed_prefix = "%s_Shot_%s" % (ep_abbrev, shot_val)
-                    expected_dir = os.path.normpath(os.path.join(work_dir, proposed_prefix))
+                    expected_dir = os.path.normpath(os.path.join(work_dir, proposed_prefix, "file"))
                     if os.path.normpath(current_dir).lower() != expected_dir.lower():
                         is_correct_location = False
                         
@@ -553,7 +572,7 @@ class FileManager(object):
                     # Xác định thư mục đích
                     if t_dir == "Layout":
                         proposed_prefix = "%s_Shot_%s" % (ep_abbrev, proposed_shot)
-                        proposed_dir = os.path.join(work_dir, proposed_prefix)
+                        proposed_dir = os.path.join(work_dir, proposed_prefix, "file")
                     else:
                         proposed_dir = work_dir
                     
