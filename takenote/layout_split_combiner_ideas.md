@@ -63,12 +63,27 @@ graph TD
      ```
   4. **Kết quả:** Toàn bộ chuyển động do Locator constrain tạo ra sẽ được chuyển đổi thành các keyframe tuyệt đối trên các control curve của Rig. Các Locator rác và constrain lúc này có thể được bỏ qua một cách an toàn. File cụm tổng chỉ việc nạp anim của các control curve này là khớp chuyển động chuẩn 100% mà không cần dựng lại bất kỳ constrain hay locator nào!
 
-#### 3.2. Dọn dẹp keyframe lố ngoài timeline (Clean Keys)
+#### 3.2. Tính Năng Smart Bake (Bake thưa giữ key cực trị) (Mới)
+* **Vấn đề của Bake thông thường:** Lệnh bake mặc định của Maya sẽ tạo keyframe trên **từng frame** (mỗi frame 1 key). Việc này khiến đường cong chuyển động (Anim Curve) cực kỳ dày đặc và nặng file, đồng thời rất khó để chỉnh sửa sửa đổi (tweak key) thủ công sau khi gộp file.
+* **Giải pháp Smart Bake (Tương tự Blender):**
+  Chúng ta có thể lập trình thuật toán giảm key thông minh nhằm giữ cho curve anim sạch sẽ nhưng vẫn bảo toàn 100% hình dạng dáng (pose) chuyển động:
+  1. **Bước 1: Quét ghi nhớ keypose gốc:** Tool ghi nhận tất cả các frame chứa key pose quan trọng ban đầu do artist đặt thủ công.
+  2. **Bước 2: Bake kết quả ở dạng thưa (Sparse Bake):** Chạy lệnh bake kết quả mô phỏng nhưng kích hoạt tuỳ chọn lọc sparse của Maya:
+     ```python
+     cmds.bakeResults(controls, sparseAnimCurveBake=True)
+     ```
+  3. **Bước 3: Lọc Keyframe bằng thuật toán Key Reducer:** Gọi bộ lọc key thông minh mặc định của Maya trên các anim curves:
+     ```python
+     cmds.filterCurve(anim_curves, filter="keyReducer", threshold=0.1)
+     ```
+     *Bộ lọc này sẽ phân tích độ dốc (tangent) và tự động xoá bỏ toàn bộ các key nằm trên đường cong đều hoặc tuyến tính, nhưng **chắc chắn giữ lại các điểm cực trị (Extreme/Breakdown)** nơi chuyển động đổi hướng hoặc đạt biên độ lớn nhất.*
+
+#### 3.3. Dọn dẹp keyframe lố ngoài timeline (Clean Keys)
 * **Quy trình xử lý:**
   * **Xuất lấn biên an toàn (Safety Padding):** Để đảm bảo quán tính chuyển động mượt mà tại điểm giao thoa giữa các shot, tool sẽ tự động xuất lấn biên thêm **+/- 5 hoặc 10 frames** (ví dụ xuất từ 95 đến 205).
   * **Clean Keys (Dọn dẹp):** Sau khi import vào file cụm tổng, tool sẽ tự động chạy lệnh `cmds.cutKey` để cắt bỏ hoàn toàn các key ngoài khoảng biên của cụm đó, đảm bảo file cụm tổng luôn sạch sẽ.
 
-#### 3.3. Tận dụng API Studio Library cho việc Copy/Paste siêu tốc
+#### 3.4. Tận dụng API Studio Library cho việc Copy/Paste siêu tốc
 * **Studio Library** chạy rất nhanh vì nó xuất dữ liệu anim trực tiếp thành các file text dictionary có cấu trúc cực nhẹ (lưu tangent, weight, values của key) thay vì ghi file Maya nặng.
 * Do Studio Library đã được tích hợp sẵn trong source của bạn tại `AnimeowTool/SourceTool/studiolibrary`, tool Pipeline có thể **gọi trực tiếp API Python của Studio Library chạy ngầm (API Mode)** để thực hiện việc export/import anim nhanh chóng mà không cần artist phải mở giao diện Studio Library lên bấm tay.
 
@@ -80,4 +95,4 @@ Chúng ta có thể thêm một Tab mới bên cạnh Tab **Quản Lý File** hi
 
 | Giao Diện Thiết Kế Đề Xuất |
 | :--- |
-| **TAB: TÁCH / GỘP CẢNH**<br><br>  **[ Khu vực 1: Tách Shot Layout Tổng ]**<br>  * Đọc bookmarks từ scene hiện tại: **[Quét Bookmarks]**<br>  * Danh sách bookmark tìm thấy: *Shot_01-25 (1-100), Shot_26-50 (101-250)...*<br>  * Chọn các control nhân vật cần giữ key: `[ Chọn Control Nhân Vật ]`<br>  * **[ 🚀 Bắt đầu Tách và đồng bộ Pipeline (1 Click) ]**<br><br>  **[ Khu vực 2: Gộp Animation Cảnh Tổng ]**<br>  * Phương thức gộp: `(o) Studio Library API`  hoặc  `( ) Import ATOM`<br>  * Cấu hình an toàn: `[x]` Tự động Bake Constrains (Locator/Rig)  `[x]` Thêm +/- `5` frame đệm (Padding)<br>  * Chọn kiểu chia Block:<br>    - `[x]` Tự gõ Block: `1-10, 11-20, 21-30, 31-45, 46-60`<br>    - `[ ] Chia đều`: `10` shot một file<br>  * **[ 📦 Tiến hành Gộp Cảnh & Xuất File Cụm Bàn Giao ]** |
+| **TAB: TÁCH / GỘP CẢNH**<br><br>  **[ Khu vực 1: Tách Shot Layout Tổng ]**<br>  * Đọc bookmarks từ scene hiện tại: **[Quét Bookmarks]**<br>  * Danh sách bookmark tìm thấy: *Shot_01-25 (1-100), Shot_26-50 (101-250)...*<br>  * Chọn các control nhân vật cần giữ key: `[ Chọn Control Nhân Vật ]`<br>  * **[ 🚀 Bắt đầu Tách và đồng bộ Pipeline (1 Click) ]**<br><br>  **[ Khu vực 2: Gộp Animation Cảnh Tổng ]**<br>  * Phương thức gộp: `(o) Studio Library API`  hoặc  `( ) Import ATOM`<br>  * Cấu hình an toàn:<br>    - `[x]` Tự động Bake Constrains (Locator/Rig)<br>    - `[x]` Chế độ Smart Bake (Bake thưa giữ key cực trị)<br>    - `[x]` Thêm +/- `5` frame đệm (Padding)<br>  * Chọn kiểu chia Block:<br>    - `[x]` Tự gõ Block: `1-10, 11-20, 21-30, 31-45, 46-60`<br>    - `[ ] Chia đều`: `10` shot một file<br>  * **[ 📦 Tiến hành Gộp Cảnh & Xuất File Cụm Bàn Giao ]** |
