@@ -268,6 +268,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     WINDOW_TITLE = "Animeow Enjo Pipeline"
     WORKSPACE_CONTROL_NAME = "AnimeowEnjoPipelineWorkspaceControl"
     OPTION_VAR_PROJ = "AnimeowEnjoProjRoot"
+    OPTION_VAR_REF_MODE = "AnimeowEnjoRefLoadMode"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolkitUI, self).__init__(parent=parent)
@@ -345,14 +346,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.create_file_btn.clicked.connect(self.on_create_file)
         shot_layout.addWidget(self.create_file_btn, 4, 2)
         
-        # Hàng 5: Label Danh sách file & Checkbox mở nhanh
+        # Hàng 5: Label Danh sách file & Dropdown tuỳ chọn nạp Reference
         files_label_layout = QtWidgets.QHBoxLayout()
         files_label_layout.addWidget(QtWidgets.QLabel("Working Files (Đúp click để Mở):"))
         
-        self.quick_open_cb = QtWidgets.QCheckBox(u"Mở nhanh (Không load References)")
-        self.quick_open_cb.setToolTip(u"Tải nhanh cảnh diễn hoạt bằng cách trì hoãn nạp tất cả các file reference bối cảnh/rig nặng.")
-        self.quick_open_cb.setStyleSheet("color: #FF9800; font-weight: bold;")
-        files_label_layout.addWidget(self.quick_open_cb, 0, QtCore.Qt.AlignRight)
+        self.ref_load_combo = QtWidgets.QComboBox()
+        self.ref_load_combo.addItems([
+            u"⚡ Mở nhanh (Không load Ref)",
+            u"👤 Chọn nạp Nhân vật (Characters Only)",
+            u"📋 Tự chọn Ref (Selective Preload)",
+            u"🔝 Chỉ nạp Ref cấp 1 (Top Level)",
+            u"🔄 Mở bình thường (Nạp tất cả)"
+        ])
+        self.ref_load_combo.setToolTip(u"Chế độ tải Reference khi mở file Maya.")
+        self.ref_load_combo.setStyleSheet("color: #FF9800; font-weight: bold;")
+        self.ref_load_combo.setFixedWidth(240)
+        self.ref_load_combo.currentIndexChanged.connect(self.save_ref_load_setting)
+        files_label_layout.addWidget(self.ref_load_combo, 0, QtCore.Qt.AlignRight)
         
         shot_layout.addLayout(files_label_layout, 5, 0, 1, 3)
         
@@ -497,6 +507,67 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     # --- SỰ KIỆN & LOGIC ---
     
+    def is_character_reference(self, ref_path):
+        """Kiểm tra xem file reference có phải là nhân vật/rig dựa trên đường dẫn hoặc tên file hay không"""
+        if not ref_path:
+            return False
+            
+        # Nếu ref_path là list/tuple do Maya query trả về
+        if isinstance(ref_path, (list, tuple)):
+            if not ref_path:
+                return False
+            ref_path = ref_path[0]
+            
+        path_lower = ref_path.replace("\\", "/").lower()
+        filename = os.path.basename(path_lower)
+        
+        # 1. BỘ LỌC LOẠI TRỪ (EXCLUDE): Loại bỏ các thư mục và file thuộc về bối cảnh (BG), đạo cụ (Props), map...
+        exclude_path_keywords = [
+            "/asset rig/", "/asset_rig/", "/bg_rig/", "/bg_rigs/", 
+            "/bg/", "/set/", "/prop/", "/props/", "/environment/", 
+            "/background/", "/stage/", "/map/", "/scene/"
+        ]
+        for kw in exclude_path_keywords:
+            if kw in path_lower:
+                return False
+                
+        exclude_file_keywords = [
+            "bg_", "set_", "prop_", "scene_", "background", "map_", 
+            "stage_", "prop", "bg", "set", "trung_tam_thuong_mai",
+            "bien_bao", "canh_bao", "thang", "hanh_lang", "bang_nut_bam", "qua_bong"
+        ]
+        for kw in exclude_file_keywords:
+            if kw in filename:
+                return False
+
+        # 2. BỘ LỌC CHẤP NHẬN (INCLUDE): Nhận diện thư mục hoặc từ khóa nhân vật
+        # 2.1 Kiểm tra đường dẫn thư mục chứa nhân vật
+        include_path_keywords = [
+            "/character rig/", "/character_rig/", "/character model/", 
+            "/character/", "/animal_rig/", "/animal/"
+        ]
+        for kw in include_path_keywords:
+            if kw in path_lower:
+                return True
+                
+        # 2.2 Kiểm tra tên file khớp từ khóa nhân vật
+        char_keywords = [
+            "baby", "mom", "sister", "brother", "dad", 
+            "mac_donald", "tourist", "guide",
+            "gau", "tho", "chicken", "clowfish", "cow", "dog", "duck", 
+            "horse", "mouse", "pig", "spider", "star_fish", "turtle",
+            "animal"
+        ]
+        for kw in char_keywords:
+            if kw in filename:
+                return True
+                
+        return False
+
+    def save_ref_load_setting(self, index):
+        """Lưu chỉ số chế độ tải Reference được chọn vào cấu hình Maya"""
+        cmds.optionVar(iv=(self.OPTION_VAR_REF_MODE, index))
+
     def load_settings(self):
         """Tải cấu hình dự án mặc định và tự động đồng bộ file đang mở"""
         if cmds.optionVar(exists=self.OPTION_VAR_PROJ):
@@ -505,6 +576,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.project_root = saved_root
                 
         self.file_manager.project_root = self.project_root
+        
+        # Nạp cấu hình chế độ tải Reference
+        if cmds.optionVar(exists=self.OPTION_VAR_REF_MODE):
+            saved_mode = cmds.optionVar(q=self.OPTION_VAR_REF_MODE)
+            self.ref_load_combo.setCurrentIndex(saved_mode)
+        else:
+            self.ref_load_combo.setCurrentIndex(0) # Mặc định mở nhanh
+
         self.populate_projects()
         
         # Tự động nhận diện và đồng bộ file đang mở trong scene khi khởi động UI
@@ -606,10 +685,46 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
         try:
             kwargs = {"open": True, "force": True}
-            if self.quick_open_cb.isChecked():
+            mode = self.ref_load_combo.currentIndex()
+            
+            if mode == 0:  # Mở nhanh (Không load Ref)
                 kwargs["loadReferenceDepth"] = "none"
+            elif mode in [1, 2]:  # Chọn nạp nhân vật hoặc Tự chọn đều dùng trì hoãn nạp settings
+                kwargs["buildLoadSettings"] = True
+            elif mode == 3:  # Chỉ nạp Ref cấp 1
+                kwargs["loadReferenceDepth"] = "topOnly"
+            # mode == 4 là Mở bình thường (nạp tất cả)
                 
             cmds.file(to_sys_path(filepath), **kwargs)
+            
+            if mode == 1:
+                # Quét và tích chọn sẵn các Rig nhân vật trong cấu hình tải
+                print(u"Đang quét các Reference để tích chọn sẵn nhân vật...")
+                num_settings = cmds.selLoadSettings(q=True, numSettings=True) or 0
+                char_count = 0
+                
+                for i in range(1, num_settings):
+                    ref_path_raw = cmds.selLoadSettings(str(i), q=True, fileName=True)
+                    ref_path = ref_path_raw[0] if isinstance(ref_path_raw, (list, tuple)) and ref_path_raw else ref_path_raw
+                    
+                    if self.is_character_reference(ref_path):
+                        cmds.selLoadSettings(str(i), edit=True, deferReference=0)  # Tích chọn (Load)
+                        char_count += 1
+                        print(u"-> Đã tích chọn Rig: %s" % os.path.basename(ref_path))
+                    else:
+                        cmds.selLoadSettings(str(i), edit=True, deferReference=1)  # Bỏ chọn (Defer)
+                        
+                print(u"Đã chuẩn bị xong cấu hình nạp. Tự động tích chọn %d nhân vật." % char_count)
+                
+                # Hiển thị bảng Preload Reference Editor của Maya để user xem và nhấn nạp
+                import maya.mel as mel
+                mel.eval("PreloadReferenceEditor;")
+                
+            elif mode == 2:
+                # Hiển thị cửa sổ Preload Reference Editor gốc của Maya để người dùng chọn
+                import maya.mel as mel
+                mel.eval("PreloadReferenceEditor;")
+                
             cmds.workspace(to_sys_path(self.project_root), openWorkspace=True)
             print(u"Đã mở file thành công: %s" % filepath)
         except Exception as e:
