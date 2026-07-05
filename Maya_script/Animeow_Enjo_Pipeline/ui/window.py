@@ -366,13 +366,37 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         shot_layout.addLayout(files_label_layout, 5, 0, 1, 3)
         
-        # Hàng 6: Danh sách file phiên bản
+        # Hàng 6: Bố cục 2 bảng (Shot bên trái, Version bên phải)
+        list_container_layout = QtWidgets.QHBoxLayout()
+        list_container_layout.setSpacing(6)
+        
+        # Bảng bên trái: Shot List
+        shot_list_widget = QtWidgets.QWidget()
+        shot_list_layout = QtWidgets.QVBoxLayout(shot_list_widget)
+        shot_list_layout.setContentsMargins(0, 0, 0, 0)
+        shot_list_layout.addWidget(QtWidgets.QLabel(u"🎬 Danh sách Shot:"))
+        
+        self.shot_list = QtWidgets.QListWidget()
+        self.shot_list.itemSelectionChanged.connect(self.on_shot_selection_changed)
+        shot_list_layout.addWidget(self.shot_list)
+        
+        # Bảng bên phải: Version List
+        version_list_widget = QtWidgets.QWidget()
+        version_list_layout = QtWidgets.QVBoxLayout(version_list_widget)
+        version_list_layout.setContentsMargins(0, 0, 0, 0)
+        version_list_layout.addWidget(QtWidgets.QLabel(u"📂 Các phiên bản (Đúp click để Mở):"))
+        
         self.files_list = QtWidgets.QListWidget()
         self.files_list.itemDoubleClicked.connect(self.on_open_file)
         self.files_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.files_list.customContextMenuRequested.connect(self.show_file_list_context_menu)
         self.files_list.itemSelectionChanged.connect(self.update_playblast_count)
-        shot_layout.addWidget(self.files_list, 6, 0, 1, 3)
+        version_list_layout.addWidget(self.files_list)
+        
+        list_container_layout.addWidget(shot_list_widget, 4) # Chiếm 40% chiều rộng
+        list_container_layout.addWidget(version_list_widget, 6) # Chiếm 60% chiều rộng
+        
+        shot_layout.addLayout(list_container_layout, 6, 0, 1, 3)
         
         # Hàng 7: Nút mở nhanh thư mục
         folder_btn_layout = QtWidgets.QHBoxLayout()
@@ -642,8 +666,10 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.refresh_files_list()
 
     def refresh_files_list(self):
+        self.shot_list.clear()
         self.files_list.clear()
         self.current_work_files = []
+        self.shot_map = {}
         
         current_proj = self.proj_combo.currentText()
         current_ep = self.ep_combo.currentText()
@@ -655,7 +681,61 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         files_info = self.file_manager.get_work_files(current_proj, current_ep, current_task)
         self.current_work_files = files_info
         
+        # Nhớ shot đang chọn trước đó để khôi phục
+        previous_selected_shot = ""
+        selected_items = self.shot_list.selectedItems()
+        if selected_items:
+            previous_selected_shot = selected_items[0].text()
+            
+        # Gom nhóm file theo tên shot
         for info in files_info:
+            filename = info["filename"]
+            parsed = self.file_manager.parse_scene_name(filename)
+            if parsed:
+                prefix = parsed[0]
+            else:
+                parts = filename.split("_v")
+                if len(parts) > 1:
+                    prefix = parts[0]
+                else:
+                    prefix = os.path.splitext(filename)[0]
+                    
+            if prefix not in self.shot_map:
+                self.shot_map[prefix] = []
+            self.shot_map[prefix].append(info)
+            
+        # Nạp tên shot lên bảng bên trái
+        sorted_shots = sorted(self.shot_map.keys())
+        for shot in sorted_shots:
+            item = QtWidgets.QListWidgetItem(shot)
+            self.shot_list.addItem(item)
+            
+        # Khôi phục lựa chọn
+        if previous_selected_shot:
+            items = self.shot_list.findItems(previous_selected_shot, QtCore.Qt.MatchExactly)
+            if items:
+                self.shot_list.blockSignals(True)
+                self.shot_list.setCurrentItem(items[0])
+                self.shot_list.blockSignals(False)
+                self.on_shot_selection_changed()
+        elif sorted_shots:
+            self.shot_list.setCurrentRow(0)
+            
+        self.update_playblast_count()
+
+    def on_shot_selection_changed(self):
+        self.files_list.clear()
+        selected_items = self.shot_list.selectedItems()
+        if not selected_items:
+            return
+            
+        selected_shot = selected_items[0].text()
+        shot_files = self.shot_map.get(selected_shot, [])
+        
+        # Sắp xếp version từ cao xuống thấp (mới nhất lên trên)
+        sorted_files = sorted(shot_files, key=lambda x: x["version"], reverse=True)
+        
+        for info in sorted_files:
             item_text = "[v%02d] %s  (%s | %s)" % (
                 info["version"], 
                 info["filename"], 
@@ -856,7 +936,24 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
             self.refresh_files_list()
             
-            # Tự động chọn (highlight) file hiện tại trong QListWidget
+            # Phân tích file hiện tại thuộc Shot nào để tự động select Shot đó trên bảng bên trái
+            current_filename = os.path.basename(norm_filepath)
+            current_parsed = self.file_manager.parse_scene_name(current_filename)
+            if current_parsed:
+                current_prefix = current_parsed[0]
+            else:
+                parts = current_filename.split("_v")
+                current_prefix = parts[0] if len(parts) > 1 else os.path.splitext(current_filename)[0]
+                
+            # Chọn shot trên shot_list
+            shot_items = self.shot_list.findItems(current_prefix, QtCore.Qt.MatchExactly)
+            if shot_items:
+                self.shot_list.blockSignals(True)
+                self.shot_list.setCurrentItem(shot_items[0])
+                self.shot_list.blockSignals(False)
+                self.on_shot_selection_changed()
+                
+            # Tự động chọn (highlight) file hiện tại trong QListWidget bên phải
             for i in range(self.files_list.count()):
                 item = self.files_list.item(i)
                 item_path = item.data(QtCore.Qt.UserRole)

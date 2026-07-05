@@ -225,7 +225,7 @@ class FileManager(object):
         return sorted(episodes)
 
     def get_work_files(self, project, episode, task):
-        """Quét trực tiếp thư mục WorkingFile/[Task] và trả về danh sách file nháp"""
+        """Quét thư mục WorkingFile/[Task] (và các thư mục con đối với Layout) và trả về danh sách file nháp"""
         if not self.project_root or not project or not episode or not task:
             return []
             
@@ -234,18 +234,42 @@ class FileManager(object):
         if not os.path.exists(work_dir):
             return []
         
-        files_info = []
+        files_to_scan = []
+        
+        # 1. Quét các file nằm trực tiếp ở thư mục cha (Layout và Anim)
         for filename in os.listdir(work_dir):
+            filepath = os.path.join(work_dir, filename)
+            if os.path.isfile(filepath):
+                files_to_scan.append((filename, filepath))
+                
+        # 2. Riêng với Layout, quét thêm các file nằm trong các thư mục con (đặt theo tên shot)
+        if task_dir_name == "Layout":
+            for item in os.listdir(work_dir):
+                shot_dir_path = os.path.join(work_dir, item)
+                if os.path.isdir(shot_dir_path) and not item.startswith("."):
+                    for filename in os.listdir(shot_dir_path):
+                        filepath = os.path.join(shot_dir_path, filename)
+                        if os.path.isfile(filepath):
+                            files_to_scan.append((filename, filepath))
+        
+        files_info = []
+        seen_filepaths = set()
+        
+        for filename, filepath in files_to_scan:
             if not (filename.lower().endswith(".ma") or filename.lower().endswith(".mb")):
                 continue
             
-            filepath = os.path.join(work_dir, filename)
-            if not os.path.isfile(filepath):
+            filepath_norm = os.path.normpath(filepath).lower()
+            if filepath_norm in seen_filepaths:
                 continue
+            seen_filepaths.add(filepath_norm)
             
-            mtime = os.path.getmtime(filepath)
-            time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
-            size_mb = os.path.getsize(filepath) / (1024.0 * 1024.0)
+            try:
+                mtime = os.path.getmtime(filepath)
+                time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+                size_mb = os.path.getsize(filepath) / (1024.0 * 1024.0)
+            except Exception:
+                continue
             
             parsed = self.parse_scene_name(filename)
             ver_num = parsed[2] if parsed else 0
@@ -319,6 +343,10 @@ class FileManager(object):
         file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code_str)
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
+        if task_short == "Lay":
+            # Layout: lưu vào thư mục con đặt tên theo shot
+            work_dir = os.path.join(work_dir, file_prefix)
+            
         if not os.path.exists(work_dir):
             os.makedirs(work_dir)
             
@@ -394,6 +422,10 @@ class FileManager(object):
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
         published_dir = os.path.join(self.project_root, project, episode, "Published", task_dir_name)
+        if task_short == "Lay":
+            # Layout: publish vào thư mục con đặt tên theo shot
+            published_dir = os.path.join(published_dir, prefix)
+            
         if not os.path.exists(published_dir):
             os.makedirs(published_dir)
             
@@ -420,7 +452,7 @@ class FileManager(object):
                 cmds.file(to_sys_path(current_filepath), open=True, force=True)
 
     def check_episode_filenames_naming(self, project, episode):
-        """Quét toàn bộ file trong WorkingFile\Layout và WorkingFile\Anim để tìm file sai quy chuẩn"""
+        """Quét toàn bộ file trong WorkingFile\Layout (kể cả thư mục con) và WorkingFile\Anim để tìm file sai quy chuẩn"""
         if not self.project_root or not project or not episode:
             return []
             
@@ -448,52 +480,89 @@ class FileManager(object):
                     re.IGNORECASE
                 )
                 
+            # Thu thập các file cần kiểm tra
+            files_to_check = []
+            for filename in os.listdir(work_dir):
+                filepath = os.path.join(work_dir, filename)
+                if os.path.isfile(filepath):
+                    files_to_check.append((filename, filepath, work_dir))
+                    
+            if t_dir == "Layout":
+                for item in os.listdir(work_dir):
+                    shot_dir_path = os.path.join(work_dir, item)
+                    if os.path.isdir(shot_dir_path) and not item.startswith("."):
+                        for filename in os.listdir(shot_dir_path):
+                            filepath = os.path.join(shot_dir_path, filename)
+                            if os.path.isfile(filepath):
+                                files_to_check.append((filename, filepath, shot_dir_path))
+                
             max_ver = 0
-            for f in os.listdir(work_dir):
-                m = valid_pattern.match(f)
+            for filename, _, _ in files_to_check:
+                m = valid_pattern.match(filename)
                 if m:
                     v = int(m.group("ver"))
                     if v > max_ver:
                         max_ver = v
                         
-            for filename in os.listdir(work_dir):
+            for filename, filepath, current_dir in files_to_check:
                 if not (filename.lower().endswith(".ma") or filename.lower().endswith(".mb")):
-                    continue
-                filepath = os.path.join(work_dir, filename)
-                if not os.path.isfile(filepath):
                     continue
                     
                 match = valid_pattern.match(filename)
-                if not match:
-                    # File sai quy chuẩn! Đề xuất tên chuẩn mới
+                is_correct_location = True
+                
+                # Nếu là Layout, kiểm tra xem nó có nằm đúng thư mục con theo shot hay không
+                if match and t_dir == "Layout":
+                    shot_val = match.group("shot")
+                    proposed_prefix = "%s_Shot_%s" % (ep_abbrev, shot_val)
+                    expected_dir = os.path.normpath(os.path.join(work_dir, proposed_prefix))
+                    if os.path.normpath(current_dir).lower() != expected_dir.lower():
+                        is_correct_location = False
+                        
+                if not match or not is_correct_location:
+                    # File sai quy chuẩn tên hoặc sai vị trí lưu trữ!
                     ext = os.path.splitext(filename)[1].lower()
                     
-                    shot_match = re.search(r"Shot_(?P<shot>\d+(-\d+)?)", filename, re.IGNORECASE)
-                    if shot_match:
-                        proposed_shot = shot_match.group("shot")
+                    if not match:
+                        # Sai tên -> Đề xuất tên mới
+                        shot_match = re.search(r"Shot_(?P<shot>\d+(-\d+)?)", filename, re.IGNORECASE)
+                        if shot_match:
+                            proposed_shot = shot_match.group("shot")
+                        else:
+                            proposed_shot = "01" if t_dir == "Anim" else "01-10"
+                            
+                        ver_match = re.search(r"[vV](?P<ver>\d+)", filename)
+                        if not ver_match:
+                            ver_match = re.search(r"(?P<ver>\d+)\.m[ab]$", filename, re.IGNORECASE)
+                            
+                        if ver_match:
+                            proposed_ver = int(ver_match.group("ver"))
+                        else:
+                            proposed_ver = max_ver + 1
+                            max_ver += 1
+                            
+                        proposed_filename = "%s_Shot_%s_%s_v%02d%s" % (
+                            ep_abbrev, proposed_shot, task_short, proposed_ver, ext
+                        )
                     else:
-                        proposed_shot = "01" if t_dir == "Anim" else "01-10"
-                        
-                    ver_match = re.search(r"[vV](?P<ver>\d+)", filename)
-                    if not ver_match:
-                        ver_match = re.search(r"(?P<ver>\d+)\.m[ab]$", filename, re.IGNORECASE)
-                        
-                    if ver_match:
-                        proposed_ver = int(ver_match.group("ver"))
+                        # Đúng tên nhưng sai vị trí -> giữ nguyên tên, đề xuất vị trí mới
+                        proposed_filename = filename
+                        shot_val = match.group("shot")
+                        proposed_shot = shot_val
+                    
+                    # Xác định thư mục đích
+                    if t_dir == "Layout":
+                        proposed_prefix = "%s_Shot_%s" % (ep_abbrev, proposed_shot)
+                        proposed_dir = os.path.join(work_dir, proposed_prefix)
                     else:
-                        proposed_ver = max_ver + 1
-                        max_ver += 1
-                        
-                    proposed_filename = "%s_Shot_%s_%s_v%02d%s" % (
-                        ep_abbrev, proposed_shot, task_short, proposed_ver, ext
-                    )
+                        proposed_dir = work_dir
                     
                     incorrect_files.append({
                         "task_dir": t_dir,
                         "old_filename": filename,
                         "old_filepath": filepath,
                         "new_filename": proposed_filename,
-                        "new_filepath": os.path.join(work_dir, proposed_filename)
+                        "new_filepath": os.path.normpath(os.path.join(proposed_dir, proposed_filename))
                     })
                     
         return incorrect_files
@@ -523,6 +592,11 @@ class FileManager(object):
                 new_path = "%s_%d%s" % (base, i, ext)
                 
             try:
+                # Tạo thư mục con đích nếu chưa tồn tại
+                dest_dir = os.path.dirname(new_path)
+                if not os.path.exists(dest_dir):
+                    os.makedirs(dest_dir)
+                    
                 is_current_open = (current_filepath and current_filepath == old_path)
                 if is_current_open:
                     cmds.file(save=True)

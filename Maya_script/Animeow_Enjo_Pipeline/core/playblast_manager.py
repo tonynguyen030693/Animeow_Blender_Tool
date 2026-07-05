@@ -134,14 +134,20 @@ class PlayblastManager(object):
         filename = os.path.basename(current_filepath)
         filename_no_ext, _ = os.path.splitext(filename)
         
-        parent_dir = os.path.basename(dirname) # "Layout" hoặc "Anim"
-        grandparent_dir = os.path.basename(os.path.dirname(dirname)) # "WorkingFile"
+        path_lower = current_filepath.replace("\\", "/").lower()
+        is_layout = "/workingfile/layout/" in path_lower
+        is_anim = "/workingfile/anim/" in path_lower
         
-        if parent_dir.lower() in ["layout", "anim"] and grandparent_dir.lower() == "workingfile":
-            # Đi ngược 3 cấp để lấy thư mục tập phim
-            ep_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_filepath)))
-            task_dir_name = "Layout" if parent_dir.lower() == "layout" else "Anim"
-            playblast_dir = os.path.join(ep_dir, "mov", task_dir_name)
+        if is_layout or is_anim:
+            task_dir_name = "Layout" if is_layout else "Anim"
+            parts = os.path.normpath(current_filepath).split(os.sep)
+            try:
+                wf_idx = [p.lower() for p in parts].index("workingfile")
+                # Thư mục tập phim ep_dir là phần đường dẫn trước "workingfile"
+                ep_dir = os.sep.join(parts[:wf_idx])
+                playblast_dir = os.path.join(ep_dir, "mov", task_dir_name)
+            except ValueError:
+                playblast_dir = os.path.join(dirname, "mov")
         else:
             playblast_dir = os.path.join(dirname, "mov")
             
