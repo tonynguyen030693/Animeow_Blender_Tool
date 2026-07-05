@@ -46,37 +46,31 @@ graph TD
 
 Để đảm bảo việc chuyển giao chuyển động (copy/paste anim) diễn ra siêu tốc và không bị lỗi lệch khớp vị trí do các ràng buộc ràng buộc (constrains) khác nhau giữa các file:
 
-#### 3.1. Tự động Phát hiện và Bake Constrains
-* **Vấn đề:** Các artist Anim thường constrain tay nhân vật vào đồ vật (súng, cốc, tay vịn) hoặc constrain các control lẫn nhau. Khi copy anim thô (curve keys) sang file gộp tổng thiếu các constrain này, nhân vật sẽ bị lỗi vị trí nghiêm trọng.
-* **Giải pháp tự động hóa:** Trước khi xuất anim từ file lẻ, tool sẽ tự động chạy ngầm:
-  1. Quét toàn bộ các control/object của nhân vật được chọn.
-  2. Phát hiện các node constrain liên kết (`parentConstraint`, `pointConstraint`, `orientConstraint`...).
-  3. Tự động gọi lệnh **Bake Simulation** của Maya trên đúng các control bị ảnh hưởng đó:
+#### 3.1. Tự động Phát hiện và Bake Constrains (Locator & Object Constrains)
+* **Thông tin dự án:** Các artist sử dụng **Reference Rig** để làm việc, chỉ tạo Keyframe trên các Control Curve của Rig đó. Trong quá trình làm, họ thường tạo thêm **Locator** (đồ vật định vị trung gian cục bộ trong file lẻ) để làm điểm neo constrain cho control (ví dụ tay bám theo locator).
+* **Vấn đề:** Locator và constrain này chỉ tồn tại trong file Anim lẻ, hoàn toàn không có trong file tổng. Nếu chỉ copy key thô của control, control đó sẽ mất vị trí chính xác khi sang file tổng.
+* **Giải pháp tự động hóa:** 
+  1. Tool tự động quét toàn bộ các control curve của các **Reference Rig** đang được chọn.
+  2. Phát hiện các node constrain liên kết control của Rig với các Locator ngoài (hoặc các vật thể khác).
+  3. Tự động gọi lệnh **Bake Simulation** của Maya trên chính các control curve của Reference Rig:
      ```python
      cmds.bakeResults(
-         controls_to_bake,
+         rig_controls_to_bake,
          time=(start_frame, end_frame),
          simulation=True,
          removeConstraint=True  # Rút phích cắm constrain sau khi bake
      )
      ```
-  4. Việc này chuyển hóa toàn bộ chuyển động của constrain thành các keyframe tuyệt đối trên từng frame. Control lúc này trở nên độc lập, sẵn sàng để copy sang file tổng an toàn 100%.
+  4. **Kết quả:** Toàn bộ chuyển động do Locator constrain tạo ra sẽ được chuyển đổi thành các keyframe tuyệt đối trên các control curve của Rig. Các Locator rác và constrain lúc này có thể được bỏ qua một cách an toàn. File cụm tổng chỉ việc nạp anim của các control curve này là khớp chuyển động chuẩn 100% mà không cần dựng lại bất kỳ constrain hay locator nào!
 
 #### 3.2. Dọn dẹp keyframe lố ngoài timeline (Clean Keys)
-* **Vấn đề:** Animator thường làm lố anim trước/sau timeline (ví dụ shot là 101-200 nhưng họ key từ 95-205).
-* **Giải pháp xử lý:**
-  * **Cắt key cứng (Hard Cut):** Khi xuất anim, tool chỉ lấy key trong khoảng Bookmark `[start_frame, end_frame]`.
-  * **Xuất lấn biên an toàn (Safety Padding):** Để đảm bảo quán tính chuyển động tại điểm giao thoa giữa các shot mượt mà nhất (không bị giật khựng), tool sẽ tự động xuất lấn biên thêm **+/- 5 hoặc 10 frames** (ví dụ xuất từ 95 đến 205).
-  * Khi import vào file cụm tổng, tool sẽ chèn keyframe và tự động dọn dẹp (xóa) toàn bộ các key ngoài khoảng cụm đó bằng lệnh `cmds.cutKey` để file tổng luôn sạch sẽ.
+* **Quy trình xử lý:**
+  * **Xuất lấn biên an toàn (Safety Padding):** Để đảm bảo quán tính chuyển động mượt mà tại điểm giao thoa giữa các shot, tool sẽ tự động xuất lấn biên thêm **+/- 5 hoặc 10 frames** (ví dụ xuất từ 95 đến 205).
+  * **Clean Keys (Dọn dẹp):** Sau khi import vào file cụm tổng, tool sẽ tự động chạy lệnh `cmds.cutKey` để cắt bỏ hoàn toàn các key ngoài khoảng biên của cụm đó, đảm bảo file cụm tổng luôn sạch sẽ.
 
 #### 3.3. Tận dụng API Studio Library cho việc Copy/Paste siêu tốc
 * **Studio Library** chạy rất nhanh vì nó xuất dữ liệu anim trực tiếp thành các file text dictionary có cấu trúc cực nhẹ (lưu tangent, weight, values của key) thay vì ghi file Maya nặng.
-* Do Studio Library đã được tích hợp sẵn trong source của bạn tại `AnimeowTool/SourceTool/studiolibrary`, tool Pipeline có thể **gọi trực tiếp API Python của Studio Library chạy ngầm (API Mode)** để thực hiện việc export/import anim nhanh chóng mà không cần artist phải mở giao diện Studio Library lên bấm tay:
-  ```python
-  # Gọi ngầm Studio Library để xuất anim siêu tốc ra file tạm
-  from studiolibrary.packages import studioanim
-  studioanim.anim.write(filepath, objects=selected_controls, time=(start, end))
-  ```
+* Do Studio Library đã được tích hợp sẵn trong source của bạn tại `AnimeowTool/SourceTool/studiolibrary`, tool Pipeline có thể **gọi trực tiếp API Python của Studio Library chạy ngầm (API Mode)** để thực hiện việc export/import anim nhanh chóng mà không cần artist phải mở giao diện Studio Library lên bấm tay.
 
 ---
 
@@ -86,4 +80,4 @@ Chúng ta có thể thêm một Tab mới bên cạnh Tab **Quản Lý File** hi
 
 | Giao Diện Thiết Kế Đề Xuất |
 | :--- |
-| **TAB: TÁCH / GỘP CẢNH**<br><br>  **[ Khu vực 1: Tách Shot Layout Tổng ]**<br>  * Đọc bookmarks từ scene hiện tại: **[Quét Bookmarks]**<br>  * Danh sách bookmark tìm thấy: *Shot_01-25 (1-100), Shot_26-50 (101-250)...*<br>  * Chọn các control nhân vật cần giữ key: `[ Chọn Control Nhân Vật ]`<br>  * **[ 🚀 Bắt đầu Tách và đồng bộ Pipeline (1 Click) ]**<br><br>  **[ Khu vực 2: Gộp Animation Cảnh Tổng ]**<br>  * Phương thức gộp: `(o) Studio Library API`  hoặc  `( ) Import ATOM`<br>  * Cấu hình an toàn: `[x]` Tự động Bake Constrains  `[x]` Thêm +/- `5` frame đệm (Padding)<br>  * Chọn kiểu chia Block:<br>    - `[x]` Tự gõ Block: `1-10, 11-20, 21-30, 31-45, 46-60`<br>    - `[ ] Chia đều`: `10` shot một file<br>  * **[ 📦 Tiến hành Gộp Cảnh & Xuất File Cụm Bàn Giao ]** |
+| **TAB: TÁCH / GỘP CẢNH**<br><br>  **[ Khu vực 1: Tách Shot Layout Tổng ]**<br>  * Đọc bookmarks từ scene hiện tại: **[Quét Bookmarks]**<br>  * Danh sách bookmark tìm thấy: *Shot_01-25 (1-100), Shot_26-50 (101-250)...*<br>  * Chọn các control nhân vật cần giữ key: `[ Chọn Control Nhân Vật ]`<br>  * **[ 🚀 Bắt đầu Tách và đồng bộ Pipeline (1 Click) ]**<br><br>  **[ Khu vực 2: Gộp Animation Cảnh Tổng ]**<br>  * Phương thức gộp: `(o) Studio Library API`  hoặc  `( ) Import ATOM`<br>  * Cấu hình an toàn: `[x]` Tự động Bake Constrains (Locator/Rig)  `[x]` Thêm +/- `5` frame đệm (Padding)<br>  * Chọn kiểu chia Block:<br>    - `[x]` Tự gõ Block: `1-10, 11-20, 21-30, 31-45, 46-60`<br>    - `[ ] Chia đều`: `10` shot một file<br>  * **[ 📦 Tiến hành Gộp Cảnh & Xuất File Cụm Bàn Giao ]** |
