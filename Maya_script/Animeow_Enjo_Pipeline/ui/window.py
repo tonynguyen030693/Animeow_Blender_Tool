@@ -9,6 +9,13 @@ from PySide2 import QtWidgets, QtCore, QtGui
 
 from ..core import file_manager, playblast_manager
 
+# --- Tự động thêm đường dẫn thirdparty/studiolibrary/src vào sys.path ---
+_THIRDPARTY_SRC = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "thirdparty", "studiolibrary", "src")
+)
+if _THIRDPARTY_SRC not in sys.path:
+    sys.path.insert(0, _THIRDPARTY_SRC)
+
 def to_sys_path(path):
     if not path:
         return path
@@ -290,6 +297,46 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.load_settings()
 
     def build_ui(self):
+        # ========================================================
+        # Tab chính: Quản lý File & Playblast (Tab 1) + Split/Merge (Tab 2)
+        # ========================================================
+        self.tab_widget = QtWidgets.QTabWidget()
+        self.tab_widget.setStyleSheet("""
+            QTabBar::tab {
+                background: #3C3C3C; color: #BBBBBB;
+                padding: 8px 18px; border: 1px solid #555;
+                border-bottom: none; border-top-left-radius: 6px;
+                border-top-right-radius: 6px; font-weight: bold;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background: #2D2D2D; color: #FF9800;
+                border-bottom: 2px solid #FF9800;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #4C4C4C; color: #FFB74D;
+            }
+        """)
+        self.main_layout.addWidget(self.tab_widget)
+
+        # --- TAB 1: Quản Lý File & Playblast ---
+        tab1_widget = QtWidgets.QWidget()
+        tab1_layout = QtWidgets.QVBoxLayout(tab1_widget)
+        tab1_layout.setContentsMargins(5, 5, 5, 5)
+        tab1_layout.setSpacing(10)
+        self.tab_widget.addTab(tab1_widget, u"📂 Quản Lý File & Playblast")
+        self._build_tab1_contents(tab1_layout)
+
+        # --- TAB 2: Tách / Gộp Cảnh ---
+        tab2_widget = QtWidgets.QWidget()
+        tab2_layout = QtWidgets.QVBoxLayout(tab2_widget)
+        tab2_layout.setContentsMargins(5, 5, 5, 5)
+        tab2_layout.setSpacing(10)
+        self.tab_widget.addTab(tab2_widget, u"✂️ Tách / Gộp Cảnh")
+        self._build_tab2_split_merge(tab2_layout)
+
+    def _build_tab1_contents(self, parent_layout):
+        """Xây dựng nội dung Tab 1 - Quản Lý File & Playblast (giữ nguyên giao diện cũ)"""
         # 1. Khối Dự Án & File nháp
         shot_group = QtWidgets.QGroupBox()
         shot_layout = QtWidgets.QGridLayout(shot_group)
@@ -455,7 +502,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.check_naming_btn.clicked.connect(self.on_check_filenames)
         shot_layout.addWidget(self.check_naming_btn, 9, 0, 1, 3)
         
-        self.main_layout.addWidget(shot_group)
+        parent_layout.addWidget(shot_group)
         
         # 2. Khối Playblast
         playblast_group = QtWidgets.QGroupBox("Auto Playblast Nháp")
@@ -538,9 +585,9 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_single_cam_widget.setVisible(False)
         self.pb_multi_cam_list.setVisible(False)
         
-        self.main_layout.addWidget(playblast_group)
+        parent_layout.addWidget(playblast_group)
         
-        self.main_layout.addStretch()
+        parent_layout.addStretch()
 
     # --- SỰ KIỆN & LOGIC ---
     
@@ -1787,6 +1834,884 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.open_folder_explorer(published_dir)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy video lên server:\n%s" % str(e))
+
+    # ================================================================
+    # TAB 2: Tách / Gộp Cảnh (Split & Merge)
+    # ================================================================
+
+    def _build_tab2_split_merge(self, parent_layout):
+        """Xây dựng nội dung Tab 2 - Tách / Gộp Cảnh (Đã căn chỉnh UI thẳng hàng dọc chuyên nghiệp)"""
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        scroll_widget = QtWidgets.QWidget()
+        scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
+        scroll_layout.setContentsMargins(5, 5, 5, 5)
+        scroll_layout.setSpacing(10)
+        scroll.setWidget(scroll_widget)
+        parent_layout.addWidget(scroll)
+
+        LABEL_WIDTH = 160
+
+        # ---- KHU VỰC 1: Tách Shot Layout Tổng ----
+        split_group = QtWidgets.QGroupBox(u"Tách Shot Layout Tổng (Split)")
+        split_group_layout = QtWidgets.QVBoxLayout(split_group)
+        split_group_layout.setContentsMargins(12, 16, 12, 12)
+        split_group_layout.setSpacing(10)
+
+        # Hàng 1: Nút Quét Bookmarks từ Scene hiện tại
+        self.sm_scan_btn = QtWidgets.QPushButton(u"🔍 Quét Bookmarks từ Scene hiện tại")
+        self.sm_scan_btn.setToolTip(u"Quét toàn bộ các timeSliderBookmark đánh số từ scene Maya đang mở")
+        self.sm_scan_btn.clicked.connect(self.on_scan_bookmarks)
+        split_group_layout.addWidget(self.sm_scan_btn)
+
+        # Hàng 2: Danh sách bookmark
+        list_label_row = QtWidgets.QHBoxLayout()
+        lbl_list = QtWidgets.QLabel(u"Bookmarks tìm thấy:")
+        lbl_list.setFixedWidth(LABEL_WIDTH)
+        list_label_row.addWidget(lbl_list)
+        
+        self.sm_bookmark_count_lbl = QtWidgets.QLabel(u"")
+        self.sm_bookmark_count_lbl.setStyleSheet("color: #FF9800; font-weight: bold;")
+        list_label_row.addWidget(self.sm_bookmark_count_lbl)
+        list_label_row.addStretch()
+        split_group_layout.addLayout(list_label_row)
+
+        list_row = QtWidgets.QHBoxLayout()
+        lbl_list_spacer = QtWidgets.QWidget()
+        lbl_list_spacer.setFixedWidth(LABEL_WIDTH)
+        list_row.addWidget(lbl_list_spacer)
+        
+        self.sm_bookmark_list = QtWidgets.QListWidget()
+        self.sm_bookmark_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.sm_bookmark_list.setFixedHeight(150)
+        list_row.addWidget(self.sm_bookmark_list)
+        split_group_layout.addLayout(list_row)
+
+        # Hàng 3: Lọc khoảng shot
+        filter_row = QtWidgets.QHBoxLayout()
+        lbl_filter = QtWidgets.QLabel(u"Lọc khoảng shot (tuỳ chọn):")
+        lbl_filter.setFixedWidth(LABEL_WIDTH)
+        filter_row.addWidget(lbl_filter)
+
+        self.sm_split_start = QtWidgets.QSpinBox()
+        self.sm_split_start.setRange(0, 999)
+        self.sm_split_start.setValue(0)
+        self.sm_split_start.setToolTip(u"Bắt đầu từ shot số (0 = không lọc)")
+        self.sm_split_start.setFixedWidth(80)
+
+        self.sm_split_end = QtWidgets.QSpinBox()
+        self.sm_split_end.setRange(0, 999)
+        self.sm_split_end.setValue(0)
+        self.sm_split_end.setToolTip(u"Đến shot số (0 = không lọc)")
+        self.sm_split_end.setFixedWidth(80)
+
+        filter_row.addWidget(QtWidgets.QLabel(u"Từ:"))
+        filter_row.addWidget(self.sm_split_start)
+        filter_row.addWidget(QtWidgets.QLabel(u" Đến:"))
+        filter_row.addWidget(self.sm_split_end)
+        filter_row.addStretch()
+        split_group_layout.addLayout(filter_row)
+
+        # Hàng 4: Frame Padding
+        padding_row = QtWidgets.QHBoxLayout()
+        lbl_padding = QtWidgets.QLabel(u"Frame đệm (Padding):")
+        lbl_padding.setFixedWidth(LABEL_WIDTH)
+        padding_row.addWidget(lbl_padding)
+
+        self.sm_padding_spin = QtWidgets.QSpinBox()
+        self.sm_padding_spin.setRange(0, 50)
+        self.sm_padding_spin.setValue(5)
+        self.sm_padding_spin.setFixedWidth(80)
+        self.sm_padding_spin.setToolTip(u"Số frame mở rộng trước/sau bookmark khi cắt key")
+        padding_row.addWidget(self.sm_padding_spin)
+        padding_row.addStretch()
+        split_group_layout.addLayout(padding_row)
+
+
+
+
+
+        # Hàng 7: Nút Bắt đầu Tách
+        btn_row = QtWidgets.QHBoxLayout()
+        lbl_btn_spacer = QtWidgets.QWidget()
+        lbl_btn_spacer.setFixedWidth(LABEL_WIDTH)
+        btn_row.addWidget(lbl_btn_spacer)
+
+        self.sm_split_btn = QtWidgets.QPushButton(u"🚀 Bắt đầu Tách Shot vào Pipeline")
+        self.sm_split_btn.setObjectName("accent_btn")
+        self.sm_split_btn.clicked.connect(self.on_split_layout)
+        btn_row.addWidget(self.sm_split_btn)
+        split_group_layout.addLayout(btn_row)
+
+        scroll_layout.addWidget(split_group)
+
+        # ---- KHU VỰC 2: Gộp Animation Cảnh Tổng ----
+        combine_group = QtWidgets.QGroupBox(u"Gộp Animation Cảnh Tổng (Combine)")
+        combine_group_layout = QtWidgets.QVBoxLayout(combine_group)
+        combine_group_layout.setContentsMargins(12, 16, 12, 12)
+        combine_group_layout.setSpacing(10)
+
+        # Hàng 0: Khoảng shot cần gộp
+        c_range_row = QtWidgets.QHBoxLayout()
+        lbl_crange = QtWidgets.QLabel(u"Khoảng shot cần gộp:")
+        lbl_crange.setFixedWidth(LABEL_WIDTH)
+        c_range_row.addWidget(lbl_crange)
+
+        self.sm_combine_start = QtWidgets.QSpinBox()
+        self.sm_combine_start.setRange(1, 999)
+        self.sm_combine_start.setValue(1)
+        self.sm_combine_start.setFixedWidth(80)
+
+        self.sm_combine_end = QtWidgets.QSpinBox()
+        self.sm_combine_end.setRange(1, 999)
+        self.sm_combine_end.setValue(30)
+        self.sm_combine_end.setFixedWidth(80)
+
+        c_range_row.addWidget(QtWidgets.QLabel(u"Từ:"))
+        c_range_row.addWidget(self.sm_combine_start)
+        c_range_row.addWidget(QtWidgets.QLabel(u" Đến:"))
+        c_range_row.addWidget(self.sm_combine_end)
+        c_range_row.addStretch()
+        combine_group_layout.addLayout(c_range_row)
+
+        # Hàng 1: Checkbox Bake Constraints
+        c_bake_row = QtWidgets.QHBoxLayout()
+        lbl_cbake_spacer = QtWidgets.QWidget()
+        lbl_cbake_spacer.setFixedWidth(LABEL_WIDTH)
+        c_bake_row.addWidget(lbl_cbake_spacer)
+
+        self.sm_bake_constraints_cb = QtWidgets.QCheckBox(u"Tự động Bake Constraints (Locator/Rig)")
+        self.sm_bake_constraints_cb.setChecked(True)
+        c_bake_row.addWidget(self.sm_bake_constraints_cb)
+        c_bake_row.addStretch()
+        combine_group_layout.addLayout(c_bake_row)
+
+        # Hàng 2: Checkbox Smart Bake
+        c_sbake_row = QtWidgets.QHBoxLayout()
+        lbl_csbake_spacer = QtWidgets.QWidget()
+        lbl_csbake_spacer.setFixedWidth(LABEL_WIDTH)
+        c_sbake_row.addWidget(lbl_csbake_spacer)
+
+        self.sm_smart_bake_cb = QtWidgets.QCheckBox(u"Smart Bake (Bake thưa giữ key cực trị)")
+        self.sm_smart_bake_cb.setChecked(True)
+        c_sbake_row.addWidget(self.sm_smart_bake_cb)
+        c_sbake_row.addStretch()
+        combine_group_layout.addLayout(c_sbake_row)
+
+        # Hàng 3: Key Reducer Threshold
+        threshold_row = QtWidgets.QHBoxLayout()
+        lbl_threshold = QtWidgets.QLabel(u"Key Reducer Threshold:")
+        lbl_threshold.setFixedWidth(LABEL_WIDTH)
+        threshold_row.addWidget(lbl_threshold)
+
+        self.sm_threshold_spin = QtWidgets.QDoubleSpinBox()
+        self.sm_threshold_spin.setRange(0.01, 5.0)
+        self.sm_threshold_spin.setValue(0.1)
+        self.sm_threshold_spin.setSingleStep(0.05)
+        self.sm_threshold_spin.setFixedWidth(80)
+        self.sm_threshold_spin.setToolTip(u"Ngưỡng cho bộ lọc keyReducer (nhỏ hơn = giữ nhiều key hơn)")
+        threshold_row.addWidget(self.sm_threshold_spin)
+        threshold_row.addStretch()
+        combine_group_layout.addLayout(threshold_row)
+
+        # Hàng 4: Frame Padding cho gộp
+        c_padding_row = QtWidgets.QHBoxLayout()
+        lbl_cpadding = QtWidgets.QLabel(u"Frame đệm khi xuất/nhập:")
+        lbl_cpadding.setFixedWidth(LABEL_WIDTH)
+        c_padding_row.addWidget(lbl_cpadding)
+
+        self.sm_combine_padding_spin = QtWidgets.QSpinBox()
+        self.sm_combine_padding_spin.setRange(0, 50)
+        self.sm_combine_padding_spin.setValue(5)
+        self.sm_combine_padding_spin.setFixedWidth(80)
+        c_padding_row.addWidget(self.sm_combine_padding_spin)
+        c_padding_row.addStretch()
+        combine_group_layout.addLayout(c_padding_row)
+
+        # Hàng 5: Nút Gộp Cảnh
+        c_btn_row = QtWidgets.QHBoxLayout()
+        lbl_cbtn_spacer = QtWidgets.QWidget()
+        lbl_cbtn_spacer.setFixedWidth(LABEL_WIDTH)
+        c_btn_row.addWidget(lbl_cbtn_spacer)
+
+        self.sm_combine_btn = QtWidgets.QPushButton(u"📦 Tiến hành Gộp Cảnh & Xuất File Cụm")
+        self.sm_combine_btn.setObjectName("accent_btn")
+        self.sm_combine_btn.clicked.connect(self.on_combine_shots)
+        c_btn_row.addWidget(self.sm_combine_btn)
+        combine_group_layout.addLayout(c_btn_row)
+
+        scroll_layout.addWidget(combine_group)
+
+        # ---- KHU VỰC 3: Tiện ích ----
+        util_group = QtWidgets.QGroupBox(u"Tiện ích")
+        util_layout = QtWidgets.QHBoxLayout(util_group)
+        util_layout.setContentsMargins(8, 12, 8, 8)
+        util_layout.setSpacing(8)
+
+        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Mở Studio Library UI")
+        self.sm_open_stlib_btn.clicked.connect(self.on_open_studio_library)
+        util_layout.addWidget(self.sm_open_stlib_btn)
+
+        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuất Bookmarks ra CSV")
+        self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
+        util_layout.addWidget(self.sm_export_csv_btn)
+
+        scroll_layout.addWidget(util_group)
+        scroll_layout.addStretch()
+
+    # ================================================================
+    # SỰ KIỆN & LOGIC - Tab 2: Tách / Gộp Cảnh
+    # ================================================================
+
+
+
+    def on_scan_bookmarks(self):
+        """Quét toàn bộ timeSliderBookmark dạng số từ scene hiện tại"""
+        self.sm_bookmark_list.clear()
+
+        # Đảm bảo plugin timeSliderBookmark được nạp
+        if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
+            try:
+                cmds.loadPlugin('timeSliderBookmark')
+            except Exception:
+                QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Không thể nạp plugin timeSliderBookmark.")
+                return
+
+        bookmarks = cmds.ls(type='timeSliderBookmark') or []
+        if not bookmarks:
+            QtWidgets.QMessageBox.information(self, u"Thông báo", u"Không tìm thấy Bookmark nào trong scene.")
+            return
+
+        valid_items = []
+        for bm in bookmarks:
+            try:
+                b_name = cmds.getAttr(bm + ".name")
+            except Exception:
+                b_name = bm
+
+            # Chỉ lấy các bookmark được đặt tên dạng số
+            try:
+                bm_num = int(b_name)
+            except ValueError:
+                continue
+
+            start_f = cmds.getAttr(bm + ".timeRangeStart")
+            end_f = cmds.getAttr(bm + ".timeRangeStop")
+            valid_items.append((bm_num, b_name, start_f, end_f, bm))
+
+        # Sắp xếp theo số thứ tự
+        valid_items.sort(key=lambda x: x[0])
+
+        for bm_num, b_name, start_f, end_f, bm_node in valid_items:
+            display_text = u"Shot %02d  |  Frame: %.0f - %.0f" % (bm_num, start_f, end_f)
+            item = QtWidgets.QListWidgetItem(display_text)
+            item.setData(QtCore.Qt.UserRole, {
+                "num": bm_num, "name": b_name,
+                "start": start_f, "end": end_f, "node": bm_node
+            })
+            self.sm_bookmark_list.addItem(item)
+            item.setSelected(True)  # Tự động tích chọn hết
+
+        self.sm_bookmark_count_lbl.setText(u"(Tìm thấy %d)" % len(valid_items))
+        QtWidgets.QMessageBox.information(
+            self, u"Kết quả",
+            u"Tìm thấy %d bookmark hợp lệ (dạng số)." % len(valid_items)
+        )
+
+    def get_smart_selection(self):
+        """
+        Lấy danh sách các đối tượng cần giữ key:
+        1. Ưu tiên lấy trực tiếp vùng chọn hiện tại của người dùng.
+        2. Nếu không có vùng chọn, tự động quét toàn bộ anim curves hoạt động trong scene,
+           tìm các node đích đang kết nối và loại trừ camera rig, camera transform.
+        """
+        selection = cmds.ls(sl=True) or []
+        if selection:
+            return selection
+
+        print(u"[Pipeline] Không có vùng chọn thủ công. Đang tự động quét toàn bộ control có keyframe trong scene...")
+
+        # Tìm tất cả anim curves đang tồn tại
+        anim_curves = cmds.ls(type=['animCurveTL', 'animCurveTA', 'animCurveTU', 'animCurveTT']) or []
+        if not anim_curves:
+            return []
+
+        keyed_nodes = []
+        for curve in anim_curves:
+            connections = cmds.listConnections(curve + ".output", plugs=True) or []
+            for conn in connections:
+                node_name = conn.split('.')[0]
+                keyed_nodes.append(node_name)
+
+        keyed_nodes = list(set(keyed_nodes))
+
+        # Định danh các node camera cần bảo hộ
+        cameras = cmds.ls(type='camera') or []
+        camera_transforms = []
+        for cam in cameras:
+            parents = cmds.listRelatives(cam, parent=True) or []
+            if parents:
+                camera_transforms.append(parents[0])
+
+        # Lọc bỏ camera
+        final_selection = []
+        for node in keyed_nodes:
+            if node in camera_transforms:
+                continue
+            node_lower = node.lower()
+            if any(cam_word in node_lower for cam_word in ['cam', 'camera', 'shot_cam']):
+                continue
+            final_selection.append(node)
+
+        print(u"[Pipeline] Tự động quét thành công %d control có keyframe (đã bảo vệ các node camera)." % len(final_selection))
+        return final_selection
+
+    def on_split_layout(self):
+        """Tách file Layout tổng thành các file shot lẻ dựa trên bookmarks đã quét"""
+        import os as _os
+        import json as _json
+        import tempfile as _tempfile
+
+        # 1. Kiểm tra đầu vào
+        selected_items = self.sm_bookmark_list.selectedItems()
+        if not selected_items:
+            QtWidgets.QMessageBox.warning(self, u"Thiếu dữ liệu", u"Chưa có bookmark nào được chọn.\nHãy nhấn 'Quét Bookmarks' trước.")
+            return
+
+        # Xác định file nguồn
+        scene_name = cmds.file(q=True, sn=True)
+        if not scene_name:
+            QtWidgets.QMessageBox.warning(self, u"Chưa lưu file", u"Hãy SAVE file Maya hiện tại trước khi tách shot!")
+            return
+        scene_name = scene_name.replace('\\', '/')
+
+        saved_selection = self.get_smart_selection()
+        if not saved_selection:
+            QtWidgets.QMessageBox.warning(
+                self, u"Thiếu Selection",
+                u"Không tìm thấy Control/Object nào có keyframe trong scene và không có vùng chọn thủ công để thực hiện cắt key!"
+            )
+            return
+
+        # 2. Lấy thông tin project/episode hiện tại từ Tab 1
+        project = self.proj_combo.currentText()
+        episode = self.ep_combo.currentText()
+        if not project or not episode:
+            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Hãy chọn Project và Episode ở Tab 'Quản Lý File' trước.")
+            return
+
+        # 3. Lọc theo khoảng filter (nếu có)
+        start_filter = self.sm_split_start.value()
+        end_filter = self.sm_split_end.value()
+        padding = self.sm_padding_spin.value()
+
+        bookmarks_data = []
+        for item in selected_items:
+            data = item.data(QtCore.Qt.UserRole)
+            bm_num = data["num"]
+            if start_filter != 0 and bm_num < start_filter:
+                continue
+            if end_filter != 0 and bm_num > end_filter:
+                continue
+            bookmarks_data.append(data)
+
+        if not bookmarks_data:
+            QtWidgets.QMessageBox.warning(self, u"Không khớp", u"Không có bookmark nào khớp với khoảng lọc đã nhập.")
+            return
+
+        # 4. Xác nhận
+        msg = u"Sẽ tách %d shot từ file Layout đang mở vào Pipeline.\n" % len(bookmarks_data)
+        msg += u"Project: %s\nEpisode: %s\n" % (project, episode)
+        msg += u"Frame Padding: ±%d frames\n" % padding
+        msg += u"Chế độ: Trực tiếp (Có progress bar chống treo đơ Maya)\n"
+        msg += u"\nBạn có chắc chắn?"
+
+        reply = QtWidgets.QMessageBox.question(self, u"Xác nhận Tách Shot", msg,
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        # 5. Lưu file hiện tại trước khi thao tác (chỉ lưu nếu scene hiện tại đã được đặt tên/được lưu trước đó)
+        current_scene = cmds.file(q=True, sn=True)
+        if current_scene:
+            try:
+                cmds.file(save=True, force=True)
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể lưu file hiện tại:\n%s" % str(e))
+                return
+
+
+
+        # ============================================================
+        # CHẾ ĐỘ CHẠY TRỰC TIẾP (FOREGROUND)
+        # ============================================================
+        # 6. Chuyển sang DG mode để tránh lỗi parallel evaluation
+        original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
+        if original_eval_mode != 'off':
+            cmds.evaluationManager(mode='off')
+
+        base_name = _os.path.basename(scene_name)
+        _, ext = _os.path.splitext(base_name)
+        file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
+
+        # Khởi tạo progress dialog cho chế độ trực tiếp để tránh đơ giao diện
+        progress = QtWidgets.QProgressDialog(
+            u"Đang tách shot trực tiếp trong Maya...",
+            u"Hủy bỏ", 0, len(bookmarks_data), self
+        )
+        progress.setWindowTitle(u"Đang Tách Shot (Foreground)")
+        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.show()
+
+        success_count = 0
+        try:
+            for i, data in enumerate(bookmarks_data):
+                if progress.wasCanceled():
+                    print(u"[Split] Người dùng đã hủy bỏ tiến trình.")
+                    break
+
+                # Cập nhật progress bar và vẽ lại GUI để tránh freeze
+                progress.setValue(i)
+                progress.setLabelText(u"Đang xử lý Shot %02d (%d/%d)..." % (data["num"], i + 1, len(bookmarks_data)))
+                QtWidgets.QApplication.processEvents()
+
+                bm_num = data["num"]
+                start_f = data["start"]
+                end_f = data["end"]
+
+                # Xây đường dẫn lưu file shot lẻ
+                filepath, shot_dir = self.file_manager.build_split_shot_path(
+                    project, episode, bm_num, task="Anim"
+                )
+                if not filepath:
+                    print(u"[Split] Không thể xây đường dẫn cho shot %d" % bm_num)
+                    continue
+
+                # Kiểm tra trùng file để chống ghi đè dữ liệu hoạt hình của artist
+                if _os.path.exists(filepath):
+                    confirm = cmds.confirmDialog(
+                        title=u"File đã tồn tại",
+                        message=u"File hoạt hình lẻ đã tồn tại:\n%s\n\nBạn có muốn ghi đè (làm mất keyframe anim cũ của shot này) không?" % _os.path.basename(filepath),
+                        button=[u"Ghi đè (Overwrite)", u"Bỏ qua (Skip)", u"Hủy toàn bộ (Cancel)"],
+                        defaultButton=u"Bỏ qua (Skip)",
+                        cancelButton=u"Bỏ qua (Skip)"
+                    )
+                    if confirm == u"Bỏ qua (Skip)":
+                        print(u"[Split] Đã bỏ qua shot %d để bảo vệ file Anim cũ." % bm_num)
+                        continue
+                    elif confirm == u"Hủy toàn bộ (Cancel)":
+                        print(u"[Split] Đã hủy tiến trình tách theo yêu cầu.")
+                        break
+
+                # Tạo thư mục nếu chưa có
+                if not _os.path.exists(shot_dir):
+                    _os.makedirs(shot_dir)
+
+                # Thao tác trong undo chunk
+                cmds.undoInfo(openChunk=True)
+                try:
+                    # Xóa bookmark khác
+                    all_bms = cmds.ls(type='timeSliderBookmark') or []
+                    for b in all_bms:
+                        try:
+                            check_name = cmds.getAttr(b + ".name")
+                        except Exception:
+                            check_name = b
+                        if check_name != data["name"]:
+                            try:
+                                cmds.delete(b)
+                            except Exception:
+                                pass
+
+                    # Truy quét toàn bộ anim curves trong scene để dọn sạch keyframe thừa 100% (bao gồm cả camera shape, custom attributes, v.v.)
+                    try:
+                        anim_curves = cmds.ls(type='animCurve') or []
+                    except Exception:
+                        anim_curves = []
+
+                    # Cắt key trên từng curve
+                    for curve in anim_curves:
+                        try:
+                            cmds.cutKey(curve, time=(-9999999, start_f - padding - 0.01), option="keys", clear=True)
+                        except Exception:
+                            pass
+                        try:
+                            cmds.cutKey(curve, time=(end_f + padding + 0.01, 9999999), option="keys", clear=True)
+                        except Exception:
+                            pass
+
+                    # Thiết lập timeline
+                    cmds.playbackOptions(
+                        min=start_f, max=end_f,
+                        animationStartTime=start_f, animationEndTime=end_f
+                    )
+                except Exception as e:
+                    print(u"[Split] Lỗi xử lý shot %d: %s" % (bm_num, str(e)))
+                finally:
+                    cmds.undoInfo(closeChunk=True)
+
+                # Lưu file shot lẻ
+                cmds.file(rename=filepath.replace('\\', '/'))
+                try:
+                    cmds.file(save=True, force=True, type=file_type)
+                    print(u"==> Đã xuất shot lẻ thành công: %s" % _os.path.basename(filepath))
+                    success_count += 1
+                except Exception as e:
+                    print(u"[Split] Lỗi lưu file shot %d: %s" % (bm_num, str(e)))
+
+                # Undo để trả scene về trạng thái ban đầu
+                cmds.undo()
+
+            progress.setValue(len(bookmarks_data))
+
+        finally:
+            # Phục hồi trạng thái ban đầu
+            cmds.file(rename=scene_name)
+            if original_eval_mode != 'off':
+                cmds.evaluationManager(mode=original_eval_mode)
+            if saved_selection:
+                try:
+                    cmds.select(saved_selection)
+                except Exception:
+                    pass
+
+        QtWidgets.QMessageBox.information(
+            self, u"Hoàn tất",
+            u"Đã tách thành công %d/%d shot!" % (success_count, len(bookmarks_data))
+        )
+        # Làm mới danh sách file ở Tab 1
+        self.refresh_files_list()
+
+
+
+    def on_combine_shots(self):
+        """Gộp Animation shot lẻ từ file Layout tổng bằng cách cắt key theo bookmark"""
+        import os as _os
+
+        # 1. Kiểm tra đầu vào
+        saved_selection = self.get_smart_selection()
+        if not saved_selection:
+            QtWidgets.QMessageBox.warning(
+                self, u"Thiếu Selection",
+                u"Không tìm thấy Control/Object nào có keyframe trong scene và không có vùng chọn thủ công để thực hiện gộp!"
+            )
+            return
+
+        scene_name = cmds.file(q=True, sn=True)
+        if not scene_name:
+            QtWidgets.QMessageBox.warning(self, u"Chưa lưu file", u"Hãy SAVE file Maya hiện tại trước khi gộp shot!")
+            return
+        scene_name = scene_name.replace('\\', '/')
+
+        project = self.proj_combo.currentText()
+        episode = self.ep_combo.currentText()
+        if not project or not episode:
+            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Hãy chọn Project và Episode ở Tab 'Quản Lý File' trước.")
+            return
+
+        start_shot = self.sm_combine_start.value()
+        end_shot = self.sm_combine_end.value()
+        if start_shot > end_shot:
+            QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Khoảng shot không hợp lệ (Start > End).")
+            return
+
+        padding = self.sm_combine_padding_spin.value()
+        do_bake = self.sm_bake_constraints_cb.isChecked()
+        do_smart_bake = self.sm_smart_bake_cb.isChecked()
+        threshold = self.sm_threshold_spin.value()
+
+        # 2. Quét bookmarks trong scene để lấy khoảng thời gian
+        if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
+            try:
+                cmds.loadPlugin('timeSliderBookmark')
+            except Exception:
+                pass
+
+        bookmarks = cmds.ls(type='timeSliderBookmark') or []
+        valid_bookmarks = []
+        global_start = 9999999
+        global_end = -9999999
+
+        for bm in bookmarks:
+            try:
+                b_name = cmds.getAttr(bm + ".name")
+            except Exception:
+                b_name = bm
+            try:
+                bm_num = int(b_name)
+            except ValueError:
+                continue
+            if bm_num < start_shot or bm_num > end_shot:
+                continue
+
+            start_f = cmds.getAttr(bm + ".timeRangeStart")
+            end_f = cmds.getAttr(bm + ".timeRangeStop")
+            if start_f < global_start:
+                global_start = start_f
+            if end_f > global_end:
+                global_end = end_f
+            valid_bookmarks.append(bm)
+
+        if not valid_bookmarks:
+            QtWidgets.QMessageBox.warning(
+                self, u"Không khớp",
+                u"Không tìm thấy bookmark nào trong khoảng %d - %d." % (start_shot, end_shot)
+            )
+            return
+
+        # 3. Xây đường dẫn file gộp
+        combine_path = self.file_manager.build_combine_file_path(project, episode, start_shot, end_shot)
+        if not combine_path:
+            QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Không thể xây đường dẫn file gộp.")
+            return
+
+        combine_dir = _os.path.dirname(combine_path)
+
+        # 4. Xác nhận
+        msg = u"Sẽ gộp shot từ %d đến %d thành file cụm tổng:\n%s\n\n" % (
+            start_shot, end_shot, _os.path.basename(combine_path))
+        if do_bake:
+            msg += u"✅ Tự động Bake Constraints\n"
+        if do_smart_bake:
+            msg += u"✅ Smart Bake (threshold=%.2f)\n" % threshold
+        msg += u"\nBạn có chắc chắn?"
+        reply = QtWidgets.QMessageBox.question(self, u"Xác nhận Gộp Shot", msg,
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        # 5. Lưu file hiện tại
+        try:
+            cmds.file(save=True, force=True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể lưu file:\n%s" % str(e))
+            return
+
+        # 6. Chuyển sang DG mode
+        original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
+        if original_eval_mode != 'off':
+            cmds.evaluationManager(mode='off')
+
+        undo_was_enabled = cmds.undoInfo(q=True, state=True)
+        if not undo_was_enabled:
+            cmds.undoInfo(state=True)
+
+        base_name = _os.path.basename(scene_name)
+        _, ext = _os.path.splitext(base_name)
+        file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
+
+        try:
+            # 7. Bake Constraints nếu được chọn
+            if do_bake:
+                print(u"[Combine] Đang Bake Constraints...")
+                self.bake_and_clean_constraints(saved_selection)
+
+            # 8. Smart Bake nếu được chọn
+            if do_smart_bake:
+                print(u"[Combine] Đang áp dụng Smart Bake...")
+                self.apply_smart_bake_filter(saved_selection, threshold)
+
+            # 9. Thực hiện gộp trong undo chunk
+            cmds.undoInfo(openChunk=True)
+            try:
+                # Xóa bookmarks không thuộc khoảng gộp
+                all_bms = cmds.ls(type='timeSliderBookmark') or []
+                for b in all_bms:
+                    if b not in valid_bookmarks:
+                        try:
+                            cmds.delete(b)
+                        except Exception:
+                            pass
+
+                # Truy quét toàn bộ anim curves trong scene để dọn sạch keyframe thừa 100%
+                try:
+                    anim_curves = cmds.ls(type='animCurve') or []
+                except Exception:
+                    anim_curves = []
+
+                # Cắt key trên từng curve
+                for curve in anim_curves:
+                    try:
+                        cmds.cutKey(curve, time=(-9999999, global_start - padding - 0.01), option="keys", clear=True)
+                    except Exception:
+                        pass
+                    try:
+                        cmds.cutKey(curve, time=(global_end + padding + 0.01, 9999999), option="keys", clear=True)
+                    except Exception:
+                        pass
+
+                # Thiết lập timeline
+                cmds.playbackOptions(
+                    min=global_start, max=global_end,
+                    animationStartTime=global_start, animationEndTime=global_end
+                )
+            except Exception as e:
+                print(u"[Combine] Lỗi: %s" % str(e))
+            finally:
+                cmds.undoInfo(closeChunk=True)
+
+            # 10. Tạo thư mục và lưu file gộp
+            if not _os.path.exists(combine_dir):
+                _os.makedirs(combine_dir)
+
+            cmds.file(rename=combine_path.replace('\\', '/'))
+            try:
+                cmds.file(save=True, force=True, type=file_type)
+                print(u"==> Đã xuất file gộp cụm thành công: %s" % _os.path.basename(combine_path))
+            except Exception as e:
+                print(u"[Combine] Lỗi lưu file: %s" % str(e))
+
+            # Undo để trả scene về trạng thái ban đầu
+            cmds.undo()
+
+        finally:
+            cmds.file(rename=scene_name)
+            if original_eval_mode != 'off':
+                cmds.evaluationManager(mode=original_eval_mode)
+            if not undo_was_enabled:
+                cmds.undoInfo(state=False)
+            if saved_selection:
+                try:
+                    cmds.select(saved_selection)
+                except Exception:
+                    pass
+
+        QtWidgets.QMessageBox.information(
+            self, u"Hoàn tất",
+            u"Đã gộp cụm shot %d-%d thành công!\n\nFile: %s" % (
+                start_shot, end_shot, _os.path.basename(combine_path))
+        )
+
+    def bake_and_clean_constraints(self, selection):
+        """
+        Tự động phát hiện constraint trên các đối tượng đã chọn,
+        thực hiện Bake Simulation rồi xóa constraint.
+        """
+        constraint_types = [
+            'parentConstraint', 'pointConstraint', 'orientConstraint',
+            'scaleConstraint', 'aimConstraint', 'geometryConstraint'
+        ]
+
+        objects_to_bake = []
+        constraints_to_delete = []
+
+        for obj in selection:
+            connections = cmds.listConnections(obj, source=True, destination=False) or []
+            found = False
+            for node in connections:
+                n_type = cmds.nodeType(node)
+                if n_type in constraint_types or n_type == 'pairBlend':
+                    constraints_to_delete.append(node)
+                    found = True
+            if found:
+                objects_to_bake.append(obj)
+
+        if not objects_to_bake:
+            print(u"[Bake] Không tìm thấy control nào bị constraint trong vùng chọn.")
+            return
+
+        s_time = cmds.playbackOptions(q=True, minTime=True)
+        e_time = cmds.playbackOptions(q=True, maxTime=True)
+
+        print(u"[Bake] Đang bake cho %d objects có constraint..." % len(objects_to_bake))
+
+        cmds.bakeResults(
+            objects_to_bake,
+            t=(s_time, e_time),
+            simulation=True,
+            sampleBy=1,
+            disableImplicitControl=True,
+            preserveOutsideKeys=True,
+            minimizeRotation=True,
+            at=["tx", "ty", "tz", "rx", "ry", "rz"]
+        )
+
+        if constraints_to_delete:
+            constraints_to_delete = list(set(constraints_to_delete))
+            cmds.delete(constraints_to_delete)
+            print(u"[Bake] Đã dọn dẹp xong %d constraints." % len(constraints_to_delete))
+
+    def apply_smart_bake_filter(self, selection, threshold=0.1):
+        """
+        Áp dụng Smart Bake: bake thưa rồi giảm keyframe bằng keyReducer.
+        """
+        # 1. Lấy tất cả anim curves từ các objects được chọn
+        anim_curves = cmds.keyframe(selection, q=True, name=True) or []
+        if not anim_curves:
+            print(u"[SmartBake] Không tìm thấy anim curve nào.")
+            return
+
+        anim_curves = list(set(anim_curves))
+
+        # 2. Áp dụng bộ lọc keyReducer
+        try:
+            cmds.filterCurve(anim_curves, filter="keyReducer", precisionMode=0, precision=threshold)
+            print(u"[SmartBake] Đã áp dụng keyReducer (threshold=%.2f) cho %d anim curves." % (
+                threshold, len(anim_curves)))
+        except Exception as e:
+            print(u"[SmartBake] Lỗi: %s" % str(e))
+
+    def on_open_studio_library(self):
+        """Mở giao diện Studio Library UI"""
+        try:
+            import studiolibrary
+            # Reset biến cửa sổ để tránh xung đột với cửa sổ cũ đã đóng
+            studiolibrary._window = None
+            studiolibrary.main()
+            print(u"[StudioLibrary] Đã mở Studio Library UI.")
+        except ImportError:
+            QtWidgets.QMessageBox.warning(
+                self, u"Lỗi Import",
+                u"Không thể import Studio Library.\n"
+                u"Kiểm tra thư mục: thirdparty/studiolibrary/src/"
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self, u"Lỗi",
+                u"Lỗi khi mở Studio Library UI:\n%s" % str(e)
+            )
+
+    def on_export_bookmarks_csv(self):
+        """Xuất danh sách Bookmarks ra file CSV"""
+        import csv
+
+        if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
+            try:
+                cmds.loadPlugin('timeSliderBookmark')
+            except Exception:
+                pass
+
+        bookmarks = cmds.ls(type='timeSliderBookmark') or []
+        if not bookmarks:
+            QtWidgets.QMessageBox.information(self, u"Thông báo", u"Không tìm thấy Bookmark nào.")
+            return
+
+        path = cmds.fileDialog2(ff="CSV Files (*.csv)", ds=2, fm=0, cap="Save Bookmark Data")
+        if not path:
+            return
+
+        data = [["Bookmark Name", "Start Frame", "End Frame"]]
+        for bm in bookmarks:
+            try:
+                n = cmds.getAttr(bm + ".name")
+            except Exception:
+                n = bm
+            s = cmds.getAttr(bm + ".timeRangeStart")
+            e = cmds.getAttr(bm + ".timeRangeStop")
+            data.append([n, s, e])
+
+        try:
+            if sys.version_info[0] < 3:
+                with open(path[0], 'wb') as f:
+                    csv.writer(f).writerows(data)
+            else:
+                with open(path[0], 'w', newline='', encoding='utf-8') as f:
+                    csv.writer(f).writerows(data)
+            QtWidgets.QMessageBox.information(self, u"Thành công", u"Đã xuất bookmarks ra CSV thành công!")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể ghi file CSV:\n%s" % str(e))
+
 
 def show_window():
     import sys

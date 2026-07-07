@@ -242,8 +242,8 @@ class FileManager(object):
             if os.path.isfile(filepath):
                 files_to_scan.append((filename, filepath))
                 
-        # 2. Riêng với Layout, quét thêm các file nằm trong các thư mục con (đặt theo tên shot)
-        if task_dir_name == "Layout":
+        # 2. Quét thêm các file nằm trong các thư mục con (đặt theo tên shot)
+        if task_dir_name in ["Layout", "Anim"]:
             for item in os.listdir(work_dir):
                 shot_dir_path = os.path.join(work_dir, item)
                 if os.path.isdir(shot_dir_path) and not item.startswith("."):
@@ -497,7 +497,7 @@ class FileManager(object):
                 if os.path.isfile(filepath):
                     files_to_check.append((filename, filepath, work_dir))
                     
-            if t_dir == "Layout":
+            if t_dir in ["Layout", "Anim"]:
                 for item in os.listdir(work_dir):
                     shot_dir_path = os.path.join(work_dir, item)
                     if os.path.isdir(shot_dir_path) and not item.startswith("."):
@@ -704,3 +704,80 @@ class FileManager(object):
                 
         report["total_time"] = time.time() - start_total
         return report
+
+    # ================================================================
+    # Hỗ trợ quy trình Tách / Gộp Shot (Split & Combine)
+    # ================================================================
+
+    def get_combine_file_dir(self, project, episode):
+        """Trả về đường dẫn thư mục lưu file gộp cảnh tổng: Published/Combine_File/"""
+        if not self.project_root or not project or not episode:
+            return None
+        combine_dir = os.path.join(self.project_root, project, episode, "Published", "Combine_File")
+        return os.path.normpath(combine_dir)
+
+    def get_published_anim_file(self, project, episode, shot_num):
+        """
+        Tìm file Animation lẻ đã publish của một shot cụ thể.
+        Quét thư mục Published/Anim/ và tìm file khớp Shot_{num:02d}_Anim_pub.
+        Trả về đường dẫn file nếu tìm thấy, None nếu không.
+        """
+        if not self.project_root or not project or not episode:
+            return None
+        pub_anim_dir = os.path.join(self.project_root, project, episode, "Published", "Anim")
+        if not os.path.exists(pub_anim_dir):
+            return None
+
+        shot_code = "Shot_%02d" % int(shot_num)
+        for filename in os.listdir(pub_anim_dir):
+            if not (filename.lower().endswith(".ma") or filename.lower().endswith(".mb")):
+                continue
+            if shot_code in filename and "_Anim" in filename:
+                return os.path.normpath(os.path.join(pub_anim_dir, filename))
+        return None
+
+    def build_split_shot_path(self, project, episode, bookmark_num, task="Layout"):
+        """
+        Xây dựng đường dẫn lưu file shot lẻ khi tách.
+        Trả về tuple (filepath, shot_dir) hoặc (None, None).
+
+        Ví dụ: bookmark_num = 5 -> file: KS_ELV02_Shot_05_Lay_v01.ma
+               thư mục: WorkingFile/Layout/KS_ELV02_Shot_05/file/
+        """
+        if not self.project_root or not project or not episode:
+            return None, None
+
+        ep_abbrev = self.get_episode_abbreviation(project, episode)
+        shot_code = "%02d" % int(bookmark_num)
+
+        task_dir_name = "Layout" if task.lower() in ["layout", "lay"] else "Anim"
+        task_short = "Lay" if task_dir_name == "Layout" else "Anim"
+
+        file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code)
+
+        shot_dir = os.path.join(
+            self.project_root, project, episode,
+            "WorkingFile", task_dir_name, file_prefix, "file"
+        )
+
+        filename = "%s_%s_v01.ma" % (file_prefix, task_short)
+        filepath = os.path.normpath(os.path.join(shot_dir, filename))
+        shot_dir = os.path.normpath(shot_dir)
+        return filepath, shot_dir
+
+    def build_combine_file_path(self, project, episode, start_shot, end_shot):
+        """
+        Xây dựng đường dẫn file gộp cảnh tổng.
+        Ví dụ: start_shot=1, end_shot=30 -> KS_ELV02_Shot_01-30.ma
+               Lưu tại Published/Combine_File/
+        """
+        if not self.project_root or not project or not episode:
+            return None
+
+        ep_abbrev = self.get_episode_abbreviation(project, episode)
+        combine_dir = self.get_combine_file_dir(project, episode)
+        if not combine_dir:
+            return None
+
+        filename = "%s_Shot_%02d-%02d.ma" % (ep_abbrev, int(start_shot), int(end_shot))
+        return os.path.normpath(os.path.join(combine_dir, filename))
