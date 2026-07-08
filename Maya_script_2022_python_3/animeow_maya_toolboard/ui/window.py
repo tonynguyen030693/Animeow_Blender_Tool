@@ -65,6 +65,28 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
 }
 """
 
+def ensure_scripts_2022_path():
+    path = r"E:\AI_Work\Blender_Maya_Script\Maya_script_2020_python_2\Tool_reference\scripts_2022"
+    if os.path.exists(path):
+        import sys
+        if path not in sys.path:
+            sys.path.insert(0, path)
+            print("[AnimeowToolboard] Da them duong dan Python: %s" % path)
+            
+        # Thêm vào MAYA_SCRIPT_PATH để source file mel
+        import maya.mel as mel
+        current_script_paths = mel.eval("getenv \"MAYA_SCRIPT_PATH\"") or ""
+        sep = ";" if os.name == 'nt' else ":"
+        paths_list = current_script_paths.split(sep)
+        
+        norm_path = os.path.normpath(path).lower()
+        has_path = any(os.path.normpath(p).lower() == norm_path for p in paths_list if p)
+        
+        if not has_path:
+            new_script_paths = "%s%s%s" % (path, sep, current_script_paths)
+            mel.eval('putenv "MAYA_SCRIPT_PATH" "%s"' % new_script_paths.replace("\\", "/"))
+            print("[AnimeowToolboard] Da them duong dan MEL: %s" % path)
+
 class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     WINDOW_TITLE = "Animeow Maya Toolboard"
     WORKSPACE_CONTROL_NAME = "AnimeowMayaToolboardWorkspaceControl"
@@ -155,7 +177,35 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         self.main_layout.addWidget(bake_group)
         
-        # 3. Khu vực nút bấm hành động
+        # 3. Khối Tích hợp Công cụ Tiện ích
+        tools_group = QtWidgets.QGroupBox("3. Tích hợp Công cụ Tiện ích")
+        tools_layout = QtWidgets.QGridLayout(tools_group)
+        tools_layout.setContentsMargins(8, 12, 8, 8)
+        tools_layout.setSpacing(8)
+        
+        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
+        self.studio_lib_btn.setFixedHeight(28)
+        self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
+        tools_layout.addWidget(self.studio_lib_btn, 0, 0)
+        
+        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
+        self.dwpicker_btn.setFixedHeight(28)
+        self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
+        tools_layout.addWidget(self.dwpicker_btn, 0, 1)
+        
+        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
+        self.tween_machine_btn.setFixedHeight(28)
+        self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
+        tools_layout.addWidget(self.tween_machine_btn, 1, 0)
+        
+        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
+        self.atools_btn.setFixedHeight(28)
+        self.atools_btn.clicked.connect(self.on_launch_atools)
+        tools_layout.addWidget(self.atools_btn, 1, 1)
+        
+        self.main_layout.addWidget(tools_group)
+        
+        # 4. Khu vực nút bấm hành động
         btn_layout = QtWidgets.QVBoxLayout()
         btn_layout.setSpacing(8)
         
@@ -383,6 +433,45 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "Thành công", "Đã nướng và dọn dẹp thành công chuyển động cho %s!" % owner)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi Bake", "Lỗi xảy ra khi bake: %s" % smart_link.exception_to_unicode(e))
+
+    def on_launch_studiolibrary(self):
+        ensure_scripts_2022_path()
+        try:
+            import studiolibrary
+            studiolibrary.main()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Studio Library:\n%s" % str(e))
+
+    def on_launch_dwpicker(self):
+        ensure_scripts_2022_path()
+        try:
+            import dwpicker
+            dwpicker.show()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy DWPicker:\n%s" % str(e))
+
+    def on_launch_tweenmachine(self):
+        ensure_scripts_2022_path()
+        try:
+            import maya.mel as mel
+            mel.eval('source "tweenMachine.mel"; tweenMachine;')
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Tween Machine:\n%s" % str(e))
+
+    def on_launch_atools(self):
+        ensure_scripts_2022_path()
+        try:
+            try:
+                import aTools.general.main as aToolsMain
+                aToolsMain.show()
+            except ImportError:
+                import aTools
+                aTools.show()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
+            )
 
 
 def show_window():
