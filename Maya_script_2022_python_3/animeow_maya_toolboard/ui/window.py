@@ -248,10 +248,29 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Left compact toolbar (hidden by default)
         self.compact_toolbar = QtWidgets.QWidget()
-        self.compact_toolbar.setFixedWidth(34)
+        self.compact_toolbar.setFixedWidth(38)
+        self.compact_toolbar.setStyleSheet("""
+            QWidget {
+                background-color: #212121;
+                border-right: 1px solid #333333;
+            }
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                border-radius: 4px;
+                font-size: 15px;
+                padding: 4px;
+            }
+            QPushButton:hover {
+                background-color: #333333;
+            }
+            QPushButton:pressed {
+                background-color: #444444;
+            }
+        """)
         self.compact_toolbar_layout = QtWidgets.QVBoxLayout(self.compact_toolbar)
-        self.compact_toolbar_layout.setContentsMargins(0, 0, 0, 0)
-        self.compact_toolbar_layout.setSpacing(6)
+        self.compact_toolbar_layout.setContentsMargins(4, 8, 4, 4)
+        self.compact_toolbar_layout.setSpacing(8)
         
         icons = ["🔗", "⚙️", "📈", "🚀", "🎬", "🎯", "🔁"]
         tooltips = [
@@ -266,7 +285,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.compact_buttons = []
         for i, icon in enumerate(icons):
             btn = QtWidgets.QPushButton(icon)
-            btn.setFixedSize(32, 32)
+            btn.setFixedSize(30, 30)
             btn.setToolTip(tooltips[i])
             def make_click(idx):
                 return lambda checked=False: self.tab_widget.setCurrentIndex(idx)
@@ -283,6 +302,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.tab_widget.tabBar().setElideMode(QtCore.Qt.ElideNone)
         self.tab_widget.tabBar().setUsesScrollButtons(True)
         self.content_layout.addWidget(self.tab_widget)
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
         
         self.main_layout.addLayout(self.content_layout)
         
@@ -2381,20 +2401,44 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mir_custom_right_label.setVisible(is_custom)
         self.mir_custom_right_txt.setVisible(is_custom)
 
+    def on_tab_changed(self, index):
+        """Cập nhật highlight cho nút tương ứng với Tab đang mở"""
+        for i, btn in enumerate(self.compact_buttons):
+            if i == index:
+                btn.setStyleSheet("background-color: #00BCD4; color: #FFFFFF; font-size: 15px; border: none; border-radius: 4px;")
+            else:
+                btn.setStyleSheet("background-color: transparent; color: #E0E0E0; font-size: 15px; border: none; border-radius: 4px;")
+
     def on_toggle_compact_mode(self, checked):
         """Bật/Ẩn chế độ thu gọn Compact Mode"""
+        ctrl_name = self.WORKSPACE_CONTROL_NAME
         if checked:
             self.tab_widget.tabBar().hide()
             self.compact_toolbar.show()
             self.compact_toggle_btn.setText("⚡ Rộng")
-            self.setMaximumWidth(280)
-            self.setMinimumWidth(200)
+            self.setMinimumWidth(80)
+            
+            # Highlight currently selected tab
+            self.on_tab_changed(self.tab_widget.currentIndex())
+            
+            # Try to shrink Maya workspace control width
+            if cmds.workspaceControl(ctrl_name, exists=True):
+                try:
+                    cmds.workspaceControl(ctrl_name, edit=True, resizeWidth=150)
+                except Exception:
+                    pass
         else:
             self.tab_widget.tabBar().show()
             self.compact_toolbar.hide()
             self.compact_toggle_btn.setText("⚡ Gọn")
-            self.setMaximumWidth(16777215)
             self.setMinimumWidth(320)
+            
+            # Try to expand Maya workspace control width back
+            if cmds.workspaceControl(ctrl_name, exists=True):
+                try:
+                    cmds.workspaceControl(ctrl_name, edit=True, resizeWidth=350)
+                except Exception:
+                    pass
 
     def on_rt_item_changed(self, item):
         """Tự động tô màu trạng thái cho control khi chỉnh sửa trong bảng"""
