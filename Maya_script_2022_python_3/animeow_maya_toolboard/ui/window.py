@@ -947,11 +947,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- ADD TABS TO TABWIDGET ---
         # =========================================================================
-        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake")
-        self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion")
-        self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror")
-        self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene")
-        self.tab_widget.addTab(wrap_in_scroll(tab5), "🚀 Launchers")
+        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab5), "🚀 Launchers  ")
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
     def load_settings(self):
