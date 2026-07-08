@@ -97,10 +97,18 @@ class ArcTracker(object):
         points = []
         frames = range(int(start_frame), int(end_frame) + 1)
         
-        # Thu thập dữ liệu tọa độ cực nhanh
-        for frame in frames:
-            pos = self.get_world_position_at_frame(obj, frame)
-            points.append(pos)
+        # Thu thập dữ liệu tọa độ chính xác bằng cách duyệt qua các khung hình tuần tự
+        # Sử dụng suspend=True để tránh giật lag viewport và đảm bảo Parallel Evaluation đánh giá đúng vị trí
+        cmds.refresh(suspend=True)
+        curr_time = cmds.currentTime(q=True)
+        try:
+            for frame in frames:
+                cmds.currentTime(frame, edit=True)
+                pos = cmds.xform(obj, q=True, ws=True, rp=True)
+                points.append(pos)
+        finally:
+            cmds.currentTime(curr_time, edit=True)
+            cmds.refresh(suspend=False)
             
         if len(points) < 2:
             cmds.warning("Không đủ khung hình để tạo trail cho %s!" % obj)
