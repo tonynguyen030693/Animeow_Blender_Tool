@@ -968,14 +968,23 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy DWPicker:\n%s" % str(e))
 
     def on_launch_tweenmachine(self):
-        ensure_scripts_2022_path()
+        path = ensure_scripts_2022_path()
+        if not path:
+            return
+            
+        tween_mel_path = os.path.join(path, "tweenMachine.mel").replace("\\", "/")
+        if not os.path.exists(tween_mel_path):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy file tweenMachine.mel tại:\n%s" % tween_mel_path)
+            return
+            
         try:
             import maya.mel as mel
             if cmds.window("tweenMachineWin", exists=True):
                 cmds.deleteUI("tweenMachineWin")
                 print("[TweenMachine] Da dong Tween Machine.")
             else:
-                mel.eval('source "tweenMachine.mel"; tweenMachine;')
+                mel.eval('source "%s"; tweenMachine;' % tween_mel_path)
+                print("[TweenMachine] Da mo Tween Machine.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Tween Machine:\n%s" % str(e))
 
