@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot
 
 QSS_STYLE = """
 QWidget {
@@ -510,6 +510,32 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addWidget(constrain_group)
         
+        # GroupBox 4: Temp Pivot (Tâm xoay tạm thời)
+        tp_group = QtWidgets.QGroupBox("Temp Pivot (Tâm xoay tạm thời)")
+        tp_layout = QtWidgets.QVBoxLayout(tp_group)
+        tp_layout.setContentsMargins(8, 12, 8, 8)
+        tp_layout.setSpacing(8)
+        
+        tp_buttons_layout = QtWidgets.QHBoxLayout()
+        self.tp_create_btn = QtWidgets.QPushButton("Tạo Temp Locator")
+        self.tp_create_btn.setFixedHeight(28)
+        self.tp_create_btn.clicked.connect(self.on_tp_create)
+        tp_buttons_layout.addWidget(self.tp_create_btn)
+        
+        self.tp_active_btn = QtWidgets.QPushButton("Kích hoạt Pivot")
+        self.tp_active_btn.setFixedHeight(28)
+        self.tp_active_btn.clicked.connect(self.on_tp_active)
+        tp_buttons_layout.addWidget(self.tp_active_btn)
+        
+        self.tp_release_btn = QtWidgets.QPushButton("Bake && Giải phóng")
+        self.tp_release_btn.setObjectName("accent_btn")
+        self.tp_release_btn.setFixedHeight(28)
+        self.tp_release_btn.clicked.connect(self.on_tp_release)
+        tp_buttons_layout.addWidget(self.tp_release_btn)
+        
+        tp_layout.addLayout(tp_buttons_layout)
+        tab2_layout.addWidget(tp_group)
+        
         # Mẹo sử dụng nhanh
         info_label = QtWidgets.QLabel("Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
         info_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -898,6 +924,89 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         self.on_rt_refresh_namespaces()
         
+        # =========================================================================
+        # --- TAB 7: MIRROR ANIMATION ---
+        # =========================================================================
+        tab7 = QtWidgets.QWidget()
+        tab7_layout = QtWidgets.QVBoxLayout(tab7)
+        tab7_layout.setContentsMargins(6, 10, 6, 6)
+        tab7_layout.setSpacing(10)
+        
+        # Tieu de Tab 7
+        t7_title = QtWidgets.QLabel("ANIMEOW MIRROR ANIMATION")
+        t7_title.setAlignment(QtCore.Qt.AlignCenter)
+        t7_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab7_layout.addWidget(t7_title)
+        
+        # 1. GroupBox Mirror Settings
+        mir_group = QtWidgets.QGroupBox("1. Thiết lập đối xứng (Mirror Settings)")
+        mir_layout = QtWidgets.QGridLayout(mir_group)
+        mir_layout.setContentsMargins(8, 12, 8, 8)
+        mir_layout.setSpacing(8)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Chồ độ Mirror:"), 0, 0)
+        self.mir_mode_combo = QtWidgets.QComboBox()
+        self.mir_mode_combo.addItems([
+            "Swap Left && Right (Đổi bên)",
+            "Left -> Right (Trái sang Phải)",
+            "Right -> Left (Phải sang Trái)",
+            "Flip Selected (Lật đối tượng chọn)"
+        ])
+        mir_layout.addWidget(self.mir_mode_combo, 0, 1)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Phạm vi:"), 0, 2)
+        self.mir_scope_combo = QtWidgets.QComboBox()
+        self.mir_scope_combo.addItems(["Selected Controls (Đối tượng chọn)", "Whole Rig (Toàn bộ Rig)"])
+        mir_layout.addWidget(self.mir_scope_combo, 0, 3)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Thời gian:"), 1, 0)
+        self.mir_time_combo = QtWidgets.QComboBox()
+        self.mir_time_combo.addItems(["Whole Timeline (Toàn bộ)", "Selected Range (Khoảng chọn)"])
+        mir_layout.addWidget(self.mir_time_combo, 1, 1)
+        
+        tab7_layout.addWidget(mir_group)
+        
+        # 2. GroupBox Axis Inversions
+        axis_group = QtWidgets.QGroupBox("2. Đảo chiều các trục (Axis Inversions)")
+        axis_layout = QtWidgets.QGridLayout(axis_group)
+        axis_layout.setContentsMargins(8, 12, 8, 8)
+        axis_layout.setSpacing(8)
+        
+        self.mir_inv_tx_cb = QtWidgets.QCheckBox("Invert Translate X")
+        self.mir_inv_tx_cb.setChecked(True)
+        axis_layout.addWidget(self.mir_inv_tx_cb, 0, 0)
+        
+        self.mir_inv_ty_cb = QtWidgets.QCheckBox("Invert Translate Y")
+        self.mir_inv_ty_cb.setChecked(False)
+        axis_layout.addWidget(self.mir_inv_ty_cb, 0, 1)
+        
+        self.mir_inv_tz_cb = QtWidgets.QCheckBox("Invert Translate Z")
+        self.mir_inv_tz_cb.setChecked(False)
+        axis_layout.addWidget(self.mir_inv_tz_cb, 0, 2)
+        
+        self.mir_inv_rx_cb = QtWidgets.QCheckBox("Invert Rotate X")
+        self.mir_inv_rx_cb.setChecked(False)
+        axis_layout.addWidget(self.mir_inv_rx_cb, 1, 0)
+        
+        self.mir_inv_ry_cb = QtWidgets.QCheckBox("Invert Rotate Y")
+        self.mir_inv_ry_cb.setChecked(True)
+        axis_layout.addWidget(self.mir_inv_ry_cb, 1, 1)
+        
+        self.mir_inv_rz_cb = QtWidgets.QCheckBox("Invert Rotate Z")
+        self.mir_inv_rz_cb.setChecked(True)
+        axis_layout.addWidget(self.mir_inv_rz_cb, 1, 2)
+        
+        tab7_layout.addWidget(axis_group)
+        
+        # Execute button
+        self.mir_execute_btn = QtWidgets.QPushButton("Thực hiện Mirror Animation (Bake)")
+        self.mir_execute_btn.setObjectName("accent_btn")
+        self.mir_execute_btn.setFixedHeight(35)
+        self.mir_execute_btn.clicked.connect(self.on_mir_execute)
+        tab7_layout.addWidget(self.mir_execute_btn)
+        
+        tab7_layout.addStretch()
+        
         # Add Scroll-wrapped tabs to TabWidget
         self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Link && Bake  ")
         self.tab_widget.addTab(wrap_in_scroll(tab2), "⚙️ Quick Utils")
@@ -905,6 +1014,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.tab_widget.addTab(wrap_in_scroll(tab4), "🚀 Launchers  ")
         self.tab_widget.addTab(wrap_in_scroll(tab5), "🎬 Playblast  ")
         self.tab_widget.addTab(wrap_in_scroll(tab6), "🎯 Retarget  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab7), "🔁 Mirror Anim  ")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -1943,6 +2053,152 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi Làm tròn sñ",
                 "Lỗi xảy ra khi thực hiện làm tròn sñ:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+        # --- TEMP PIVOT CALLBACKS ---
+    def on_tp_create(self):
+        """Tạo Temp Locator tại vị trí của control được chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một Rig Control trong Viewport!")
+            return
+            
+        try:
+            loc = temp_pivot.create_temp_locator(sel)
+            cmds.select(loc)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã tạo Temp Locator: %s\nHãy di chuyển Locator này tới vị trí Pivot mới, sau đó nhấn 'Kích hoạt Pivot'." % loc
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Có lỗi xảy ra khi tạo Temp Locator:\n%s" % str(e)
+            )
+
+    def on_tp_active(self):
+        """Kích hoạt tâm xoay tạm thời"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng!")
+            return
+            
+        obj = sel[0]
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            loc = temp_pivot.active_temp_pivot(obj, start_frame, end_frame)
+            cmds.select(loc)
+            cmds.warning("Đã kích hoạt Temp Pivot thành công! Hãy diễn hoạt xoay/dịch chuyển trên locator này.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Kích hoạt Pivot",
+                "Không thể kích hoạt Temp Pivot:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_tp_release(self):
+        """Nướng ngược lại chuyển động và giải phóng tâm xoay"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng để giải phóng!")
+            return
+            
+        obj = sel[0]
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            control = temp_pivot.release_temp_pivot(obj, start_frame, end_frame)
+            cmds.select(control)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã nướng trả chuyển động thành công về Control gốc: %s\nLocator tạm thời đã được gỡ bỏ." % control
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Giải phóng Pivot",
+                "Có lỗi xảy ra khi giải phóng Temp Pivot:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    # --- MIRROR ANIM CALLBACKS ---
+    def on_mir_execute(self):
+        """Thực hiện đối xướng chuyển động"""
+        scope_idx = self.mir_scope_combo.currentIndex()
+        
+        selected_objs = cmds.ls(sl=True) or []
+        if not selected_objs:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trong Viewport!")
+            return
+            
+        objects_to_process = []
+        if scope_idx == 0:
+            objects_to_process = selected_objs
+        else:
+            parts = selected_objs[0].split(":")
+            if len(parts) > 1:
+                ns = ":".join(parts[:-1])
+                objects_to_process = cmds.ls(ns + ":*", type="transform") or []
+            else:
+                objects_to_process = cmds.ls(type="transform") or []
+                
+        if not objects_to_process:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thớđ đối tượng nào để xử lý!")
+            return
+            
+        mode_map = {
+            0: 'swap',
+            1: 'left_to_right',
+            2: 'right_to_left',
+            3: 'flip_selected'
+        }
+        mode = mode_map.get(self.mir_mode_combo.currentIndex(), 'swap')
+        
+        time_idx = self.mir_time_combo.currentIndex()
+        time_range = None
+        if time_idx == 1:
+            time_range_slider = mel.eval("timeControl -q -range $gPlayBackSlider")
+            if time_range_slider:
+                clean_range = time_range_slider.replace('"', '').split(':')
+                if len(clean_range) == 2:
+                    time_range = (float(clean_range[0]), float(clean_range[1]))
+            
+            if not time_range:
+                time_range = (cmds.playbackOptions(q=True, minTime=True), cmds.playbackOptions(q=True, maxTime=True))
+                
+        invert_map = {
+            'translateX': self.mir_inv_tx_cb.isChecked(),
+            'translateY': self.mir_inv_ty_cb.isChecked(),
+            'translateZ': self.mir_inv_tz_cb.isChecked(),
+            'rotateX': self.mir_inv_rx_cb.isChecked(),
+            'rotateY': self.mir_inv_ry_cb.isChecked(),
+            'rotateZ': self.mir_inv_rz_cb.isChecked()
+        }
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = mirror_tool.execute_mirror(
+                objects=objects_to_process,
+                mode=mode,
+                time_range=time_range,
+                invert_map=invert_map
+            )
+            if success:
+                QtWidgets.QMessageBox.information(self, "Thành công", msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Mirror Animation",
+                "Có lỗi xảy ra khi thực hiện đối xướng chuyển động:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
