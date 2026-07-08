@@ -77,17 +77,15 @@ def ensure_scripts_2022_path():
     # 2. Thử đường dẫn tuyệt đối mặc định cũ làm phương án dự phòng
     hardcoded_path = r"E:\AI_Work\Blender_Maya_Script\Maya_script_2020_python_2\Tool_reference\scripts_2022"
     
-    # Xác định đường dẫn thực tế tồn tại trên máy hiện hành
+    # Xác định đường dẫn thực tế tồn tại trên máy hiện hành (Ưu tiên nạp từ thirdparty nội bộ trước)
+    thirdparty_path = os.path.join(package_dir, "thirdparty")
     path = ""
-    if os.path.exists(dynamic_path):
+    if os.path.exists(thirdparty_path) and os.path.isdir(thirdparty_path) and len(os.listdir(thirdparty_path)) > 1:
+        path = thirdparty_path
+    elif os.path.exists(dynamic_path):
         path = dynamic_path
     elif os.path.exists(hardcoded_path):
         path = hardcoded_path
-    else:
-        # Dự phòng tiếp theo: thư mục thirdparty nằm trực tiếp trong animeow_maya_toolboard
-        thirdparty_path = os.path.join(package_dir, "thirdparty")
-        if os.path.exists(thirdparty_path):
-            path = thirdparty_path
 
     if not path:
         print("[AnimeowToolboard] Khong tim thay thu muc scripts_2022 hay thirdparty chua cac tool bo tro!")
