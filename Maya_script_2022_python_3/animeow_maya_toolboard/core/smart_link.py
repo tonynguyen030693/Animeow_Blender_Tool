@@ -158,8 +158,8 @@ class AnimationBaker(object):
             if loc_child and cmds.objExists(loc_child):
                 targets_to_scan.append(loc_child)
             else:
-                constraints = cmds.listConnections(self.owner, type="constraint") or []
-                for con in constraints:
+                incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
+                for con in incoming_constraints:
                     # Lấy các kết nối đầu vào (drivers) của constraint
                     inputs = cmds.listConnections(con, source=True, destination=False) or []
                     targets_to_scan.extend(inputs)
@@ -189,8 +189,7 @@ class AnimationBaker(object):
             )
             
             # Xoá các constraints trên owner sau khi nướng
-            constraints = cmds.listConnections(self.owner, type="constraint") or []
-            for c in list(set(constraints)):
+            for c in list(set(incoming_constraints)):
                 if cmds.objExists(c):
                     try:
                         cmds.delete(c)
@@ -222,8 +221,8 @@ class AnimationBaker(object):
             )
             
             # Xoá các constraints trên owner sau khi nướng
-            constraints = cmds.listConnections(self.owner, type="constraint") or []
-            for c in list(set(constraints)):
+            incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
+            for c in list(set(incoming_constraints)):
                 if cmds.objExists(c):
                     try:
                         cmds.delete(c)

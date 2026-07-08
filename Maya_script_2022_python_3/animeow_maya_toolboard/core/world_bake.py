@@ -41,8 +41,8 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
         
         # Quét các keyframe sẵn có của chính vật thể hoặc driver của constraint nối vào nó
         targets_to_scan = [obj]
-        constraints = cmds.listConnections(obj, type="constraint") or []
-        for con in constraints:
+        incoming_constraints = cmds.listConnections(obj, source=True, destination=False, type="constraint") or []
+        for con in incoming_constraints:
             inputs = cmds.listConnections(con, source=True, destination=False) or []
             targets_to_scan.extend(inputs)
             
@@ -70,8 +70,8 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # 4. Xóa constraints liên quan
-        for c in list(set(constraints)):
+        # 4. Chỉ xóa constraints hướng vào (đang ràng buộc đối tượng này)
+        for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
                 try:
                     cmds.delete(c)
@@ -100,9 +100,9 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # Xóa constraints liên quan
-        constraints = cmds.listConnections(obj, type="constraint") or []
-        for c in list(set(constraints)):
+        # Chỉ xóa constraints hướng vào (đang ràng buộc đối tượng này)
+        incoming_constraints = cmds.listConnections(obj, source=True, destination=False, type="constraint") or []
+        for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
                 try:
                     cmds.delete(c)
