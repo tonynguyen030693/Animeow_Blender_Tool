@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker
+from ..core import smart_link, playblast, arc_tracker, world_bake
 
 QSS_STYLE = """
 QWidget {
@@ -165,6 +165,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_AT_SHOW_TICKS = "AnimeowTbAtShowTicks"
     OP_AT_SHOW_KEYS = "AnimeowTbAtShowKeys"
     OP_AT_TICK_SIZE = "AnimeowTbAtTickSize"
+    OP_WB_CHANNELS = "AnimeowTbWbChannels"
+    OP_WB_STEP = "AnimeowTbWbStep"
+    OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
@@ -501,11 +504,75 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab4_layout.addStretch()
         
+        # --- TAB 5: WORLD BAKE ---
+        tab5 = QtWidgets.QWidget()
+        tab5_layout = QtWidgets.QVBoxLayout(tab5)
+        tab5_layout.setContentsMargins(6, 10, 6, 6)
+        tab5_layout.setSpacing(12)
+        
+        # Tiêu đề Tab 5
+        wb_title = QtWidgets.QLabel("🌍 ANIMEOW WORLD BAKE")
+        wb_title.setAlignment(QtCore.Qt.AlignCenter)
+        wb_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
+        tab5_layout.addWidget(wb_title)
+        
+        # Khối cấu hình World Bake
+        wb_group = QtWidgets.QGroupBox("Cấu hình World Bake")
+        wb_layout = QtWidgets.QGridLayout(wb_group)
+        wb_layout.setContentsMargins(8, 12, 8, 8)
+        wb_layout.setSpacing(10)
+        
+        # Kênh nướng
+        wb_layout.addWidget(QtWidgets.QLabel("Kênh nướng (Channels):"), 0, 0)
+        self.wb_channels_combo = QtWidgets.QComboBox()
+        self.wb_channels_combo.addItems(["Translate & Rotate (Both)", "Translate Only", "Rotate Only"])
+        wb_layout.addWidget(self.wb_channels_combo, 0, 1)
+        
+        # Step
+        wb_layout.addWidget(QtWidgets.QLabel("Bước nhảy (Step):"), 1, 0)
+        self.wb_step_spin = QtWidgets.QSpinBox()
+        self.wb_step_spin.setRange(1, 100)
+        self.wb_step_spin.setValue(1)
+        wb_layout.addWidget(self.wb_step_spin, 1, 1)
+        
+        # Smart clean
+        self.wb_smart_clean_cb = QtWidgets.QCheckBox("Smart Clean (Bảo toàn keyframe cực trị và khớp lưới)")
+        self.wb_smart_clean_cb.setChecked(True)
+        wb_layout.addWidget(self.wb_smart_clean_cb, 2, 0, 1, 2)
+        
+        tab5_layout.addWidget(wb_group)
+        
+        # Các nút bấm hành động
+        wb_btn_layout = QtWidgets.QVBoxLayout()
+        wb_btn_layout.setSpacing(8)
+        
+        self.wb_to_loc_btn = QtWidgets.QPushButton("🚀 Bake sang Locator (To Locator)")
+        self.wb_to_loc_btn.setObjectName("accent_btn")
+        self.wb_to_loc_btn.setFixedHeight(38)
+        self.wb_to_loc_btn.clicked.connect(self.on_world_bake_to_locator)
+        wb_btn_layout.addWidget(self.wb_to_loc_btn)
+        
+        self.wb_from_loc_btn = QtWidgets.QPushButton("🎬 Bake ngược về Vật thể (From Locator)")
+        self.wb_from_loc_btn.setFixedHeight(38)
+        self.wb_from_loc_btn.clicked.connect(self.on_world_bake_from_locator)
+        wb_btn_layout.addWidget(self.wb_from_loc_btn)
+        
+        tab5_layout.addLayout(wb_btn_layout)
+        
+        # Hướng dẫn nhỏ
+        wb_info_label = QtWidgets.QLabel("💡 Mẹo: Chế độ Smart Clean sẽ giúp nướng thưa\n(2s, 3s...) mà không bị mất đi các pose chính/cực trị của bạn.")
+        wb_info_label.setAlignment(QtCore.Qt.AlignCenter)
+        wb_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
+        tab5_layout.addWidget(wb_info_label)
+        
+        tab5_layout.addStretch()
+        
         # Thêm các tab vào Widget
         self.tab_widget.addTab(tab1, "🔗 Smart Link")
         self.tab_widget.addTab(tab2, "🛠️ Quick Tools")
         self.tab_widget.addTab(tab3, "🎬 Playblast")
         self.tab_widget.addTab(tab4, "📈 Arc Tracker")
+        self.tab_widget.addTab(tab5, "🌍 World Bake")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -561,6 +628,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.at_show_keys_cb.setChecked(bool(cmds.optionVar(query=self.OP_AT_SHOW_KEYS)))
         if cmds.optionVar(exists=self.OP_AT_TICK_SIZE):
             self.at_tick_size_spin.setValue(cmds.optionVar(query=self.OP_AT_TICK_SIZE))
+            
+        # World Bake Settings
+        if cmds.optionVar(exists=self.OP_WB_CHANNELS):
+            fmt = cmds.optionVar(query=self.OP_WB_CHANNELS)
+            idx = self.wb_channels_combo.findText(fmt)
+            if idx >= 0:
+                self.wb_channels_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_WB_STEP):
+            self.wb_step_spin.setValue(cmds.optionVar(query=self.OP_WB_STEP))
+        if cmds.optionVar(exists=self.OP_WB_SMART_CLEAN):
+            self.wb_smart_clean_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_SMART_CLEAN)))
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -590,6 +668,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_AT_SHOW_TICKS, int(self.at_show_ticks_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_AT_SHOW_KEYS, int(self.at_show_keys_cb.isChecked())))
         cmds.optionVar(floatValue=(self.OP_AT_TICK_SIZE, self.at_tick_size_spin.value()))
+        
+        # World Bake Settings
+        cmds.optionVar(stringValue=(self.OP_WB_CHANNELS, self.wb_channels_combo.currentText()))
+        cmds.optionVar(intValue=(self.OP_WB_STEP, self.wb_step_spin.value()))
+        cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -1139,6 +1222,91 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tracker = arc_tracker.ArcTracker()
         tracker.clear_all_trails()
         QtWidgets.QMessageBox.information(self, "Thành công", "Đã xóa sạch toàn bộ Arc Trails!")
+
+    def on_world_bake_to_locator(self):
+        """Bake vật thể được chọn sang Locator thế giới"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể để tạo World Locator!")
+            return
+            
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.wb_step_spin.value()
+        smart_clean = self.wb_smart_clean_cb.isChecked()
+        
+        idx = self.wb_channels_combo.currentIndex()
+        channels = ['both', 'translate', 'rotate'][idx]
+        
+        wbm = world_bake.WorldBakeManager()
+        
+        success_locs = []
+        try:
+            for obj in sel:
+                loc = wbm.bake_to_locator(
+                    obj=obj,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    step=step,
+                    smart_clean=smart_clean,
+                    channels=channels
+                )
+                success_locs.append(loc)
+                
+            cmds.select(success_locs)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã bake thành công %d vật thể sang Locator không gian thế giới!\nCác locator mới: %s" % (
+                    len(sel), ", ".join(success_locs))
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi World Bake",
+                "Lỗi xảy ra khi Bake sang Locator:\n%s" % world_bake.exception_to_unicode(e)
+            )
+
+    def on_world_bake_from_locator(self):
+        """Bake ngược từ Locator trở về vật thể gốc"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Locator hoặc vật thể gốc để Bake ngược trở lại!")
+            return
+            
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.wb_step_spin.value()
+        smart_clean = self.wb_smart_clean_cb.isChecked()
+        
+        wbm = world_bake.WorldBakeManager()
+        
+        success_objs = []
+        try:
+            for item in sel:
+                obj = wbm.bake_from_locator(
+                    locator_or_obj=item,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    step=step,
+                    smart_clean=smart_clean
+                )
+                success_objs.append(obj)
+                
+            cmds.select(success_objs)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã bake ngược thành công từ Locator về %d vật thể gốc!" % len(success_objs)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi World Bake",
+                "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
+            )
 
 
 def show_window():
