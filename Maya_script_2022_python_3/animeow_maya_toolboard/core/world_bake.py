@@ -190,7 +190,10 @@ class WorldBakeManager(object):
         pass
 
     def get_clean_name(self, name):
-        return name.replace(":", "_").replace("|", "_")
+        # 1. Chỉ lấy tên ngắn cuối cùng (leaf node) sau dấu gạch đứng '|'
+        short_name = name.split("|")[-1]
+        # 2. Thay thế dấu hai chấm ':' của namespace thành '_'
+        return short_name.replace(":", "_")
 
     def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both'):
         """Bake vật thể sang một locator ở không gian thế giới"""
