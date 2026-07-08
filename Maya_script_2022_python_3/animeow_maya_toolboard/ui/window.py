@@ -564,6 +564,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.create_trail_btn.clicked.connect(self.on_create_arc_trail)
         at_btn_layout.addWidget(self.create_trail_btn)
         
+        self.update_trail_btn = QtWidgets.QPushButton("🔄 Cập nhật Arc Trails (Update)")
+        self.update_trail_btn.setFixedHeight(32)
+        self.update_trail_btn.clicked.connect(self.on_update_arc_trails)
+        at_btn_layout.addWidget(self.update_trail_btn)
+        
         self.clear_selected_trail_btn = QtWidgets.QPushButton("❌ Xóa Trail của vật thể chọn")
         self.clear_selected_trail_btn.setFixedHeight(30)
         self.clear_selected_trail_btn.clicked.connect(self.on_clear_selected_trails)
@@ -1299,6 +1304,40 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi vẽ Trail",
                 "Lỗi xảy ra khi vẽ Arc Trail:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_update_arc_trails(self):
+        """Cập nhật các Arc Trail hiện có (nếu chọn thì update chọn, không chọn thì update hết)"""
+        sel = cmds.ls(sl=True) or []
+        self.save_settings()
+        
+        show_ticks = self.at_show_ticks_cb.isChecked()
+        show_keys = self.at_show_keys_cb.isChecked()
+        tick_size = self.at_tick_size_spin.value()
+        
+        tracker = arc_tracker.ArcTracker()
+        
+        cmds.undoInfo(openChunk=True, chunkName="UpdateArcTrails")
+        try:
+            count = tracker.update_trails(
+                selected_objs=sel,
+                show_ticks=show_ticks,
+                show_keys=show_keys,
+                tick_size=tick_size
+            )
+            if count > 0:
+                cmds.warning("Đã cập nhật thành công %d Arc Trail!" % count)
+            else:
+                QtWidgets.QMessageBox.information(
+                    self, "Thông báo", 
+                    "Không tìm thấy Arc Trail nào hoạt động để cập nhật!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi cập nhật Trail",
+                "Lỗi xảy ra khi cập nhật Arc Trail:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)

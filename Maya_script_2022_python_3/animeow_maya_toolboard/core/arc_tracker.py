@@ -86,6 +86,10 @@ class ArcTracker(object):
         obj_trail_grp = cmds.group(em=True, name=specific_grp)
         cmds.parent(obj_trail_grp, self.GROUP_NAME)
         
+        # Lưu thông tin vật thể gốc bằng message connection
+        cmds.addAttr(obj_trail_grp, longName='animeow_sourceObj', attributeType='message')
+        cmds.connectAttr(obj + '.message', obj_trail_grp + '.animeow_sourceObj')
+        
         # Dò tìm các frame có keyframe của đối tượng để hiển thị đặc biệt
         keyframe_times = []
         try:
@@ -166,3 +170,44 @@ class ArcTracker(object):
         # Chọn lại đối tượng gốc để animator tiếp tục làm việc
         cmds.select(obj)
         print("[ArcTracker] Đã vẽ Arc Trail thành công cho %s từ frame %d đến %d." % (obj, start_frame, end_frame))
+
+    def update_trails(self, selected_objs=None, show_ticks=True, show_keys=True, tick_size=0.1):
+        """
+        Cập nhật các trail. 
+        Nếu selected_objs không trống: cập nhật/vẽ trail cho các đối tượng được chọn.
+        Nếu selected_objs trống: tự động quét group tổng và cập nhật tất cả trail đang hiển thị trong cảnh.
+        """
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        objects_to_update = []
+        
+        # 1. Nếu có chọn vật thể cụ thể
+        if selected_objs:
+            objects_to_update = selected_objs
+        # 2. Nếu không chọn gì, tự động quét tìm tất cả các trail hiện hữu trong cảnh
+        else:
+            if cmds.objExists(self.GROUP_NAME):
+                children = cmds.listRelatives(self.GROUP_NAME, children=True, type="transform") or []
+                for child in children:
+                    attr_path = "%s.animeow_sourceObj" % child
+                    if cmds.objExists(attr_path):
+                        conns = cmds.listConnections(attr_path, destination=False) or []
+                        if conns:
+                            objects_to_update.append(conns[0])
+                            
+        # Loại bỏ các đối tượng trùng lặp và thực hiện vẽ lại
+        updated_count = 0
+        for obj in list(set(objects_to_update)):
+            if cmds.objExists(obj):
+                self.create_trail(
+                    obj=obj,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    show_ticks=show_ticks,
+                    show_keys=show_keys,
+                    tick_size=tick_size
+                )
+                updated_count += 1
+                
+        return updated_count
