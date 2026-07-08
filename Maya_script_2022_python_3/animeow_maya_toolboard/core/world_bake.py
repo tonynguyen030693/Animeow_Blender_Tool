@@ -15,6 +15,31 @@ def exception_to_unicode(e):
     except Exception:
         return "Lỗi hệ thống"
 
+def get_incoming_constraints(obj):
+    """Tìm tất cả các constraint node trực tiếp hoặc gián tiếp (qua pairBlend) đang ràng buộc obj"""
+    if not cmds.objExists(obj):
+        return []
+        
+    found_constraints = []
+    
+    # 1. Tìm các constraint kết nối trực tiếp (source)
+    direct_cons = cmds.listConnections(obj, source=True, destination=False, type="constraint") or []
+    found_constraints.extend(direct_cons)
+    
+    # 2. Tìm qua pairBlend nodes (dữ liệu đi từ Constraint -> pairBlend -> Object)
+    pair_blends = cmds.listConnections(obj, source=True, destination=False, type="pairBlend") or []
+    for pb in pair_blends:
+        pb_cons = cmds.listConnections(pb, source=True, destination=False, type="constraint") or []
+        found_constraints.extend(pb_cons)
+        
+    return list(set(found_constraints))
+
+def get_pair_blend_nodes(obj):
+    """Tìm tất cả pairBlend nodes đầu vào của obj"""
+    if not cmds.objExists(obj):
+        return []
+    return cmds.listConnections(obj, source=True, destination=False, type="pairBlend") or []
+
 def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, channels='both'):
     """
     Nướng (Bake) chuyển động cho vật thể bất kỳ, hỗ trợ giữ lưới Grid Step
@@ -32,16 +57,16 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
     if not attrs:
         attrs = ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
 
+    # Tìm các constraint thực tế đang ràng buộc vật thể này
+    incoming_constraints = get_incoming_constraints(obj)
+
     if smart_clean:
         # 1. Thu thập lưới Grid Step
         grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
         
-        # 2. Thu thập keyframe thô nguồn
+        # 2. Thu thập keyframe thô nguồn từ chính vật thể và driver của constraint
         source_keyframes = set()
-        
-        # Quét các keyframe sẵn có của chính vật thể hoặc driver của constraint nối vào nó
         targets_to_scan = [obj]
-        incoming_constraints = cmds.listConnections(obj, source=True, destination=False, type="constraint") or []
         for con in incoming_constraints:
             inputs = cmds.listConnections(con, source=True, destination=False) or []
             targets_to_scan.extend(inputs)
@@ -70,11 +95,18 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # 4. Chỉ xóa constraints hướng vào (đang ràng buộc đối tượng này)
+        # 4. Chỉ xóa constraints và pairBlends hướng vào
         for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
                 try:
                     cmds.delete(c)
+                except Exception:
+                    pass
+        pair_blends = get_pair_blend_nodes(obj)
+        for pb in pair_blends:
+            if cmds.objExists(pb):
+                try:
+                    cmds.delete(pb)
                 except Exception:
                     pass
                     
@@ -100,12 +132,18 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # Chỉ xóa constraints hướng vào (đang ràng buộc đối tượng này)
-        incoming_constraints = cmds.listConnections(obj, source=True, destination=False, type="constraint") or []
+        # Chỉ xóa constraints và pairBlends hướng vào
         for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
                 try:
                     cmds.delete(c)
+                except Exception:
+                    pass
+        pair_blends = get_pair_blend_nodes(obj)
+        for pb in pair_blends:
+            if cmds.objExists(pb):
+                try:
+                    cmds.delete(pb)
                 except Exception:
                     pass
 
@@ -199,7 +237,7 @@ class WorldBakeManager(object):
                 
         if not locator or not obj or not cmds.objExists(locator) or not cmds.objExists(obj):
             # Thử quét các constraint kết nối
-            constraints = cmds.listConnections(locator_or_obj, type="constraint") or []
+            constraints = get_incoming_constraints(locator_or_obj)
             for con in constraints:
                 inputs = cmds.listConnections(con, source=True, destination=False) or []
                 for inp in inputs:
@@ -211,11 +249,21 @@ class WorldBakeManager(object):
         if not locator or not obj:
             raise RuntimeError("Vui lòng chọn Locator hoặc vật thể gốc đã được World Bake trước đó!")
             
-        # Xác định các kênh ràng buộc hiện hành
+        # Xác định các kênh ràng buộc hiện hành bằng cách quét get_incoming_constraints
         channels = 'both'
-        if cmds.listConnections(obj, type="pointConstraint"):
+        incoming_cons = get_incoming_constraints(obj)
+        has_point = False
+        has_orient = False
+        for c in incoming_cons:
+            n_type = cmds.nodeType(c)
+            if n_type == 'pointConstraint':
+                has_point = True
+            elif n_type == 'orientConstraint':
+                has_orient = True
+                
+        if has_point and not has_orient:
             channels = 'translate'
-        elif cmds.listConnections(obj, type="orientConstraint"):
+        elif has_orient and not has_point:
             channels = 'rotate'
             
         # Nướng ngược lại lên vật thể gốc và tối ưu
