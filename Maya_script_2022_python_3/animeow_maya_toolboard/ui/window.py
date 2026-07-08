@@ -347,10 +347,15 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
         utils_layout.addWidget(self.toggle_ref_btn, 0, 1)
         
-        self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment (Lưu tăng dần)")
+        self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment")
         self.save_inc_btn.setFixedHeight(32)
         self.save_inc_btn.clicked.connect(self.on_save_increment)
-        utils_layout.addWidget(self.save_inc_btn, 1, 0, 1, 2)
+        utils_layout.addWidget(self.save_inc_btn, 1, 0)
+        
+        self.save_up_ver_btn = QtWidgets.QPushButton("🚀 Save Up Version")
+        self.save_up_ver_btn.setFixedHeight(32)
+        self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
+        utils_layout.addWidget(self.save_up_ver_btn, 1, 1)
         
         tab2_layout.addWidget(utils_group)
         
@@ -1365,6 +1370,72 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             print("[Toolboard] Da thuc hien Save Increment.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể thực hiện Save Increment:\n%s" % str(e))
+
+    def on_save_up_version(self):
+        """Lưu file nâng Version (ví dụ: từ _v01.0001 thành _v02)"""
+        import os
+        import re
+        
+        scene_path = cmds.file(q=True, sceneName=True)
+        if not scene_path:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Scene chưa được lưu! Hãy lưu file trước khi nâng Version.")
+            return
+            
+        scene_dir, scene_file = os.path.split(scene_path)
+        file_name, ext = os.path.splitext(scene_file)
+        
+        # Regex tìm version _v01, _v02,... hoặc .v01, .v02...
+        version_pattern = re.compile(r'([_\.]v)(\d+)(.*)', re.IGNORECASE)
+        
+        match = version_pattern.search(file_name)
+        if match:
+            prefix = file_name[:match.start()]
+            v_prefix = match.group(1) # '_v' hoặc '.v'
+            v_num_str = match.group(2) # '01', '1', '001'
+            
+            # Tăng số version lên 1
+            new_v_num = int(v_num_str) + 1
+            # Đệm số 0 tương ứng độ dài cũ (v01 -> v02)
+            new_v_num_str = str(new_v_num).zfill(len(v_num_str))
+            
+            # Bỏ qua phần hậu tố số increment phía sau (ví dụ: .0001)
+            new_file_name = prefix + v_prefix + new_v_num_str + ext
+        else:
+            # Nếu không có _vXX nhưng có hậu tố increment (ví dụ: .0005)
+            inc_pattern = re.compile(r'\.(\d{3,5})$')
+            inc_match = inc_pattern.search(file_name)
+            if inc_match:
+                prefix = file_name[:inc_match.start()]
+                new_file_name = prefix + "_v02" + ext
+            else:
+                # Không tìm thấy version và increment
+                new_file_name = file_name + "_v02" + ext
+                
+        new_scene_path = os.path.join(scene_dir, new_file_name).replace('\\', '/')
+        
+        # Xác nhận với người dùng trước khi lưu nâng version
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận nâng Version",
+            "Bạn có muốn nâng version hiện tại lên phiên bản mới không?\nTên file mới:\n%s" % new_file_name,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+            
+        try:
+            cmds.file(rename=new_scene_path)
+            file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
+            cmds.file(save=True, type=file_type)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã nâng version thành công!\nTên file mới: %s" % new_file_name
+            )
+            print("[Toolboard] Da nang version thanh cong: %s" % new_file_name)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Lỗi xảy ra khi nâng version:\n%s" % str(e)
+            )
 
 
 def show_window():
