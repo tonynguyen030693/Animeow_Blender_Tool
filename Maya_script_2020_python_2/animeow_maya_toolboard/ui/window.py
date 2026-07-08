@@ -589,12 +589,14 @@ def show_window():
             pass
         sys._animeow_maya_toolboard_ui = None
 
-    # 2. Xóa workspaceControl cũ đang tồn tại trong Maya session để tránh lỗi "not unique"
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
-        try:
-            cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
-        except Exception:
-            pass
+    # 2. Xóa các workspaceControl cũ và dọn dẹp các control rác từ các bản build lỗi trước đó
+    for ctrl_name in [AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
+                      AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME + "WorkspaceControl"]:
+        if cmds.workspaceControl(ctrl_name, exists=True):
+            try:
+                cmds.deleteUI(ctrl_name)
+            except Exception:
+                pass
             
     # 3. Tạo instance mới
     ui_instance = AnimeowMayaToolboardUI()
