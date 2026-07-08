@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link
+from ..core import smart_link, playblast
 
 QSS_STYLE = """
 QWidget {
@@ -153,6 +153,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_STEP = "AnimeowTbBakeStep"
     OP_SMART_CLEAN = "AnimeowTbBakeSmartClean"
     OP_THRESHOLD = "AnimeowTbBakeThreshold"
+    OP_PB_CAMERA = "AnimeowTbPbCamera"
+    OP_PB_FORMAT = "AnimeowTbPbFormat"
+    OP_PB_WIDTH = "AnimeowTbPbWidth"
+    OP_PB_HEIGHT = "AnimeowTbPbHeight"
+    OP_PB_SCALE = "AnimeowTbPbScale"
+    OP_PB_VIEWER = "AnimeowTbPbViewer"
+    OP_PB_OVERWRITE = "AnimeowTbPbOverwrite"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
@@ -319,9 +326,94 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addStretch()
         
+        # --- TAB 3: PLAYBLAST ---
+        tab3 = QtWidgets.QWidget()
+        tab3_layout = QtWidgets.QVBoxLayout(tab3)
+        tab3_layout.setContentsMargins(6, 10, 6, 6)
+        tab3_layout.setSpacing(12)
+        
+        # Tiêu đề Tab 3
+        pb_title = QtWidgets.QLabel("🎬 ANIMEOW PLAYBLAST MANAGER")
+        pb_title.setAlignment(QtCore.Qt.AlignCenter)
+        pb_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
+        tab3_layout.addWidget(pb_title)
+        
+        # Khối cấu hình Playblast
+        pb_group = QtWidgets.QGroupBox("Cấu hình Quay thử (Playblast Settings)")
+        pb_layout = QtWidgets.QGridLayout(pb_group)
+        pb_layout.setContentsMargins(8, 12, 8, 8)
+        pb_layout.setSpacing(10)
+        
+        # Camera
+        pb_layout.addWidget(QtWidgets.QLabel("Camera:"), 0, 0)
+        cam_row = QtWidgets.QHBoxLayout()
+        self.camera_combo = QtWidgets.QComboBox()
+        cam_row.addWidget(self.camera_combo)
+        self.refresh_cam_btn = QtWidgets.QPushButton("🔄")
+        self.refresh_cam_btn.setFixedWidth(30)
+        self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
+        cam_row.addWidget(self.refresh_cam_btn)
+        pb_layout.addLayout(cam_row, 0, 1)
+        
+        # Format
+        pb_layout.addWidget(QtWidgets.QLabel("Định dạng (Format):"), 1, 0)
+        self.pb_format_combo = QtWidgets.QComboBox()
+        self.pb_format_combo.addItems(["QuickTime (mov)", "AVI (avi)"])
+        pb_layout.addWidget(self.pb_format_combo, 1, 1)
+        
+        # Resolution (W x H)
+        pb_layout.addWidget(QtWidgets.QLabel("Độ phân giải:"), 2, 0)
+        res_row = QtWidgets.QHBoxLayout()
+        self.pb_width_spin = QtWidgets.QSpinBox()
+        self.pb_width_spin.setRange(320, 7680)
+        self.pb_width_spin.setValue(1920)
+        self.pb_height_spin = QtWidgets.QSpinBox()
+        self.pb_height_spin.setRange(240, 4320)
+        self.pb_height_spin.setValue(1080)
+        res_row.addWidget(self.pb_width_spin)
+        res_row.addWidget(QtWidgets.QLabel("x"))
+        res_row.addWidget(self.pb_height_spin)
+        pb_layout.addLayout(res_row, 2, 1)
+        
+        # Scale (Percent)
+        pb_layout.addWidget(QtWidgets.QLabel("Tỉ lệ (Scale %):"), 3, 0)
+        self.pb_scale_spin = QtWidgets.QSpinBox()
+        self.pb_scale_spin.setRange(10, 100)
+        self.pb_scale_spin.setValue(100)
+        self.pb_scale_spin.setSuffix(" %")
+        pb_layout.addWidget(self.pb_scale_spin, 3, 1)
+        
+        tab3_layout.addWidget(pb_group)
+        
+        # Khối tùy chọn thêm
+        pb_options_group = QtWidgets.QGroupBox("Tùy chọn bổ sung")
+        pb_opt_layout = QtWidgets.QVBoxLayout(pb_options_group)
+        pb_opt_layout.setContentsMargins(8, 12, 8, 8)
+        pb_opt_layout.setSpacing(8)
+        
+        self.pb_viewer_cb = QtWidgets.QCheckBox("Tự động mở trình phát sau khi quay xong")
+        self.pb_viewer_cb.setChecked(True)
+        pb_opt_layout.addWidget(self.pb_viewer_cb)
+        
+        self.pb_overwrite_cb = QtWidgets.QCheckBox("Ghi đè trực tiếp lên tệp cũ (Không lưu trữ Old)")
+        self.pb_overwrite_cb.setChecked(False)
+        pb_opt_layout.addWidget(self.pb_overwrite_cb)
+        
+        tab3_layout.addWidget(pb_options_group)
+        
+        # Nút thực thi Playblast
+        self.run_pb_btn = QtWidgets.QPushButton("🎬 Xuất Video Playblast (Nháp)")
+        self.run_pb_btn.setObjectName("accent_btn")
+        self.run_pb_btn.setFixedHeight(40)
+        self.run_pb_btn.clicked.connect(self.on_run_playblast)
+        tab3_layout.addWidget(self.run_pb_btn)
+        
+        tab3_layout.addStretch()
+        
         # Thêm các tab vào Widget
         self.tab_widget.addTab(tab1, "🔗 Smart Link")
         self.tab_widget.addTab(tab2, "🛠️ Quick Tools")
+        self.tab_widget.addTab(tab3, "🎬 Playblast")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -337,12 +429,44 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if cmds.optionVar(exists=self.OP_THRESHOLD):
             self.threshold_spin.setValue(cmds.optionVar(query=self.OP_THRESHOLD))
 
+        # Khởi tạo danh sách camera trước
+        self.on_refresh_cameras()
+        if cmds.optionVar(exists=self.OP_PB_CAMERA):
+            cam = cmds.optionVar(query=self.OP_PB_CAMERA)
+            idx = self.camera_combo.findText(cam)
+            if idx >= 0:
+                self.camera_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_PB_FORMAT):
+            fmt = cmds.optionVar(query=self.OP_PB_FORMAT)
+            idx = self.pb_format_combo.findText(fmt)
+            if idx >= 0:
+                self.pb_format_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_PB_WIDTH):
+            self.pb_width_spin.setValue(cmds.optionVar(query=self.OP_PB_WIDTH))
+        if cmds.optionVar(exists=self.OP_PB_HEIGHT):
+            self.pb_height_spin.setValue(cmds.optionVar(query=self.OP_PB_HEIGHT))
+        if cmds.optionVar(exists=self.OP_PB_SCALE):
+            self.pb_scale_spin.setValue(cmds.optionVar(query=self.OP_PB_SCALE))
+        if cmds.optionVar(exists=self.OP_PB_VIEWER):
+            self.pb_viewer_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_VIEWER)))
+        if cmds.optionVar(exists=self.OP_PB_OVERWRITE):
+            self.pb_overwrite_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_OVERWRITE)))
+
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
         cmds.optionVar(stringValue=(self.OP_OWNER, self.owner_txt.text()))
         cmds.optionVar(intValue=(self.OP_STEP, self.bake_step_spin.value()))
         cmds.optionVar(intValue=(self.OP_SMART_CLEAN, int(self.smart_clean_cb.isChecked())))
         cmds.optionVar(floatValue=(self.OP_THRESHOLD, self.threshold_spin.value()))
+
+        # Lưu cấu hình Playblast
+        cmds.optionVar(stringValue=(self.OP_PB_CAMERA, self.camera_combo.currentText()))
+        cmds.optionVar(stringValue=(self.OP_PB_FORMAT, self.pb_format_combo.currentText()))
+        cmds.optionVar(intValue=(self.OP_PB_WIDTH, self.pb_width_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_HEIGHT, self.pb_height_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -664,6 +788,69 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print("[Animo] Đã khởi chạy Animo thành công.")
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
+
+    def on_refresh_cameras(self):
+        """Làm mới danh sách camera trong scene"""
+        current_cam = self.camera_combo.currentText()
+        self.camera_combo.clear()
+        
+        cams = cmds.ls(type="camera")
+        cam_transforms = []
+        for cam in cams:
+            parent = cmds.listRelatives(cam, parent=True)
+            if parent:
+                cam_transforms.append(parent[0])
+                
+        cam_transforms = sorted(list(set(cam_transforms)))
+        startup_cams = ["persp", "top", "front", "side"]
+        custom_cams = [c for c in cam_transforms if c not in startup_cams]
+        sorted_cams = custom_cams + startup_cams
+        
+        self.camera_combo.addItems(sorted_cams)
+        
+        idx = self.camera_combo.findText(current_cam)
+        if idx >= 0:
+            self.camera_combo.setCurrentIndex(idx)
+
+    def on_run_playblast(self):
+        """Thực thi quay thử Playblast"""
+        self.save_settings()
+        
+        camera = self.camera_combo.currentText()
+        if not camera:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy camera khả dụng!")
+            return
+            
+        fmt_text = self.pb_format_combo.currentText()
+        format_ext = "avi" if "avi" in fmt_text.lower() else "qt"
+        
+        width = self.pb_width_spin.value()
+        height = self.pb_height_spin.value()
+        percent = self.pb_scale_spin.value()
+        viewer = self.pb_viewer_cb.isChecked()
+        overwrite = self.pb_overwrite_cb.isChecked()
+        
+        try:
+            pbm = playblast.PlayblastManager()
+            output_file = pbm.run_playblast(
+                format_ext=format_ext,
+                percent=percent,
+                width=width,
+                height=height,
+                camera=camera,
+                viewer=viewer,
+                overwrite=overwrite
+            )
+            print("[Playblast] Xuat video thanh cong: %s" % output_file)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công", 
+                "Đã xuất Playblast thành công!\nĐường dẫn:\n%s" % output_file
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Playblast", 
+                "Lỗi xảy ra khi xuất Playblast:\n%s" % playblast.exception_to_unicode(e)
+            )
 
 
 def show_window():
