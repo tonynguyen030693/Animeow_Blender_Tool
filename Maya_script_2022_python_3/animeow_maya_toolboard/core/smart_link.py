@@ -146,41 +146,91 @@ class AnimationBaker(object):
         """Bake chuyển động và dọn dẹp"""
         # 1. Định vị locators
         loc_parent, loc_child = self.find_locator_names()
-        
-        # 2. Chạy Bake Results của Maya
         attrs = ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
         
-        cmds.bakeResults(
-            self.owner,
-            time=(start_frame, end_frame),
-            sampleBy=step,
-            simulation=True,
-            disableImplicitControl=True,
-            preserveOutsideKeys=True,
-            sparseAnimCurveBake=False,
-            at=attrs
-        )
-        
-        # Xóa các constraints trên owner sau khi bake xong
-        constraints = cmds.listConnections(self.owner, type="constraint") or []
-        for c in list(set(constraints)):
-            if cmds.objExists(c):
-                try:
-                    cmds.delete(c)
-                except Exception:
-                    pass
-        
-        # 3. Lọc tối ưu keyframe bằng keyReducer
         if smart_clean:
-            anim_curves = cmds.keyframe(self.owner, q=True, name=True) or []
-            if anim_curves:
-                try:
-                    cmds.filterCurve(anim_curves, filter="keyReducer", precisionMode=0, precision=clean_threshold)
-                    print(u"[SmartLink] Đã tối ưu hóa keyframe bằng keyReducer.")
-                except Exception as e:
-                    print(u"[SmartLink] Lỗi lọc keyframe: %s" % exception_to_unicode(e))
-
-        # 4. Xóa các locator
+            # Thu thập các frame theo lưới Grid Step (ví dụ step=2: 1, 3, 5, 7...)
+            grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
+            
+            # Thu thập các keyframe nguồn từ locator hoặc các vật dẫn của constraint
+            source_keyframes = set()
+            targets_to_scan = []
+            if loc_child and cmds.objExists(loc_child):
+                targets_to_scan.append(loc_child)
+            else:
+                constraints = cmds.listConnections(self.owner, type="constraint") or []
+                for con in constraints:
+                    # Lấy các kết nối đầu vào (drivers) của constraint
+                    inputs = cmds.listConnections(con, source=True, destination=False) or []
+                    targets_to_scan.extend(inputs)
+            
+            targets_to_scan = list(set(targets_to_scan))
+            for target in targets_to_scan:
+                if cmds.objExists(target):
+                    loc_curves = cmds.keyframe(target, q=True, name=True) or []
+                    for curve in loc_curves:
+                        keys = cmds.keyframe(curve, q=True, timeChange=True) or []
+                        for k in keys:
+                            source_keyframes.add(int(round(k)))
+            
+            # Tập hợp các frame cần giữ lại (Hợp của lưới Grid và Keyframe nguồn)
+            keep_frames = grid_frames.union(source_keyframes)
+            
+            # Bake với step = 1 để ghi nhận đầy đủ chuyển động chính xác nhất
+            cmds.bakeResults(
+                self.owner,
+                time=(start_frame, end_frame),
+                sampleBy=1,
+                simulation=True,
+                disableImplicitControl=True,
+                preserveOutsideKeys=True,
+                sparseAnimCurveBake=False,
+                at=attrs
+            )
+            
+            # Xoá các constraints trên owner sau khi nướng
+            constraints = cmds.listConnections(self.owner, type="constraint") or []
+            for c in list(set(constraints)):
+                if cmds.objExists(c):
+                    try:
+                        cmds.delete(c)
+                    except Exception:
+                        pass
+            
+            # Lọc bỏ các keyframe thô không nằm trong danh sách keep_frames
+            all_keys = cmds.keyframe(self.owner, q=True, timeChange=True) or []
+            all_keys = sorted(list(set([int(round(k)) for k in all_keys])))
+            for k in all_keys:
+                if k < start_frame or k > end_frame:
+                    continue
+                if k not in keep_frames:
+                    cmds.cutKey(self.owner, time=(k, k), option="keys", clear=True)
+            
+            print(u"[SmartLink] Đã bake tối ưu giữ Grid (bước %d) và giữ nguyên các key cực trị nguồn." % step)
+            
+        else:
+            # Bake thuần túy theo bước nhảy (Step) không thêm key cực trị nguồn nằm ngoài lưới
+            cmds.bakeResults(
+                self.owner,
+                time=(start_frame, end_frame),
+                sampleBy=step,
+                simulation=True,
+                disableImplicitControl=True,
+                preserveOutsideKeys=True,
+                sparseAnimCurveBake=False,
+                at=attrs
+            )
+            
+            # Xoá các constraints trên owner sau khi nướng
+            constraints = cmds.listConnections(self.owner, type="constraint") or []
+            for c in list(set(constraints)):
+                if cmds.objExists(c):
+                    try:
+                        cmds.delete(c)
+                    except Exception:
+                        pass
+        
+        # 4. Xóa các locator thừa
         self.cleanup_locators(loc_parent, loc_child)
 
     def cleanup_locators(self, loc_parent, loc_child):
