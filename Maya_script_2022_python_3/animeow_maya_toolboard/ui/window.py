@@ -2307,9 +2307,25 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 disableImplicitControl=True,
                 preserveOutsideKeys=True,
                 sparseAnimCurveBake=False, # Không giữ cực trị thưa, tạo key đều tăm tắp
-                removeBakedConstraints=remove_constraints,
                 bakeOnDefaultKeyPath=True
             )
+            
+            # Nếu người dùng tích chọn Xóa Constraints, thực hiện xóa thủ công
+            if remove_constraints:
+                for obj in sel:
+                    constraints = []
+                    connections = cmds.listConnections(obj, source=True, destination=False) or []
+                    for node in connections:
+                        if cmds.nodeType(node) in [
+                            "parentConstraint", "pointConstraint", "orientConstraint", 
+                            "scaleConstraint", "aimConstraint", "poleVectorConstraint"
+                        ]:
+                            constraints.append(node)
+                    if constraints:
+                        try:
+                            cmds.delete(list(set(constraints)))
+                        except Exception:
+                            pass
             QtWidgets.QMessageBox.information(
                 self, "Thành công", 
                 "Đã bake thành công %d đối tượng theo bước %ds." % (len(sel), step)
