@@ -1910,21 +1910,24 @@ def is_ui_alive(ui_obj):
 def show_window():
     import sys
     
-    # 1. Đóng và giải phóng widget cũ lập tức bằng cách gỡ parent trước khi deleteLater
+    # 1. Đóng và giải phóng widget cũ (nếu có)
     old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
     if is_ui_alive(old_ui):
         try:
-            old_ui.setParent(None)
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
             pass
         sys._animeow_maya_toolboard_ui = None
 
-    # CHÚ Ý QUAN TRỌNG: Không xóa workspaceControl bằng deleteUI nữa!
-    # Nếu workspaceControl đã tồn tại trong Maya, container của nó sẽ lưu giữ trạng thái vị trí nổi (Float)/ghép (Dock) và size.
-    
-    # 2. Tạo instance mới
+    # 2. Xóa workspaceControl cũ đang tồn tại trong Maya session để tránh lỗi "not unique"
+    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+        try:
+            cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
+        except Exception:
+            pass
+            
+    # 3. Tạo instance mới
     ui_instance = AnimeowMayaToolboardUI()
     sys._animeow_maya_toolboard_ui = ui_instance
     
@@ -1933,22 +1936,20 @@ def show_window():
     obj_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME.replace("WorkspaceControl", "")
     ui_instance.setObjectName(obj_name)
     
-    # 3. Hiển thị dưới dạng dockable panel
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
-        # Nếu container đã có sẵn trong Maya session: 
-        # Chỉ gọi show() mà không truyền floating/area hay workspaceControlName để tránh TypeError và giữ nguyên vị trí container
+    # 4. Kiểm tra xem người dùng đã từng có tùy biến vị trí (windowPref) được lưu cho workspace control này chưa
+    pref_exists = False
+    try:
+        pref_exists = cmds.windowPref(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True)
+    except Exception:
+        pass
+        
+    # 5. Hiển thị dưới dạng dockable panel
+    if pref_exists:
+        # Nếu đã có tùy chỉnh vị trí trước đó (Ví dụ kéo ra ngoài float hoặc dock chỗ khác),
+        # ta để Maya tự động tải cấu hình cũ bằng cách không áp các giá trị mặc định (floating=False, area="right")
         ui_instance.show(dockable=True)
-        try:
-            # Bật hiển thị trở lại (trong trường hợp người dùng vừa bấm tắt 'X' làm ẩn control)
-            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, visible=True)
-            # Khôi phục trạng thái Float/Docked và kích thước đã lưu của container
-            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, restore=True)
-            # Kích hoạt đưa tab lên trước
-            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, select=True)
-        except Exception as e:
-            print("[Toolboard] Lỗi khôi phục vị trí cũ: %s" % str(e))
     else:
-        # Nếu chưa từng tồn tại (lần đầu tiên mở trong phiên làm việc của Maya)
+        # Nếu là lần đầu chạy tool, áp dụng docking mặc định ở bên phải
         ui_instance.show(
             dockable=True,
             area="right",
@@ -1956,7 +1957,7 @@ def show_window():
             allowedArea="left|right"
         )
     
-    # 4. Cập nhật tiêu đề hiển thị cho tab trong Maya
+    # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
         cmds.workspaceControl(
             AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
