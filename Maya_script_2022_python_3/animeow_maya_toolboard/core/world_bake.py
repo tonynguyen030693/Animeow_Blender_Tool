@@ -64,9 +64,9 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
         # 1. Thu thập lưới Grid Step
         grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
         
-        # 2. Thu thập keyframe thô nguồn từ chính vật thể và driver của constraint
+        # 2. Thu thập keyframe thô nguồn từ driver của constraint (không quét chính vật thể đang bake)
         source_keyframes = set()
-        targets_to_scan = [obj]
+        targets_to_scan = []
         for con in incoming_constraints:
             inputs = cmds.listConnections(con, source=True, destination=False) or []
             targets_to_scan.extend(inputs)
