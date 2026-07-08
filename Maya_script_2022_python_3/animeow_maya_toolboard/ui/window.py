@@ -185,239 +185,315 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.load_settings()
 
     def build_ui(self):
+        # Helper function to wrap widgets in scroll area
+        def wrap_in_scroll(widget):
+            scroll = QtWidgets.QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
+            # Thiết lập nền tối đồng bộ
+            scroll.setStyleSheet("QScrollArea { background-color: #2D2D2D; border: none; }")
+            scroll.setWidget(widget)
+            return scroll
+
         # Khởi tạo QTabWidget
         self.tab_widget = QtWidgets.QTabWidget()
         self.main_layout.addWidget(self.tab_widget)
         
-        # --- TAB 1: SMART LINK ---
+        # =========================================================================
+        # --- TAB 1: 🔗 LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
+        # =========================================================================
         tab1 = QtWidgets.QWidget()
         tab1_layout = QtWidgets.QVBoxLayout(tab1)
         tab1_layout.setContentsMargins(6, 10, 6, 6)
-        tab1_layout.setSpacing(12)
+        tab1_layout.setSpacing(10)
         
         # Tiêu đề Tab 1
-        title_label = QtWidgets.QLabel("🎯 ANIMEOW SMART LINK")
-        title_label.setAlignment(QtCore.Qt.AlignCenter)
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        tab1_layout.addWidget(title_label)
+        t1_title = QtWidgets.QLabel("🔗 LINK & WORLD BAKE MANAGER")
+        t1_title.setAlignment(QtCore.Qt.AlignCenter)
+        t1_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab1_layout.addWidget(t1_title)
         
-        # 1. Khối đối tượng (Link Targets)
-        link_group = QtWidgets.QGroupBox("1. Thiết lập Đối Tượng liên kết (Target & Owner)")
+        # GroupBox 1: Smart Link
+        link_group = QtWidgets.QGroupBox("🎯 Smart Link (Liên kết đối tượng)")
         link_layout = QtWidgets.QVBoxLayout(link_group)
         link_layout.setContentsMargins(8, 12, 8, 8)
-        link_layout.setSpacing(10)
+        link_layout.setSpacing(8)
         
-        # Hàng Target
+        # Target
         target_row = QtWidgets.QHBoxLayout()
         target_row.addWidget(QtWidgets.QLabel("Target (Vật dẫn):"))
         self.target_txt = QtWidgets.QLineEdit()
         self.target_txt.setPlaceholderText("Xương / Vật dẫn đường (Driver)...")
         target_row.addWidget(self.target_txt)
-        self.get_target_btn = QtWidgets.QPushButton("Lấy đang chọn")
+        self.get_target_btn = QtWidgets.QPushButton("Lấy chọn")
         self.get_target_btn.clicked.connect(self.on_get_target)
         target_row.addWidget(self.get_target_btn)
         link_layout.addLayout(target_row)
         
-        # Hàng Owner
+        # Owner
         owner_row = QtWidgets.QHBoxLayout()
         owner_row.addWidget(QtWidgets.QLabel("Owner (Vật bị dẫn):"))
         self.owner_txt = QtWidgets.QLineEdit()
         self.owner_txt.setPlaceholderText("Vật bị ràng buộc (Driven)...")
         owner_row.addWidget(self.owner_txt)
-        self.get_owner_btn = QtWidgets.QPushButton("Lấy đang chọn")
+        self.get_owner_btn = QtWidgets.QPushButton("Lấy chọn")
         self.get_owner_btn.clicked.connect(self.on_get_owner)
         owner_row.addWidget(self.get_owner_btn)
         link_layout.addLayout(owner_row)
         
-        # Tùy chọn locator
+        # Use locator cb
         self.use_locator_cb = QtWidgets.QCheckBox("Sử dụng cặp Locator (Hook & Offset) lồng nhau")
         self.use_locator_cb.setChecked(True)
         link_layout.addWidget(self.use_locator_cb)
         
-        tab1_layout.addWidget(link_group)
+        # Link / Switch / Bake Action Buttons
+        link_btn_layout = QtWidgets.QHBoxLayout()
+        self.link_btn = QtWidgets.QPushButton("🚀 Gán Link")
+        self.link_btn.setObjectName("accent_btn")
+        self.link_btn.setFixedHeight(30)
+        self.link_btn.clicked.connect(self.on_link)
+        link_btn_layout.addWidget(self.link_btn)
         
-        # 2. Khối cấu hình Bake (Bake Settings)
-        bake_group = QtWidgets.QGroupBox("2. Thiết lập Bake chuyển động")
-        bake_layout = QtWidgets.QGridLayout(bake_group)
-        bake_layout.setContentsMargins(8, 12, 8, 8)
-        bake_layout.setSpacing(8)
+        self.switch_btn = QtWidgets.QPushButton("🔄 Đổi Vật Dẫn")
+        self.switch_btn.setFixedHeight(30)
+        self.switch_btn.clicked.connect(self.on_switch_target)
+        link_btn_layout.addWidget(self.switch_btn)
         
-        bake_layout.addWidget(QtWidgets.QLabel("Step (Bước nhảy):"), 0, 0)
+        self.bake_btn = QtWidgets.QPushButton("🎬 Giải phóng")
+        self.bake_btn.setFixedHeight(30)
+        self.bake_btn.clicked.connect(self.on_bake_clean)
+        link_btn_layout.addWidget(self.bake_btn)
+        link_layout.addLayout(link_btn_layout)
+        
+        # Smart Link Bake settings
+        smart_bake_layout = QtWidgets.QGridLayout()
+        smart_bake_layout.addWidget(QtWidgets.QLabel("Step (Bake Link):"), 0, 0)
         self.bake_step_spin = QtWidgets.QSpinBox()
         self.bake_step_spin.setRange(1, 100)
         self.bake_step_spin.setValue(1)
-        bake_layout.addWidget(self.bake_step_spin, 0, 1)
+        smart_bake_layout.addWidget(self.bake_step_spin, 0, 1)
         
-        self.smart_clean_cb = QtWidgets.QCheckBox("Smart Clean (Bake thưa tối ưu key thô)")
+        self.smart_clean_cb = QtWidgets.QCheckBox("Smart Clean Link (Bảo toàn key cực trị)")
         self.smart_clean_cb.setChecked(True)
-        bake_layout.addWidget(self.smart_clean_cb, 1, 0, 1, 2)
+        smart_bake_layout.addWidget(self.smart_clean_cb, 0, 2)
         
-        bake_layout.addWidget(QtWidgets.QLabel("Key Reducer Threshold:"), 2, 0)
+        smart_bake_layout.addWidget(QtWidgets.QLabel("Reducer Threshold:"), 1, 0)
         self.threshold_spin = QtWidgets.QDoubleSpinBox()
         self.threshold_spin.setRange(0.001, 2.0)
         self.threshold_spin.setValue(0.05)
         self.threshold_spin.setSingleStep(0.01)
-        bake_layout.addWidget(self.threshold_spin, 2, 1)
+        smart_bake_layout.addWidget(self.threshold_spin, 1, 1, 1, 2)
+        link_layout.addLayout(smart_bake_layout)
         
-        tab1_layout.addWidget(bake_group)
+        tab1_layout.addWidget(link_group)
         
-        # 3. Khu vực nút bấm hành động
-        btn_layout = QtWidgets.QVBoxLayout()
-        btn_layout.setSpacing(8)
+        # GroupBox 2: World Bake
+        wb_group = QtWidgets.QGroupBox("🌍 World Bake (Nướng không gian thế giới)")
+        wb_layout = QtWidgets.QGridLayout(wb_group)
+        wb_layout.setContentsMargins(8, 12, 8, 8)
+        wb_layout.setSpacing(8)
         
-        self.link_btn = QtWidgets.QPushButton("🚀 Gán Liên Kết (Link)")
-        self.link_btn.setObjectName("accent_btn")
-        self.link_btn.setFixedHeight(35)
-        self.link_btn.clicked.connect(self.on_link)
-        btn_layout.addWidget(self.link_btn)
+        wb_layout.addWidget(QtWidgets.QLabel("Kênh nướng:"), 0, 0)
+        self.wb_channels_combo = QtWidgets.QComboBox()
+        self.wb_channels_combo.addItems(["Translate & Rotate (Both)", "Translate Only", "Rotate Only"])
+        wb_layout.addWidget(self.wb_channels_combo, 0, 1)
         
-        self.switch_btn = QtWidgets.QPushButton("🔄 Đổi Vật Dẫn (Switch Target)")
-        self.switch_btn.setFixedHeight(30)
-        self.switch_btn.clicked.connect(self.on_switch_target)
-        btn_layout.addWidget(self.switch_btn)
+        wb_layout.addWidget(QtWidgets.QLabel("Bước nhảy (Step):"), 0, 2)
+        self.wb_step_spin = QtWidgets.QSpinBox()
+        self.wb_step_spin.setRange(1, 100)
+        self.wb_step_spin.setValue(1)
+        wb_layout.addWidget(self.wb_step_spin, 0, 3)
         
-        self.bake_btn = QtWidgets.QPushButton("🎬 Bake & Clean (Giải phóng)")
-        self.bake_btn.setFixedHeight(35)
-        self.bake_btn.clicked.connect(self.on_bake_clean)
-        btn_layout.addWidget(self.bake_btn)
+        self.wb_smart_clean_cb = QtWidgets.QCheckBox("Smart Clean World (Bảo toàn keyframe cực trị)")
+        self.wb_smart_clean_cb.setChecked(True)
+        wb_layout.addWidget(self.wb_smart_clean_cb, 1, 0, 1, 4)
         
-        tab1_layout.addLayout(btn_layout)
+        # Buttons for World Bake
+        wb_buttons = QtWidgets.QHBoxLayout()
+        self.wb_to_loc_btn = QtWidgets.QPushButton("🚀 Bake sang Locator")
+        self.wb_to_loc_btn.setObjectName("accent_btn")
+        self.wb_to_loc_btn.setFixedHeight(30)
+        self.wb_to_loc_btn.clicked.connect(self.on_world_bake_to_locator)
+        wb_buttons.addWidget(self.wb_to_loc_btn)
+        
+        self.wb_from_loc_btn = QtWidgets.QPushButton("🎬 Bake ngược về Vật thể")
+        self.wb_from_loc_btn.setFixedHeight(30)
+        self.wb_from_loc_btn.clicked.connect(self.on_world_bake_from_locator)
+        wb_buttons.addWidget(self.wb_from_loc_btn)
+        
+        wb_layout.addLayout(wb_buttons, 2, 0, 1, 4)
+        
+        tab1_layout.addWidget(wb_group)
         tab1_layout.addStretch()
         
-        # --- TAB 2: TIỆN ÍCH (QUICK TOOLS) ---
+        # =========================================================================
+        # --- TAB 2: ⚙️ QUICK UTILITIES (TIỆN ÍCH NHANH) ---
+        # =========================================================================
         tab2 = QtWidgets.QWidget()
         tab2_layout = QtWidgets.QVBoxLayout(tab2)
         tab2_layout.setContentsMargins(6, 10, 6, 6)
-        tab2_layout.setSpacing(12)
+        tab2_layout.setSpacing(10)
         
         # Tiêu đề Tab 2
-        tools_title = QtWidgets.QLabel("🛠️ ANIMEOW QUICK TOOLS")
-        tools_title.setAlignment(QtCore.Qt.AlignCenter)
-        tools_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        tab2_layout.addWidget(tools_title)
+        t2_title = QtWidgets.QLabel("⚙️ QUICK UTILITIES")
+        t2_title.setAlignment(QtCore.Qt.AlignCenter)
+        t2_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab2_layout.addWidget(t2_title)
         
-        # Khối công cụ mở rộng
-        tools_group = QtWidgets.QGroupBox("Tích hợp các bộ công cụ hoạt họa bên thứ ba")
-        tools_layout = QtWidgets.QGridLayout(tools_group)
-        tools_layout.setContentsMargins(8, 12, 8, 8)
-        tools_layout.setSpacing(10)
+        # GroupBox 1: Scene & File Manager
+        scene_group = QtWidgets.QGroupBox("📂 Scene & File Manager (Quản lý File)")
+        scene_layout = QtWidgets.QGridLayout(scene_group)
+        scene_layout.setContentsMargins(8, 12, 8, 8)
+        scene_layout.setSpacing(8)
         
-        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
-        self.studio_lib_btn.setFixedHeight(32)
-        self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
-        tools_layout.addWidget(self.studio_lib_btn, 0, 0)
-        
-        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
-        self.dwpicker_btn.setFixedHeight(32)
-        self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
-        tools_layout.addWidget(self.dwpicker_btn, 0, 1)
-        
-        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
-        self.tween_machine_btn.setFixedHeight(32)
-        self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
-        tools_layout.addWidget(self.tween_machine_btn, 1, 0)
-        
-        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
-        self.atools_btn.setFixedHeight(32)
-        self.atools_btn.clicked.connect(self.on_launch_atools)
-        tools_layout.addWidget(self.atools_btn, 1, 1)
-        
-        self.animo_btn = QtWidgets.QPushButton("🚀 Animo")
-        self.animo_btn.setFixedHeight(32)
-        self.animo_btn.clicked.connect(self.on_launch_animo)
-        tools_layout.addWidget(self.animo_btn, 2, 0)
-        
-        self.world_bake_btn = QtWidgets.QPushButton("🌍 World Bake")
-        self.world_bake_btn.setFixedHeight(32)
-        self.world_bake_btn.clicked.connect(self.on_launch_worldbake)
-        tools_layout.addWidget(self.world_bake_btn, 2, 1)
-        
-        tab2_layout.addWidget(tools_group)
-        
-        # Khối tiện ích Maya nhanh
-        utils_group = QtWidgets.QGroupBox("Tiện ích nhanh Maya")
-        utils_layout = QtWidgets.QGridLayout(utils_group)
-        utils_layout.setContentsMargins(8, 12, 8, 8)
-        utils_layout.setSpacing(10)
-        
-        self.toggle_graph_btn = QtWidgets.QPushButton("📈 Graph Editor")
-        self.toggle_graph_btn.setFixedHeight(32)
+        self.toggle_graph_btn = QtWidgets.QPushButton("📈 Graph Editor (Bật/Tắt)")
+        self.toggle_graph_btn.setFixedHeight(28)
         self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
-        utils_layout.addWidget(self.toggle_graph_btn, 0, 0)
-        
-        self.euler_filter_btn = QtWidgets.QPushButton("🔄 Euler Filter")
-        self.euler_filter_btn.setFixedHeight(32)
-        self.euler_filter_btn.clicked.connect(self.on_euler_filter)
-        utils_layout.addWidget(self.euler_filter_btn, 0, 1)
+        scene_layout.addWidget(self.toggle_graph_btn, 0, 0)
         
         self.toggle_ref_btn = QtWidgets.QPushButton("📂 Reference Editor")
-        self.toggle_ref_btn.setFixedHeight(32)
+        self.toggle_ref_btn.setFixedHeight(28)
         self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
-        utils_layout.addWidget(self.toggle_ref_btn, 1, 0)
-        
-        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder")
-        self.clean_folder_btn.setFixedHeight(32)
-        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
-        utils_layout.addWidget(self.clean_folder_btn, 1, 1)
+        scene_layout.addWidget(self.toggle_ref_btn, 0, 1)
         
         self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment")
-        self.save_inc_btn.setFixedHeight(32)
+        self.save_inc_btn.setFixedHeight(28)
         self.save_inc_btn.clicked.connect(self.on_save_increment)
-        utils_layout.addWidget(self.save_inc_btn, 2, 0)
+        scene_layout.addWidget(self.save_inc_btn, 1, 0)
         
         self.save_up_ver_btn = QtWidgets.QPushButton("🚀 Save Up Version")
-        self.save_up_ver_btn.setFixedHeight(32)
+        self.save_up_ver_btn.setFixedHeight(28)
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
-        utils_layout.addWidget(self.save_up_ver_btn, 2, 1)
+        scene_layout.addWidget(self.save_up_ver_btn, 1, 1)
         
-        self.fix_shader_btn = QtWidgets.QPushButton("🩹 Fix Lost Shader (Sửa lỗi mất shader)")
-        self.fix_shader_btn.setFixedHeight(32)
+        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder (Dọn dẹp scenes)")
+        self.clean_folder_btn.setFixedHeight(28)
+        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
+        scene_layout.addWidget(self.clean_folder_btn, 2, 0, 1, 2)
+        
+        tab2_layout.addWidget(scene_group)
+        
+        # GroupBox 2: Optimize & Fix
+        fix_group = QtWidgets.QGroupBox("🩹 Optimize & Fix (Tối ưu & Sửa lỗi)")
+        fix_layout = QtWidgets.QVBoxLayout(fix_group)
+        fix_layout.setContentsMargins(8, 12, 8, 8)
+        fix_layout.setSpacing(8)
+        
+        fix_row = QtWidgets.QHBoxLayout()
+        self.euler_filter_btn = QtWidgets.QPushButton("🔄 Euler Filter (Lọc xoay)")
+        self.euler_filter_btn.setFixedHeight(28)
+        self.euler_filter_btn.clicked.connect(self.on_euler_filter)
+        fix_row.addWidget(self.euler_filter_btn)
+        
+        self.fix_shader_btn = QtWidgets.QPushButton("🩹 Fix Lost Shader (Xanh lưới)")
+        self.fix_shader_btn.setFixedHeight(28)
         self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
-        utils_layout.addWidget(self.fix_shader_btn, 3, 0, 1, 2)
+        fix_row.addWidget(self.fix_shader_btn)
+        fix_layout.addLayout(fix_row)
         
-        tab2_layout.addWidget(utils_group)
-        
-        # Khối làm tròn số
-        round_group = QtWidgets.QGroupBox("Làm tròn số (Round Values)")
-        round_layout = QtWidgets.QGridLayout(round_group)
-        round_layout.setContentsMargins(8, 12, 8, 8)
-        round_layout.setSpacing(10)
-        
-        # Độ chính xác
-        round_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
+        # Sub-group: Round Values
+        round_sub_layout = QtWidgets.QGridLayout()
+        round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
         self.round_precision_combo = QtWidgets.QComboBox()
         self.round_precision_combo.addItems([
             "Số nguyên (ví dụ: 1)", 
             "1 chữ số thập phân (ví dụ: 1.1)", 
             "2 chữ số thập phân (ví dụ: 1.23)"
         ])
-        round_layout.addWidget(self.round_precision_combo, 0, 1)
+        round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
         
-        # Đối tượng làm tròn
-        round_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
+        round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
         self.round_target_combo = QtWidgets.QComboBox()
         self.round_target_combo.addItems([
-            "Channel Box (Thuộc tính hiện tại)", 
-            "Graph Editor (Keyframe đang chọn)"
+            "Channel Box (Thuộc tính chọn)", 
+            "Graph Editor (Keyframe chọn)"
         ])
-        round_layout.addWidget(self.round_target_combo, 1, 1)
+        round_sub_layout.addWidget(self.round_target_combo, 1, 1)
         
-        # Nút thực thi
         self.round_btn = QtWidgets.QPushButton("🔢 Làm tròn số")
         self.round_btn.setObjectName("accent_btn")
-        self.round_btn.setFixedHeight(35)
+        self.round_btn.setFixedHeight(28)
         self.round_btn.clicked.connect(self.on_round_values)
-        round_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+        round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+        fix_layout.addLayout(round_sub_layout)
         
-        tab2_layout.addWidget(round_group)
+        tab2_layout.addWidget(fix_group)
         
-        # Khối chuyển đổi Space & Rotate Order
-        space_order_group = QtWidgets.QGroupBox("Space & Rotate Order (Bảo toàn Key)")
-        so_layout = QtWidgets.QGridLayout(space_order_group)
+        # Mẹo sử dụng nhanh
+        info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
+        info_label.setAlignment(QtCore.Qt.AlignCenter)
+        info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
+        tab2_layout.addWidget(info_label)
+        
+        tab2_layout.addStretch()
+        
+        # =========================================================================
+        # --- TAB 3: 📈 ARC & ROTATE (QUỸ ĐẠO & XOAY) ---
+        # =========================================================================
+        tab3 = QtWidgets.QWidget()
+        tab3_layout = QtWidgets.QVBoxLayout(tab3)
+        tab3_layout.setContentsMargins(6, 10, 6, 6)
+        tab3_layout.setSpacing(10)
+        
+        # Tiêu đề Tab 3
+        t3_title = QtWidgets.QLabel("📈 ARC & ROTATION UTILITIES")
+        t3_title.setAlignment(QtCore.Qt.AlignCenter)
+        t3_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab3_layout.addWidget(t3_title)
+        
+        # GroupBox 1: Arc Tracker
+        at_group = QtWidgets.QGroupBox("🌈 Arc Tracker (Vẽ Quỹ đạo chuyển động)")
+        at_layout = QtWidgets.QGridLayout(at_group)
+        at_layout.setContentsMargins(8, 12, 8, 8)
+        at_layout.setSpacing(8)
+        
+        self.at_show_ticks_cb = QtWidgets.QCheckBox("Hiển thị Ticks thường (Màu vàng)")
+        self.at_show_ticks_cb.setChecked(True)
+        at_layout.addWidget(self.at_show_ticks_cb, 0, 0, 1, 2)
+        
+        self.at_show_keys_cb = QtWidgets.QCheckBox("Hiển thị Ticks Keyframe (Màu đỏ)")
+        self.at_show_keys_cb.setChecked(True)
+        at_layout.addWidget(self.at_show_keys_cb, 1, 0, 1, 2)
+        
+        at_layout.addWidget(QtWidgets.QLabel("Kích thước Ticks (Size):"), 2, 0)
+        self.at_tick_size_spin = QtWidgets.QDoubleSpinBox()
+        self.at_tick_size_spin.setRange(0.01, 10.0)
+        self.at_tick_size_spin.setValue(0.5)
+        self.at_tick_size_spin.setSingleStep(0.1)
+        at_layout.addWidget(self.at_tick_size_spin, 2, 1)
+        
+        # Actions Layout
+        at_actions_layout = QtWidgets.QGridLayout()
+        self.create_trail_btn = QtWidgets.QPushButton("🚀 Vẽ Arc Trail")
+        self.create_trail_btn.setObjectName("accent_btn")
+        self.create_trail_btn.setFixedHeight(30)
+        self.create_trail_btn.clicked.connect(self.on_create_arc_trail)
+        at_actions_layout.addWidget(self.create_trail_btn, 0, 0)
+        
+        self.update_trail_btn = QtWidgets.QPushButton("🔄 Cập nhật Trail")
+        self.update_trail_btn.setFixedHeight(30)
+        self.update_trail_btn.clicked.connect(self.on_update_arc_trails)
+        at_actions_layout.addWidget(self.update_trail_btn, 0, 1)
+        
+        self.clear_selected_trail_btn = QtWidgets.QPushButton("❌ Xóa chọn")
+        self.clear_selected_trail_btn.setFixedHeight(28)
+        self.clear_selected_trail_btn.clicked.connect(self.on_clear_selected_trails)
+        at_actions_layout.addWidget(self.clear_selected_trail_btn, 1, 0)
+        
+        self.clear_all_trails_btn = QtWidgets.QPushButton("🗑️ Xóa tất cả")
+        self.clear_all_trails_btn.setFixedHeight(28)
+        self.clear_all_trails_btn.clicked.connect(self.on_clear_all_trails)
+        at_actions_layout.addWidget(self.clear_all_trails_btn, 1, 1)
+        at_layout.addLayout(at_actions_layout, 3, 0, 1, 2)
+        
+        tab3_layout.addWidget(at_group)
+        
+        # GroupBox 2: Space & Rotate Order
+        so_group = QtWidgets.QGroupBox("🔄 Space & Rotate Order (Bảo toàn Key)")
+        so_layout = QtWidgets.QGridLayout(so_group)
         so_layout.setContentsMargins(8, 12, 8, 8)
-        so_layout.setSpacing(10)
+        so_layout.setSpacing(8)
         
-        # 1. Rotate Order Row
         so_layout.addWidget(QtWidgets.QLabel("Đổi Rotate Order:"), 0, 0)
         self.ro_combo = QtWidgets.QComboBox()
         self.ro_combo.addItems(["XYZ", "YZX", "ZXY", "XZY", "YXZ", "ZYX"])
@@ -428,50 +504,99 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.ro_apply_btn.clicked.connect(self.on_change_rotate_order)
         so_layout.addWidget(self.ro_apply_btn, 0, 2)
         
-        # Separator line
-        line = QtWidgets.QFrame()
-        line.setFrameShape(QtWidgets.QFrame.HLine)
-        line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        so_layout.addWidget(line, 1, 0, 1, 3)
-        
-        # 2. Record & Restore Row
+        # Record / Restore buttons
         self.so_record_btn = QtWidgets.QPushButton("📥 Ghi Space Thế giới (Record)")
-        self.so_record_btn.setFixedHeight(30)
+        self.so_record_btn.setFixedHeight(28)
         self.so_record_btn.clicked.connect(self.on_record_world_space)
-        so_layout.addWidget(self.so_record_btn, 2, 0, 1, 3)
+        so_layout.addWidget(self.so_record_btn, 1, 0, 1, 3)
         
         self.so_restore_btn = QtWidgets.QPushButton("📤 Khôi phục Space (Restore)")
-        self.so_restore_btn.setFixedHeight(30)
+        self.so_restore_btn.setFixedHeight(28)
         self.so_restore_btn.clicked.connect(self.on_restore_world_space)
-        so_layout.addWidget(self.so_restore_btn, 3, 0, 1, 3)
+        so_layout.addWidget(self.so_restore_btn, 2, 0, 1, 3)
         
-        tab2_layout.addWidget(space_order_group)
+        tab3_layout.addWidget(so_group)
         
-        # Lời giải thích nhỏ
-        info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
-        info_label.setAlignment(QtCore.Qt.AlignCenter)
-        info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
-        tab2_layout.addWidget(info_label)
+        # Mẹo sử dụng Arc
+        at_info_label = QtWidgets.QLabel("💡 Mẹo: Đường dẫn tĩnh chạy mượt 100% không lag.\nCập nhật nhanh sau khi chỉnh sửa animation.")
+        at_info_label.setAlignment(QtCore.Qt.AlignCenter)
+        at_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
+        tab3_layout.addWidget(at_info_label)
         
-        tab2_layout.addStretch()
+        tab3_layout.addStretch()
         
-        # --- TAB 3: PLAYBLAST ---
-        tab3 = QtWidgets.QWidget()
-        tab3_layout = QtWidgets.QVBoxLayout(tab3)
-        tab3_layout.setContentsMargins(6, 10, 6, 6)
-        tab3_layout.setSpacing(12)
+        # =========================================================================
+        # --- TAB 4: 🚀 APP LAUNCHERS (BỘ KHỞI CHẠY) ---
+        # =========================================================================
+        tab4 = QtWidgets.QWidget()
+        tab4_layout = QtWidgets.QVBoxLayout(tab4)
+        tab4_layout.setContentsMargins(6, 10, 6, 6)
+        tab4_layout.setSpacing(10)
         
-        # Tiêu đề Tab 3
-        pb_title = QtWidgets.QLabel("🎬 ANIMEOW PLAYBLAST MANAGER")
-        pb_title.setAlignment(QtCore.Qt.AlignCenter)
-        pb_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        tab3_layout.addWidget(pb_title)
+        # Tiêu đề Tab 4
+        t4_title = QtWidgets.QLabel("🚀 APP LAUNCHER DASHBOARD")
+        t4_title.setAlignment(QtCore.Qt.AlignCenter)
+        t4_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab4_layout.addWidget(t4_title)
         
-        # Khối cấu hình Playblast
+        # Launcher Grid
+        launch_group = QtWidgets.QGroupBox("Danh sách công cụ phụ trợ")
+        launch_layout = QtWidgets.QGridLayout(launch_group)
+        launch_layout.setContentsMargins(8, 12, 8, 8)
+        launch_layout.setSpacing(12)
+        
+        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
+        self.studio_lib_btn.setFixedHeight(40)
+        self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
+        launch_layout.addWidget(self.studio_lib_btn, 0, 0)
+        
+        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
+        self.dwpicker_btn.setFixedHeight(40)
+        self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
+        launch_layout.addWidget(self.dwpicker_btn, 0, 1)
+        
+        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
+        self.tween_machine_btn.setFixedHeight(40)
+        self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
+        launch_layout.addWidget(self.tween_machine_btn, 1, 0)
+        
+        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
+        self.atools_btn.setFixedHeight(40)
+        self.atools_btn.clicked.connect(self.on_launch_atools)
+        launch_layout.addWidget(self.atools_btn, 1, 1)
+        
+        self.animo_btn = QtWidgets.QPushButton("🚀 Animo")
+        self.animo_btn.setFixedHeight(40)
+        self.animo_btn.clicked.connect(self.on_launch_animo)
+        launch_layout.addWidget(self.animo_btn, 2, 0)
+        
+        self.world_bake_btn = QtWidgets.QPushButton("🌍 World Bake (Gốc)")
+        self.world_bake_btn.setFixedHeight(40)
+        self.world_bake_btn.clicked.connect(self.on_launch_worldbake)
+        launch_layout.addWidget(self.world_bake_btn, 2, 1)
+        
+        tab4_layout.addWidget(launch_group)
+        tab4_layout.addStretch()
+        
+        # =========================================================================
+        # --- TAB 5: 🎬 PLAYBLAST MANAGER ---
+        # =========================================================================
+        tab5 = QtWidgets.QWidget()
+        tab5_layout = QtWidgets.QVBoxLayout(tab5)
+        tab5_layout.setContentsMargins(6, 10, 6, 6)
+        tab5_layout.setSpacing(10)
+        
+        # Tiêu đề Tab 5
+        t5_title = QtWidgets.QLabel("🎬 ANIMEOW PLAYBLAST MANAGER")
+        t5_title.setAlignment(QtCore.Qt.AlignCenter)
+        t5_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab5_layout.addWidget(t5_title)
+        
+        # Config group
         pb_group = QtWidgets.QGroupBox("Cấu hình Quay thử (Playblast Settings)")
         pb_layout = QtWidgets.QGridLayout(pb_group)
         pb_layout.setContentsMargins(8, 12, 8, 8)
-        pb_layout.setSpacing(10)
+        pb_layout.setSpacing(8)
         
         # Camera
         pb_layout.addWidget(QtWidgets.QLabel("Camera:"), 0, 0)
@@ -490,7 +615,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cam_vbox.addLayout(cam_row)
         
         self.camera_list_widget = QtWidgets.QListWidget()
-        self.camera_list_widget.setFixedHeight(100)
+        self.camera_list_widget.setFixedHeight(80)
         self.camera_list_widget.setVisible(False)
         cam_vbox.addWidget(self.camera_list_widget)
         
@@ -501,12 +626,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         pb_layout.addWidget(cam_container, 0, 1)
         
         # Format
-        pb_layout.addWidget(QtWidgets.QLabel("Định dạng (Format):"), 1, 0)
+        pb_layout.addWidget(QtWidgets.QLabel("Định dạng:"), 1, 0)
         self.pb_format_combo = QtWidgets.QComboBox()
         self.pb_format_combo.addItems(["QuickTime (mov)", "AVI (avi)"])
         pb_layout.addWidget(self.pb_format_combo, 1, 1)
         
-        # Resolution (W x H)
+        # Resolution
         pb_layout.addWidget(QtWidgets.QLabel("Độ phân giải:"), 2, 0)
         res_row = QtWidgets.QHBoxLayout()
         self.pb_width_spin = QtWidgets.QSpinBox()
@@ -520,21 +645,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         res_row.addWidget(self.pb_height_spin)
         pb_layout.addLayout(res_row, 2, 1)
         
-        # Scale (Percent)
-        pb_layout.addWidget(QtWidgets.QLabel("Tỉ lệ (Scale %):"), 3, 0)
+        # Scale
+        pb_layout.addWidget(QtWidgets.QLabel("Tỉ lệ (Scale):"), 3, 0)
         self.pb_scale_spin = QtWidgets.QSpinBox()
         self.pb_scale_spin.setRange(10, 100)
         self.pb_scale_spin.setValue(100)
         self.pb_scale_spin.setSuffix(" %")
         pb_layout.addWidget(self.pb_scale_spin, 3, 1)
         
-        tab3_layout.addWidget(pb_group)
+        tab5_layout.addWidget(pb_group)
         
-        # Khối tùy chọn thêm
+        # Extra group
         pb_options_group = QtWidgets.QGroupBox("Tùy chọn bổ sung")
         pb_opt_layout = QtWidgets.QVBoxLayout(pb_options_group)
         pb_opt_layout.setContentsMargins(8, 12, 8, 8)
-        pb_opt_layout.setSpacing(8)
+        pb_opt_layout.setSpacing(6)
         
         self.pb_viewer_cb = QtWidgets.QCheckBox("Tự động mở trình phát sau khi quay xong")
         self.pb_viewer_cb.setChecked(True)
@@ -544,156 +669,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_overwrite_cb.setChecked(False)
         pb_opt_layout.addWidget(self.pb_overwrite_cb)
         
-        tab3_layout.addWidget(pb_options_group)
+        tab5_layout.addWidget(pb_options_group)
         
-        # Nút thực thi Playblast
+        # Run Button
         self.run_pb_btn = QtWidgets.QPushButton("🎬 Xuất Video Playblast (Nháp)")
         self.run_pb_btn.setObjectName("accent_btn")
-        self.run_pb_btn.setFixedHeight(40)
+        self.run_pb_btn.setFixedHeight(35)
         self.run_pb_btn.clicked.connect(self.on_run_playblast)
-        tab3_layout.addWidget(self.run_pb_btn)
-        
-        tab3_layout.addStretch()
-        
-        # --- TAB 4: ARC TRACKER ---
-        tab4 = QtWidgets.QWidget()
-        tab4_layout = QtWidgets.QVBoxLayout(tab4)
-        tab4_layout.setContentsMargins(6, 10, 6, 6)
-        tab4_layout.setSpacing(12)
-        
-        # Tiêu đề Tab 4
-        at_title = QtWidgets.QLabel("📈 ANIMEOW ARC TRACKER")
-        at_title.setAlignment(QtCore.Qt.AlignCenter)
-        at_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        tab4_layout.addWidget(at_title)
-        
-        # Khối cấu hình Arc Tracker
-        at_group = QtWidgets.QGroupBox("Cài đặt Đường dẫn (Trail Settings)")
-        at_layout = QtWidgets.QGridLayout(at_group)
-        at_layout.setContentsMargins(8, 12, 8, 8)
-        at_layout.setSpacing(10)
-        
-        self.at_show_ticks_cb = QtWidgets.QCheckBox("Hiển thị Ticks thường (Màu vàng)")
-        self.at_show_ticks_cb.setChecked(True)
-        at_layout.addWidget(self.at_show_ticks_cb, 0, 0, 1, 2)
-        
-        self.at_show_keys_cb = QtWidgets.QCheckBox("Hiển thị Ticks Keyframe (Màu đỏ)")
-        self.at_show_keys_cb.setChecked(True)
-        at_layout.addWidget(self.at_show_keys_cb, 1, 0, 1, 2)
-        
-        at_layout.addWidget(QtWidgets.QLabel("Kích thước Ticks (Size):"), 2, 0)
-        self.at_tick_size_spin = QtWidgets.QDoubleSpinBox()
-        self.at_tick_size_spin.setRange(0.01, 10.0)
-        self.at_tick_size_spin.setValue(0.5)
-        self.at_tick_size_spin.setSingleStep(0.1)
-        at_layout.addWidget(self.at_tick_size_spin, 2, 1)
-        
-        tab4_layout.addWidget(at_group)
-        
-        # Các nút bấm hành động
-        at_btn_layout = QtWidgets.QVBoxLayout()
-        at_btn_layout.setSpacing(8)
-        
-        self.create_trail_btn = QtWidgets.QPushButton("🚀 Vẽ Arc Trail (Vật thể chọn)")
-        self.create_trail_btn.setObjectName("accent_btn")
-        self.create_trail_btn.setFixedHeight(35)
-        self.create_trail_btn.clicked.connect(self.on_create_arc_trail)
-        at_btn_layout.addWidget(self.create_trail_btn)
-        
-        self.update_trail_btn = QtWidgets.QPushButton("🔄 Cập nhật Arc Trails (Update)")
-        self.update_trail_btn.setFixedHeight(32)
-        self.update_trail_btn.clicked.connect(self.on_update_arc_trails)
-        at_btn_layout.addWidget(self.update_trail_btn)
-        
-        self.clear_selected_trail_btn = QtWidgets.QPushButton("❌ Xóa Trail của vật thể chọn")
-        self.clear_selected_trail_btn.setFixedHeight(30)
-        self.clear_selected_trail_btn.clicked.connect(self.on_clear_selected_trails)
-        at_btn_layout.addWidget(self.clear_selected_trail_btn)
-        
-        self.clear_all_trails_btn = QtWidgets.QPushButton("🗑️ Xóa tất cả Arc Trails")
-        self.clear_all_trails_btn.setFixedHeight(30)
-        self.clear_all_trails_btn.clicked.connect(self.on_clear_all_trails)
-        at_btn_layout.addWidget(self.clear_all_trails_btn)
-        
-        tab4_layout.addLayout(at_btn_layout)
-        
-        # Mẹo sử dụng
-        at_info_label = QtWidgets.QLabel("💡 Mẹo: Đường dẫn tĩnh này chạy mượt 100% không bị lag.\nNhấp lại 'Vẽ Arc Trail' để cập nhật khi đổi animation.")
-        at_info_label.setAlignment(QtCore.Qt.AlignCenter)
-        at_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
-        tab4_layout.addWidget(at_info_label)
-        
-        tab4_layout.addStretch()
-        
-        # --- TAB 5: WORLD BAKE ---
-        tab5 = QtWidgets.QWidget()
-        tab5_layout = QtWidgets.QVBoxLayout(tab5)
-        tab5_layout.setContentsMargins(6, 10, 6, 6)
-        tab5_layout.setSpacing(12)
-        
-        # Tiêu đề Tab 5
-        wb_title = QtWidgets.QLabel("🌍 ANIMEOW WORLD BAKE")
-        wb_title.setAlignment(QtCore.Qt.AlignCenter)
-        wb_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        tab5_layout.addWidget(wb_title)
-        
-        # Khối cấu hình World Bake
-        wb_group = QtWidgets.QGroupBox("Cấu hình World Bake")
-        wb_layout = QtWidgets.QGridLayout(wb_group)
-        wb_layout.setContentsMargins(8, 12, 8, 8)
-        wb_layout.setSpacing(10)
-        
-        # Kênh nướng
-        wb_layout.addWidget(QtWidgets.QLabel("Kênh nướng (Channels):"), 0, 0)
-        self.wb_channels_combo = QtWidgets.QComboBox()
-        self.wb_channels_combo.addItems(["Translate & Rotate (Both)", "Translate Only", "Rotate Only"])
-        wb_layout.addWidget(self.wb_channels_combo, 0, 1)
-        
-        # Step
-        wb_layout.addWidget(QtWidgets.QLabel("Bước nhảy (Step):"), 1, 0)
-        self.wb_step_spin = QtWidgets.QSpinBox()
-        self.wb_step_spin.setRange(1, 100)
-        self.wb_step_spin.setValue(1)
-        wb_layout.addWidget(self.wb_step_spin, 1, 1)
-        
-        # Smart clean
-        self.wb_smart_clean_cb = QtWidgets.QCheckBox("Smart Clean (Bảo toàn keyframe cực trị và khớp lưới)")
-        self.wb_smart_clean_cb.setChecked(True)
-        wb_layout.addWidget(self.wb_smart_clean_cb, 2, 0, 1, 2)
-        
-        tab5_layout.addWidget(wb_group)
-        
-        # Các nút bấm hành động
-        wb_btn_layout = QtWidgets.QVBoxLayout()
-        wb_btn_layout.setSpacing(8)
-        
-        self.wb_to_loc_btn = QtWidgets.QPushButton("🚀 Bake sang Locator (To Locator)")
-        self.wb_to_loc_btn.setObjectName("accent_btn")
-        self.wb_to_loc_btn.setFixedHeight(38)
-        self.wb_to_loc_btn.clicked.connect(self.on_world_bake_to_locator)
-        wb_btn_layout.addWidget(self.wb_to_loc_btn)
-        
-        self.wb_from_loc_btn = QtWidgets.QPushButton("🎬 Bake ngược về Vật thể (From Locator)")
-        self.wb_from_loc_btn.setFixedHeight(38)
-        self.wb_from_loc_btn.clicked.connect(self.on_world_bake_from_locator)
-        wb_btn_layout.addWidget(self.wb_from_loc_btn)
-        
-        tab5_layout.addLayout(wb_btn_layout)
-        
-        # Hướng dẫn nhỏ
-        wb_info_label = QtWidgets.QLabel("💡 Mẹo: Chế độ Smart Clean sẽ giúp nướng thưa\n(2s, 3s...) mà không bị mất đi các pose chính/cực trị của bạn.")
-        wb_info_label.setAlignment(QtCore.Qt.AlignCenter)
-        wb_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
-        tab5_layout.addWidget(wb_info_label)
-        
+        tab5_layout.addWidget(self.run_pb_btn)
         tab5_layout.addStretch()
         
-        # Thêm các tab vào Widget
-        self.tab_widget.addTab(tab1, "🔗 Smart Link")
-        self.tab_widget.addTab(tab2, "🛠️ Quick Tools")
-        self.tab_widget.addTab(tab3, "🎬 Playblast")
-        self.tab_widget.addTab(tab4, "📈 Arc Tracker")
-        self.tab_widget.addTab(tab5, "🌍 World Bake")
+        # Add Scroll-wrapped tabs to TabWidget
+        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Link & Bake")
+        self.tab_widget.addTab(wrap_in_scroll(tab2), "⚙️ Quick Utils")
+        self.tab_widget.addTab(wrap_in_scroll(tab3), "📈 Arc & Rotate")
+        self.tab_widget.addTab(wrap_in_scroll(tab4), "🚀 Launchers")
+        self.tab_widget.addTab(wrap_in_scroll(tab5), "🎬 Playblast")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
