@@ -469,6 +469,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ensure_scripts_2022_path()
         try:
             import studiolibrary
+            window = getattr(studiolibrary, "_window", None)
+            if window is not None:
+                try:
+                    window.close()
+                    studiolibrary._window = None
+                    print("[StudioLibrary] Da dong Studio Library.")
+                    return
+                except Exception:
+                    pass
+            studiolibrary._window = None
             studiolibrary.main()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Studio Library:\n%s" % str(e))
@@ -477,7 +487,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ensure_scripts_2022_path()
         try:
             import dwpicker
-            dwpicker.show()
+            from dwpicker.main import WINDOW_CONTROL_NAME
+            if cmds.workspaceControl(WINDOW_CONTROL_NAME, exists=True):
+                dwpicker.close()
+                print("[DWPicker] Da dong DWPicker.")
+            else:
+                dwpicker.show()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy DWPicker:\n%s" % str(e))
 
@@ -485,18 +500,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ensure_scripts_2022_path()
         try:
             import maya.mel as mel
-            mel.eval('source "tweenMachine.mel"; tweenMachine;')
+            if cmds.window("tweenMachineWin", exists=True):
+                cmds.deleteUI("tweenMachineWin")
+                print("[TweenMachine] Da dong Tween Machine.")
+            else:
+                mel.eval('source "tweenMachine.mel"; tweenMachine;')
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Tween Machine:\n%s" % str(e))
 
     def on_launch_atools(self):
         ensure_scripts_2022_path()
         try:
-            # Thử nạp aTools theo cấu trúc chuẩn của nó
             from aTools.animTools.animBar import animBarUI
-            animBarUI.show()
+            # aTools co ho tro mode="toggle" tich hop san
+            animBarUI.show(mode="toggle")
         except Exception as e:
-            # Dự phòng nếu có cấu trúc khác
             try:
                 import aTools.general.main as aToolsMain
                 aToolsMain.show()
