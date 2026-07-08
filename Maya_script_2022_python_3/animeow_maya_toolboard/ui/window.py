@@ -1910,56 +1910,43 @@ def is_ui_alive(ui_obj):
 def show_window():
     import sys
     
-    # 1. Kiểm tra xem giao diện và đối tượng Python cũ còn sống thực sự không
+    # 1. Đóng và giải phóng widget cũ (nếu có) để tránh rò rỉ bộ nhớ và đảm bảo cập nhật code mới khi reload
     old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
     if is_ui_alive(old_ui):
-        try:
-            if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
-                # Khôi phục và chọn lại control cũ tại đúng vị trí, trạng thái (floating/docked) của nó
-                cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, restore=True)
-                cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, select=True)
-                print("[Toolboard] Đã khôi phục giao diện hiện tại ở vị trí cũ.")
-                return old_ui
-        except Exception:
-            pass
-
-    # Nếu UI cũ đã chết hoặc không tìm thấy control, dọn dẹp sạch sẽ để dựng mới
-    if old_ui is not None:
         try:
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
             pass
         sys._animeow_maya_toolboard_ui = None
-        
-    # 2. Xóa workspace control cũ nếu tồn tại để tránh rác
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
-        try:
-            cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
-        except Exception:
-            pass
-            
-    # 3. Tạo instance mới và lưu tham chiếu vào sys module
+
+    # CHÚ Ý QUAN TRỌNG: Không xóa workspaceControl bằng deleteUI nữa!
+    # Nếu workspaceControl đã tồn tại trong Maya, container của nó sẽ lưu giữ trạng thái vị trí nổi (Float)/ghép (Dock) và size.
+    # Khi gọi show(), Maya sẽ tự động chèn widget mới vào container cũ đã có vị trí.
+    
+    # 2. Tạo instance mới
     ui_instance = AnimeowMayaToolboardUI()
     sys._animeow_maya_toolboard_ui = ui_instance
     
-    # 4. Kiểm tra xem người dùng đã từng lưu vị trí cửa sổ này chưa (windowPref)
-    pref_exists = False
-    try:
-        pref_exists = cmds.windowPref(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True)
-    except Exception:
-        pass
-        
-    # 5. Hiển thị dưới dạng dockable panel
-    if pref_exists:
-        # Nếu đã có tùy chỉnh vị trí trước đó (Ví dụ kéo ra ngoài float), 
-        # ta để Maya tự động tải cấu hình cũ bằng cách không áp các giá trị mặc định (floating=False, area="right")
+    # 3. Hiển thị dưới dạng dockable panel
+    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+        # Nếu container đã có sẵn trong Maya session: 
+        # Chỉ gọi show() mà không truyền floating/area để Maya giữ nguyên vị trí và kích thước cũ của container
         ui_instance.show(
             dockable=True,
             workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME
         )
+        try:
+            # Bật hiển thị trở lại (trong trường hợp người dùng vừa bấm tắt 'X' làm ẩn control)
+            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, visible=True)
+            # Khôi phục trạng thái Float/Docked và kích thước đã lưu của container
+            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, restore=True)
+            # Kích hoạt đưa tab lên trước
+            cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, select=True)
+        except Exception as e:
+            print("[Toolboard] Lỗi khôi phục vị trí cũ: %s" % str(e))
     else:
-        # Nếu là lần đầu chạy tool, áp dụng docking mặc định ở bên phải
+        # Nếu chưa từng tồn tại (lần đầu tiên mở trong phiên làm việc của Maya)
         ui_instance.show(
             dockable=True,
             workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME,
@@ -1968,7 +1955,7 @@ def show_window():
             allowedArea="left|right"
         )
     
-    # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
+    # 4. Cập nhật tiêu đề hiển thị cho tab trong Maya
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
         cmds.workspaceControl(
             AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
