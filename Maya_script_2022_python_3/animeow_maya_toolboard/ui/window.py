@@ -357,6 +357,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
         utils_layout.addWidget(self.save_up_ver_btn, 1, 1)
         
+        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder (Dọn dẹp thư mục)")
+        self.clean_folder_btn.setFixedHeight(32)
+        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
+        utils_layout.addWidget(self.clean_folder_btn, 2, 0, 1, 2)
+        
         tab2_layout.addWidget(utils_group)
         
         # Lời giải thích nhỏ
@@ -1436,6 +1441,118 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi",
                 "Lỗi xảy ra khi nâng version:\n%s" % str(e)
             )
+
+    def on_clean_folder(self):
+        """Dọn dẹp thư mục chứa file: giữ lại 5 version mới nhất, chuyển các file cũ hơn vào thư mục Old"""
+        import os
+        import re
+        import shutil
+        
+        # 1. Lấy thông tin file hiện tại
+        scene_path = cmds.file(q=True, sceneName=True)
+        if not scene_path:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Scene hiện tại chưa được lưu trên đĩa! Hãy lưu file trước khi thực hiện dọn dẹp.")
+            return
+            
+        scene_dir, scene_file = os.path.split(scene_path)
+        file_name, ext = os.path.splitext(scene_file)
+        
+        # 2. Rút trích phần tên gốc (root prefix) bằng cách bỏ version (_v01) và increment (.0001)
+        root_prefix = re.sub(r'([_\.]v\d+)?(\.\d{3,5})?(_org)?$', '', file_name, flags=re.IGNORECASE)
+        
+        # Quét các file trong cùng thư mục
+        try:
+            files_in_dir = os.listdir(scene_dir)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể truy cập thư mục scene:\n%s" % str(e))
+            return
+            
+        # Lọc các file bắt đầu bằng root_prefix và có đuôi .ma/.mb
+        matched_files = []
+        for f in files_in_dir:
+            f_path = os.path.join(scene_dir, f).replace('\\', '/')
+            if os.path.isfile(f_path) and f.lower().startswith(root_prefix.lower()) and f.lower().endswith(('.ma', '.mb')):
+                mtime = os.path.getmtime(f_path)
+                matched_files.append((f, f_path, mtime))
+                
+        if not matched_files:
+            QtWidgets.QMessageBox.information(self, "Thông báo", "Không tìm thấy file nào khớp trong thư mục để dọn dẹp!")
+            return
+            
+        # Sắp xếp các file theo mtime giảm dần (mới nhất lên đầu)
+        matched_files.sort(key=lambda x: x[2], reverse=True)
+        
+        # Xác định 5 tệp mới nhất để giữ lại
+        keep_filenames = [x[0] for x in matched_files[:5]]
+        
+        # Đảm bảo tệp hiện tại đang mở trong Maya LUÔN LUÔN được giữ lại (tránh mất file handle)
+        if scene_file not in keep_filenames:
+            keep_filenames.append(scene_file)
+            
+        # Các tệp cũ cần di chuyển
+        files_to_move = [x for x in matched_files if x[0] not in keep_filenames]
+        
+        if not files_to_move:
+            QtWidgets.QMessageBox.information(
+                self, "Thông báo", 
+                "Thư mục hiện tại đang rất sạch sẽ!\nChỉ có %d tệp khớp và toàn bộ đã được giữ lại (tối đa 5 tệp gần nhất)." % len(matched_files)
+            )
+            return
+            
+        # Hỏi ý kiến người dùng trước khi dọn dẹp
+        confirm_msg = "Bạn có muốn dọn dẹp thư mục này không?\n\n"
+        confirm_msg += "- Giữ lại %d tệp mới nhất (bao gồm file đang mở).\n" % len(keep_filenames)
+        confirm_msg += "- Di chuyển %d tệp cũ hơn vào thư mục 'Old'.\n\nDanh sách file sẽ di chuyển:\n" % len(files_to_move)
+        for f, _, _ in files_to_move[:10]:
+            confirm_msg += "  + %s\n" % f
+        if len(files_to_move) > 10:
+            confirm_msg += "  + ... và %d file khác.\n" % (len(files_to_move) - 10)
+            
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận dọn dẹp thư mục",
+            confirm_msg,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+            
+        # 3. Tạo thư mục Old và di chuyển các file cũ
+        old_dir = os.path.join(scene_dir, "Old").replace('\\', '/')
+        if not os.path.exists(old_dir):
+            try:
+                os.makedirs(old_dir)
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Lỗi tạo thư mục", "Không thể tạo thư mục 'Old':\n%s" % str(e))
+                return
+                
+        moved_count = 0
+        error_count = 0
+        error_files = []
+        
+        for f, f_path, _ in files_to_move:
+            dest_path = os.path.join(old_dir, f).replace('\\', '/')
+            try:
+                if os.path.exists(dest_path):
+                    os.remove(dest_path)
+                shutil.move(f_path, dest_path)
+                moved_count += 1
+            except Exception as ex:
+                error_count += 1
+                error_files.append((f, str(ex)))
+                
+        # 4. Hiển thị báo cáo kết quả
+        if error_count == 0:
+            QtWidgets.QMessageBox.information(
+                self, "Dọn dẹp thành công",
+                "Đã di chuyển thành công %d tệp cũ vào thư mục 'Old'!\nThư mục hiện tại chỉ giữ lại 5 tệp mới nhất." % moved_count
+            )
+        else:
+            warn_msg = "Dọn dẹp hoàn thành một phần:\n"
+            warn_msg += "- Di chuyển thành công: %d file.\n" % moved_count
+            warn_msg += "- Thất bại: %d file.\n\nChi tiết lỗi:\n" % error_count
+            for f, err in error_files:
+                warn_msg += "  + %s: %s\n" % (f, err)
+            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", warn_msg)
 
 
 def show_window():
