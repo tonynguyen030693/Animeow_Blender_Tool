@@ -1277,6 +1277,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tick_size = self.at_tick_size_spin.value()
         
         tracker = arc_tracker.ArcTracker()
+        
+        # Bọc toàn bộ các thao tác tạo curve và locator vào một undo chunk duy nhất
+        # Tránh làm rác hàng trăm lệnh đơn lẻ trong danh sách Undo của Maya
+        cmds.undoInfo(openChunk=True, chunkName="CreateArcTrail")
         try:
             for obj in sel:
                 tracker.create_trail(
@@ -1296,6 +1300,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi vẽ Trail",
                 "Lỗi xảy ra khi vẽ Arc Trail:\n%s" % str(e)
             )
+        finally:
+            cmds.undoInfo(closeChunk=True)
             
     def on_clear_selected_trails(self):
         """Xóa trail của các vật thể đang chọn"""
