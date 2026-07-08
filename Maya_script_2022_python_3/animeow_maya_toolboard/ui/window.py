@@ -1899,8 +1899,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 def show_window():
     import sys
     
-    # 1. Đóng và giải phóng bộ nhớ của giao diện cũ từ sys module
+    # 1. Kiểm tra xem giao diện đã tồn tại trong session hiện tại chưa
     old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
+    if old_ui is not None:
+        try:
+            if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+                # Khôi phục và chọn lại control cũ tại đúng vị trí, trạng thái (floating/docked) của nó
+                cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, restore=True)
+                cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, select=True)
+                print("[Toolboard] Đã khôi phục giao diện hiện tại ở vị trí cũ.")
+                return old_ui
+        except Exception:
+            pass
+
+    # Nếu không tìm thấy hoặc có lỗi, tiến hành tạo mới
     if old_ui is not None:
         try:
             old_ui.close()
@@ -1936,3 +1948,4 @@ def show_window():
             edit=True, 
             label=AnimeowMayaToolboardUI.WINDOW_TITLE
         )
+    return ui_instance
