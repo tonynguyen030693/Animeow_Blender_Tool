@@ -1,0 +1,67 @@
+// -*- mode: mel -*-
+// Animeow Maya Toolboard Drag-and-Drop Installer
+// Drag and drop this file into Maya viewport to install the toolboard shelf button.
+
+global proc string animeow_tb_get_installer_path() {
+    string $whatIs = `whatIs animeow_tb_get_installer_path`;
+    string $prefix = "Mel procedure found in: ";
+    string $path = "";
+    if (`gmatch $whatIs ($prefix + "*")`) {
+        $path = `substring $whatIs (size($prefix) + 1) (size($whatIs))`;
+    }
+    return $path;
+}
+
+global proc animeow_tb_install() {
+    string $filePath = `animeow_tb_get_installer_path`;
+    if ($filePath == "") {
+        error "Khong the tu dong tim thay duong dan installer. Vui long cai dat thu cong.";
+        return;
+    }
+    
+    // Chuẩn hoá đường dẫn
+    $filePath = `substituteAllString $filePath "\\" "/"`;
+    
+    // Lấy thư mục cha của installer (ví dụ: E:/AI_Work/Blender_Maya_Script/Maya_script_2022_python_3/animeow_maya_toolboard/)
+    string $installDir = `match "^.*/" $filePath`;
+    
+    // Thư mục chứa gói python (thư mục cha của animeow_maya_toolboard, tức là E:/AI_Work/Blender_Maya_Script/Maya_script_2022_python_3/)
+    // Ta cắt bỏ "animeow_maya_toolboard/" ở cuối
+    string $parentDir = `substitute "animeow_maya_toolboard/" $installDir ""`;
+    
+    // Tạo script Python để khởi chạy
+    string $pyCmd = "import sys\n";
+    $pyCmd += "path = '" + $parentDir + "'\n";
+    $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
+    $pyCmd += "import animeow_maya_toolboard\n";
+    $pyCmd += "import animeow_maya_toolboard.menu as menu\n";
+    $pyCmd += "menu.create_menu()\n";
+    $pyCmd += "animeow_maya_toolboard.show()\n";
+    
+    // Tìm Shelf hiện tại để thêm nút
+    global string $gShelfTopLevel;
+    if (`tabLayout -exists $gShelfTopLevel`) {
+        string $currentShelf = `tabLayout -q -selectTab $gShelfTopLevel`;
+        setParent $currentShelf;
+        
+        // Tạo nút bấm mới trên Shelf
+        shelfButton
+            -label "Animeow Toolboard"
+            -annotation "Mo bo cong cu Smart Link (Double Locator System) Animeow Toolboard"
+            -image1 "fileOpen.png"
+            -command $pyCmd
+            -sourceType "python"
+            -style "iconOnly"
+            -imageOverlayLabel "ATB";
+            
+        confirmDialog 
+            -title "Thanh Cong" 
+            -message "Da tao nut bam 'ATB' (Smart Link) thanh cong tren Shelf hien hanh va dang ky vao menu Animeow!" 
+            -button "Tuyet voi";
+    } else {
+        error "Khong tim thay thanh Shelf hien hanh. Vui long chay thu cong bang ma Python.";
+    }
+}
+
+// Thực thi cài đặt
+animeow_tb_install();
