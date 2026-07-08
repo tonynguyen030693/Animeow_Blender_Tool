@@ -716,6 +716,30 @@ class FileManager(object):
         combine_dir = os.path.join(self.project_root, project, episode, "Published", "Combine_File")
         return os.path.normpath(combine_dir)
 
+    def get_studiolibrary_dir(self, project, episode):
+        """Trả về đường dẫn thư mục Studio Library của tập phim: Published/StudioLibrary/"""
+        if not self.project_root or not project or not episode:
+            return None
+        sl_dir = os.path.join(self.project_root, project, episode, "Published", "StudioLibrary")
+        return os.path.normpath(sl_dir)
+
+    def build_studiolibrary_shot_dir(self, project, episode, shot_code_or_num):
+        """
+        Xây dựng đường dẫn thư mục Studio Library cho một Shot cụ thể.
+        Ví dụ: shot_code_or_num = 5 hoặc "05" -> .../Published/StudioLibrary/Shot_05/
+        """
+        st_dir = self.get_studiolibrary_dir(project, episode)
+        if not st_dir:
+            return None
+            
+        try:
+            shot_num = int(shot_code_or_num)
+            shot_folder = "Shot_%02d" % shot_num
+        except ValueError:
+            shot_folder = "Shot_%s" % shot_code_or_num
+            
+        return os.path.normpath(os.path.join(st_dir, shot_folder))
+
     def get_published_anim_file(self, project, episode, shot_num):
         """
         Tìm file Animation lẻ đã publish của một shot cụ thể.

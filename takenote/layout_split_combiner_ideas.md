@@ -108,3 +108,37 @@ Chúng ta có thể thêm một Tab mới bên cạnh Tab **Quản Lý File** hi
 | Giao Diện Thiết Kế Đề Xuất |
 | :--- |
 | **TAB: TÁCH / GỘP CẢNH**<br><br>  **[ Khu vực 1: Tách Shot Layout Tổng ]**<br>  * Đọc bookmarks từ scene hiện tại: **[Quét Bookmarks]**<br>  * Danh sách bookmark tìm thấy: *Shot_01-25 (1-100), Shot_26-50 (101-250)...*<br>  * Chọn các control nhân vật cần giữ key: `[ Chọn Control Nhân Vật ]`<br>  * **[ 🚀 Bắt đầu Tách và đồng bộ Pipeline (1 Click) ]**<br><br>  **[ Khu vực 2: Gộp Animation Cảnh Tổng ]**<br>  * Phương thức gộp: `(o) Studio Library API`  hoặc  `( ) Import ATOM`<br>  * Cấu hình an toàn:<br>    - `[x]` Tự động Bake Constrains (Locator/Rig)<br>    - `[x]` Chế độ Smart Bake (Bake thưa giữ key cực trị)<br>    - `[x]` Thêm +/- `5` frame đệm (Padding)<br>  * Chọn kiểu chia Block:<br>    - `[x]` Tự gõ Block: `1-10, 11-20, 21-30, 31-45, 46-60`<br>    - `[ ] Chia đều`: `10` shot một file<br>  * **[ 📦 Tiến hành Gộp Cảnh & Xuất File Cụm Bàn Giao ]**<br><br>  **[ Khu vực 3: Tiện ích ]**<br>  * **[ 📖 Mở Studio Library UI ]**  * **[ 🎬 Xem Keyframe Bookmarks CSV ]** |
+
+---
+
+## 📝 Nhật Ký Phiên Làm Việc (Phiên 7/7/2026 - Đã Đẩy Lên Git)
+
+### 1. Các Cải Tiến Đã Hoàn Thành & Push Git
+* **Tối giản hóa giao diện Tab 2:**
+  * Loại bỏ ô nhập file Layout tổng và nút Browse.
+  * Loại bỏ menu chuột phải "Chuyển sang Tách / Gộp Cảnh" ở Tab 1.
+  * Quét bookmark trực tiếp trên scene mở chỉ mất 0.01s.
+  * Xóa bỏ tệp quét ngầm `standalone_scan.py` khỏi core.
+* **Sửa lỗi dọn dẹp keyframe thừa (100% Sạch):**
+  * Quét toàn bộ `animCurve` nodes trong scene (`cmds.ls(type='animCurve')`) để dọn sạch keyframe thừa của mọi đối tượng, bao gồm cả camera shape (`Focal Length`, `Distance`, v.v.) ngoài khoảng range.
+  * Bổ sung tham số `option="keys"` và sai số `0.01` trong `cmds.cutKey` để chặn Maya tự động tạo thêm keyframe biên (ở frame 9 hoặc biên của range).
+* **Đồng bộ thư mục phân cấp cho Anim:**
+  * File lẻ hoạt hình được lưu vào thư mục phân cấp giống Layout: `WorkingFile/Anim/{Tên_Shot}/file/{Tên_Shot}_Anim_v01.ma`.
+* **An toàn dữ liệu:**
+  * Thêm hộp thoại confirm cảnh báo trùng file nháp hoạt hình trên đĩa để chống ghi đè làm mất công sức của artist (chọn *Ghi đè*, *Bỏ qua*, hoặc *Hủy bỏ*).
+
+### 2. Định Hướng Phiên Làm Việc Sau (Brainstorming - Studio Library API)
+Nhằm giải quyết bài toán "không cần mở file vẫn gộp được" và nâng cao tính ổn định của quy trình Gộp Cảnh (Combine), chúng ta thống nhất sẽ chuyển sang **luồng làm việc qua Studio Library trung gian**:
+
+#### 📤 A. Khi ở File Lẻ (Publish Animation)
+1. Artist làm Anim xong trên file lẻ.
+2. Bấm nút **"Publish Anim của File lẻ lên Server"**.
+3. Tool tự động nhận diện tên shot, quét controls có key (Smart Selection) và gọi API `mutils.saveAnim(...)` xuất thành tệp chuyển động `.anim` trên server:
+   `Z:/Animeow_Production/{Project}/{Episode}/Published/StudioLibrary/{Shot_Name}.anim`
+
+#### 📥 B. Khi ở File Tổng (Import/Combine)
+1. Artist mở file Cảnh tổng.
+2. Tích chọn các shot lẻ cần gộp trên bảng danh sách của Tool.
+3. Bấm nút **"Import Anim từ Server về Cảnh tổng"**.
+4. Tool tự tìm đúng tệp `.anim` tương ứng của shot trên server, tự động map namespace trong scene tổng và dán đè keyframe hoạt hình vào đúng vị trí timeline của bookmark đó qua API `mutils.loadAnims(...)`.
+

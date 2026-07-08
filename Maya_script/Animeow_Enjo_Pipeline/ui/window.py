@@ -1718,14 +1718,32 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         published_filename = "%s_%s_pub%s" % (prefix, task_short, ext)
         published_filepath = os.path.normpath(os.path.join(published_dir, published_filename))
         
+        # Check if the published file is the currently open scene file
+        current_scene = cmds.file(q=True, sceneName=True)
+        is_current_scene = False
+        if current_scene:
+            is_current_scene = (os.path.normpath(current_scene).lower() == os.path.normpath(filepath).lower())
+            
         # Tiến hành copy file Maya
         import shutil
         try:
             shutil.copy2(filepath, published_filepath)
             print(u"[PUBLISH OFFLINE] Đã copy file Maya sang Published: %s" % published_filepath)
             
+            # Tự động xuất anim sang Studio Library nếu là file đang mở
+            anim_msg = ""
+            if is_current_scene:
+                try:
+                    self.export_current_scene_anim(current_proj, current_ep, filename)
+                    anim_msg = u"✅ Đã tự động xuất dữ liệu Anim sang thư viện Studio Library chuẩn bị cho khâu Gộp Cảnh.\n\n"
+                except Exception as ex:
+                    anim_msg = u"❌ Gặp lỗi khi xuất dữ liệu Anim: %s\n\n" % exception_to_unicode(ex)
+            else:
+                anim_msg = u"⚠️ Chú ý: Bạn đang publish offline một tệp không phải scene đang mở hiện tại, vì vậy hệ thống không thể xuất dữ liệu anim cho khâu Gộp Cảnh. Vui lòng mở file và publish để xuất anim.\n\n"
+
             # Thông báo thành công
             msg = u"Đã xuất bản (Publish) thành công thành file sạch trên server!\n\n"
+            msg += anim_msg
             msg += u"📁 File Maya: %s\n\n" % os.path.basename(published_filepath)
             msg += u"💡 Gợi ý: Nhấp chuột phải vào video ở cột thứ 3 và chọn 'Publish Video này' nếu bạn muốn đẩy video playblast tương ứng lên server.\n"
                 
@@ -1834,6 +1852,95 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.open_folder_explorer(published_dir)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy video lên server:\n%s" % str(e))
+
+    def export_current_scene_anim(self, project, episode, filename):
+        """Tự động xuất anim của scene hiện tại thành file Studio Library .anim cho quy trình Gộp Cảnh"""
+        parsed = self.file_manager.parse_scene_name(filename)
+        if not parsed:
+            return
+        prefix, file_task, ver, padding, ext = parsed
+        if file_task.lower() != "anim":
+            return
+            
+        import re
+        shot_match = re.search(r'Shot_(\d+)', prefix, re.IGNORECASE)
+        if not shot_match:
+            print(u"[StudioLibrary] Không tìm thấy số Shot hợp lệ từ tiền tố: %s" % prefix)
+            return
+        shot_num = shot_match.group(1)
+        
+        # Xây đường dẫn thư mục Studio Library cho shot
+        shot_stlib_dir = self.file_manager.build_studiolibrary_shot_dir(project, episode, shot_num)
+        if not shot_stlib_dir:
+            return
+            
+        if not os.path.exists(shot_stlib_dir):
+            try:
+                os.makedirs(shot_stlib_dir)
+            except Exception as e:
+                print(u"[StudioLibrary] Lỗi tạo thư mục Studio Library: %s" % str(e))
+                return
+                
+        # Lấy danh sách các node có keyframe
+        saved_selection = self.get_smart_selection()
+        if not saved_selection:
+            print(u"[StudioLibrary] Không tìm thấy control nào có keyframe để xuất anim.")
+            return
+            
+        s_time = int(cmds.playbackOptions(q=True, minTime=True))
+        e_time = int(cmds.playbackOptions(q=True, maxTime=True))
+        
+        import mutils
+        import shutil
+        
+        # 1. Xuất file gộp all_assets.anim
+        all_assets_path = os.path.normpath(os.path.join(shot_stlib_dir, "all_assets.anim")).replace('\\', '/')
+        if os.path.exists(all_assets_path):
+            try:
+                shutil.rmtree(all_assets_path)
+            except Exception:
+                pass
+        try:
+            mutils.saveAnim(
+                objects=saved_selection,
+                path=all_assets_path,
+                time=(s_time, e_time),
+                bakeConnected=True
+            )
+            print(u"[StudioLibrary] Đã tự động xuất anim gộp thành công: %s" % all_assets_path)
+        except Exception as e:
+            print(u"[StudioLibrary] Lỗi khi tự động xuất anim gộp: %s" % exception_to_unicode(e))
+            
+        # 2. Phân nhóm đối tượng theo namespace và xuất anim lẻ cho từng Rig
+        namespace_groups = {}
+        for obj in saved_selection:
+            if ":" in obj:
+                parts = obj.split(":")
+                ns = ":".join(parts[:-1])
+            else:
+                ns = "no_namespace"
+            if ns not in namespace_groups:
+                namespace_groups[ns] = []
+            namespace_groups[ns].append(obj)
+            
+        for ns, objs in namespace_groups.items():
+            ns_clean = ns.replace(":", "_")
+            ns_anim_path = os.path.normpath(os.path.join(shot_stlib_dir, "%s.anim" % ns_clean)).replace('\\', '/')
+            if os.path.exists(ns_anim_path):
+                try:
+                    shutil.rmtree(ns_anim_path)
+                except Exception:
+                    pass
+            try:
+                mutils.saveAnim(
+                    objects=objs,
+                    path=ns_anim_path,
+                    time=(s_time, e_time),
+                    bakeConnected=True
+                )
+                print(u"[StudioLibrary] Đã xuất anim cho namespace %s: %s" % (ns, ns_anim_path))
+            except Exception as e:
+                print(u"[StudioLibrary] Lỗi khi xuất anim cho namespace %s: %s" % (ns, exception_to_unicode(e)))
 
     # ================================================================
     # TAB 2: Tách / Gộp Cảnh (Split & Merge)
