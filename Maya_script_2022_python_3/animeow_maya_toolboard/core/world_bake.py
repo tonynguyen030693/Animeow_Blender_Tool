@@ -40,6 +40,37 @@ def get_pair_blend_nodes(obj):
         return []
     return cmds.listConnections(obj, source=True, destination=False, type="pairBlend") or []
 
+def get_extreme_frames(curve, tolerance=0.001):
+    """Tìm các frame cực trị (đỉnh/đáy) thực sự của đường cong animation"""
+    if not cmds.objExists(curve):
+        return []
+        
+    keys = cmds.keyframe(curve, q=True, timeChange=True) or []
+    values = cmds.keyframe(curve, q=True, valueChange=True) or []
+    
+    if len(keys) <= 2:
+        return [int(round(k)) for k in keys]
+        
+    extreme_frames = []
+    # Luôn giữ key đầu và key cuối
+    extreme_frames.append(int(round(keys[0])))
+    extreme_frames.append(int(round(keys[-1])))
+    
+    for i in range(1, len(keys) - 1):
+        prev_val = values[i-1]
+        curr_val = values[i]
+        next_val = values[i+1]
+        
+        diff1 = curr_val - prev_val
+        diff2 = next_val - curr_val
+        
+        # Nếu đổi chiều độ dốc (đổi dấu nhân) và sự thay đổi lớn hơn sai số tolerance
+        if diff1 * diff2 < -1e-8:
+            if abs(diff1) > tolerance or abs(diff2) > tolerance:
+                extreme_frames.append(int(round(keys[i])))
+                
+    return list(set(extreme_frames))
+
 def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, channels='both'):
     """
     Nướng (Bake) chuyển động cho vật thể bất kỳ, hỗ trợ giữ lưới Grid Step
@@ -64,7 +95,7 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
         # 1. Thu thập lưới Grid Step
         grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
         
-        # 2. Thu thập keyframe thô nguồn từ driver của constraint (không quét chính vật thể đang bake)
+        # 2. Thu thập keyframe cực trị nguồn từ driver của constraint
         source_keyframes = set()
         targets_to_scan = []
         for con in incoming_constraints:
@@ -76,9 +107,9 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             if cmds.objExists(target):
                 curves = cmds.keyframe(target, q=True, name=True) or []
                 for curve in curves:
-                    keys = cmds.keyframe(curve, q=True, timeChange=True) or []
-                    for k in keys:
-                        source_keyframes.add(int(round(k)))
+                    extreme_keys = get_extreme_frames(curve)
+                    for k in extreme_keys:
+                        source_keyframes.add(k)
                         
         # Hợp nhất lưới Grid và Keyframe nguồn
         keep_frames = grid_frames.union(source_keyframes)
