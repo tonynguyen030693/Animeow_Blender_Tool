@@ -331,6 +331,29 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addWidget(tools_group)
         
+        # Khối tiện ích Maya nhanh
+        utils_group = QtWidgets.QGroupBox("Tiện ích nhanh Maya")
+        utils_layout = QtWidgets.QGridLayout(utils_group)
+        utils_layout.setContentsMargins(8, 12, 8, 8)
+        utils_layout.setSpacing(10)
+        
+        self.toggle_graph_btn = QtWidgets.QPushButton("📈 Graph Editor")
+        self.toggle_graph_btn.setFixedHeight(32)
+        self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
+        utils_layout.addWidget(self.toggle_graph_btn, 0, 0)
+        
+        self.toggle_ref_btn = QtWidgets.QPushButton("📂 Reference Editor")
+        self.toggle_ref_btn.setFixedHeight(32)
+        self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
+        utils_layout.addWidget(self.toggle_ref_btn, 0, 1)
+        
+        self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment (Lưu tăng dần)")
+        self.save_inc_btn.setFixedHeight(32)
+        self.save_inc_btn.clicked.connect(self.on_save_increment)
+        utils_layout.addWidget(self.save_inc_btn, 1, 0, 1, 2)
+        
+        tab2_layout.addWidget(utils_group)
+        
         # Lời giải thích nhỏ
         info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
         info_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -1307,6 +1330,41 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi World Bake",
                 "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
             )
+
+    def on_toggle_graph_editor(self):
+        """Bật/Tắt Graph Editor"""
+        try:
+            import maya.mel as mel
+            if cmds.window("graphEditor1Window", exists=True):
+                cmds.deleteUI("graphEditor1Window", window=True)
+                print("[Toolboard] Da dong Graph Editor.")
+            else:
+                mel.eval("GraphEditor;")
+                print("[Toolboard] Da mo Graph Editor.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Graph Editor:\n%s" % str(e))
+
+    def on_toggle_reference_editor(self):
+        """Bật/Tắt Reference Editor"""
+        try:
+            import maya.mel as mel
+            if cmds.window("referenceEditorPanel1Window", exists=True):
+                cmds.deleteUI("referenceEditorPanel1Window", window=True)
+                print("[Toolboard] Da dong Reference Editor.")
+            else:
+                mel.eval("ReferenceEditor;")
+                print("[Toolboard] Da mo Reference Editor.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Reference Editor:\n%s" % str(e))
+
+    def on_save_increment(self):
+        """Lưu file tăng dần (Save Increment)"""
+        try:
+            import maya.mel as mel
+            mel.eval("IncrementAndSave;")
+            print("[Toolboard] Da thuc hien Save Increment.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể thực hiện Save Increment:\n%s" % str(e))
 
 
 def show_window():
