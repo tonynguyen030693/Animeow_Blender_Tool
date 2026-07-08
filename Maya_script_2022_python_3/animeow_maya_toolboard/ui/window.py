@@ -304,6 +304,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.atools_btn.clicked.connect(self.on_launch_atools)
         tools_layout.addWidget(self.atools_btn, 1, 1)
         
+        self.animo_btn = QtWidgets.QPushButton("🚀 Animo (Animation Tools)")
+        self.animo_btn.setFixedHeight(32)
+        self.animo_btn.clicked.connect(self.on_launch_animo)
+        tools_layout.addWidget(self.animo_btn, 2, 0, 1, 2)
+        
         tab2_layout.addWidget(tools_group)
         
         # Lời giải thích nhỏ
@@ -580,6 +585,85 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self, "Lỗi", 
                     "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
                 )
+
+    def on_launch_animo(self):
+        thirdparty_dir = ensure_scripts_2022_path()
+        if not thirdparty_dir:
+            return
+            
+        animo_data_path = os.path.join(thirdparty_dir, "Animo_v5.9.6", "Animo_v5.9.6", "Animo_Data")
+        if not os.path.exists(animo_data_path):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy thư mục Animo_Data tại:\n%s" % animo_data_path)
+            return
+            
+        # Kiểm tra xem Animo đang mở hay không để thực hiện Bật/Tắt (Toggle)
+        animo_visible = False
+        if cmds.workspaceControl('animo', exists=True):
+            animo_visible = cmds.workspaceControl('animo', query=True, visible=True)
+            
+        # Kiểm tra Qt Toolbar của Animo
+        qt_toolbar_visible = False
+        existing_qt_toolbar = None
+        try:
+            import maya.OpenMayaUI as mui
+            from PySide2 import QtWidgets as QtW
+            from shiboken2 import wrapInstance
+            maya_main_ptr = mui.MQtUtil.mainWindow()
+            if maya_main_ptr:
+                maya_main = wrapInstance(int(maya_main_ptr), QtW.QMainWindow)
+                existing_qt_toolbar = maya_main.findChild(QtW.QWidget, "animo_qt_toolbar")
+                if existing_qt_toolbar and existing_qt_toolbar.isVisible():
+                    qt_toolbar_visible = True
+        except Exception:
+            pass
+
+        if animo_visible or qt_toolbar_visible:
+            # --- ĐÓNG ANIMO ---
+            if cmds.workspaceControl('animo', exists=True):
+                cmds.workspaceControl('animo', edit=True, visible=False)
+            if existing_qt_toolbar:
+                try:
+                    existing_qt_toolbar.hide()
+                except Exception:
+                    pass
+            print("[Animo] Đã đóng Animo.")
+        else:
+            # --- MỞ ANIMO ---
+            if cmds.workspaceControl('animo', exists=True):
+                cmds.deleteUI('animo', control=True)
+            if existing_qt_toolbar:
+                try:
+                    existing_qt_toolbar.hide()
+                    existing_qt_toolbar.setParent(None)
+                    existing_qt_toolbar.deleteLater()
+                except Exception:
+                    pass
+                    
+            # Xoá cache sys.modules
+            mods_to_delete = [mod for mod in list(sys.modules.keys()) 
+                              if 'Animo' in mod or 'animo' in mod or 'styleMod' in mod or 'barMod' in mod]
+            for mod in mods_to_delete:
+                del sys.modules[mod]
+                
+            # Thêm các đường dẫn nạp vào sys.path
+            animo_launcher_dir = os.path.join(animo_data_path, "Animo_Launcher")
+            for p in [animo_data_path, animo_launcher_dir]:
+                if p not in sys.path:
+                    sys.path.insert(0, p)
+                    
+            # Load và thực thi khởi động UI Animo
+            try:
+                import importlib.util
+                launcher_file = os.path.join(animo_launcher_dir, "Animo_Launcher.py")
+                spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
+                launcher_module = importlib.util.module_from_spec(spec)
+                sys.modules["Animo_Launcher_Module"] = launcher_module
+                spec.loader.exec_module(launcher_module)
+                _tb = launcher_module.toolbar()
+                _tb.startUI()
+                print("[Animo] Đã khởi chạy Animo thành công.")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
 
 
 def show_window():
