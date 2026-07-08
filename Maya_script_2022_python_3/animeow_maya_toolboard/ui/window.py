@@ -547,9 +547,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         at_layout.addWidget(QtWidgets.QLabel("Kích thước Ticks (Size):"), 2, 0)
         self.at_tick_size_spin = QtWidgets.QDoubleSpinBox()
-        self.at_tick_size_spin.setRange(0.01, 2.0)
-        self.at_tick_size_spin.setValue(0.1)
-        self.at_tick_size_spin.setSingleStep(0.02)
+        self.at_tick_size_spin.setRange(0.01, 10.0)
+        self.at_tick_size_spin.setValue(0.5)
+        self.at_tick_size_spin.setSingleStep(0.1)
         at_layout.addWidget(self.at_tick_size_spin, 2, 1)
         
         tab4_layout.addWidget(at_group)

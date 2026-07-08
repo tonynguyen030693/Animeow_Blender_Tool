@@ -156,9 +156,9 @@ class ArcTracker(object):
                 if is_key:
                     # Nếu là keyframe, tô màu đỏ rực rỡ (màu 13) và phóng to lên một chút
                     cmds.setAttr("%s.overrideColor" % loc, 13)
-                    cmds.setAttr("%s.scaleX" % loc, tick_size * 1.5)
-                    cmds.setAttr("%s.scaleY" % loc, tick_size * 1.5)
-                    cmds.setAttr("%s.scaleZ" % loc, tick_size * 1.5)
+                    cmds.setAttr("%s.scaleX" % loc, tick_size * 2.0)
+                    cmds.setAttr("%s.scaleY" % loc, tick_size * 2.0)
+                    cmds.setAttr("%s.scaleZ" % loc, tick_size * 2.0)
                 else:
                     # Ticks thường: tô màu vàng ấm áp (màu 17)
                     cmds.setAttr("%s.overrideColor" % loc, 17)
