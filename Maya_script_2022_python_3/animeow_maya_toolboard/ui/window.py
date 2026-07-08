@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, temp_pivot
 
 QSS_STYLE = """
 QWidget {
@@ -22,7 +22,7 @@ QGroupBox {
     margin-top: 12px;
     padding-top: 10px;
     font-weight: bold;
-    color: #00BCD4; /* Cyan accent for Toolboard */
+    color: #00BCD4; /* Cyan accent */
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -34,13 +34,14 @@ QPushButton {
     background-color: #3C3C3C;
     color: #E0E0E0;
     border: 1px solid #555555;
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 6px 12px;
     font-weight: bold;
 }
 QPushButton:hover {
     background-color: #4C4C4C;
     border-color: #00BCD4;
+    color: #FFFFFF;
 }
 QPushButton:pressed {
     background-color: #222222;
@@ -52,6 +53,7 @@ QPushButton#accent_btn {
 }
 QPushButton#accent_btn:hover {
     background-color: #0097A7;
+    border-color: #00E5FF;
 }
 QPushButton#accent_btn:pressed {
     background-color: #006064;
@@ -62,6 +64,9 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     border-radius: 4px;
     padding: 4px 6px;
     color: #FFFFFF;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+    border-color: #00BCD4;
 }
 QTabWidget::pane {
     border: 1px solid #444444;
@@ -78,8 +83,8 @@ QTabBar::tab {
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
     font-weight: bold;
-
-    min-width: 125px;}
+    min-width: 120px;
+}
 QTabBar::tab:selected {
     background-color: #2D2D2D;
     border-bottom: 1px solid #2D2D2D;
@@ -88,6 +93,42 @@ QTabBar::tab:selected {
 QTabBar::tab:hover {
     color: #FFFFFF;
     border-top: 2px solid #00BCD4;
+}
+QTableWidget {
+    gridline-color: #333333;
+    border: 1px solid #444444;
+    background-color: #1E1E1E;
+    color: #E0E0E0;
+    border-radius: 4px;
+}
+QTableWidget::item:selected {
+    background-color: #004D40;
+    color: #FFFFFF;
+}
+QHeaderView::section {
+    background-color: #2D2D2D;
+    color: #00BCD4;
+    border: 1px solid #444444;
+    font-weight: bold;
+    padding: 4px;
+}
+QScrollBar:vertical {
+    border: none;
+    background-color: #222222;
+    width: 8px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background-color: #555555;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: #00BCD4;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
 }
 """
 
@@ -179,8 +220,71 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.setStyleSheet(QSS_STYLE)
         
         self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_layout.setSpacing(12)
+        self.main_layout.setContentsMargins(8, 8, 8, 8)
+        self.main_layout.setSpacing(8)
+        
+        # Header Layout
+        header_layout = QtWidgets.QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.title_lbl = QtWidgets.QLabel("<b>ANIMEOW TOOLBOARD v5.0</b>")
+        self.title_lbl.setStyleSheet("color: #00BCD4; font-weight: bold; font-size: 11px;")
+        header_layout.addWidget(self.title_lbl)
+        header_layout.addStretch()
+        
+        self.compact_toggle_btn = QtWidgets.QPushButton("⚡ Gọn")
+        self.compact_toggle_btn.setCheckable(True)
+        self.compact_toggle_btn.setFixedHeight(22)
+        self.compact_toggle_btn.setFixedWidth(65)
+        self.compact_toggle_btn.setStyleSheet("font-size: 10px; padding: 2px 4px; background-color: #333333; border: 1px solid #444444;")
+        self.compact_toggle_btn.clicked.connect(self.on_toggle_compact_mode)
+        header_layout.addWidget(self.compact_toggle_btn)
+        
+        self.main_layout.addLayout(header_layout)
+        
+        self.content_layout = QtWidgets.QHBoxLayout()
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(4)
+        
+        # Left compact toolbar (hidden by default)
+        self.compact_toolbar = QtWidgets.QWidget()
+        self.compact_toolbar.setFixedWidth(34)
+        self.compact_toolbar_layout = QtWidgets.QVBoxLayout(self.compact_toolbar)
+        self.compact_toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        self.compact_toolbar_layout.setSpacing(6)
+        
+        icons = ["🔗", "⚙️", "📈", "🚀", "🎬", "🎯", "🔁"]
+        tooltips = [
+            "Link && World Bake",
+            "Quick Utilities",
+            "Arc && Rotate",
+            "Quick Launchers",
+            "Playblast Exporter",
+            "Rig Retargeting",
+            "Mirror Animation"
+        ]
+        self.compact_buttons = []
+        for i, icon in enumerate(icons):
+            btn = QtWidgets.QPushButton(icon)
+            btn.setFixedSize(32, 32)
+            btn.setToolTip(tooltips[i])
+            def make_click(idx):
+                return lambda checked=False: self.tab_widget.setCurrentIndex(idx)
+            btn.clicked.connect(make_click(i))
+            self.compact_toolbar_layout.addWidget(btn)
+            self.compact_buttons.append(btn)
+        self.compact_toolbar_layout.addStretch()
+        
+        self.content_layout.addWidget(self.compact_toolbar)
+        self.compact_toolbar.hide() # Hidden by default
+        
+        # QTabWidget
+        self.tab_widget = QtWidgets.QTabWidget()
+        self.tab_widget.tabBar().setElideMode(QtCore.Qt.ElideNone)
+        self.tab_widget.tabBar().setUsesScrollButtons(True)
+        self.content_layout.addWidget(self.tab_widget)
+        
+        self.main_layout.addLayout(self.content_layout)
         
         self.build_ui()
         self.load_settings()
@@ -197,10 +301,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # Khởi tạo QTabWidget
         # Khói tạo QTabWidget
-        self.tab_widget = QtWidgets.QTabWidget()
-        self.tab_widget.tabBar().setElideMode(QtCore.Qt.ElideNone)
-        self.tab_widget.tabBar().setUsesScrollButtons(True)
-        self.main_layout.addWidget(self.tab_widget)
+        # Tab widget is already initialized in __init__
+        pass
         
         # =========================================================================
         # --- TAB 1: LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
@@ -233,6 +335,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         target_row.addWidget(self.get_target_btn)
         link_layout.addLayout(target_row)
         
+        # Swap Target/Owner button
+        swap_row = QtWidgets.QHBoxLayout()
+        swap_row.addStretch()
+        self.swap_target_owner_btn = QtWidgets.QPushButton("  ⇅ Đổi bên Target / Owner  ")
+        self.swap_target_owner_btn.setFixedHeight(22)
+        self.swap_target_owner_btn.setStyleSheet("font-size: 11px; max-width: 180px; padding: 2px 8px;")
+        self.swap_target_owner_btn.clicked.connect(self.on_swap_target_owner)
+        swap_row.addWidget(self.swap_target_owner_btn)
+        swap_row.addStretch()
+        link_layout.addLayout(swap_row)
+
         # Owner
         owner_row = QtWidgets.QHBoxLayout()
         owner_row.addWidget(QtWidgets.QLabel("Owner (Vật bị dẫn):"))
@@ -848,6 +961,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.rt_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.rt_table.setFixedHeight(180)
         map_layout.addWidget(self.rt_table)
+        self.rt_table.itemChanged.connect(self.on_rt_item_changed)
         
         # Manual selection layout
         manual_layout = QtWidgets.QHBoxLayout()
@@ -963,6 +1077,35 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mir_time_combo = QtWidgets.QComboBox()
         self.mir_time_combo.addItems(["Whole Timeline (Toàn bộ)", "Selected Range (Khoảng chọn)"])
         mir_layout.addWidget(self.mir_time_combo, 1, 1)
+
+        mir_layout.addWidget(QtWidgets.QLabel("Rig Preset:"), 2, 0)
+        self.mir_preset_combo = QtWidgets.QComboBox()
+        self.mir_preset_combo.addItems([
+            "Chuẩn L/R (L_, _L, Left, Right)",
+            "Mixamo (mixamorig:Left/Right)",
+            "Advanced Skeleton (FKArmL/R)",
+            "MetaHuman (l_hand/r_hand)",
+            "Tự định nghĩa (Custom)"
+        ])
+        self.mir_preset_combo.currentIndexChanged.connect(self.on_mir_preset_changed)
+        mir_layout.addWidget(self.mir_preset_combo, 2, 1)
+
+        self.mir_custom_left_label = QtWidgets.QLabel("Custom Left:")
+        self.mir_custom_left_txt = QtWidgets.QLineEdit()
+        self.mir_custom_left_txt.setPlaceholderText("Ví dụ: _L")
+        self.mir_custom_right_label = QtWidgets.QLabel("Custom Right:")
+        self.mir_custom_right_txt = QtWidgets.QLineEdit()
+        self.mir_custom_right_txt.setPlaceholderText("Ví dụ: _R")
+        
+        mir_layout.addWidget(self.mir_custom_left_label, 2, 2)
+        mir_layout.addWidget(self.mir_custom_left_txt, 2, 3)
+        mir_layout.addWidget(self.mir_custom_right_label, 3, 2)
+        mir_layout.addWidget(self.mir_custom_right_txt, 3, 3)
+        
+        self.mir_custom_left_label.hide()
+        self.mir_custom_left_txt.hide()
+        self.mir_custom_right_label.hide()
+        self.mir_custom_right_txt.hide()
         
         tab7_layout.addWidget(mir_group)
         
@@ -2183,13 +2326,32 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             'rotateZ': self.mir_inv_rz_cb.isChecked()
         }
         
+        # Naming preset
+        preset_idx = self.mir_preset_combo.currentIndex()
+        left_pat = None
+        right_pat = None
+        if preset_idx == 1: # Mixamo
+            left_pat = ["Left", "left", "mixamorig:Left"]
+            right_pat = ["Right", "right", "mixamorig:Right"]
+        elif preset_idx == 2: # Advanced Skeleton
+            left_pat = ["L_", "FKArmL", "FKForeArmL", "FKHandL", "FKLegL", "FKAnkleL"]
+            right_pat = ["R_", "FKArmR", "FKForeArmR", "FKHandR", "FKLegR", "FKAnkleR"]
+        elif preset_idx == 3: # MetaHuman
+            left_pat = ["l_", "L_", "_L", "_l", "left", "Left"]
+            right_pat = ["r_", "R_", "_R", "_r", "right", "Right"]
+        elif preset_idx == 4: # Custom
+            left_pat = [self.mir_custom_left_txt.text().strip()]
+            right_pat = [self.mir_custom_right_txt.text().strip()]
+
         cmds.undoInfo(openChunk=True)
         try:
             success, msg = mirror_tool.execute_mirror(
                 objects=objects_to_process,
                 mode=mode,
                 time_range=time_range,
-                invert_map=invert_map
+                invert_map=invert_map,
+                left_patterns=left_pat,
+                right_patterns=right_pat
             )
             if success:
                 QtWidgets.QMessageBox.information(self, "Thành công", msg)
@@ -2203,7 +2365,76 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         finally:
             cmds.undoInfo(closeChunk=True)
 
-        # --- RETARGET TOOL CALLBACKS ---
+        # --- NEW UI UX UPGRADE CALLBACKS ---
+    def on_swap_target_owner(self):
+        """Đổi bên Target và Owner cho nhau"""
+        tgt = self.target_txt.text()
+        own = self.owner_txt.text()
+        self.target_txt.setText(own)
+        self.owner_txt.setText(tgt)
+
+    def on_mir_preset_changed(self, index):
+        """Hiển thị hoặc ẩn các ô nhập Pattern tự định nghĩa"""
+        is_custom = (index == 4)
+        self.mir_custom_left_label.setVisible(is_custom)
+        self.mir_custom_left_txt.setVisible(is_custom)
+        self.mir_custom_right_label.setVisible(is_custom)
+        self.mir_custom_right_txt.setVisible(is_custom)
+
+    def on_toggle_compact_mode(self, checked):
+        """Bật/Ẩn chế độ thu gọn Compact Mode"""
+        if checked:
+            self.tab_widget.tabBar().hide()
+            self.compact_toolbar.show()
+            self.compact_toggle_btn.setText("⚡ Rộng")
+            self.setMaximumWidth(280)
+            self.setMinimumWidth(200)
+        else:
+            self.tab_widget.tabBar().show()
+            self.compact_toolbar.hide()
+            self.compact_toggle_btn.setText("⚡ Gọn")
+            self.setMaximumWidth(16777215)
+            self.setMinimumWidth(320)
+
+    def on_rt_item_changed(self, item):
+        """Tự động tô màu trạng thái cho control khi chỉnh sửa trong bảng"""
+        self.rt_table.blockSignals(True)
+        try:
+            text = item.text().strip()
+            if text:
+                if cmds.objExists(text):
+                    item.setForeground(QtGui.QColor("#4CAF50")) # Green
+                    item.setToolTip("Vật thể tồn tại trong Scene")
+                else:
+                    item.setForeground(QtGui.QColor("#F44336")) # Red
+                    item.setToolTip("Không tìm thấy vật thể này!")
+            else:
+                item.setForeground(QtGui.QColor("#AAAAAA"))
+        finally:
+            self.rt_table.blockSignals(False)
+
+    def refresh_rt_table_colors(self):
+        """Làm mới toàn bộ màu sắc trạng thái của các ô trong bảng"""
+        self.rt_table.blockSignals(True)
+        try:
+            for row in range(self.rt_table.rowCount()):
+                for col in [0, 1]:
+                    item = self.rt_table.item(row, col)
+                    if item:
+                        text = item.text().strip()
+                        if text:
+                            if cmds.objExists(text):
+                                item.setForeground(QtGui.QColor("#4CAF50"))
+                                item.setToolTip("Vật thể tồn tại trong Scene")
+                            else:
+                                item.setForeground(QtGui.QColor("#F44336"))
+                                item.setToolTip("Không tìm thấy vật thể này!")
+                        else:
+                            item.setForeground(QtGui.QColor("#AAAAAA"))
+        finally:
+            self.rt_table.blockSignals(False)
+
+    # --- RETARGET TOOL CALLBACKS ---
     def on_rt_get_source(self):
         """Lấy đối tượng chọn trong Viewport điền vào cột Source"""
         sel = cmds.ls(sl=True)
@@ -2272,6 +2503,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self, "Thành công",
             "Đã tự động tìm và khớp nối thành công %d cặp control!" % len(pairs)
         )
+        self.refresh_rt_table_colors()
 
     def on_rt_add_row(self):
         row = self.rt_table.rowCount()
@@ -2314,6 +2546,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(item.get("source", "")))
                 self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(item.get("target", "")))
             print("[Retarget] Đã nạp cấu hình ánh xạ từ file: %s" % filepath)
+            self.refresh_rt_table_colors()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi Nạp cấu hình",

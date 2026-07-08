@@ -3,7 +3,7 @@ from __future__ import print_function, absolute_import, division
 
 import maya.cmds as cmds
 
-def find_counterpart(obj):
+def find_counterpart(obj, left_patterns=None, right_patterns=None):
     """
     Tìm đối tượng đối xứng của obj và xác định bên đối xứng (left/right/center).
     Hỗ trợ cả namespace.
@@ -11,8 +11,9 @@ def find_counterpart(obj):
     if not cmds.objExists(obj):
         return None, 'center'
         
-    left_patterns = ['_L', 'L_', '_l', 'l_', '_left', 'left_', 'Left']
-    right_patterns = ['_R', 'R_', '_r', 'r_', '_right', 'right_', 'Right']
+    if not left_patterns or not right_patterns:
+        left_patterns = ['_L', 'L_', '_l', 'l_', '_left', 'left_', 'Left']
+        right_patterns = ['_R', 'R_', '_r', 'r_', '_right', 'right_', 'Right']
     
     parts = obj.split(":")
     short_name = parts[-1]
@@ -41,7 +42,7 @@ def find_counterpart(obj):
                 
     return obj, 'center'
 
-def execute_mirror(objects, mode='swap', time_range=None, invert_map=None):
+def execute_mirror(objects, mode='swap', time_range=None, invert_map=None, left_patterns=None, right_patterns=None):
     """
     Thực hiện đối xứng chuyển động (Mirror Animation).
     """
@@ -69,7 +70,7 @@ def execute_mirror(objects, mode='swap', time_range=None, invert_map=None):
         if obj in processed:
             continue
             
-        counterpart, side = find_counterpart(obj)
+        counterpart, side = find_counterpart(obj, left_patterns, right_patterns)
         
         if side == 'left':
             pairs.append((obj, counterpart, 'side'))
