@@ -17,19 +17,24 @@ class ArcTracker(object):
         
     def get_world_position_at_frame(self, obj, frame):
         """Lấy tọa độ thế giới (X, Y, Z) của đối tượng tại frame cụ thể bằng worldMatrix"""
-        try:
-            matrix = cmds.getAttr("%s.worldMatrix[0]" % obj, time=frame)
-            if matrix and len(matrix) == 16:
-                # Tọa độ tịnh tiến X, Y, Z nằm ở vị trí index 12, 13, 14
-                return [matrix[12], matrix[13], matrix[14]]
-        except Exception:
-            pass
-            
-        # Phương án dự phòng nếu không lấy được worldMatrix
+        is_component = '.' in obj
+        if not is_component:
+            try:
+                matrix = cmds.getAttr("%s.worldMatrix[0]" % obj, time=frame)
+                if matrix and len(matrix) == 16:
+                    # Tọa độ tịnh tiến X, Y, Z nằm ở vị trí index 12, 13, 14
+                    return [matrix[12], matrix[13], matrix[14]]
+            except Exception:
+                pass
+                
+        # Phương án dự phòng nếu không lấy được worldMatrix hoặc dành cho component
         try:
             curr_time = cmds.currentTime(q=True)
             cmds.currentTime(frame, edit=True)
-            pos = cmds.xform(obj, q=True, ws=True, rp=True)
+            if is_component:
+                pos = cmds.xform(obj, q=True, ws=True, translation=True)
+            else:
+                pos = cmds.xform(obj, q=True, ws=True, rp=True)
             cmds.currentTime(curr_time, edit=True)
             return pos
         except Exception:
@@ -65,7 +70,17 @@ class ArcTracker(object):
             cmds.warning("Đối tượng %s không tồn tại!" % obj)
             return
             
-        clean_name = obj.replace(":", "_").replace("|", "_")
+        is_component = '.' in obj
+        if is_component:
+            node_name = obj.split('.')[0]
+            component_suffix = "." + ".".join(obj.split('.')[1:])
+            # Thay thế ký tự đặc biệt để đặt tên group hợp lệ trong Maya
+            clean_name = obj.replace(":", "_").replace("|", "_").replace(".", "_").replace("[", "_").replace("]", "_")
+        else:
+            node_name = obj
+            component_suffix = ""
+            clean_name = obj.replace(":", "_").replace("|", "_")
+            
         specific_grp = "%s_%s_Trail" % (self.GROUP_NAME, clean_name)
         
         # Xóa trail cũ của vật thể này nếu đã tồn tại
@@ -88,12 +103,18 @@ class ArcTracker(object):
         
         # Lưu thông tin vật thể gốc bằng message connection
         cmds.addAttr(obj_trail_grp, longName='animeow_sourceObj', attributeType='message')
-        cmds.connectAttr(obj + '.message', obj_trail_grp + '.animeow_sourceObj')
+        cmds.connectAttr(node_name + '.message', obj_trail_grp + '.animeow_sourceObj')
+        
+        # Lưu hậu tố component (nếu có) vào thuộc tính chuỗi
+        if is_component:
+            cmds.addAttr(obj_trail_grp, longName='animeow_component', dataType='string')
+            cmds.setAttr(obj_trail_grp + '.animeow_component', component_suffix, type='string')
         
         # Dò tìm các frame có keyframe của đối tượng để hiển thị đặc biệt
         keyframe_times = []
         try:
-            keys = cmds.keyframe(obj, query=True, timeChange=True) or []
+            target_node = node_name if is_component else obj
+            keys = cmds.keyframe(target_node, query=True, timeChange=True) or []
             keyframe_times = sorted(list(set([int(k) for k in keys])))
         except Exception:
             pass
@@ -108,7 +129,10 @@ class ArcTracker(object):
         try:
             for frame in frames:
                 cmds.currentTime(frame, edit=True)
-                pos = cmds.xform(obj, q=True, ws=True, rp=True)
+                if is_component:
+                    pos = cmds.xform(obj, q=True, ws=True, translation=True)
+                else:
+                    pos = cmds.xform(obj, q=True, ws=True, rp=True)
                 points.append(pos)
         finally:
             cmds.currentTime(curr_time, edit=True)
@@ -194,7 +218,13 @@ class ArcTracker(object):
                     if cmds.objExists(attr_path):
                         conns = cmds.listConnections(attr_path, destination=False) or []
                         if conns:
-                            objects_to_update.append(conns[0])
+                            # Kiểm tra xem có lưu hậu tố component không
+                            comp_attr = "%s.animeow_component" % child
+                            if cmds.objExists(comp_attr):
+                                comp_suffix = cmds.getAttr(comp_attr) or ""
+                                objects_to_update.append(conns[0] + comp_suffix)
+                            else:
+                                objects_to_update.append(conns[0])
                             
         # Loại bỏ các đối tượng trùng lặp và thực hiện vẽ lại
         updated_count = 0
