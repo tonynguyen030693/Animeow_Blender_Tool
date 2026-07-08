@@ -63,6 +63,31 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     padding: 4px 6px;
     color: #FFFFFF;
 }
+QTabWidget::pane {
+    border: 1px solid #444444;
+    top: -1px;
+    background-color: #2D2D2D;
+}
+QTabBar::tab {
+    background-color: #3C3C3C;
+    color: #AAAAAA;
+    border: 1px solid #444444;
+    border-bottom: none;
+    padding: 8px 16px;
+    margin-right: 4px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    font-weight: bold;
+}
+QTabBar::tab:selected {
+    background-color: #2D2D2D;
+    border-bottom: 1px solid #2D2D2D;
+    color: #00BCD4;
+}
+QTabBar::tab:hover {
+    color: #FFFFFF;
+    border-top: 2px solid #00BCD4;
+}
 """
 
 def ensure_scripts_2022_path():
@@ -142,11 +167,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.load_settings()
 
     def build_ui(self):
-        # Tiêu đề giao diện
+        # Khởi tạo QTabWidget
+        self.tab_widget = QtWidgets.QTabWidget()
+        self.main_layout.addWidget(self.tab_widget)
+        
+        # --- TAB 1: SMART LINK ---
+        tab1 = QtWidgets.QWidget()
+        tab1_layout = QtWidgets.QVBoxLayout(tab1)
+        tab1_layout.setContentsMargins(6, 10, 6, 6)
+        tab1_layout.setSpacing(12)
+        
+        # Tiêu đề Tab 1
         title_label = QtWidgets.QLabel("🎯 ANIMEOW SMART LINK")
         title_label.setAlignment(QtCore.Qt.AlignCenter)
         title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        self.main_layout.addWidget(title_label)
+        tab1_layout.addWidget(title_label)
         
         # 1. Khối đối tượng (Link Targets)
         link_group = QtWidgets.QGroupBox("1. Thiết lập Đối Tượng liên kết (Target & Owner)")
@@ -181,7 +216,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.use_locator_cb.setChecked(True)
         link_layout.addWidget(self.use_locator_cb)
         
-        self.main_layout.addWidget(link_group)
+        tab1_layout.addWidget(link_group)
         
         # 2. Khối cấu hình Bake (Bake Settings)
         bake_group = QtWidgets.QGroupBox("2. Thiết lập Bake chuyển động")
@@ -206,37 +241,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.threshold_spin.setSingleStep(0.01)
         bake_layout.addWidget(self.threshold_spin, 2, 1)
         
-        self.main_layout.addWidget(bake_group)
+        tab1_layout.addWidget(bake_group)
         
-        # 3. Khối Tích hợp Công cụ Tiện ích
-        tools_group = QtWidgets.QGroupBox("3. Tích hợp Công cụ Tiện ích")
-        tools_layout = QtWidgets.QGridLayout(tools_group)
-        tools_layout.setContentsMargins(8, 12, 8, 8)
-        tools_layout.setSpacing(8)
-        
-        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
-        self.studio_lib_btn.setFixedHeight(28)
-        self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
-        tools_layout.addWidget(self.studio_lib_btn, 0, 0)
-        
-        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
-        self.dwpicker_btn.setFixedHeight(28)
-        self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
-        tools_layout.addWidget(self.dwpicker_btn, 0, 1)
-        
-        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
-        self.tween_machine_btn.setFixedHeight(28)
-        self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
-        tools_layout.addWidget(self.tween_machine_btn, 1, 0)
-        
-        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
-        self.atools_btn.setFixedHeight(28)
-        self.atools_btn.clicked.connect(self.on_launch_atools)
-        tools_layout.addWidget(self.atools_btn, 1, 1)
-        
-        self.main_layout.addWidget(tools_group)
-        
-        # 4. Khu vực nút bấm hành động
+        # 3. Khu vực nút bấm hành động
         btn_layout = QtWidgets.QVBoxLayout()
         btn_layout.setSpacing(8)
         
@@ -256,10 +263,60 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.bake_btn.clicked.connect(self.on_bake_clean)
         btn_layout.addWidget(self.bake_btn)
         
-        self.main_layout.addLayout(btn_layout)
+        tab1_layout.addLayout(btn_layout)
+        tab1_layout.addStretch()
         
-        # Co giãn cuối
-        self.main_layout.addStretch()
+        # --- TAB 2: TIỆN ÍCH (QUICK TOOLS) ---
+        tab2 = QtWidgets.QWidget()
+        tab2_layout = QtWidgets.QVBoxLayout(tab2)
+        tab2_layout.setContentsMargins(6, 10, 6, 6)
+        tab2_layout.setSpacing(12)
+        
+        # Tiêu đề Tab 2
+        tools_title = QtWidgets.QLabel("🛠️ ANIMEOW QUICK TOOLS")
+        tools_title.setAlignment(QtCore.Qt.AlignCenter)
+        tools_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
+        tab2_layout.addWidget(tools_title)
+        
+        # Khối công cụ mở rộng
+        tools_group = QtWidgets.QGroupBox("Tích hợp các bộ công cụ hoạt họa bên thứ ba")
+        tools_layout = QtWidgets.QGridLayout(tools_group)
+        tools_layout.setContentsMargins(8, 12, 8, 8)
+        tools_layout.setSpacing(10)
+        
+        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
+        self.studio_lib_btn.setFixedHeight(32)
+        self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
+        tools_layout.addWidget(self.studio_lib_btn, 0, 0)
+        
+        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
+        self.dwpicker_btn.setFixedHeight(32)
+        self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
+        tools_layout.addWidget(self.dwpicker_btn, 0, 1)
+        
+        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
+        self.tween_machine_btn.setFixedHeight(32)
+        self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
+        tools_layout.addWidget(self.tween_machine_btn, 1, 0)
+        
+        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
+        self.atools_btn.setFixedHeight(32)
+        self.atools_btn.clicked.connect(self.on_launch_atools)
+        tools_layout.addWidget(self.atools_btn, 1, 1)
+        
+        tab2_layout.addWidget(tools_group)
+        
+        # Lời giải thích nhỏ
+        info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
+        info_label.setAlignment(QtCore.Qt.AlignCenter)
+        info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
+        tab2_layout.addWidget(info_label)
+        
+        tab2_layout.addStretch()
+        
+        # Thêm các tab vào Widget
+        self.tab_widget.addTab(tab1, "🔗 Smart Link")
+        self.tab_widget.addTab(tab2, "🛠️ Quick Tools")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
