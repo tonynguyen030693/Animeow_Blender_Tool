@@ -797,8 +797,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         pb_layout.setSpacing(8)
         
         pb_layout.addWidget(QtWidgets.QLabel("Camera:"), 0, 0)
-        self.pb_camera_combo = QtWidgets.QComboBox()
-        pb_layout.addWidget(self.pb_camera_combo, 0, 1)
+        self.camera_combo = QtWidgets.QComboBox()
+        pb_layout.addWidget(self.camera_combo, 0, 1)
         
         pb_layout.addWidget(QtWidgets.QLabel("Định dạng:"), 0, 2)
         self.pb_format_combo = QtWidgets.QComboBox()
@@ -839,17 +839,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_multi_cam_cb.toggled.connect(self.on_toggle_multi_cam)
         pb_layout.addWidget(self.pb_multi_cam_cb, 3, 0, 1, 4)
         
-        self.pb_cams_list = QtWidgets.QListWidget()
-        self.pb_cams_list.setFixedHeight(80)
-        self.pb_cams_list.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        self.pb_cams_list.hide()
-        pb_layout.addWidget(self.pb_cams_list, 4, 0, 1, 4)
+        self.camera_list_widget = QtWidgets.QListWidget()
+        self.camera_list_widget.setFixedHeight(80)
+        self.camera_list_widget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.camera_list_widget.hide()
+        pb_layout.addWidget(self.camera_list_widget, 4, 0, 1, 4)
         
-        self.pb_refresh_cams_btn = QtWidgets.QPushButton("Quét lại Cameras")
-        self.pb_refresh_cams_btn.setFixedHeight(22)
-        self.pb_refresh_cams_btn.clicked.connect(self.on_refresh_cameras)
-        self.pb_refresh_cams_btn.hide()
-        pb_layout.addWidget(self.pb_refresh_cams_btn, 5, 0, 1, 4)
+        self.refresh_cam_btn = QtWidgets.QPushButton("Quét lại Cameras")
+        self.refresh_cam_btn.setFixedHeight(22)
+        self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
+        self.refresh_cam_btn.hide()
+        pb_layout.addWidget(self.refresh_cam_btn, 5, 0, 1, 4)
         
         self.pb_execute_btn = QtWidgets.QPushButton("Thực hiện Playblast")
         self.pb_execute_btn.setObjectName("accent_btn")
