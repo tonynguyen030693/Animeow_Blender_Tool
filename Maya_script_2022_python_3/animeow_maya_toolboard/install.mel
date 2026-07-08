@@ -33,6 +33,9 @@ global proc animeow_tb_install() {
     string $pyCmd = "import sys\n";
     $pyCmd += "path = '" + $parentDir + "'\n";
     $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
+    $pyCmd += "for m in list(sys.modules.keys()):\n";
+    $pyCmd += "    if m.startswith('animeow_maya_toolboard'):\n";
+    $pyCmd += "        del sys.modules[m]\n";
     $pyCmd += "import animeow_maya_toolboard\n";
     $pyCmd += "import animeow_maya_toolboard.menu as menu\n";
     $pyCmd += "menu.create_menu()\n";

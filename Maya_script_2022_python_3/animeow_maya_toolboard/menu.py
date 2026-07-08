@@ -25,24 +25,26 @@ def create_menu():
     # Lấy danh sách các menu item hiện có để tránh tạo trùng lặp
     menu_items = cmds.menu(MENU_NAME, query=True, itemArray=True) or []
     
-    has_toolboard = False
+    # Xoá các menu item cũ để tránh bị trùng hoặc thừa nút
     for item in menu_items:
         try:
-            if cmds.menuItem(item, query=True, label=True) == "Animeow Toolboard":
-                has_toolboard = True
-                break
+            lbl = cmds.menuItem(item, query=True, label=True)
+            if lbl in ["Anim Combiner Toolboard", "Animeow Toolboard"]:
+                cmds.deleteUI(item, menuItem=True)
         except Exception:
             pass
             
-    if not has_toolboard:
-        # Nếu đã có các item khác (ví dụ từ bộ pipeline), ta thêm dấu gạch phân cách
-        if menu_items:
-            cmds.menuItem(divider=True, parent=MENU_NAME)
+    # Lấy lại danh sách sau khi xoá
+    menu_items = cmds.menu(MENU_NAME, query=True, itemArray=True) or []
             
-        cmds.menuItem(
-            label="Animeow Toolboard",
-            command="import animeow_maya_toolboard; animeow_maya_toolboard.show()",
-            image="fileOpen.png",
-            parent=MENU_NAME
-        )
-        print("Đã đăng ký 'Animeow Toolboard' vào menu '%s'." % MENU_LABEL)
+    # Thêm dấu gạch phân cách nếu đã có các menu item khác từ trước
+    if menu_items:
+        cmds.menuItem(divider=True, parent=MENU_NAME)
+        
+    cmds.menuItem(
+        label="Animeow Toolboard",
+        command="import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show()",
+        image="fileOpen.png",
+        parent=MENU_NAME
+    )
+    print("Đã đăng ký 'Animeow Toolboard' vào menu '%s'." % MENU_LABEL)
