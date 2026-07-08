@@ -66,32 +66,59 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
 """
 
 def ensure_scripts_2022_path():
-    path = r"E:\AI_Work\Blender_Maya_Script\Maya_script_2020_python_2\Tool_reference\scripts_2022"
-    if os.path.exists(path):
-        import sys
-        if path not in sys.path:
-            sys.path.insert(0, path)
-            print("[AnimeowToolboard] Da them duong dan Python: %s" % path)
-            
-        # Thêm thư mục src của Studio Library vào sys.path
-        sl_path = os.path.join(path, "studiolibrary-2.9.6.b3", "studiolibrary-2.9.6.b3", "src")
-        if os.path.exists(sl_path) and sl_path not in sys.path:
-            sys.path.insert(0, sl_path)
-            print("[AnimeowToolboard] Da them duong dan Studio Library: %s" % sl_path)
-            
-        # Thêm vào MAYA_SCRIPT_PATH để source file mel
-        import maya.mel as mel
-        current_script_paths = mel.eval("getenv \"MAYA_SCRIPT_PATH\"") or ""
-        sep = ";" if os.name == 'nt' else ":"
-        paths_list = current_script_paths.split(sep)
+    # 1. Thử lấy đường dẫn động tương đối theo cấu trúc thư mục của git repo
+    ui_dir = os.path.dirname(os.path.abspath(__file__))
+    package_dir = os.path.dirname(ui_dir)
+    python3_dir = os.path.dirname(package_dir)
+    workspace_root = os.path.dirname(python3_dir)
+    
+    dynamic_path = os.path.join(workspace_root, "Maya_script_2020_python_2", "Tool_reference", "scripts_2022")
+    
+    # 2. Thử đường dẫn tuyệt đối mặc định cũ làm phương án dự phòng
+    hardcoded_path = r"E:\AI_Work\Blender_Maya_Script\Maya_script_2020_python_2\Tool_reference\scripts_2022"
+    
+    # Xác định đường dẫn thực tế tồn tại trên máy hiện hành
+    path = ""
+    if os.path.exists(dynamic_path):
+        path = dynamic_path
+    elif os.path.exists(hardcoded_path):
+        path = hardcoded_path
+    else:
+        # Dự phòng tiếp theo: thư mục thirdparty nằm trực tiếp trong animeow_maya_toolboard
+        thirdparty_path = os.path.join(package_dir, "thirdparty")
+        if os.path.exists(thirdparty_path):
+            path = thirdparty_path
+
+    if not path:
+        print("[AnimeowToolboard] Khong tim thay thu muc scripts_2022 hay thirdparty chua cac tool bo tro!")
+        return ""
         
-        norm_path = os.path.normpath(path).lower()
-        has_path = any(os.path.normpath(p).lower() == norm_path for p in paths_list if p)
+    import sys
+    if path not in sys.path:
+        sys.path.insert(0, path)
+        print("[AnimeowToolboard] Da them duong dan Python: %s" % path)
         
-        if not has_path:
-            new_script_paths = "%s%s%s" % (path, sep, current_script_paths)
-            mel.eval('putenv "MAYA_SCRIPT_PATH" "%s"' % new_script_paths.replace("\\", "/"))
-            print("[AnimeowToolboard] Da them duong dan MEL: %s" % path)
+    # Thêm thư mục src của Studio Library vào sys.path
+    sl_path = os.path.join(path, "studiolibrary-2.9.6.b3", "studiolibrary-2.9.6.b3", "src")
+    if os.path.exists(sl_path) and sl_path not in sys.path:
+        sys.path.insert(0, sl_path)
+        print("[AnimeowToolboard] Da them duong dan Studio Library: %s" % sl_path)
+        
+    # Thêm vào MAYA_SCRIPT_PATH để source file mel
+    import maya.mel as mel
+    current_script_paths = mel.eval("getenv \"MAYA_SCRIPT_PATH\"") or ""
+    sep = ";" if os.name == 'nt' else ":"
+    paths_list = current_script_paths.split(sep)
+    
+    norm_path = os.path.normpath(path).lower()
+    has_path = any(os.path.normpath(p).lower() == norm_path for p in paths_list if p)
+    
+    if not has_path:
+        new_script_paths = "%s%s%s" % (path, sep, current_script_paths)
+        mel.eval('putenv "MAYA_SCRIPT_PATH" "%s"' % new_script_paths.replace("\\", "/"))
+        print("[AnimeowToolboard] Da them duong dan MEL: %s" % path)
+        
+    return path
 
 class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     WINDOW_TITLE = "Animeow Maya Toolboard"
