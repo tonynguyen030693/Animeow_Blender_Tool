@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool
 
 QSS_STYLE = """
 QWidget {
@@ -770,12 +770,141 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab5_layout.addWidget(self.run_pb_btn)
         tab5_layout.addStretch()
         
+        # =========================================================================
+        # --- TAB 6: RIG RETARGET TOOL ---
+        # =========================================================================
+        tab6 = QtWidgets.QWidget()
+        tab6_layout = QtWidgets.QVBoxLayout(tab6)
+        tab6_layout.setContentsMargins(6, 10, 6, 6)
+        tab6_layout.setSpacing(10)
+        
+        # Tieu de Tab 6
+        t6_title = QtWidgets.QLabel("ANIMEOW RIG RETARGET TOOL")
+        t6_title.setAlignment(QtCore.Qt.AlignCenter)
+        t6_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab6_layout.addWidget(t6_title)
+        
+        # 1. GroupBox Namespace Setup
+        ns_group = QtWidgets.QGroupBox("1. Thiết lập Rig Namespace")
+        ns_layout = QtWidgets.QGridLayout(ns_group)
+        ns_layout.setContentsMargins(8, 12, 8, 8)
+        ns_layout.setSpacing(8)
+        
+        ns_layout.addWidget(QtWidgets.QLabel("Source Rig Namespace:"), 0, 0)
+        self.rt_source_ns_combo = QtWidgets.QComboBox()
+        ns_layout.addWidget(self.rt_source_ns_combo, 0, 1)
+        
+        self.rt_refresh_ns_btn = QtWidgets.QPushButton("Refresh Namespaces")
+        self.rt_refresh_ns_btn.clicked.connect(self.on_rt_refresh_namespaces)
+        ns_layout.addWidget(self.rt_refresh_ns_btn, 0, 2)
+        
+        ns_layout.addWidget(QtWidgets.QLabel("Target Rig Namespace:"), 1, 0)
+        self.rt_target_ns_combo = QtWidgets.QComboBox()
+        ns_layout.addWidget(self.rt_target_ns_combo, 1, 1)
+        
+        self.rt_auto_map_btn = QtWidgets.QPushButton("Khớp tự động (Auto Map)")
+        self.rt_auto_map_btn.setObjectName("accent_btn")
+        self.rt_auto_map_btn.clicked.connect(self.on_rt_auto_map)
+        ns_layout.addWidget(self.rt_auto_map_btn, 1, 2)
+        
+        tab6_layout.addWidget(ns_group)
+        
+        # 2. GroupBox Mapping Table
+        map_group = QtWidgets.QGroupBox("2. Bảng ánh xạ Control")
+        map_layout = QtWidgets.QVBoxLayout(map_group)
+        map_layout.setContentsMargins(8, 12, 8, 8)
+        map_layout.setSpacing(8)
+        
+        self.rt_table = QtWidgets.QTableWidget()
+        self.rt_table.setColumnCount(2)
+        self.rt_table.setHorizontalHeaderLabels(["Source Control", "Target Control"])
+        self.rt_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.rt_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.rt_table.setFixedHeight(180)
+        map_layout.addWidget(self.rt_table)
+        
+        # Manual selection layout
+        manual_layout = QtWidgets.QHBoxLayout()
+        self.rt_get_source_btn = QtWidgets.QPushButton("Lấy Nguồn (Get Source)")
+        self.rt_get_source_btn.clicked.connect(self.on_rt_get_source)
+        manual_layout.addWidget(self.rt_get_source_btn)
+        
+        self.rt_get_target_btn = QtWidgets.QPushButton("Lấy Đích (Get Target)")
+        self.rt_get_target_btn.clicked.connect(self.on_rt_get_target)
+        manual_layout.addWidget(self.rt_get_target_btn)
+        
+        map_layout.addLayout(manual_layout)
+        
+        # Table control buttons
+        table_btn_layout = QtWidgets.QHBoxLayout()
+        self.rt_add_row_btn = QtWidgets.QPushButton("ThêM dòng")
+        self.rt_add_row_btn.clicked.connect(self.on_rt_add_row)
+        table_btn_layout.addWidget(self.rt_add_row_btn)
+        
+        self.rt_del_row_btn = QtWidgets.QPushButton("Xóa dòng chọn")
+        self.rt_del_row_btn.clicked.connect(self.on_rt_del_row)
+        table_btn_layout.addWidget(self.rt_del_row_btn)
+        
+        self.rt_clear_btn = QtWidgets.QPushButton("Xóa hết bảng")
+        self.rt_clear_btn.clicked.connect(self.on_rt_clear_table)
+        table_btn_layout.addWidget(self.rt_clear_btn)
+        
+        self.rt_load_json_btn = QtWidgets.QPushButton("Tải file JSON")
+        self.rt_load_json_btn.clicked.connect(self.on_rt_load_json)
+        table_btn_layout.addWidget(self.rt_load_json_btn)
+        
+        self.rt_save_json_btn = QtWidgets.QPushButton("Lưu file JSON")
+        self.rt_save_json_btn.clicked.connect(self.on_rt_save_json)
+        table_btn_layout.addWidget(self.rt_save_json_btn)
+        
+        map_layout.addLayout(table_btn_layout)
+        tab6_layout.addWidget(map_group)
+        
+        # 3. Bake options GroupBox
+        opt_group = QtWidgets.QGroupBox("3. Cấu hình Bake Retarget")
+        opt_layout = QtWidgets.QGridLayout(opt_group)
+        opt_layout.setContentsMargins(8, 12, 8, 8)
+        opt_layout.setSpacing(8)
+        
+        opt_layout.addWidget(QtWidgets.QLabel("Kênh Bake:"), 0, 0)
+        self.rt_channels_combo = QtWidgets.QComboBox()
+        self.rt_channels_combo.addItems(["Translate & Rotate (Both)", "Translate Only", "Rotate Only"])
+        opt_layout.addWidget(self.rt_channels_combo, 0, 1)
+        
+        opt_layout.addWidget(QtWidgets.QLabel("Bước nhảy (Step):"), 0, 2)
+        self.rt_step_spin = QtWidgets.QSpinBox()
+        self.rt_step_spin.setRange(1, 100)
+        self.rt_step_spin.setValue(1)
+        opt_layout.addWidget(self.rt_step_spin, 0, 3)
+        
+        self.rt_maintain_offset_cb = QtWidgets.QCheckBox("Maintain Offset (Bảo toàn độ lệch tư thế ban đầu)")
+        self.rt_maintain_offset_cb.setChecked(True)
+        opt_layout.addWidget(self.rt_maintain_offset_cb, 1, 0, 1, 4)
+        
+        self.rt_smart_bake_cb = QtWidgets.QCheckBox("Smart Bake (Ch뚿 độ nướng tại các frame có Key của nguồn)")
+        self.rt_smart_bake_cb.setChecked(False)
+        opt_layout.addWidget(self.rt_smart_bake_cb, 2, 0, 1, 4)
+        
+        tab6_layout.addWidget(opt_group)
+        
+        # Execute button
+        self.rt_execute_btn = QtWidgets.QPushButton("Bắt đầu Retarget (Bake)")
+        self.rt_execute_btn.setObjectName("accent_btn")
+        self.rt_execute_btn.setFixedHeight(35)
+        self.rt_execute_btn.clicked.connect(self.on_rt_execute)
+        tab6_layout.addWidget(self.rt_execute_btn)
+        
+        tab6_layout.addStretch()
+        
+        self.on_rt_refresh_namespaces()
+        
         # Add Scroll-wrapped tabs to TabWidget
         self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Link && Bake  ")
         self.tab_widget.addTab(wrap_in_scroll(tab2), "⚙️ Quick Utils")
         self.tab_widget.addTab(wrap_in_scroll(tab3), "📈 Arc && Rotate  ")
         self.tab_widget.addTab(wrap_in_scroll(tab4), "🚀 Launchers  ")
         self.tab_widget.addTab(wrap_in_scroll(tab5), "🎬 Playblast  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab6), "🎯 Retarget  ")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -1814,6 +1943,207 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi Làm tròn sñ",
                 "Lỗi xảy ra khi thực hiện làm tròn sñ:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+        # --- RETARGET TOOL CALLBACKS ---
+    def on_rt_get_source(self):
+        """Lấy đối tượng chọn trong Viewport điền vào cột Source"""
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn một đối tượng trong Viewport!")
+            return
+            
+        obj_name = sel[0]
+        selected_ranges = self.rt_table.selectedRanges()
+        if selected_ranges:
+            row = selected_ranges[0].topRow()
+        else:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(""))
+            
+        self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(obj_name))
+        self.rt_table.selectRow(row)
+
+    def on_rt_get_target(self):
+        """Lấy đối tượng chọn trong Viewport điền vào cột Target"""
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn một đối tượng trong Viewport!")
+            return
+            
+        obj_name = sel[0]
+        selected_ranges = self.rt_table.selectedRanges()
+        if selected_ranges:
+            row = selected_ranges[0].topRow()
+        else:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(""))
+            
+        self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(obj_name))
+        self.rt_table.selectRow(row)
+
+    def on_rt_refresh_namespaces(self):
+        namespaces = retarget_tool.get_all_namespaces()
+        self.rt_source_ns_combo.clear()
+        self.rt_target_ns_combo.clear()
+        self.rt_source_ns_combo.addItem("")
+        self.rt_target_ns_combo.addItem("")
+        for ns in namespaces:
+            self.rt_source_ns_combo.addItem(ns)
+            self.rt_target_ns_combo.addItem(ns)
+
+    def on_rt_auto_map(self):
+        source_ns = self.rt_source_ns_combo.currentText()
+        target_ns = self.rt_target_ns_combo.currentText()
+        if source_ns == target_ns and source_ns != "":
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Namespace Nguồn và Namespace Đích không nên trùng nhau!")
+            return
+            
+        pairs = retarget_tool.auto_map_rigs(source_ns, target_ns)
+        self.on_rt_clear_table()
+        
+        for src, tgt in pairs:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(src))
+            self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(tgt))
+            
+        QtWidgets.QMessageBox.information(
+            self, "Thành công",
+            "Đã tự động tìm và khớp nối thành công %d cặp control!" % len(pairs)
+        )
+
+    def on_rt_add_row(self):
+        row = self.rt_table.rowCount()
+        self.rt_table.insertRow(row)
+        self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(""))
+        self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(""))
+
+    def on_rt_del_row(self):
+        selected_ranges = self.rt_table.selectedRanges()
+        if not selected_ranges:
+            return
+        rows_to_delete = []
+        for r in selected_ranges:
+            for row in range(r.topRow(), r.bottomRow() + 1):
+                rows_to_delete.append(row)
+        rows_to_delete = sorted(list(set(rows_to_delete)), reverse=True)
+        for r in rows_to_delete:
+            self.rt_table.removeRow(r)
+
+    def on_rt_clear_table(self):
+        self.rt_table.setRowCount(0)
+
+    def on_rt_load_json(self):
+        file_filter = "JSON Files (*.json)"
+        filepath, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Chọn file cấu hình Mapping", "", file_filter
+        )
+        if not filepath:
+            return
+            
+        import json
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            self.on_rt_clear_table()
+            for item in data:
+                row = self.rt_table.rowCount()
+                self.rt_table.insertRow(row)
+                self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(item.get("source", "")))
+                self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(item.get("target", "")))
+            print("[Retarget] Đã nạp cấu hình ánh xạ từ file: %s" % filepath)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Nạp cấu hình",
+                "Không thể nạp file cấu hình ánh xạ:\n%s" % str(e)
+            )
+
+    def on_rt_save_json(self):
+        rowCount = self.rt_table.rowCount()
+        if rowCount == 0:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Bảng ánh xạ trống, không có gì để lưu!")
+            return
+            
+        file_filter = "JSON Files (*.json)"
+        filepath, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Lưu cấu hình Mapping", "", file_filter
+        )
+        if not filepath:
+            return
+            
+        import json
+        data = []
+        for row in range(rowCount):
+            src_item = self.rt_table.item(row, 0)
+            tgt_item = self.rt_table.item(row, 1)
+            src = src_item.text().strip() if src_item else ""
+            tgt = tgt_item.text().strip() if tgt_item else ""
+            data.append({"source": src, "target": tgt})
+            
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=4)
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã lưu cấu hình ánh xạ thành công!")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Lưu cấu hình",
+                "Không thể lưu file cấu hình ánh xạ:\n%s" % str(e)
+            )
+
+    def on_rt_execute(self):
+        rowCount = self.rt_table.rowCount()
+        if rowCount == 0:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng thêM hoộc khớp nối ít nhất một cặp control trong bảng!")
+            return
+            
+        mapping_pairs = []
+        for row in range(rowCount):
+            src_item = self.rt_table.item(row, 0)
+            tgt_item = self.rt_table.item(row, 1)
+            src = src_item.text().strip() if src_item else ""
+            tgt = tgt_item.text().strip() if tgt_item else ""
+            if src and tgt:
+                mapping_pairs.append((src, tgt))
+                
+        if not mapping_pairs:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không có cặp đối tượng hợp lệ nào được điền!")
+            return
+            
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.rt_step_spin.value()
+        maintain_offset = self.rt_maintain_offset_cb.isChecked()
+        smart_bake = self.rt_smart_bake_cb.isChecked()
+        
+        idx = self.rt_channels_combo.currentIndex()
+        channels = ['both', 'translate', 'rotate'][idx]
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = retarget_tool.execute_retarget(
+                mapping_pairs=mapping_pairs,
+                start_frame=start_frame,
+                end_frame=end_frame,
+                step=step,
+                maintain_offset=maintain_offset,
+                channels=channels,
+                smart_bake=smart_bake
+            )
+            if success:
+                QtWidgets.QMessageBox.information(self, "Thành công", msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Retarget",
+                "Có lỗi xảy ra trong quá trình Retarget:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
