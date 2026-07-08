@@ -313,10 +313,15 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.atools_btn.clicked.connect(self.on_launch_atools)
         tools_layout.addWidget(self.atools_btn, 1, 1)
         
-        self.animo_btn = QtWidgets.QPushButton("🚀 Animo (Animation Tools)")
+        self.animo_btn = QtWidgets.QPushButton("🚀 Animo")
         self.animo_btn.setFixedHeight(32)
         self.animo_btn.clicked.connect(self.on_launch_animo)
-        tools_layout.addWidget(self.animo_btn, 2, 0, 1, 2)
+        tools_layout.addWidget(self.animo_btn, 2, 0)
+        
+        self.world_bake_btn = QtWidgets.QPushButton("🌍 World Bake")
+        self.world_bake_btn.setFixedHeight(32)
+        self.world_bake_btn.clicked.connect(self.on_launch_worldbake)
+        tools_layout.addWidget(self.world_bake_btn, 2, 1)
         
         tab2_layout.addWidget(tools_group)
         
@@ -971,6 +976,25 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             for f_cam, f_err in failed_cameras:
                 err_msg += "  + %s: %s\n" % (f_cam, f_err)
             QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+
+    def on_launch_worldbake(self):
+        ensure_scripts_2022_path()
+        try:
+            is_open = False
+            for win in ['ml_worldBake', 'ml_worldBakeWin']:
+                if cmds.window(win, exists=True):
+                    cmds.deleteUI(win)
+                    is_open = True
+                    print("[WorldBake] Da dong World Bake.")
+                    
+            if not is_open:
+                import ml_worldBake
+                import importlib
+                importlib.reload(ml_worldBake)
+                ml_worldBake.ui()
+                print("[WorldBake] Da mo World Bake.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy World Bake:\n%s" % str(e))
 
 
 def show_window():
