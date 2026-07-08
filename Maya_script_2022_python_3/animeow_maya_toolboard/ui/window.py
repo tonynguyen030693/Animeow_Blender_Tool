@@ -834,10 +834,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_overwrite_cb.setChecked(True)
         pb_layout.addWidget(self.pb_overwrite_cb, 2, 2, 1, 2)
         
-        self.pb_multi_cam_cb = QtWidgets.QCheckBox("Quay hàng loạt (Multi-Camera)")
-        self.pb_multi_cam_cb.setChecked(False)
-        self.pb_multi_cam_cb.toggled.connect(self.on_toggle_multi_cam)
-        pb_layout.addWidget(self.pb_multi_cam_cb, 3, 0, 1, 4)
+        self.multi_cam_cb = QtWidgets.QCheckBox("Quay hàng loạt (Multi-Camera)")
+        self.multi_cam_cb.setChecked(False)
+        self.multi_cam_cb.toggled.connect(self.on_toggle_multi_cam)
+        pb_layout.addWidget(self.multi_cam_cb, 3, 0, 1, 4)
         
         self.camera_list_widget = QtWidgets.QListWidget()
         self.camera_list_widget.setFixedHeight(80)
