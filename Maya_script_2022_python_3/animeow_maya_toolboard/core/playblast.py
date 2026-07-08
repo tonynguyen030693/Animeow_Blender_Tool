@@ -243,6 +243,32 @@ class PlayblastManager(object):
         start_time = cmds.playbackOptions(query=True, minTime=True)
         end_time = cmds.playbackOptions(query=True, maxTime=True)
         
+        # Lấy danh sách compression khả dụng cho format đã chọn trên hệ thống hiện tại
+        available_compressions = []
+        try:
+            available_compressions = cmds.playblast(query=True, compression=True) or []
+        except Exception:
+            pass
+            
+        compression = "none"
+        if fmt == "qt":
+            # Ưu tiên H.264, sau đó đến các định dạng nén phổ biến, cuối cùng là none
+            for opt in ["H.264", "png", "jpeg", "rle", "PNG", "JPEG"]:
+                if opt in available_compressions:
+                    compression = opt
+                    break
+            else:
+                if available_compressions:
+                    compression = available_compressions[0]
+        else: # avi
+            for opt in ["none", "IYUV codec", "MS-CVC"]:
+                if opt in available_compressions:
+                    compression = opt
+                    break
+            else:
+                if available_compressions:
+                    compression = available_compressions[0]
+                    
         playblast_args = {
             "format": fmt,
             "filename": output_filepath,
@@ -252,21 +278,44 @@ class PlayblastManager(object):
             "viewer": viewer,
             "showOrnaments": True,
             "percent": percent,
-            "compression": "H.264" if fmt == "qt" else "none",
             "quality": 70,
             "widthHeight": [width, height],
             "startTime": start_time,
             "endTime": end_time,
         }
         
+        if compression and compression != "none":
+            playblast_args["compression"] = compression
+            
         if sound_node:
             playblast_args["sound"] = sound_node
             
-        print("[Playblast] Dang xuat Playblast tu camera %s..." % (camera if camera else "active"))
+        print("\n[DEBUG PLAYBLAST] --- Thiet lap Playblast ---")
+        print("[DEBUG PLAYBLAST] Output Path: %s" % output_filepath)
+        print("[DEBUG PLAYBLAST] Format: %s" % fmt)
+        print("[DEBUG PLAYBLAST] Compression: %s" % compression)
+        print("[DEBUG PLAYBLAST] Available Compressions: %s" % available_compressions)
+        print("[DEBUG PLAYBLAST] ----------------------------------------\n")
+        
+        # Thử chạy playblast với offScreen=True trước
+        playblast_args["offScreen"] = True
         
         try:
-            # Thực thi playblast của Maya
             cmds.playblast(**playblast_args)
+        except Exception as e1:
+            print("[Playblast] offScreen=True that bai, dang thu lai voi offScreen=False...")
+            playblast_args["offScreen"] = False
+            try:
+                cmds.playblast(**playblast_args)
+            except Exception as e2:
+                # Khôi phục trạng thái trước khi ném lỗi
+                self.restore_viewport(panel, original_states)
+                if original_camera and panel:
+                    try:
+                        cmds.modelEditor(panel, edit=True, camera=original_camera)
+                    except Exception:
+                        pass
+                raise e2
         finally:
             # Khôi phục viewport và camera ban đầu
             self.restore_viewport(panel, original_states)
