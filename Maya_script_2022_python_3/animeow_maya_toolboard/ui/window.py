@@ -455,6 +455,35 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab1_layout.addWidget(wb_group)
 
+        # GroupBox 3: Bake theo bước (Bake on Ns)
+        ns_group = QtWidgets.QGroupBox("Bake theo bước (Bake on Ns)")
+        ns_layout = QtWidgets.QGridLayout(ns_group)
+        ns_layout.setContentsMargins(8, 12, 8, 8)
+        ns_layout.setSpacing(8)
+        
+        ns_layout.addWidget(QtWidgets.QLabel("Bước Bake:"), 0, 0)
+        self.ns_step_combo = QtWidgets.QComboBox()
+        self.ns_step_combo.addItems([
+            "On 2s (Bước 2)",
+            "On 3s (Bước 3)",
+            "On 4s (Bước 4)",
+            "On 5s (Bước 5)",
+            "On 1s (Bước 1)"
+        ])
+        ns_layout.addWidget(self.ns_step_combo, 0, 1)
+        
+        self.ns_remove_constraints_cb = QtWidgets.QCheckBox("Xóa Constraints")
+        self.ns_remove_constraints_cb.setChecked(False)
+        ns_layout.addWidget(self.ns_remove_constraints_cb, 0, 2)
+        
+        self.ns_bake_btn = QtWidgets.QPushButton("Bake đối tượng chọn")
+        self.ns_bake_btn.setObjectName("accent_btn")
+        self.ns_bake_btn.setFixedHeight(26)
+        self.ns_bake_btn.clicked.connect(self.on_bake_selected_ns)
+        ns_layout.addWidget(self.ns_bake_btn, 1, 0, 1, 3)
+        
+        tab1_layout.addWidget(ns_group)
+
         # GroupBox 3: Temp Pivot
         tp_group = QtWidgets.QGroupBox("Tâm xoay tạm thời (Temp Pivot)")
         tp_layout = QtWidgets.QHBoxLayout(tp_group)
@@ -2250,6 +2279,48 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                             item.setForeground(QtGui.QColor("#AAAAAA"))
         finally:
             self.rt_table.blockSignals(False)
+
+    def on_bake_selected_ns(self):
+        """Bake đối tượng chọn theo bước 2s, 3s, 4s, 5s hoặc 1s"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng để bake!")
+            return
+            
+        step_idx = self.ns_step_combo.currentIndex()
+        steps = [2, 3, 4, 5, 1]
+        step = steps[step_idx]
+        
+        remove_constraints = self.ns_remove_constraints_cb.isChecked()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowBakeOnNs")
+        try:
+            cmds.bakeResults(
+                sel,
+                time=(start_frame, end_frame),
+                simulation=True,
+                sampleBy=step,
+                oversamplingRate=1,
+                disableImplicitControl=True,
+                preserveOutsideKeys=True,
+                sparseAnimCurveBake=False, # Không giữ cực trị thưa, tạo key đều tăm tắp
+                removeBakedConstraints=remove_constraints,
+                bakeOnDefaultKeyPath=True
+            )
+            QtWidgets.QMessageBox.information(
+                self, "Thành công", 
+                "Đã bake thành công %d đối tượng theo bước %ds." % (len(sel), step)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi thực hiện bake:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
 
     # --- RETARGET TOOL CALLBACKS ---
     def on_rt_get_source(self):
