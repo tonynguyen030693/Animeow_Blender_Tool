@@ -73,6 +73,12 @@ def ensure_scripts_2022_path():
             sys.path.insert(0, path)
             print("[AnimeowToolboard] Da them duong dan Python: %s" % path)
             
+        # Thêm thư mục src của Studio Library vào sys.path
+        sl_path = os.path.join(path, "studiolibrary-2.9.6.b3", "studiolibrary-2.9.6.b3", "src")
+        if os.path.exists(sl_path) and sl_path not in sys.path:
+            sys.path.insert(0, sl_path)
+            print("[AnimeowToolboard] Da them duong dan Studio Library: %s" % sl_path)
+            
         # Thêm vào MAYA_SCRIPT_PATH để source file mel
         import maya.mel as mel
         current_script_paths = mel.eval("getenv \"MAYA_SCRIPT_PATH\"") or ""
@@ -461,17 +467,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_launch_atools(self):
         ensure_scripts_2022_path()
         try:
+            # Thử nạp aTools theo cấu trúc chuẩn của nó
+            from aTools.animTools.animBar import animBarUI
+            animBarUI.show()
+        except Exception as e:
+            # Dự phòng nếu có cấu trúc khác
             try:
                 import aTools.general.main as aToolsMain
                 aToolsMain.show()
-            except ImportError:
-                import aTools
-                aTools.show()
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi", 
-                "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
-            )
+            except Exception as e2:
+                QtWidgets.QMessageBox.critical(
+                    self, "Lỗi", 
+                    "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
+                )
 
 
 def show_window():
