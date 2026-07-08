@@ -141,6 +141,7 @@ def ensure_scripts_2022_path():
         mel.eval('putenv "MAYA_SCRIPT_PATH" "%s"' % new_script_paths.replace("\\", "/"))
         print("[AnimeowToolboard] Da them duong dan MEL: %s" % path)
         
+    mel.eval("rehash;")
     return path
 
 class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
