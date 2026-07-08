@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool
 
 QSS_STYLE = """
 QWidget {
@@ -168,6 +168,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_WB_CHANNELS = "AnimeowTbWbChannels"
     OP_WB_STEP = "AnimeowTbWbStep"
     OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
+    OP_RT_PRECISION = "AnimeowTbRtPrecision"
+    OP_RT_TARGET = "AnimeowTbRtTarget"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
@@ -363,6 +365,40 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         utils_layout.addWidget(self.clean_folder_btn, 2, 0, 1, 2)
         
         tab2_layout.addWidget(utils_group)
+        
+        # Khối làm tròn số
+        round_group = QtWidgets.QGroupBox("Làm tròn số (Round Values)")
+        round_layout = QtWidgets.QGridLayout(round_group)
+        round_layout.setContentsMargins(8, 12, 8, 8)
+        round_layout.setSpacing(10)
+        
+        # Độ chính xác
+        round_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
+        self.round_precision_combo = QtWidgets.QComboBox()
+        self.round_precision_combo.addItems([
+            "Số nguyên (ví dụ: 1)", 
+            "1 chữ số thập phân (ví dụ: 1.1)", 
+            "2 chữ số thập phân (ví dụ: 1.23)"
+        ])
+        round_layout.addWidget(self.round_precision_combo, 0, 1)
+        
+        # Đối tượng làm tròn
+        round_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
+        self.round_target_combo = QtWidgets.QComboBox()
+        self.round_target_combo.addItems([
+            "Channel Box (Thuộc tính hiện tại)", 
+            "Graph Editor (Keyframe đang chọn)"
+        ])
+        round_layout.addWidget(self.round_target_combo, 1, 1)
+        
+        # Nút thực thi
+        self.round_btn = QtWidgets.QPushButton("🔢 Làm tròn số")
+        self.round_btn.setObjectName("accent_btn")
+        self.round_btn.setFixedHeight(35)
+        self.round_btn.clicked.connect(self.on_round_values)
+        round_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+        
+        tab2_layout.addWidget(round_group)
         
         # Lời giải thích nhỏ
         info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
@@ -672,6 +708,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.wb_step_spin.setValue(cmds.optionVar(query=self.OP_WB_STEP))
         if cmds.optionVar(exists=self.OP_WB_SMART_CLEAN):
             self.wb_smart_clean_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_SMART_CLEAN)))
+            
+        # Round Tool Settings
+        if cmds.optionVar(exists=self.OP_RT_PRECISION):
+            self.round_precision_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_PRECISION))
+        if cmds.optionVar(exists=self.OP_RT_TARGET):
+            self.round_target_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_TARGET))
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -706,6 +748,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(stringValue=(self.OP_WB_CHANNELS, self.wb_channels_combo.currentText()))
         cmds.optionVar(intValue=(self.OP_WB_STEP, self.wb_step_spin.value()))
         cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
+        
+        # Round Tool Settings
+        cmds.optionVar(intValue=(self.OP_RT_PRECISION, self.round_precision_combo.currentIndex()))
+        cmds.optionVar(intValue=(self.OP_RT_TARGET, self.round_target_combo.currentIndex()))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -1550,9 +1596,35 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             warn_msg = "Dọn dẹp hoàn thành một phần:\n"
             warn_msg += "- Di chuyển thành công: %d file.\n" % moved_count
             warn_msg += "- Thất bại: %d file.\n\nChi tiết lỗi:\n" % error_count
-            for f, err in error_files:
-                warn_msg += "  + %s: %s\n" % (f, err)
             QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", warn_msg)
+
+    def on_round_values(self):
+        """Làm tròn số thuộc tính hoặc keyframe"""
+        self.save_settings()
+        
+        # Lấy độ chính xác: 0 = số nguyên, 1 = 1 chữ số, 2 = 2 chữ số thập phân
+        precision = self.round_precision_combo.currentIndex()
+        
+        # Lấy môi trường đích: channel_box hoặc graph_editor
+        target_idx = self.round_target_combo.currentIndex()
+        target = 'channel_box' if target_idx == 0 else 'graph_editor'
+        
+        # Bọc trong một khối Undo chunk để animator có thể Ctrl + Z hoàn tác nhanh
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = round_tool.round_selected_values(precision, target)
+            if success:
+                # Hiển thị thông báo góc dưới Maya
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Làm tròn số",
+                "Lỗi xảy ra khi thực hiện làm tròn số:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
 
 
 def show_window():
