@@ -52,7 +52,6 @@ def get_extreme_frames(curve, tolerance=0.001):
         return [int(round(k)) for k in keys]
         
     extreme_frames = []
-    # Luôn giữ key đầu và key cuối
     extreme_frames.append(int(round(keys[0])))
     extreme_frames.append(int(round(keys[-1])))
     
@@ -64,17 +63,16 @@ def get_extreme_frames(curve, tolerance=0.001):
         diff1 = curr_val - prev_val
         diff2 = next_val - curr_val
         
-        # Nếu đổi chiều độ dốc (đổi dấu nhân) và sự thay đổi lớn hơn sai số tolerance
         if diff1 * diff2 < -1e-8:
             if abs(diff1) > tolerance or abs(diff2) > tolerance:
                 extreme_frames.append(int(round(keys[i])))
                 
     return list(set(extreme_frames))
 
-def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, channels='both'):
+def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False, source_obj=None):
     """
-    Nướng (Bake) chuyển động cho vật thể bất kỳ, hỗ trợ giữ lưới Grid Step
-    và bảo toàn các keyframe cực trị nguồn (Extreme keyframes).
+    Bake (Bake) chuyển động cho vật thể, hỗ trợ Bake theo lưới Grid,
+    bảo toàn keyframe cực trị hoặc chỉ Bake tại các frame có key của source_obj (Smart Bake).
     """
     if not cmds.objExists(obj):
         return
@@ -88,14 +86,24 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
     if not attrs:
         attrs = ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
 
-    # Tìm các constraint thực tế đang ràng buộc vật thể này
     incoming_constraints = get_incoming_constraints(obj)
 
-    if smart_clean:
-        # 1. Thu thập lưới Grid Step
-        grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
-        
-        # 2. Thu thập keyframe cực trị nguồn từ driver của constraint
+    # 1. Khởi tạo lưới Grid
+    grid_frames = set(range(int(start_frame), int(end_frame) + 1, step))
+    
+    # 2. Xác định các frame cần giữ lại (keep_frames)
+    keep_frames = set()
+    
+    if smart_bake and source_obj and cmds.objExists(source_obj):
+        # Chế độ Smart Bake (Key-on-key): Chỉ lấy các frame có key từ source_obj
+        source_keys = cmds.keyframe(source_obj, query=True, timeChange=True) or []
+        source_keys = set(int(round(k)) for k in source_keys)
+        keep_frames = set(k for k in source_keys if start_frame <= k <= end_frame)
+        # Giữ lại start & end frame để chặn hai đầu
+        keep_frames.add(int(start_frame))
+        keep_frames.add(int(end_frame))
+    elif smart_clean:
+        # Chế độ Smart Clean: Grid step + Extreme keys của driver
         source_keyframes = set()
         targets_to_scan = []
         for con in incoming_constraints:
@@ -111,10 +119,10 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
                     for k in extreme_keys:
                         source_keyframes.add(k)
                         
-        # Hợp nhất lưới Grid và Keyframe nguồn
         keep_frames = grid_frames.union(source_keyframes)
-        
-        # 3. Bake bước 1 để có animation thô chính xác nhất
+
+    # 3. Thực hiện Bake thô ở bước nhảy 1
+    if smart_bake or smart_clean:
         cmds.bakeResults(
             obj,
             time=(start_frame, end_frame),
@@ -126,22 +134,18 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # 4. Chỉ xóa constraints và pairBlends hướng vào
+        # 4. Xóa các constraints và pairBlend đầu vào
         for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
-                try:
-                    cmds.delete(c)
-                except Exception:
-                    pass
+                try: cmds.delete(c)
+                except Exception: pass
         pair_blends = get_pair_blend_nodes(obj)
         for pb in pair_blends:
             if cmds.objExists(pb):
-                try:
-                    cmds.delete(pb)
-                except Exception:
-                    pass
-                    
-        # 5. Xóa keyframe nằm ngoài lưới giữ (keep_frames)
+                try: cmds.delete(pb)
+                except Exception: pass
+                
+        # 5. Xóa các keyframe thừa ngoài keep_frames
         all_keys = cmds.keyframe(obj, q=True, timeChange=True) or []
         all_keys = sorted(list(set([int(round(k)) for k in all_keys])))
         for k in all_keys:
@@ -149,9 +153,8 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
                 continue
             if k not in keep_frames:
                 cmds.cutKey(obj, time=(k, k), option="keys", clear=True)
-                
     else:
-        # Nướng thuần túy theo bước nhảy (Step)
+        # Bake thuần túy theo bước nhảy (Step)
         cmds.bakeResults(
             obj,
             time=(start_frame, end_frame),
@@ -163,26 +166,21 @@ def smart_bake_object(obj, start_frame, end_frame, step=1, smart_clean=True, cha
             at=attrs
         )
         
-        # Chỉ xóa constraints và pairBlends hướng vào
         for c in list(set(incoming_constraints)):
             if cmds.objExists(c):
-                try:
-                    cmds.delete(c)
-                except Exception:
-                    pass
+                try: cmds.delete(c)
+                except Exception: pass
         pair_blends = get_pair_blend_nodes(obj)
         for pb in pair_blends:
             if cmds.objExists(pb):
-                try:
-                    cmds.delete(pb)
-                except Exception:
-                    pass
+                try: cmds.delete(pb)
+                except Exception: pass
 
 class WorldBakeManager(object):
     """
-    Quản lý nướng chuyển động sang không gian thế giới thông qua Locator
+    Quản lý Bake chuyển động sang không gian thế giới thông qua Locator
     và trả ngược lại vật thể gốc, hỗ trợ lọc kênh (Translate, Rotate, Both)
-    và bảo toàn keyframe cực trị.
+    và bảo toàn keyframe cực trị / Bake theo key của đối tượng nguồn.
     """
     PREFIX = "worldBake_loc_"
     
@@ -190,12 +188,10 @@ class WorldBakeManager(object):
         pass
 
     def get_clean_name(self, name):
-        # 1. Chỉ lấy tên ngắn cuối cùng (leaf node) sau dấu gạch đứng '|'
         short_name = name.split("|")[-1]
-        # 2. Thay thế dấu hai chấm ':' của namespace thành '_'
         return short_name.replace(":", "_")
 
-    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both'):
+    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False):
         """Bake vật thể sang một locator ở không gian thế giới"""
         if not cmds.objExists(obj):
             raise RuntimeError("Vật thể %s không tồn tại!" % obj)
@@ -215,7 +211,6 @@ class WorldBakeManager(object):
         cmds.matchTransform(loc, obj, pos=True, rot=True)
         cmds.setAttr(loc + ".rotateOrder", cmds.getAttr(obj + ".rotateOrder"))
         
-        # Tăng scale hiển thị
         for axis in ['X','Y','Z']:
             cmds.setAttr(loc + ".localScale" + axis, 1.5)
             
@@ -226,9 +221,9 @@ class WorldBakeManager(object):
         # 2. Tạo ràng buộc tạm thời từ vật thể gốc sang locator
         temp_con = cmds.parentConstraint(obj, loc, maintainOffset=False)[0]
         
-        # 3. Nướng animation lên locator và tối ưu keyframe
+        # 3. Bake animation lên locator và tối ưu keyframe
         try:
-            smart_bake_object(loc, start_frame, end_frame, step, smart_clean, channels)
+            smart_bake_object(loc, start_frame, end_frame, step, smart_clean, channels, smart_bake=smart_bake, source_obj=obj)
         finally:
             if cmds.objExists(temp_con):
                 try:
@@ -247,7 +242,7 @@ class WorldBakeManager(object):
         print("[WorldBake] Đã bake thành công %s sang locator %s." % (obj, loc))
         return loc
 
-    def bake_from_locator(self, locator_or_obj, start_frame, end_frame, step=1, smart_clean=True):
+    def bake_from_locator(self, locator_or_obj, start_frame, end_frame, step=1, smart_clean=True, smart_bake=False):
         """Bake chuyển động từ locator thế giới ngược lại vật thể gốc và xóa locator"""
         if not cmds.objExists(locator_or_obj):
             raise RuntimeError("Không tìm thấy vật thể hoặc locator!")
@@ -255,13 +250,11 @@ class WorldBakeManager(object):
         locator = None
         obj = None
         
-        # Trường hợp 1: Chọn locator
         if self.PREFIX in locator_or_obj:
             locator = locator_or_obj
             conns = cmds.listConnections(locator + '.animeow_bakeSource', destination=False) or []
             if conns:
                 obj = conns[0]
-        # Trường hợp 2: Chọn vật thể gốc
         else:
             obj = locator_or_obj
             clean_name = self.get_clean_name(obj)
@@ -270,7 +263,6 @@ class WorldBakeManager(object):
                 locator = possible_loc
                 
         if not locator or not obj or not cmds.objExists(locator) or not cmds.objExists(obj):
-            # Thử quét các constraint kết nối
             constraints = get_incoming_constraints(locator_or_obj)
             for con in constraints:
                 inputs = cmds.listConnections(con, source=True, destination=False) or []
@@ -283,7 +275,6 @@ class WorldBakeManager(object):
         if not locator or not obj:
             raise RuntimeError("Vui lòng chọn Locator hoặc vật thể gốc đã được World Bake trước đó!")
             
-        # Xác định các kênh ràng buộc hiện hành bằng cách quét get_incoming_constraints
         channels = 'both'
         incoming_cons = get_incoming_constraints(obj)
         has_point = False
@@ -300,8 +291,8 @@ class WorldBakeManager(object):
         elif has_orient and not has_point:
             channels = 'rotate'
             
-        # Nướng ngược lại lên vật thể gốc và tối ưu
-        smart_bake_object(obj, start_frame, end_frame, step, smart_clean, channels)
+        # Bake ngược lại lên vật thể gốc và tối ưu
+        smart_bake_object(obj, start_frame, end_frame, step, smart_clean, channels, smart_bake=smart_bake, source_obj=locator)
         
         # Xóa locator sau khi hoàn thành
         if cmds.objExists(locator):

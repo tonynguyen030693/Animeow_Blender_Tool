@@ -73,12 +73,13 @@ QTabBar::tab {
     color: #AAAAAA;
     border: 1px solid #444444;
     border-bottom: none;
-    padding: 8px 16px;
+    padding: 8px 8px;
     margin-right: 4px;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
     font-weight: bold;
-}
+
+    min-width: 125px;}
 QTabBar::tab:selected {
     background-color: #2D2D2D;
     border-bottom: 1px solid #2D2D2D;
@@ -183,7 +184,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         self.build_ui()
         self.load_settings()
-
     def build_ui(self):
         # Helper function to wrap widgets in scroll area
         def wrap_in_scroll(widget):
@@ -196,11 +196,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return scroll
 
         # Khởi tạo QTabWidget
+        # Khói tạo QTabWidget
         self.tab_widget = QtWidgets.QTabWidget()
+        self.tab_widget.tabBar().setElideMode(QtCore.Qt.ElideNone)
+        self.tab_widget.tabBar().setUsesScrollButtons(True)
         self.main_layout.addWidget(self.tab_widget)
         
         # =========================================================================
-        # --- TAB 1: 🔗 LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
+        # --- TAB 1: LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
         # =========================================================================
         tab1 = QtWidgets.QWidget()
         tab1_layout = QtWidgets.QVBoxLayout(tab1)
@@ -208,13 +211,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab1_layout.setSpacing(10)
         
         # Tiêu đề Tab 1
-        t1_title = QtWidgets.QLabel("🔗 LINK & WORLD BAKE MANAGER")
+        t1_title = QtWidgets.QLabel("LINK & WORLD BAKE MANAGER")
         t1_title.setAlignment(QtCore.Qt.AlignCenter)
         t1_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab1_layout.addWidget(t1_title)
         
         # GroupBox 1: Smart Link
-        link_group = QtWidgets.QGroupBox("🎯 Smart Link (Liên kết đối tượng)")
+        link_group = QtWidgets.QGroupBox("Smart Link (Liên kết đối tượng)")
         link_layout = QtWidgets.QVBoxLayout(link_group)
         link_layout.setContentsMargins(8, 12, 8, 8)
         link_layout.setSpacing(8)
@@ -248,18 +251,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Link / Switch / Bake Action Buttons
         link_btn_layout = QtWidgets.QHBoxLayout()
-        self.link_btn = QtWidgets.QPushButton("🚀 Gán Link")
+        self.link_btn = QtWidgets.QPushButton("Gan Link")
         self.link_btn.setObjectName("accent_btn")
         self.link_btn.setFixedHeight(30)
         self.link_btn.clicked.connect(self.on_link)
         link_btn_layout.addWidget(self.link_btn)
         
-        self.switch_btn = QtWidgets.QPushButton("🔄 Đổi Vật Dẫn")
+        self.switch_btn = QtWidgets.QPushButton("Doi Vat Dan")
         self.switch_btn.setFixedHeight(30)
         self.switch_btn.clicked.connect(self.on_switch_target)
         link_btn_layout.addWidget(self.switch_btn)
         
-        self.bake_btn = QtWidgets.QPushButton("🎬 Giải phóng")
+        self.bake_btn = QtWidgets.QPushButton("Giai phong")
         self.bake_btn.setFixedHeight(30)
         self.bake_btn.clicked.connect(self.on_bake_clean)
         link_btn_layout.addWidget(self.bake_btn)
@@ -288,12 +291,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab1_layout.addWidget(link_group)
         
         # GroupBox 2: World Bake
-        wb_group = QtWidgets.QGroupBox("🌍 World Bake (Nướng không gian thế giới)")
+        wb_group = QtWidgets.QGroupBox("World Bake (Bake không gian thế giới)")
         wb_layout = QtWidgets.QGridLayout(wb_group)
         wb_layout.setContentsMargins(8, 12, 8, 8)
         wb_layout.setSpacing(8)
         
-        wb_layout.addWidget(QtWidgets.QLabel("Kênh nướng:"), 0, 0)
+        wb_layout.addWidget(QtWidgets.QLabel("Kênh Bake:"), 0, 0)
         self.wb_channels_combo = QtWidgets.QComboBox()
         self.wb_channels_combo.addItems(["Translate & Rotate (Both)", "Translate Only", "Rotate Only"])
         wb_layout.addWidget(self.wb_channels_combo, 0, 1)
@@ -308,26 +311,31 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.wb_smart_clean_cb.setChecked(True)
         wb_layout.addWidget(self.wb_smart_clean_cb, 1, 0, 1, 4)
         
+        # Checkbox Smart Bake (Key-on-key)
+        self.wb_smart_bake_cb = QtWidgets.QCheckBox("Smart Bake (Chỉ Bake tại các frame có Key của nguồn)")
+        self.wb_smart_bake_cb.setChecked(False)
+        wb_layout.addWidget(self.wb_smart_bake_cb, 2, 0, 1, 4)
+        
         # Buttons for World Bake
         wb_buttons = QtWidgets.QHBoxLayout()
-        self.wb_to_loc_btn = QtWidgets.QPushButton("🚀 Bake sang Locator")
+        self.wb_to_loc_btn = QtWidgets.QPushButton("Bake sang Locator")
         self.wb_to_loc_btn.setObjectName("accent_btn")
         self.wb_to_loc_btn.setFixedHeight(30)
         self.wb_to_loc_btn.clicked.connect(self.on_world_bake_to_locator)
         wb_buttons.addWidget(self.wb_to_loc_btn)
         
-        self.wb_from_loc_btn = QtWidgets.QPushButton("🎬 Bake ngược về Vật thể")
+        self.wb_from_loc_btn = QtWidgets.QPushButton("Bake ngược về Vật thể")
         self.wb_from_loc_btn.setFixedHeight(30)
         self.wb_from_loc_btn.clicked.connect(self.on_world_bake_from_locator)
         wb_buttons.addWidget(self.wb_from_loc_btn)
         
-        wb_layout.addLayout(wb_buttons, 2, 0, 1, 4)
+        wb_layout.addLayout(wb_buttons, 3, 0, 1, 4)
         
         tab1_layout.addWidget(wb_group)
         tab1_layout.addStretch()
         
         # =========================================================================
-        # --- TAB 2: ⚙️ QUICK UTILITIES (TIỆN ÍCH NHANH) ---
+        # --- TAB 2: QUICK UTILITIES (TIỆN ÍCH NHANH) ---
         # =========================================================================
         tab2 = QtWidgets.QWidget()
         tab2_layout = QtWidgets.QVBoxLayout(tab2)
@@ -335,38 +343,38 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab2_layout.setSpacing(10)
         
         # Tiêu đề Tab 2
-        t2_title = QtWidgets.QLabel("⚙️ QUICK UTILITIES")
+        t2_title = QtWidgets.QLabel("QUICK UTILITIES")
         t2_title.setAlignment(QtCore.Qt.AlignCenter)
         t2_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab2_layout.addWidget(t2_title)
         
         # GroupBox 1: Scene & File Manager
-        scene_group = QtWidgets.QGroupBox("📂 Scene & File Manager (Quản lý File)")
+        scene_group = QtWidgets.QGroupBox("Scene & File Manager (Quản lý File)")
         scene_layout = QtWidgets.QGridLayout(scene_group)
         scene_layout.setContentsMargins(8, 12, 8, 8)
         scene_layout.setSpacing(8)
         
-        self.toggle_graph_btn = QtWidgets.QPushButton("📈 Graph Editor (Bật/Tắt)")
+        self.toggle_graph_btn = QtWidgets.QPushButton("Graph Editor (Bật/Tắt)")
         self.toggle_graph_btn.setFixedHeight(28)
         self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
         scene_layout.addWidget(self.toggle_graph_btn, 0, 0)
         
-        self.toggle_ref_btn = QtWidgets.QPushButton("📂 Reference Editor")
+        self.toggle_ref_btn = QtWidgets.QPushButton("Reference Editor")
         self.toggle_ref_btn.setFixedHeight(28)
         self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
         scene_layout.addWidget(self.toggle_ref_btn, 0, 1)
         
-        self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment")
+        self.save_inc_btn = QtWidgets.QPushButton("Save Increment")
         self.save_inc_btn.setFixedHeight(28)
         self.save_inc_btn.clicked.connect(self.on_save_increment)
         scene_layout.addWidget(self.save_inc_btn, 1, 0)
         
-        self.save_up_ver_btn = QtWidgets.QPushButton("🚀 Save Up Version")
+        self.save_up_ver_btn = QtWidgets.QPushButton("Save Up Version")
         self.save_up_ver_btn.setFixedHeight(28)
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
         scene_layout.addWidget(self.save_up_ver_btn, 1, 1)
         
-        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder (Dọn dẹp scenes)")
+        self.clean_folder_btn = QtWidgets.QPushButton("Clean Folder (Dọn dẹp scenes)")
         self.clean_folder_btn.setFixedHeight(28)
         self.clean_folder_btn.clicked.connect(self.on_clean_folder)
         scene_layout.addWidget(self.clean_folder_btn, 2, 0, 1, 2)
@@ -374,18 +382,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab2_layout.addWidget(scene_group)
         
         # GroupBox 2: Optimize & Fix
-        fix_group = QtWidgets.QGroupBox("🩹 Optimize & Fix (Tối ưu & Sửa lỗi)")
+        fix_group = QtWidgets.QGroupBox("Optimize & Fix (Tối ưu & Sửa lỗi)")
         fix_layout = QtWidgets.QVBoxLayout(fix_group)
         fix_layout.setContentsMargins(8, 12, 8, 8)
         fix_layout.setSpacing(8)
         
         fix_row = QtWidgets.QHBoxLayout()
-        self.euler_filter_btn = QtWidgets.QPushButton("🔄 Euler Filter (Lọc xoay)")
+        self.euler_filter_btn = QtWidgets.QPushButton("Euler Filter (Lọc xoay)")
         self.euler_filter_btn.setFixedHeight(28)
         self.euler_filter_btn.clicked.connect(self.on_euler_filter)
         fix_row.addWidget(self.euler_filter_btn)
         
-        self.fix_shader_btn = QtWidgets.QPushButton("🩹 Fix Lost Shader (Xanh lưới)")
+        self.fix_shader_btn = QtWidgets.QPushButton("Fix Lost Shader (Xanh lưới)")
         self.fix_shader_btn.setFixedHeight(28)
         self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
         fix_row.addWidget(self.fix_shader_btn)
@@ -405,12 +413,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
         self.round_target_combo = QtWidgets.QComboBox()
         self.round_target_combo.addItems([
-            "Channel Box (Thuộc tính chọn)", 
-            "Graph Editor (Keyframe chọn)"
+            "Channel Box (Thuộc tiính chọn)", 
+            "Graph Editor (Keyframe chọn)",
+            "Keyframe tại frame hiện tại",
+            "Toàn bộ keyframe (Timeline)"
         ])
         round_sub_layout.addWidget(self.round_target_combo, 1, 1)
         
-        self.round_btn = QtWidgets.QPushButton("🔢 Làm tròn số")
+        self.round_btn = QtWidgets.QPushButton("Làm tròn số")
         self.round_btn.setObjectName("accent_btn")
         self.round_btn.setFixedHeight(28)
         self.round_btn.clicked.connect(self.on_round_values)
@@ -419,8 +429,89 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addWidget(fix_group)
         
+                # GroupBox 3: Constraint Manager (Quản lý Ràng buộc)
+        constrain_group = QtWidgets.QGroupBox("Constraint Manager (Quản lý Ràng buộc)")
+        constrain_layout = QtWidgets.QVBoxLayout(constrain_group)
+        constrain_layout.setContentsMargins(8, 12, 8, 8)
+        constrain_layout.setSpacing(8)
+        
+        # Checkbox Maintain Offset
+        self.constrain_offset_cb = QtWidgets.QCheckBox("Maintain Offset (Bảo toàn độ lệch)")
+        self.constrain_offset_cb.setChecked(True)
+        constrain_layout.addWidget(self.constrain_offset_cb)
+        
+        # Translate Axes Row
+        t_axes_layout = QtWidgets.QHBoxLayout()
+        t_axes_layout.addWidget(QtWidgets.QLabel("Translate:"))
+        self.tx_cb = QtWidgets.QCheckBox("X")
+        self.tx_cb.setChecked(True)
+        self.ty_cb = QtWidgets.QCheckBox("Y")
+        self.ty_cb.setChecked(True)
+        self.tz_cb = QtWidgets.QCheckBox("Z")
+        self.tz_cb.setChecked(True)
+        t_axes_layout.addWidget(self.tx_cb)
+        t_axes_layout.addWidget(self.ty_cb)
+        t_axes_layout.addWidget(self.tz_cb)
+        t_axes_layout.addStretch()
+        constrain_layout.addLayout(t_axes_layout)
+        
+        # Rotate Axes Row
+        r_axes_layout = QtWidgets.QHBoxLayout()
+        r_axes_layout.addWidget(QtWidgets.QLabel("Rotate:   "))
+        self.rx_cb = QtWidgets.QCheckBox("X")
+        self.rx_cb.setChecked(True)
+        self.ry_cb = QtWidgets.QCheckBox("Y")
+        self.ry_cb.setChecked(True)
+        self.rz_cb = QtWidgets.QCheckBox("Z")
+        self.rz_cb.setChecked(True)
+        r_axes_layout.addWidget(self.rx_cb)
+        r_axes_layout.addWidget(self.ry_cb)
+        r_axes_layout.addWidget(self.rz_cb)
+        r_axes_layout.addStretch()
+        constrain_layout.addLayout(r_axes_layout)
+        
+        # Row 1 of buttons: Parent, Point, Orient
+        row1_layout = QtWidgets.QHBoxLayout()
+        self.parent_const_btn = QtWidgets.QPushButton("Parent")
+        self.parent_const_btn.setFixedHeight(28)
+        self.parent_const_btn.clicked.connect(self.on_parent_constraint)
+        row1_layout.addWidget(self.parent_const_btn)
+        
+        self.point_const_btn = QtWidgets.QPushButton("Point")
+        self.point_const_btn.setFixedHeight(28)
+        self.point_const_btn.clicked.connect(self.on_point_constraint)
+        row1_layout.addWidget(self.point_const_btn)
+        
+        self.orient_const_btn = QtWidgets.QPushButton("Orient")
+        self.orient_const_btn.setFixedHeight(28)
+        self.orient_const_btn.clicked.connect(self.on_orient_constraint)
+        row1_layout.addWidget(self.orient_const_btn)
+        
+        constrain_layout.addLayout(row1_layout)
+        
+        # Row 2 of buttons: Scale, Aim, Delete
+        row2_layout = QtWidgets.QHBoxLayout()
+        self.scale_const_btn = QtWidgets.QPushButton("Scale")
+        self.scale_const_btn.setFixedHeight(28)
+        self.scale_const_btn.clicked.connect(self.on_scale_constraint)
+        row2_layout.addWidget(self.scale_const_btn)
+        
+        self.aim_const_btn = QtWidgets.QPushButton("Aim")
+        self.aim_const_btn.setFixedHeight(28)
+        self.aim_const_btn.clicked.connect(self.on_aim_constraint)
+        row2_layout.addWidget(self.aim_const_btn)
+        
+        self.delete_const_btn = QtWidgets.QPushButton("Xóa Const")
+        self.delete_const_btn.setFixedHeight(28)
+        self.delete_const_btn.clicked.connect(self.on_delete_constraints)
+        row2_layout.addWidget(self.delete_const_btn)
+        
+        constrain_layout.addLayout(row2_layout)
+        
+        tab2_layout.addWidget(constrain_group)
+        
         # Mẹo sử dụng nhanh
-        info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
+        info_label = QtWidgets.QLabel("Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
         info_label.setAlignment(QtCore.Qt.AlignCenter)
         info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
         tab2_layout.addWidget(info_label)
@@ -428,7 +519,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab2_layout.addStretch()
         
         # =========================================================================
-        # --- TAB 3: 📈 ARC & ROTATE (QUỸ ĐẠO & XOAY) ---
+        # --- TAB 3: ARC & ROTATE (QUỸ ĐẠO & XOAY) ---
         # =========================================================================
         tab3 = QtWidgets.QWidget()
         tab3_layout = QtWidgets.QVBoxLayout(tab3)
@@ -436,13 +527,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab3_layout.setSpacing(10)
         
         # Tiêu đề Tab 3
-        t3_title = QtWidgets.QLabel("📈 ARC & ROTATION UTILITIES")
+        t3_title = QtWidgets.QLabel("ARC & ROTATION UTILITIES")
         t3_title.setAlignment(QtCore.Qt.AlignCenter)
         t3_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab3_layout.addWidget(t3_title)
         
         # GroupBox 1: Arc Tracker
-        at_group = QtWidgets.QGroupBox("🌈 Arc Tracker (Vẽ Quỹ đạo chuyển động)")
+        at_group = QtWidgets.QGroupBox("Arc Tracker (Vẽ Quỹ đạo chuyển động)")
         at_layout = QtWidgets.QGridLayout(at_group)
         at_layout.setContentsMargins(8, 12, 8, 8)
         at_layout.setSpacing(8)
@@ -464,23 +555,23 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Actions Layout
         at_actions_layout = QtWidgets.QGridLayout()
-        self.create_trail_btn = QtWidgets.QPushButton("🚀 Vẽ Arc Trail")
+        self.create_trail_btn = QtWidgets.QPushButton("Vẽ Arc Trail")
         self.create_trail_btn.setObjectName("accent_btn")
         self.create_trail_btn.setFixedHeight(30)
         self.create_trail_btn.clicked.connect(self.on_create_arc_trail)
         at_actions_layout.addWidget(self.create_trail_btn, 0, 0)
         
-        self.update_trail_btn = QtWidgets.QPushButton("🔄 Cập nhật Trail")
+        self.update_trail_btn = QtWidgets.QPushButton("Cập nhật Trail")
         self.update_trail_btn.setFixedHeight(30)
         self.update_trail_btn.clicked.connect(self.on_update_arc_trails)
         at_actions_layout.addWidget(self.update_trail_btn, 0, 1)
         
-        self.clear_selected_trail_btn = QtWidgets.QPushButton("❌ Xóa chọn")
+        self.clear_selected_trail_btn = QtWidgets.QPushButton("Xóa chọn")
         self.clear_selected_trail_btn.setFixedHeight(28)
         self.clear_selected_trail_btn.clicked.connect(self.on_clear_selected_trails)
         at_actions_layout.addWidget(self.clear_selected_trail_btn, 1, 0)
         
-        self.clear_all_trails_btn = QtWidgets.QPushButton("🗑️ Xóa tất cả")
+        self.clear_all_trails_btn = QtWidgets.QPushButton("Xóa tất cả")
         self.clear_all_trails_btn.setFixedHeight(28)
         self.clear_all_trails_btn.clicked.connect(self.on_clear_all_trails)
         at_actions_layout.addWidget(self.clear_all_trails_btn, 1, 1)
@@ -489,7 +580,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab3_layout.addWidget(at_group)
         
         # GroupBox 2: Space & Rotate Order
-        so_group = QtWidgets.QGroupBox("🔄 Space & Rotate Order (Bảo toàn Key)")
+        so_group = QtWidgets.QGroupBox("Space & Rotate Order (Bảo toàn Key)")
         so_layout = QtWidgets.QGridLayout(so_group)
         so_layout.setContentsMargins(8, 12, 8, 8)
         so_layout.setSpacing(8)
@@ -505,12 +596,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         so_layout.addWidget(self.ro_apply_btn, 0, 2)
         
         # Record / Restore buttons
-        self.so_record_btn = QtWidgets.QPushButton("📥 Ghi Space Thế giới (Record)")
+        self.so_record_btn = QtWidgets.QPushButton("Ghi Space Thế giới (Record)")
         self.so_record_btn.setFixedHeight(28)
         self.so_record_btn.clicked.connect(self.on_record_world_space)
         so_layout.addWidget(self.so_record_btn, 1, 0, 1, 3)
         
-        self.so_restore_btn = QtWidgets.QPushButton("📤 Khôi phục Space (Restore)")
+        self.so_restore_btn = QtWidgets.QPushButton("Khôi phục Space (Restore)")
         self.so_restore_btn.setFixedHeight(28)
         self.so_restore_btn.clicked.connect(self.on_restore_world_space)
         so_layout.addWidget(self.so_restore_btn, 2, 0, 1, 3)
@@ -518,7 +609,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab3_layout.addWidget(so_group)
         
         # Mẹo sử dụng Arc
-        at_info_label = QtWidgets.QLabel("💡 Mẹo: Đường dẫn tĩnh chạy mượt 100% không lag.\nCập nhật nhanh sau khi chỉnh sửa animation.")
+        at_info_label = QtWidgets.QLabel("Mẹo: Đường dẫn tĩnh chạy mượt 100% không lag.\nCập nhật nhanh sau khi chỉnh sửa animation.")
         at_info_label.setAlignment(QtCore.Qt.AlignCenter)
         at_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
         tab3_layout.addWidget(at_info_label)
@@ -526,7 +617,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab3_layout.addStretch()
         
         # =========================================================================
-        # --- TAB 4: 🚀 APP LAUNCHERS (BỘ KHỞI CHẠY) ---
+        # --- TAB 4: APP LAUNCHERS (BỘ KHỞI CHẠY) ---
         # =========================================================================
         tab4 = QtWidgets.QWidget()
         tab4_layout = QtWidgets.QVBoxLayout(tab4)
@@ -534,7 +625,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab4_layout.setSpacing(10)
         
         # Tiêu đề Tab 4
-        t4_title = QtWidgets.QLabel("🚀 APP LAUNCHER DASHBOARD")
+        t4_title = QtWidgets.QLabel("APP LAUNCHER DASHBOARD")
         t4_title.setAlignment(QtCore.Qt.AlignCenter)
         t4_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab4_layout.addWidget(t4_title)
@@ -545,32 +636,32 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         launch_layout.setContentsMargins(8, 12, 8, 8)
         launch_layout.setSpacing(12)
         
-        self.studio_lib_btn = QtWidgets.QPushButton("🎨 Studio Library")
+        self.studio_lib_btn = QtWidgets.QPushButton("Studio Library")
         self.studio_lib_btn.setFixedHeight(40)
         self.studio_lib_btn.clicked.connect(self.on_launch_studiolibrary)
         launch_layout.addWidget(self.studio_lib_btn, 0, 0)
         
-        self.dwpicker_btn = QtWidgets.QPushButton("🖱️ DWPicker")
+        self.dwpicker_btn = QtWidgets.QPushButton("DWPicker")
         self.dwpicker_btn.setFixedHeight(40)
         self.dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
         launch_layout.addWidget(self.dwpicker_btn, 0, 1)
         
-        self.tween_machine_btn = QtWidgets.QPushButton("⏱️ Tween Machine")
+        self.tween_machine_btn = QtWidgets.QPushButton("Tween Machine")
         self.tween_machine_btn.setFixedHeight(40)
         self.tween_machine_btn.clicked.connect(self.on_launch_tweenmachine)
         launch_layout.addWidget(self.tween_machine_btn, 1, 0)
         
-        self.atools_btn = QtWidgets.QPushButton("🛠️ aTools")
+        self.atools_btn = QtWidgets.QPushButton("aTools")
         self.atools_btn.setFixedHeight(40)
         self.atools_btn.clicked.connect(self.on_launch_atools)
         launch_layout.addWidget(self.atools_btn, 1, 1)
         
-        self.animo_btn = QtWidgets.QPushButton("🚀 Animo")
+        self.animo_btn = QtWidgets.QPushButton("Animo")
         self.animo_btn.setFixedHeight(40)
         self.animo_btn.clicked.connect(self.on_launch_animo)
         launch_layout.addWidget(self.animo_btn, 2, 0)
         
-        self.world_bake_btn = QtWidgets.QPushButton("🌍 World Bake (Gốc)")
+        self.world_bake_btn = QtWidgets.QPushButton("World Bake (Gốc)")
         self.world_bake_btn.setFixedHeight(40)
         self.world_bake_btn.clicked.connect(self.on_launch_worldbake)
         launch_layout.addWidget(self.world_bake_btn, 2, 1)
@@ -579,7 +670,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab4_layout.addStretch()
         
         # =========================================================================
-        # --- TAB 5: 🎬 PLAYBLAST MANAGER ---
+        # --- TAB 5: PLAYBLAST MANAGER ---
         # =========================================================================
         tab5 = QtWidgets.QWidget()
         tab5_layout = QtWidgets.QVBoxLayout(tab5)
@@ -587,7 +678,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab5_layout.setSpacing(10)
         
         # Tiêu đề Tab 5
-        t5_title = QtWidgets.QLabel("🎬 ANIMEOW PLAYBLAST MANAGER")
+        t5_title = QtWidgets.QLabel("ANIMEOW PLAYBLAST MANAGER")
         t5_title.setAlignment(QtCore.Qt.AlignCenter)
         t5_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab5_layout.addWidget(t5_title)
@@ -608,8 +699,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cam_row = QtWidgets.QHBoxLayout()
         self.camera_combo = QtWidgets.QComboBox()
         cam_row.addWidget(self.camera_combo)
-        self.refresh_cam_btn = QtWidgets.QPushButton("🔄")
-        self.refresh_cam_btn.setFixedWidth(30)
+        self.refresh_cam_btn = QtWidgets.QPushButton("Reload")
+        self.refresh_cam_btn.setFixedWidth(50)
         self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
         cam_row.addWidget(self.refresh_cam_btn)
         cam_vbox.addLayout(cam_row)
@@ -672,7 +763,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab5_layout.addWidget(pb_options_group)
         
         # Run Button
-        self.run_pb_btn = QtWidgets.QPushButton("🎬 Xuất Video Playblast (Nháp)")
+        self.run_pb_btn = QtWidgets.QPushButton("Xuất Video Playblast (Nháp)")
         self.run_pb_btn.setObjectName("accent_btn")
         self.run_pb_btn.setFixedHeight(35)
         self.run_pb_btn.clicked.connect(self.on_run_playblast)
@@ -680,11 +771,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab5_layout.addStretch()
         
         # Add Scroll-wrapped tabs to TabWidget
-        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Link & Bake")
+        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Link && Bake  ")
         self.tab_widget.addTab(wrap_in_scroll(tab2), "⚙️ Quick Utils")
-        self.tab_widget.addTab(wrap_in_scroll(tab3), "📈 Arc & Rotate")
-        self.tab_widget.addTab(wrap_in_scroll(tab4), "🚀 Launchers")
-        self.tab_widget.addTab(wrap_in_scroll(tab5), "🎬 Playblast")
+        self.tab_widget.addTab(wrap_in_scroll(tab3), "📈 Arc && Rotate  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab4), "🚀 Launchers  ")
+        self.tab_widget.addTab(wrap_in_scroll(tab5), "🎬 Playblast  ")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -952,7 +1043,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         res = QtWidgets.QMessageBox.question(
             self, "Xác nhận Bake & Clean",
-            "Sẽ nướng chuyển động từ locator/constraint vào keyframe của %s và dọn dẹp các locator/constraint thừa.\nBạn có chắc chắn?" % owner,
+            "Sẽ Bake chuyển động từ locator/constraint vào keyframe của %s và dọn dẹp các locator/constraint thừa.\nBạn có chắc chắn?" % owner,
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         if res == QtWidgets.QMessageBox.No:
@@ -975,7 +1066,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 clean_threshold=threshold
             )
             print(u"[SmartLink] Đã bake và dọn dẹp liên kết cho %s thành công." % owner)
-            QtWidgets.QMessageBox.information(self, "Thành công", "Đã nướng và dọn dẹp thành công chuyển động cho %s!" % owner)
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã Bake và dọn dẹp thành công chuyển động cho %s!" % owner)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi Bake", "Lỗi xảy ra khi bake: %s" % smart_link.exception_to_unicode(e))
 
@@ -1408,6 +1499,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         step = self.wb_step_spin.value()
         smart_clean = self.wb_smart_clean_cb.isChecked()
+        smart_bake = self.wb_smart_bake_cb.isChecked()
         
         idx = self.wb_channels_combo.currentIndex()
         channels = ['both', 'translate', 'rotate'][idx]
@@ -1423,7 +1515,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     end_frame=end_frame,
                     step=step,
                     smart_clean=smart_clean,
-                    channels=channels
+                    channels=channels,
+                    smart_bake=smart_bake
                 )
                 success_locs.append(loc)
                 
@@ -1453,6 +1546,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         step = self.wb_step_spin.value()
         smart_clean = self.wb_smart_clean_cb.isChecked()
+        smart_bake = self.wb_smart_bake_cb.isChecked()
         
         wbm = world_bake.WorldBakeManager()
         
@@ -1464,7 +1558,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     start_frame=start_frame,
                     end_frame=end_frame,
                     step=step,
-                    smart_clean=smart_clean
+                    smart_clean=smart_clean,
+                    smart_bake=smart_bake
                 )
                 success_objs.append(obj)
                 
@@ -1691,33 +1786,187 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", warn_msg)
 
     def on_round_values(self):
-        """Làm tròn số thuộc tính hoặc keyframe"""
+        """Làm tròn sñ thuûc tính hoộc keyframe"""
         self.save_settings()
         
-        # Lấy độ chính xác: 0 = số nguyên, 1 = 1 chữ số, 2 = 2 chữ số thập phân
+        # Lấy độ chính xác: 0 = sñ nguyên, 1 = 1 chữ sñ, 2 = 2 chữ sñ thửp phân
         precision = self.round_precision_combo.currentIndex()
         
-        # Lấy môi trường đích: channel_box hoặc graph_editor
+        # Lấy môi trườnđ đích
         target_idx = self.round_target_combo.currentIndex()
-        target = 'channel_box' if target_idx == 0 else 'graph_editor'
+        target_map = {
+            0: 'channel_box',
+            1: 'graph_editor',
+            2: 'current_frame',
+            3: 'all_keyframes'
+        }
+        target = target_map.get(target_idx, 'channel_box')
         
         # Bọc trong một khối Undo chunk để animator có thể Ctrl + Z hoàn tác nhanh
         cmds.undoInfo(openChunk=True)
         try:
             success, msg = round_tool.round_selected_values(precision, target)
             if success:
-                # Hiển thị thông báo góc dưới Maya
                 cmds.warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi Làm tròn số",
-                "Lỗi xảy ra khi thực hiện làm tròn số:\n%s" % str(e)
+                self, "Lỗi Làm tròn sñ",
+                "Lỗi xảy ra khi thực hiện làm tròn sñ:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
 
+        # --- CONSTRAINT MANAGER CALLBACKS ---
+
+    def on_parent_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Translate bị bỏ chọn
+        skip_t = []
+        if not self.tx_cb.isChecked(): skip_t.append("x")
+        if not self.ty_cb.isChecked(): skip_t.append("y")
+        if not self.tz_cb.isChecked(): skip_t.append("z")
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip_r = []
+        if not self.rx_cb.isChecked(): skip_r.append("x")
+        if not self.ry_cb.isChecked(): skip_r.append("y")
+        if not self.rz_cb.isChecked(): skip_r.append("z")
+        
+        try:
+            cmds.parentConstraint(mo=mo, skipTranslate=skip_t, skipRotate=skip_r)
+            cmds.warning("Đã tạo Parent Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Parent Constraint: " + str(e))
+
+    def on_point_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Translate bị bỏ chọn
+        skip = []
+        if not self.tx_cb.isChecked(): skip.append("x")
+        if not self.ty_cb.isChecked(): skip.append("y")
+        if not self.tz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.pointConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Point Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Point Constraint: " + str(e))
+
+    def on_orient_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip = []
+        if not self.rx_cb.isChecked(): skip.append("x")
+        if not self.ry_cb.isChecked(): skip.append("y")
+        if not self.rz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.orientConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Orient Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Orient Constraint: " + str(e))
+
+    def on_scale_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Dùng các trục Translate làm trục Scale tương ứng
+        skip = []
+        if not self.tx_cb.isChecked(): skip.append("x")
+        if not self.ty_cb.isChecked(): skip.append("y")
+        if not self.tz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.scaleConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Scale Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Scale Constraint: " + str(e))
+
+    def on_aim_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip = []
+        if not self.rx_cb.isChecked(): skip.append("x")
+        if not self.ry_cb.isChecked(): skip.append("y")
+        if not self.rz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.aimConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Aim Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Aim Constraint: " + str(e))
+
+    def on_delete_constraints(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng để xóa Constraint!")
+            return
+        
+        constraint_types = [
+            "parentConstraint", "pointConstraint", "orientConstraint",
+            "scaleConstraint", "aimConstraint", "poleVectorConstraint",
+            "geometryConstraint", "normalConstraint", "tangentConstraint"
+        ]
+        
+        deleted_count = 0
+        for obj in sel:
+            children = cmds.listRelatives(obj, children=True, fullPath=True) or []
+            for child in children:
+                node_type = cmds.nodeType(child)
+                if node_type in constraint_types:
+                    try:
+                        cmds.delete(child)
+                        deleted_count += 1
+                    except Exception:
+                        pass
+            
+            connections = cmds.listConnections(obj, source=True, destination=False) or []
+            for conn in connections:
+                node_type = cmds.nodeType(conn)
+                if node_type in constraint_types:
+                    try:
+                        cmds.delete(conn)
+                        deleted_count += 1
+                    except Exception:
+                        pass
+                        
+        if deleted_count > 0:
+            cmds.warning("Đã xóa thành công %d Constraint khỏi các đối tượng được chọn!" % deleted_count)
+        else:
+            cmds.warning("Không tìm thấy Constraint nào trực tiếp trên các đối tượng được chọn.")
+
+    
     def on_euler_filter(self):
         """Áp dụng Euler Filter cho các đường cong xoay được chọn hoặc các vật thể được chọn"""
         selected = cmds.ls(sl=True) or []

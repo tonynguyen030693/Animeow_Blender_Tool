@@ -146,7 +146,7 @@ class SmartLinkManager(object):
 
 class AnimationBaker(object):
     """
-    Chịu trách nhiệm nướng (Bake) chuyển động từ locator sang keyframe thực trên vật thể
+    Chịu trách nhiệm Bake (Bake) chuyển động từ locator sang keyframe thực trên vật thể
     và dọn dẹp sạch sẽ các constraints/locator thừa.
     """
     def __init__(self, owner):
@@ -219,7 +219,7 @@ class AnimationBaker(object):
                 at=attrs
             )
             
-            # Xoá các constraints trên owner sau khi nướng
+            # Xoá các constraints trên owner sau khi Bake
             for c in list(set(incoming_constraints)):
                 if cmds.objExists(c):
                     try:
@@ -251,7 +251,7 @@ class AnimationBaker(object):
                 at=attrs
             )
             
-            # Xoá các constraints trên owner sau khi nướng
+            # Xoá các constraints trên owner sau khi Bake
             incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
             for c in list(set(incoming_constraints)):
                 if cmds.objExists(c):
