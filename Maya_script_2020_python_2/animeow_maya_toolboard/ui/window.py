@@ -583,6 +583,7 @@ def show_window():
     old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
     if is_ui_alive(old_ui):
         try:
+            old_ui.setParent(None)
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
@@ -596,14 +597,16 @@ def show_window():
     ui_instance = AnimeowMayaToolboardUI()
     sys._animeow_maya_toolboard_ui = ui_instance
     
+    # Thiết lập objectName (không bao gồm hậu tố WorkspaceControl) để Maya tự động ghép thêm hậu tố này
+    # tạo thành đúng tên AnimeowMayaToolboardWorkspaceControl khớp với WORKSPACE_CONTROL_NAME
+    obj_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME.replace("WorkspaceControl", "")
+    ui_instance.setObjectName(obj_name)
+    
     # 3. Hiển thị dưới dạng dockable panel
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
         # Nếu container đã có sẵn trong Maya session: 
-        # Chỉ gọi show() mà không truyền floating/area để Maya giữ nguyên vị trí và kích thước cũ của container
-        ui_instance.show(
-            dockable=True,
-            workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME
-        )
+        # Chỉ gọi show() mà không truyền floating/area để giữ nguyên vị trí container
+        ui_instance.show(dockable=True)
         try:
             # Bật hiển thị trở lại (trong trường hợp người dùng vừa bấm tắt 'X' làm ẩn control)
             cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, edit=True, visible=True)
@@ -617,7 +620,6 @@ def show_window():
         # Nếu chưa từng tồn tại (lần đầu tiên mở trong phiên làm việc của Maya)
         ui_instance.show(
             dockable=True,
-            workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME,
             area="right",
             floating=False,
             allowedArea="left|right"

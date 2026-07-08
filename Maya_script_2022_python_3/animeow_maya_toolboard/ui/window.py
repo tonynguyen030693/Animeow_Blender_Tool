@@ -1928,8 +1928,10 @@ def show_window():
     ui_instance = AnimeowMayaToolboardUI()
     sys._animeow_maya_toolboard_ui = ui_instance
     
-    # Thiết lập objectName để liên kết tên với workspaceControl một cách tương thích ngược (không gây lỗi TypeError trên Maya 2020)
-    ui_instance.setObjectName(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
+    # Thiết lập objectName (không bao gồm hậu tố WorkspaceControl) để Maya tự động ghép thêm hậu tố này
+    # tạo thành đúng tên AnimeowMayaToolboardWorkspaceControl khớp với WORKSPACE_CONTROL_NAME
+    obj_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME.replace("WorkspaceControl", "")
+    ui_instance.setObjectName(obj_name)
     
     # 3. Hiển thị dưới dạng dockable panel
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
