@@ -155,12 +155,20 @@ class AnimationBaker(object):
             time=(start_frame, end_frame),
             sampleBy=step,
             simulation=True,
-            removeConstraint=True,  # Maya tự động gỡ constraint kết nối tới owner
             disableImplicitControl=True,
             preserveOutsideKeys=True,
             sparseAnimCurveBake=True,
             at=attrs
         )
+        
+        # Xóa các constraints trên owner sau khi bake xong
+        constraints = cmds.listConnections(self.owner, type="constraint") or []
+        for c in list(set(constraints)):
+            if cmds.objExists(c):
+                try:
+                    cmds.delete(c)
+                except Exception:
+                    pass
         
         # 3. Lọc tối ưu keyframe bằng keyReducer
         if smart_clean:
