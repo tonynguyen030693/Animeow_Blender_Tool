@@ -2307,7 +2307,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 disableImplicitControl=True,
                 preserveOutsideKeys=True,
                 sparseAnimCurveBake=False, # Không giữ cực trị thưa, tạo key đều tăm tắp
-                bakeOnDefaultKeyPath=True
             )
             
             # Nếu người dùng tích chọn Xóa Constraints, thực hiện xóa thủ công
