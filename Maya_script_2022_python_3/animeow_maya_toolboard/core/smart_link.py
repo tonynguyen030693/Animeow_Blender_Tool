@@ -157,7 +157,7 @@ class AnimationBaker(object):
             simulation=True,
             disableImplicitControl=True,
             preserveOutsideKeys=True,
-            sparseAnimCurveBake=True,
+            sparseAnimCurveBake=False,
             at=attrs
         )
         
