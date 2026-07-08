@@ -345,25 +345,30 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
         utils_layout.addWidget(self.toggle_graph_btn, 0, 0)
         
+        self.euler_filter_btn = QtWidgets.QPushButton("🔄 Euler Filter")
+        self.euler_filter_btn.setFixedHeight(32)
+        self.euler_filter_btn.clicked.connect(self.on_euler_filter)
+        utils_layout.addWidget(self.euler_filter_btn, 0, 1)
+        
         self.toggle_ref_btn = QtWidgets.QPushButton("📂 Reference Editor")
         self.toggle_ref_btn.setFixedHeight(32)
         self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
-        utils_layout.addWidget(self.toggle_ref_btn, 0, 1)
+        utils_layout.addWidget(self.toggle_ref_btn, 1, 0)
+        
+        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder")
+        self.clean_folder_btn.setFixedHeight(32)
+        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
+        utils_layout.addWidget(self.clean_folder_btn, 1, 1)
         
         self.save_inc_btn = QtWidgets.QPushButton("💾 Save Increment")
         self.save_inc_btn.setFixedHeight(32)
         self.save_inc_btn.clicked.connect(self.on_save_increment)
-        utils_layout.addWidget(self.save_inc_btn, 1, 0)
+        utils_layout.addWidget(self.save_inc_btn, 2, 0)
         
         self.save_up_ver_btn = QtWidgets.QPushButton("🚀 Save Up Version")
         self.save_up_ver_btn.setFixedHeight(32)
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
-        utils_layout.addWidget(self.save_up_ver_btn, 1, 1)
-        
-        self.clean_folder_btn = QtWidgets.QPushButton("🧹 Clean Folder (Dọn dẹp thư mục)")
-        self.clean_folder_btn.setFixedHeight(32)
-        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
-        utils_layout.addWidget(self.clean_folder_btn, 2, 0, 1, 2)
+        utils_layout.addWidget(self.save_up_ver_btn, 2, 1)
         
         tab2_layout.addWidget(utils_group)
         
@@ -1632,6 +1637,43 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi Làm tròn số",
                 "Lỗi xảy ra khi thực hiện làm tròn số:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_euler_filter(self):
+        """Áp dụng Euler Filter cho các đường cong xoay được chọn hoặc các vật thể được chọn"""
+        selected = cmds.ls(sl=True) or []
+        selected_curves = cmds.keyframe(query=True, selected=True, name=True) or []
+        
+        # Bọc trong undo chunk để hoàn tác dễ dàng
+        cmds.undoInfo(openChunk=True)
+        try:
+            if selected_curves:
+                cmds.filterCurve(selected_curves)
+                cmds.warning("Đã áp dụng Euler Filter cho các đường cong được chọn trong Graph Editor.")
+            elif selected:
+                # Tìm toàn bộ curve keyframe của đối tượng chọn
+                curves = cmds.keyframe(selected, query=True, name=True) or []
+                # Lọc lấy các curve liên quan tới xoay (rotateX, rotateY, rotateZ, rx, ry, rz)
+                rot_curves = [c for c in curves if any(r in c.lower() for r in ['rotate', 'rx', 'ry', 'rz'])]
+                if rot_curves:
+                    cmds.filterCurve(rot_curves)
+                    cmds.warning("Đã áp dụng Euler Filter cho các kênh xoay của đối tượng được chọn.")
+                else:
+                    QtWidgets.QMessageBox.warning(
+                        self, "Thông báo", 
+                        "Không tìm thấy đường cong xoay (Rotation curves) nào trên vật thể được chọn để áp dụng Euler Filter!"
+                    )
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self, "Cảnh báo", 
+                    "Vui lòng chọn các đường cong xoay trong Graph Editor hoặc chọn đối tượng trong viewport!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Euler Filter", 
+                "Lỗi xảy ra khi thực hiện Euler Filter:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
