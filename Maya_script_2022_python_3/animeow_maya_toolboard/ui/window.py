@@ -370,6 +370,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
         utils_layout.addWidget(self.save_up_ver_btn, 2, 1)
         
+        self.fix_shader_btn = QtWidgets.QPushButton("🩹 Fix Lost Shader (Sửa lỗi mất shader)")
+        self.fix_shader_btn.setFixedHeight(32)
+        self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
+        utils_layout.addWidget(self.fix_shader_btn, 3, 0, 1, 2)
+        
         tab2_layout.addWidget(utils_group)
         
         # Khối làm tròn số
@@ -1677,6 +1682,28 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
         finally:
             cmds.undoInfo(closeChunk=True)
+
+    def on_fix_lost_shader(self):
+        """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
+        try:
+            # 1. Unlock initialShadingGroup
+            if cmds.objExists('initialShadingGroup'):
+                cmds.lockNode('initialShadingGroup', lock=False, lockUnpublished=False)
+                
+            # 2. Unlock defaultTextureList1
+            if cmds.objExists('defaultTextureList1'):
+                cmds.lockNode('defaultTextureList1', lock=False, lockUnpublished=False)
+                
+            cmds.warning("Đã mở khóa initialShadingGroup và defaultTextureList1 thành công!")
+            QtWidgets.QMessageBox.information(
+                self, "Thành công", 
+                "Đã mở khóa các node mặc định thành công!\nBạn có thể thử gán lại shader hoặc import/export bình thường."
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Không thể mở khóa các node mặc định:\n%s" % str(e)
+            )
 
 
 def show_window():
