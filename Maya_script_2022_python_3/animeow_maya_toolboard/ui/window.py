@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool
 
 QSS_STYLE = """
 QWidget {
@@ -410,6 +410,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         round_layout.addWidget(self.round_btn, 2, 0, 1, 2)
         
         tab2_layout.addWidget(round_group)
+        
+        # Khối chuyển đổi Space & Rotate Order
+        space_order_group = QtWidgets.QGroupBox("Space & Rotate Order (Bảo toàn Key)")
+        so_layout = QtWidgets.QGridLayout(space_order_group)
+        so_layout.setContentsMargins(8, 12, 8, 8)
+        so_layout.setSpacing(10)
+        
+        # 1. Rotate Order Row
+        so_layout.addWidget(QtWidgets.QLabel("Đổi Rotate Order:"), 0, 0)
+        self.ro_combo = QtWidgets.QComboBox()
+        self.ro_combo.addItems(["XYZ", "YZX", "ZXY", "XZY", "YXZ", "ZYX"])
+        so_layout.addWidget(self.ro_combo, 0, 1)
+        
+        self.ro_apply_btn = QtWidgets.QPushButton("Đổi Order")
+        self.ro_apply_btn.setFixedHeight(26)
+        self.ro_apply_btn.clicked.connect(self.on_change_rotate_order)
+        so_layout.addWidget(self.ro_apply_btn, 0, 2)
+        
+        # Separator line
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        so_layout.addWidget(line, 1, 0, 1, 3)
+        
+        # 2. Record & Restore Row
+        self.so_record_btn = QtWidgets.QPushButton("📥 Ghi Space Thế giới (Record)")
+        self.so_record_btn.setFixedHeight(30)
+        self.so_record_btn.clicked.connect(self.on_record_world_space)
+        so_layout.addWidget(self.so_record_btn, 2, 0, 1, 3)
+        
+        self.so_restore_btn = QtWidgets.QPushButton("📤 Khôi phục Space (Restore)")
+        self.so_restore_btn.setFixedHeight(30)
+        self.so_restore_btn.clicked.connect(self.on_restore_world_space)
+        so_layout.addWidget(self.so_restore_btn, 3, 0, 1, 3)
+        
+        tab2_layout.addWidget(space_order_group)
         
         # Lời giải thích nhỏ
         info_label = QtWidgets.QLabel("💡 Mẹo: Nhấp vào nút công cụ lần đầu để mở,\nnhấp lại lần nữa để tắt (Toggle đóng/mở nhanh).")
@@ -1749,6 +1785,115 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi", 
                 "Không thể mở khóa các node mặc định:\n%s" % str(e)
             )
+
+    def on_change_rotate_order(self):
+        """Thay đổi Rotate Order bảo toàn keyframe"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể!")
+            return
+            
+        new_order = self.ro_combo.currentText()
+        
+        # Chạy trong một undo chunk của Maya
+        cmds.undoInfo(openChunk=True, chunkName="ChangeRotateOrder")
+        try:
+            success_count = 0
+            for obj in sel:
+                success, msg = space_order_tool.change_rotate_order(obj, new_order)
+                if success:
+                    success_count += 1
+                    print("[SpaceOrder] %s: %s" % (obj, msg))
+                    
+            if success_count > 0:
+                cmds.warning("Đã đổi Rotate Order sang %s cho %d vật thể thành công!" % (new_order, success_count))
+            else:
+                QtWidgets.QMessageBox.warning(self, "Thất bại", "Không thể thay đổi Rotate Order của các vật thể được chọn.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_record_world_space(self):
+        """Ghi tọa độ thế giới sang locator"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn 1 vật thể muốn ghi nhận Space thế giới!")
+            return
+            
+        # Ta chỉ ghi nhận cho vật thể đầu tiên được chọn
+        obj = sel[0]
+        cmds.undoInfo(openChunk=True, chunkName="RecordWorldSpace")
+        try:
+            loc, msg = space_order_tool.record_world_space(obj)
+            if loc:
+                cmds.warning(msg)
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã ghi nhận chuyển động sang Locator thế giới:\n%s\n\nBây giờ bạn có thể thay đổi Parent, Space hoặc cấu trúc của vật thể tùy ý, sau đó chọn vật thể và Locator để bấm Khôi phục (Restore)." % loc
+                )
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi ghi Space thế giới:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_restore_world_space(self):
+        """Khôi phục tọa độ thế giới từ locator"""
+        sel = cmds.ls(sl=True) or []
+        if len(sel) < 2:
+            # Thử tự động quét xem có locator record nào liên kết với vật thể được chọn không
+            if len(sel) == 1:
+                obj = sel[0]
+                clean_name = obj.replace(":", "_").replace("|", "_")
+                possible_loc = "animeow_space_record_%s" % clean_name
+                if cmds.objExists(possible_loc):
+                    sel = [obj, possible_loc]
+                    
+            if len(sel) < 2:
+                QtWidgets.QMessageBox.warning(
+                    self, "Cảnh báo", 
+                    "Vui lòng chọn vật thể gốc và Locator lưu trữ (animeow_space_record_...) để khôi phục!"
+                )
+                return
+                
+        # Phân biệt đối tượng và locator
+        obj = None
+        locator = None
+        for item in sel:
+            if "animeow_space_record_" in item:
+                locator = item
+            else:
+                obj = item
+                
+        if not obj or not locator:
+            QtWidgets.QMessageBox.warning(
+                self, "Cảnh báo", 
+                "Không tìm thấy đúng cặp vật thể gốc và Locator lưu trữ trong vùng chọn!"
+            )
+            return
+            
+        cmds.undoInfo(openChunk=True, chunkName="RestoreWorldSpace")
+        try:
+            success, msg = space_order_tool.restore_world_space(obj, locator)
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
 
 
 def show_window():
