@@ -1896,12 +1896,23 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.undoInfo(closeChunk=True)
 
 
+def is_ui_alive(ui_obj):
+    """Kiểm tra xem đối tượng Qt UI còn sống ở phía C++ không để tránh lỗi pointer chết"""
+    if ui_obj is None:
+        return False
+    try:
+        ui_obj.objectName()
+        return True
+    except RuntimeError:
+        return False
+
+
 def show_window():
     import sys
     
-    # 1. Kiểm tra xem giao diện đã tồn tại trong session hiện tại chưa
+    # 1. Kiểm tra xem giao diện và đối tượng Python cũ còn sống thực sự không
     old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
-    if old_ui is not None:
+    if is_ui_alive(old_ui):
         try:
             if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
                 # Khôi phục và chọn lại control cũ tại đúng vị trí, trạng thái (floating/docked) của nó
@@ -1912,7 +1923,7 @@ def show_window():
         except Exception:
             pass
 
-    # Nếu không tìm thấy hoặc có lỗi, tiến hành tạo mới
+    # Nếu UI cũ đã chết hoặc không tìm thấy control, dọn dẹp sạch sẽ để dựng mới
     if old_ui is not None:
         try:
             old_ui.close()
@@ -1921,7 +1932,7 @@ def show_window():
             pass
         sys._animeow_maya_toolboard_ui = None
         
-    # 2. Xóa workspace control cũ nếu tồn tại
+    # 2. Xóa workspace control cũ nếu tồn tại để tránh rác
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
         try:
             cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
@@ -1932,16 +1943,32 @@ def show_window():
     ui_instance = AnimeowMayaToolboardUI()
     sys._animeow_maya_toolboard_ui = ui_instance
     
-    # 4. Hiển thị dưới dạng dockable panel với workspaceControlName định danh
-    ui_instance.show(
-        dockable=True,
-        workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME,
-        area="right",
-        floating=False,
-        allowedArea="left|right"
-    )
+    # 4. Kiểm tra xem người dùng đã từng lưu vị trí cửa sổ này chưa (windowPref)
+    pref_exists = False
+    try:
+        pref_exists = cmds.windowPref(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True)
+    except Exception:
+        pass
+        
+    # 5. Hiển thị dưới dạng dockable panel
+    if pref_exists:
+        # Nếu đã có tùy chỉnh vị trí trước đó (Ví dụ kéo ra ngoài float), 
+        # ta để Maya tự động tải cấu hình cũ bằng cách không áp các giá trị mặc định (floating=False, area="right")
+        ui_instance.show(
+            dockable=True,
+            workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME
+        )
+    else:
+        # Nếu là lần đầu chạy tool, áp dụng docking mặc định ở bên phải
+        ui_instance.show(
+            dockable=True,
+            workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME,
+            area="right",
+            floating=False,
+            allowedArea="left|right"
+        )
     
-    # 5. Cập nhật tiêu đề hiển thị cho tab trong Maya
+    # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
     if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
         cmds.workspaceControl(
             AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
