@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast
+from ..core import smart_link, playblast, arc_tracker
 
 QSS_STYLE = """
 QWidget {
@@ -162,6 +162,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_PB_OVERWRITE = "AnimeowTbPbOverwrite"
     OP_PB_MULTI_CAM = "AnimeowTbPbMultiCam"
     OP_PB_MULTI_CAMS_LIST = "AnimeowTbPbMultiCamsList"
+    OP_AT_SHOW_TICKS = "AnimeowTbAtShowTicks"
+    OP_AT_SHOW_KEYS = "AnimeowTbAtShowKeys"
+    OP_AT_TICK_SIZE = "AnimeowTbAtTickSize"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
@@ -433,10 +436,76 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab3_layout.addStretch()
         
+        # --- TAB 4: ARC TRACKER ---
+        tab4 = QtWidgets.QWidget()
+        tab4_layout = QtWidgets.QVBoxLayout(tab4)
+        tab4_layout.setContentsMargins(6, 10, 6, 6)
+        tab4_layout.setSpacing(12)
+        
+        # Tiêu đề Tab 4
+        at_title = QtWidgets.QLabel("📈 ANIMEOW ARC TRACKER")
+        at_title.setAlignment(QtCore.Qt.AlignCenter)
+        at_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
+        tab4_layout.addWidget(at_title)
+        
+        # Khối cấu hình Arc Tracker
+        at_group = QtWidgets.QGroupBox("Cài đặt Đường dẫn (Trail Settings)")
+        at_layout = QtWidgets.QGridLayout(at_group)
+        at_layout.setContentsMargins(8, 12, 8, 8)
+        at_layout.setSpacing(10)
+        
+        self.at_show_ticks_cb = QtWidgets.QCheckBox("Hiển thị Ticks thường (Màu vàng)")
+        self.at_show_ticks_cb.setChecked(True)
+        at_layout.addWidget(self.at_show_ticks_cb, 0, 0, 1, 2)
+        
+        self.at_show_keys_cb = QtWidgets.QCheckBox("Hiển thị Ticks Keyframe (Màu đỏ)")
+        self.at_show_keys_cb.setChecked(True)
+        at_layout.addWidget(self.at_show_keys_cb, 1, 0, 1, 2)
+        
+        at_layout.addWidget(QtWidgets.QLabel("Kích thước Ticks (Size):"), 2, 0)
+        self.at_tick_size_spin = QtWidgets.QDoubleSpinBox()
+        self.at_tick_size_spin.setRange(0.01, 2.0)
+        self.at_tick_size_spin.setValue(0.1)
+        self.at_tick_size_spin.setSingleStep(0.02)
+        at_layout.addWidget(self.at_tick_size_spin, 2, 1)
+        
+        tab4_layout.addWidget(at_group)
+        
+        # Các nút bấm hành động
+        at_btn_layout = QtWidgets.QVBoxLayout()
+        at_btn_layout.setSpacing(8)
+        
+        self.create_trail_btn = QtWidgets.QPushButton("🚀 Vẽ Arc Trail (Vật thể chọn)")
+        self.create_trail_btn.setObjectName("accent_btn")
+        self.create_trail_btn.setFixedHeight(35)
+        self.create_trail_btn.clicked.connect(self.on_create_arc_trail)
+        at_btn_layout.addWidget(self.create_trail_btn)
+        
+        self.clear_selected_trail_btn = QtWidgets.QPushButton("❌ Xóa Trail của vật thể chọn")
+        self.clear_selected_trail_btn.setFixedHeight(30)
+        self.clear_selected_trail_btn.clicked.connect(self.on_clear_selected_trails)
+        at_btn_layout.addWidget(self.clear_selected_trail_btn)
+        
+        self.clear_all_trails_btn = QtWidgets.QPushButton("🗑️ Xóa tất cả Arc Trails")
+        self.clear_all_trails_btn.setFixedHeight(30)
+        self.clear_all_trails_btn.clicked.connect(self.on_clear_all_trails)
+        at_btn_layout.addWidget(self.clear_all_trails_btn)
+        
+        tab4_layout.addLayout(at_btn_layout)
+        
+        # Mẹo sử dụng
+        at_info_label = QtWidgets.QLabel("💡 Mẹo: Đường dẫn tĩnh này chạy mượt 100% không bị lag.\nNhấp lại 'Vẽ Arc Trail' để cập nhật khi đổi animation.")
+        at_info_label.setAlignment(QtCore.Qt.AlignCenter)
+        at_info_label.setStyleSheet("color: #888888; font-style: italic; font-size: 11px;")
+        tab4_layout.addWidget(at_info_label)
+        
+        tab4_layout.addStretch()
+        
         # Thêm các tab vào Widget
         self.tab_widget.addTab(tab1, "🔗 Smart Link")
         self.tab_widget.addTab(tab2, "🛠️ Quick Tools")
         self.tab_widget.addTab(tab3, "🎬 Playblast")
+        self.tab_widget.addTab(tab4, "📈 Arc Tracker")
 
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -484,6 +553,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 item = self.camera_list_widget.item(i)
                 if item.text() in saved_cams:
                     item.setCheckState(QtCore.Qt.Checked)
+                    
+        # Arc Tracker Settings
+        if cmds.optionVar(exists=self.OP_AT_SHOW_TICKS):
+            self.at_show_ticks_cb.setChecked(bool(cmds.optionVar(query=self.OP_AT_SHOW_TICKS)))
+        if cmds.optionVar(exists=self.OP_AT_SHOW_KEYS):
+            self.at_show_keys_cb.setChecked(bool(cmds.optionVar(query=self.OP_AT_SHOW_KEYS)))
+        if cmds.optionVar(exists=self.OP_AT_TICK_SIZE):
+            self.at_tick_size_spin.setValue(cmds.optionVar(query=self.OP_AT_TICK_SIZE))
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -508,6 +585,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if item.checkState() == QtCore.Qt.Checked:
                 checked_cams.append(item.text())
         cmds.optionVar(stringValue=(self.OP_PB_MULTI_CAMS_LIST, ";".join(checked_cams)))
+        
+        # Arc Tracker Settings
+        cmds.optionVar(intValue=(self.OP_AT_SHOW_TICKS, int(self.at_show_ticks_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_AT_SHOW_KEYS, int(self.at_show_keys_cb.isChecked())))
+        cmds.optionVar(floatValue=(self.OP_AT_TICK_SIZE, self.at_tick_size_spin.value()))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -995,6 +1077,68 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print("[WorldBake] Da mo World Bake.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy World Bake:\n%s" % str(e))
+
+    def on_create_arc_trail(self):
+        """Tạo Arc Trail cho các vật thể đang chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể để tạo Arc Trail!")
+            return
+            
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        show_ticks = self.at_show_ticks_cb.isChecked()
+        show_keys = self.at_show_keys_cb.isChecked()
+        tick_size = self.at_tick_size_spin.value()
+        
+        tracker = arc_tracker.ArcTracker()
+        try:
+            for obj in sel:
+                tracker.create_trail(
+                    obj=obj,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    show_ticks=show_ticks,
+                    show_keys=show_keys,
+                    tick_size=tick_size
+                )
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã tạo Arc Trail thành công cho %d vật thể!" % len(sel)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi vẽ Trail",
+                "Lỗi xảy ra khi vẽ Arc Trail:\n%s" % str(e)
+            )
+            
+    def on_clear_selected_trails(self):
+        """Xóa trail của các vật thể đang chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn vật thể muốn xóa Arc Trail!")
+            return
+            
+        tracker = arc_tracker.ArcTracker()
+        tracker.clear_selected_trails(sel)
+        QtWidgets.QMessageBox.information(self, "Thành công", "Đã xóa Arc Trail của các vật thể được chọn!")
+
+    def on_clear_all_trails(self):
+        """Xóa sạch toàn bộ các Arc Trails"""
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận xóa",
+            "Bạn có chắc chắn muốn xóa sạch toàn bộ các Arc Trails trong scene?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+            
+        tracker = arc_tracker.ArcTracker()
+        tracker.clear_all_trails()
+        QtWidgets.QMessageBox.information(self, "Thành công", "Đã xóa sạch toàn bộ Arc Trails!")
 
 
 def show_window():
