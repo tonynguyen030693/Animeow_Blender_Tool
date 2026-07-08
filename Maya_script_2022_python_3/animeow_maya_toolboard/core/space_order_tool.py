@@ -13,6 +13,15 @@ def get_all_keys(obj):
             keys.add(int(round(k)))
     return sorted(list(keys))
 
+def key_transforms(obj, time):
+    """Đặt keyframe cho các kênh translate và rotate của obj nếu chúng không bị khóa"""
+    attrs_to_key = []
+    for attr in ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']:
+        if cmds.objExists("%s.%s" % (obj, attr)) and not cmds.getAttr("%s.%s" % (obj, attr), lock=True):
+            attrs_to_key.append(attr)
+    if attrs_to_key:
+        cmds.setKeyframe(obj, attribute=attrs_to_key, time=time)
+
 def change_rotate_order(obj, new_order):
     """
     Thay đổi Rotate Order của vật thể mà vẫn bảo toàn chuyển động và số lượng/vị trí keyframe.
@@ -45,48 +54,37 @@ def change_rotate_order(obj, new_order):
     cmds.matchTransform(loc, obj, pos=True, rot=True)
     cmds.setAttr(loc + ".rotateOrder", curr_order)
     
-    # 3. Tạo constraint từ obj sang locator
-    temp_constraint = cmds.parentConstraint(obj, loc, maintainOffset=False)[0]
-    
-    # 4. Bake locator tại đúng các keyframe gốc
+    # 3. Ghi anim thế giới lên locator tại các frame k qua matchTransform (Không dùng constraint để tránh bị lock kênh)
     curr_time = cmds.currentTime(q=True)
     cmds.refresh(suspend=True)
     try:
         for k in keys:
             cmds.currentTime(k, edit=True)
-            cmds.setKeyframe(loc, attribute=['translateX', 'translateY', 'translateZ', 
-                                              'rotateX', 'rotateY', 'rotateZ'], time=k)
+            cmds.matchTransform(loc, obj, pos=True, rot=True)
+            key_transforms(loc, k)
     finally:
         cmds.refresh(suspend=False)
         cmds.currentTime(curr_time, edit=True)
-        
-    if cmds.objExists(temp_constraint):
-        cmds.delete(temp_constraint)
 
-    # 5. Xóa keyframe xoay và dịch chuyển trên obj gốc để nhận giá trị mới sạch sẽ
+    # 4. Xóa keyframe cũ trên obj gốc
     cmds.cutKey(obj, attribute=['translateX', 'translateY', 'translateZ', 
                                 'rotateX', 'rotateY', 'rotateZ'], clear=True)
                                 
-    # 6. Đổi rotate order mới
+    # 5. Đổi rotate order mới trên obj
     cmds.setAttr(obj + ".rotateOrder", new_order_val)
     
-    # 7. Ràng buộc ngược lại từ locator sang obj
-    restore_constraint = cmds.parentConstraint(loc, obj, maintainOffset=False)[0]
-    
-    # 8. Bake ngược lại obj tại đúng các keyframe gốc
+    # 6. Khớp ngược lại từ locator sang obj và đặt keyframe
     cmds.refresh(suspend=True)
     try:
         for k in keys:
             cmds.currentTime(k, edit=True)
-            cmds.setKeyframe(obj, attribute=['translateX', 'translateY', 'translateZ', 
-                                              'rotateX', 'rotateY', 'rotateZ'], time=k)
+            cmds.matchTransform(obj, loc, pos=True, rot=True)
+            key_transforms(obj, k)
     finally:
         cmds.refresh(suspend=False)
         cmds.currentTime(curr_time, edit=True)
         
-    # 9. Dọn dẹp
-    if cmds.objExists(restore_constraint):
-        cmds.delete(restore_constraint)
+    # 7. Dọn dẹp locator tạm
     if cmds.objExists(loc):
         cmds.delete(loc)
         
@@ -134,23 +132,17 @@ def record_world_space(obj):
     cmds.addAttr(loc, longName="animeow_sourceObj", attributeType="message")
     cmds.connectAttr(obj + ".message", loc + ".animeow_sourceObj")
     
-    # Ghi parentConstraint tạm từ obj sang locator
-    temp_con = cmds.parentConstraint(obj, loc, maintainOffset=False)[0]
-    
-    # Ghi anim thế giới
+    # Ghi anim thế giới qua matchTransform
     curr_time = cmds.currentTime(q=True)
     cmds.refresh(suspend=True)
     try:
         for k in keys:
             cmds.currentTime(k, edit=True)
-            cmds.setKeyframe(loc, attribute=['translateX', 'translateY', 'translateZ', 
-                                              'rotateX', 'rotateY', 'rotateZ'], time=k)
+            cmds.matchTransform(loc, obj, pos=True, rot=True)
+            key_transforms(loc, k)
     finally:
         cmds.refresh(suspend=False)
         cmds.currentTime(curr_time, edit=True)
-        
-    if cmds.objExists(temp_con):
-        cmds.delete(temp_con)
         
     cmds.select(loc)
     return loc, "Đã ghi nhận thành công %d keyframe thế giới vào locator: %s" % (len(keys), loc)
@@ -174,28 +166,23 @@ def restore_world_space(obj, locator):
         
     keys = [int(k) for k in keys_str.split(",")]
     
-    # Ràng buộc obj vào locator
-    restore_constraint = cmds.parentConstraint(locator, obj, maintainOffset=False)[0]
-    
     # Xóa key cũ trên obj trước khi bake để nhận key mới sạch sẽ
     cmds.cutKey(obj, attribute=['translateX', 'translateY', 'translateZ', 
                                 'rotateX', 'rotateY', 'rotateZ'], clear=True)
                                 
-    # Bake ngược lại obj tại đúng các keyframe
+    # Bake ngược lại obj tại đúng các keyframe bằng cách khớp trực tiếp, không dùng constraint
     curr_time = cmds.currentTime(q=True)
     cmds.refresh(suspend=True)
     try:
         for k in keys:
             cmds.currentTime(k, edit=True)
-            cmds.setKeyframe(obj, attribute=['translateX', 'translateY', 'translateZ', 
-                                              'rotateX', 'rotateY', 'rotateZ'], time=k)
+            cmds.matchTransform(obj, locator, pos=True, rot=True)
+            key_transforms(obj, k)
     finally:
         cmds.refresh(suspend=False)
         cmds.currentTime(curr_time, edit=True)
         
-    # Xóa constraint và locator
-    if cmds.objExists(restore_constraint):
-        cmds.delete(restore_constraint)
+    # Xóa locator lưu trữ
     if cmds.objExists(locator):
         cmds.delete(locator)
         
