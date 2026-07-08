@@ -386,19 +386,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
 
 def show_window():
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
-        cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
+    import sys
+    
+    # 1. Đóng và giải phóng bộ nhớ của giao diện cũ từ sys module
+    old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
+    if old_ui is not None:
+        try:
+            old_ui.close()
+            old_ui.deleteLater()
+        except Exception:
+            pass
+        sys._animeow_maya_toolboard_ui = None
         
+    # 2. Xóa workspace control cũ nếu tồn tại
+    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+        try:
+            cmds.deleteUI(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME)
+        except Exception:
+            pass
+            
+    # 3. Tạo instance mới và lưu tham chiếu vào sys module
     ui_instance = AnimeowMayaToolboardUI()
+    sys._animeow_maya_toolboard_ui = ui_instance
+    
+    # 4. Hiển thị dưới dạng dockable panel với workspaceControlName định danh
     ui_instance.show(
         dockable=True,
+        workspaceControlName=AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME,
         area="right",
         floating=False,
         allowedArea="left|right"
     )
     
-    cmds.workspaceControl(
-        AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
-        edit=True, 
-        label=AnimeowMayaToolboardUI.WINDOW_TITLE
-    )
+    # 5. Cập nhật tiêu đề hiển thị cho tab trong Maya
+    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+        cmds.workspaceControl(
+            AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
+            edit=True, 
+            label=AnimeowMayaToolboardUI.WINDOW_TITLE
+        )
