@@ -160,6 +160,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_PB_SCALE = "AnimeowTbPbScale"
     OP_PB_VIEWER = "AnimeowTbPbViewer"
     OP_PB_OVERWRITE = "AnimeowTbPbOverwrite"
+    OP_PB_MULTI_CAM = "AnimeowTbPbMultiCam"
+    OP_PB_MULTI_CAMS_LIST = "AnimeowTbPbMultiCamsList"
 
     def __init__(self, parent=None):
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
@@ -346,6 +348,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Camera
         pb_layout.addWidget(QtWidgets.QLabel("Camera:"), 0, 0)
+        cam_container = QtWidgets.QWidget()
+        cam_vbox = QtWidgets.QVBoxLayout(cam_container)
+        cam_vbox.setContentsMargins(0, 0, 0, 0)
+        cam_vbox.setSpacing(6)
+        
         cam_row = QtWidgets.QHBoxLayout()
         self.camera_combo = QtWidgets.QComboBox()
         cam_row.addWidget(self.camera_combo)
@@ -353,7 +360,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.refresh_cam_btn.setFixedWidth(30)
         self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
         cam_row.addWidget(self.refresh_cam_btn)
-        pb_layout.addLayout(cam_row, 0, 1)
+        cam_vbox.addLayout(cam_row)
+        
+        self.camera_list_widget = QtWidgets.QListWidget()
+        self.camera_list_widget.setFixedHeight(100)
+        self.camera_list_widget.setVisible(False)
+        cam_vbox.addWidget(self.camera_list_widget)
+        
+        self.multi_cam_cb = QtWidgets.QCheckBox("Quay hàng loạt (Multi-Camera)")
+        self.multi_cam_cb.stateChanged.connect(self.on_toggle_multi_cam)
+        cam_vbox.addWidget(self.multi_cam_cb)
+        
+        pb_layout.addWidget(cam_container, 0, 1)
         
         # Format
         pb_layout.addWidget(QtWidgets.QLabel("Định dạng (Format):"), 1, 0)
@@ -451,6 +469,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.pb_viewer_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_VIEWER)))
         if cmds.optionVar(exists=self.OP_PB_OVERWRITE):
             self.pb_overwrite_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_OVERWRITE)))
+            
+        if cmds.optionVar(exists=self.OP_PB_MULTI_CAM):
+            self.multi_cam_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_MULTI_CAM)))
+            
+        if cmds.optionVar(exists=self.OP_PB_MULTI_CAMS_LIST):
+            saved_cams = cmds.optionVar(query=self.OP_PB_MULTI_CAMS_LIST).split(";")
+            for i in range(self.camera_list_widget.count()):
+                item = self.camera_list_widget.item(i)
+                if item.text() in saved_cams:
+                    item.setCheckState(QtCore.Qt.Checked)
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -467,6 +495,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
         cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_PB_MULTI_CAM, int(self.multi_cam_cb.isChecked())))
+        
+        checked_cams = []
+        for i in range(self.camera_list_widget.count()):
+            item = self.camera_list_widget.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                checked_cams.append(item.text())
+        cmds.optionVar(stringValue=(self.OP_PB_MULTI_CAMS_LIST, ";".join(checked_cams)))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -789,10 +825,23 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
 
+    def on_toggle_multi_cam(self, state):
+        is_multi = (state == QtCore.Qt.Checked)
+        self.camera_combo.setVisible(not is_multi)
+        self.refresh_cam_btn.setVisible(not is_multi)
+        self.camera_list_widget.setVisible(is_multi)
+
     def on_refresh_cameras(self):
         """Làm mới danh sách camera trong scene"""
+        previously_checked = []
+        for i in range(self.camera_list_widget.count()):
+            item = self.camera_list_widget.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                previously_checked.append(item.text())
+                
         current_cam = self.camera_combo.currentText()
         self.camera_combo.clear()
+        self.camera_list_widget.clear()
         
         cams = cmds.ls(type="camera")
         cam_transforms = []
@@ -806,21 +855,27 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         custom_cams = [c for c in cam_transforms if c not in startup_cams]
         sorted_cams = custom_cams + startup_cams
         
+        # Nạp Combobox
         self.camera_combo.addItems(sorted_cams)
         
+        # Nạp ListWidget checkable
+        for cam in sorted_cams:
+            item = QtWidgets.QListWidgetItem(cam)
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            if cam in previously_checked:
+                item.setCheckState(QtCore.Qt.Checked)
+            else:
+                item.setCheckState(QtCore.Qt.Unchecked)
+            self.camera_list_widget.addItem(item)
+            
         idx = self.camera_combo.findText(current_cam)
         if idx >= 0:
             self.camera_combo.setCurrentIndex(idx)
 
     def on_run_playblast(self):
-        """Thực thi quay thử Playblast"""
+        """Thực thi quay thử Playblast (hỗ trợ camera đơn hoặc hàng loạt camera)"""
         self.save_settings()
         
-        camera = self.camera_combo.currentText()
-        if not camera:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy camera khả dụng!")
-            return
-            
         fmt_text = self.pb_format_combo.currentText()
         format_ext = "avi" if "avi" in fmt_text.lower() else "qt"
         
@@ -830,27 +885,92 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         viewer = self.pb_viewer_cb.isChecked()
         overwrite = self.pb_overwrite_cb.isChecked()
         
-        try:
-            pbm = playblast.PlayblastManager()
-            output_file = pbm.run_playblast(
-                format_ext=format_ext,
-                percent=percent,
-                width=width,
-                height=height,
-                camera=camera,
-                viewer=viewer,
-                overwrite=overwrite
+        is_multi = self.multi_cam_cb.isChecked()
+        
+        target_cameras = []
+        if is_multi:
+            for i in range(self.camera_list_widget.count()):
+                item = self.camera_list_widget.item(i)
+                if item.checkState() == QtCore.Qt.Checked:
+                    target_cameras.append(item.text())
+            if not target_cameras:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một camera trong danh sách để quay hàng loạt!")
+                return
+        else:
+            single_cam = self.camera_combo.currentText()
+            if not single_cam:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy camera khả dụng!")
+                return
+            target_cameras = [single_cam]
+            
+        # Xác nhận nếu xuất nhiều camera cùng lúc
+        if len(target_cameras) > 1:
+            res = QtWidgets.QMessageBox.question(
+                self, "Xác nhận quay hàng loạt",
+                "Bạn có chắc chắn muốn chạy Playblast cho %d camera đã chọn?" % len(target_cameras),
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
-            print("[Playblast] Xuat video thanh cong: %s" % output_file)
-            QtWidgets.QMessageBox.information(
-                self, "Thành công", 
-                "Đã xuất Playblast thành công!\nĐường dẫn:\n%s" % output_file
-            )
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi Playblast", 
-                "Lỗi xảy ra khi xuất Playblast:\n%s" % playblast.exception_to_unicode(e)
-            )
+            if res == QtWidgets.QMessageBox.No:
+                return
+
+        success_files = []
+        failed_cameras = []
+        
+        # Hiển thị QProgressDialog để báo cáo tiến trình
+        progress_dialog = QtWidgets.QProgressDialog("Đang xuất Playblast...", "Hủy", 0, len(target_cameras), self)
+        progress_dialog.setWindowTitle("Playblast Hàng Loạt")
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.setMinimumDuration(0)
+        
+        pbm = playblast.PlayblastManager()
+        
+        for idx, cam in enumerate(target_cameras):
+            if progress_dialog.wasCanceled():
+                break
+                
+            progress_dialog.setLabelText("Đang quay camera: %s (%d/%d)..." % (cam, idx + 1, len(target_cameras)))
+            progress_dialog.setValue(idx)
+            QtCore.QCoreApplication.processEvents()
+            
+            try:
+                # Nếu nhiều camera, chỉ mở video cuối cùng bằng trình phát để tránh mở hàng loạt tab VLC làm đơ máy
+                should_view = viewer if len(target_cameras) == 1 else (viewer and (idx == len(target_cameras) - 1))
+                
+                output_file = pbm.run_playblast(
+                    format_ext=format_ext,
+                    percent=percent,
+                    width=width,
+                    height=height,
+                    camera=cam,
+                    viewer=should_view,
+                    overwrite=overwrite
+                )
+                success_files.append(output_file)
+            except Exception as e:
+                failed_cameras.append((cam, playblast.exception_to_unicode(e)))
+                
+        progress_dialog.setValue(len(target_cameras))
+        
+        # Báo cáo kết quả
+        if not failed_cameras:
+            if len(target_cameras) == 1:
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã xuất Playblast thành công cho camera: %s!\nĐường dẫn:\n%s" % (target_cameras[0], success_files[0])
+                )
+            else:
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã hoàn thành xuất Playblast hàng loạt cho %d camera thành công!\nCác tệp được lưu trong thư mục 'mov'." % len(success_files)
+                )
+        else:
+            err_msg = "Kết quả xuất Playblast:\n\n"
+            if success_files:
+                err_msg += "✅ Thành công %d camera.\n" % len(success_files)
+            err_msg += "❌ Thất bại %d camera:\n" % len(failed_cameras)
+            for f_cam, f_err in failed_cameras:
+                err_msg += "  + %s: %s\n" % (f_cam, f_err)
+            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
 
 
 def show_window():
