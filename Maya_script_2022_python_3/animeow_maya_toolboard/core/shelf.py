@@ -634,34 +634,10 @@ def create_shelf():
             "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_outliner()"
         },
         {
-            "label": "PRN",
-            "annotation": "Tạo Parent Constraint có Maintain Offset nhanh",
+            "label": "Const",
+            "annotation": "Mở hộp công cụ Quick Constraint độc lập",
             "image": "parentConstraint.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_parent_constraint()"
-        },
-        {
-            "label": "PNT",
-            "annotation": "Tạo Point Constraint có Maintain Offset nhanh",
-            "image": "pointConstraint.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_point_constraint()"
-        },
-        {
-            "label": "ORI",
-            "annotation": "Tạo Orient Constraint có Maintain Offset nhanh",
-            "image": "orientConstraint.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_orient_constraint()"
-        },
-        {
-            "label": "SCL",
-            "annotation": "Tạo Scale Constraint có Maintain Offset nhanh",
-            "image": "scaleConstraint.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_scale_constraint()"
-        },
-        {
-            "label": "DelC",
-            "annotation": "Xóa toàn bộ constraint trên đối tượng được chọn",
-            "image": "deleteActive.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.delete_obj_constraints()"
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='quick_const')"
         },
         {
             "label": "S.Inc",

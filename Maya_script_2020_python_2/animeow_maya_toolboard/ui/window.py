@@ -1070,6 +1070,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self.curve_group.setTitle("Công cụ làm tròn số")
                 except Exception:
                     pass
+            elif self.standalone_tab == "quick_const":
+                qc_widget = QtWidgets.QWidget(self)
+                qc_layout = QtWidgets.QVBoxLayout(qc_widget)
+                qc_layout.setContentsMargins(6, 6, 6, 6)
+                qc_layout.setSpacing(6)
+                
+                btn_parent = QtWidgets.QPushButton("Parent Constraint (mo)")
+                btn_parent.setFixedHeight(26)
+                btn_parent.clicked.connect(self.on_qc_parent)
+                
+                btn_point = QtWidgets.QPushButton("Point Constraint (mo)")
+                btn_point.setFixedHeight(26)
+                btn_point.clicked.connect(self.on_qc_point)
+                
+                btn_orient = QtWidgets.QPushButton("Orient Constraint (mo)")
+                btn_orient.setFixedHeight(26)
+                btn_orient.clicked.connect(self.on_qc_orient)
+                
+                btn_scale = QtWidgets.QPushButton("Scale Constraint (mo)")
+                btn_scale.setFixedHeight(26)
+                btn_scale.clicked.connect(self.on_qc_scale)
+                
+                btn_delete = QtWidgets.QPushButton("Xóa Constraints (Delete)")
+                btn_delete.setFixedHeight(26)
+                btn_delete.setStyleSheet("background-color: #5A2A2A; color: #FFAAAA; font-weight: bold;")
+                btn_delete.clicked.connect(self.on_qc_delete)
+                
+                qc_layout.addWidget(btn_parent)
+                qc_layout.addWidget(btn_point)
+                qc_layout.addWidget(btn_orient)
+                qc_layout.addWidget(btn_scale)
+                qc_layout.addWidget(btn_delete)
+                
+                self.tab_widget.addTab(qc_widget, "Quick Const")
+                self.setMinimumWidth(180)
+                self.setMaximumWidth(220)
             self.tab_widget.tabBar().hide()
         else:
             self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
@@ -2803,6 +2839,26 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
         finally:
             cmds.undoInfo(closeChunk=True)
+
+    def on_qc_parent(self):
+        from ..core import shelf
+        shelf.create_parent_constraint()
+        
+    def on_qc_point(self):
+        from ..core import shelf
+        shelf.create_point_constraint()
+        
+    def on_qc_orient(self):
+        from ..core import shelf
+        shelf.create_orient_constraint()
+        
+    def on_qc_scale(self):
+        from ..core import shelf
+        shelf.create_scale_constraint()
+        
+    def on_qc_delete(self):
+        from ..core import shelf
+        shelf.delete_obj_constraints()
 
 
 def is_ui_alive(ui_obj):
