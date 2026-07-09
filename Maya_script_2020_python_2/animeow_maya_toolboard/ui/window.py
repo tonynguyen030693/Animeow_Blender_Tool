@@ -3,14 +3,11 @@ from __future__ import print_function, absolute_import, division
 
 import os
 import sys
-import json
-import subprocess
-import tempfile
 import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import anim_combiner
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf
 
 QSS_STYLE = """
 QWidget {
@@ -25,7 +22,7 @@ QGroupBox {
     margin-top: 12px;
     padding-top: 10px;
     font-weight: bold;
-    color: #00BCD4; /* Cyan accent for Toolboard */
+    color: #00BCD4; /* Cyan accent */
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -37,13 +34,14 @@ QPushButton {
     background-color: #3C3C3C;
     color: #E0E0E0;
     border: 1px solid #555555;
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 6px 12px;
     font-weight: bold;
 }
 QPushButton:hover {
     background-color: #4C4C4C;
     border-color: #00BCD4;
+    color: #FFFFFF;
 }
 QPushButton:pressed {
     background-color: #222222;
@@ -55,515 +53,2716 @@ QPushButton#accent_btn {
 }
 QPushButton#accent_btn:hover {
     background-color: #0097A7;
+    border-color: #00E5FF;
 }
 QPushButton#accent_btn:pressed {
     background-color: #006064;
 }
-QLineEdit, QComboBox, QSpinBox {
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     background-color: #1E1E1E;
     border: 1px solid #444444;
     border-radius: 4px;
     padding: 4px 6px;
     color: #FFFFFF;
 }
-QComboBox::drop-down {
-    border: none;
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+    border-color: #00BCD4;
 }
-QListWidget {
-    background-color: #1E1E1E;
+QTabWidget::pane {
     border: 1px solid #444444;
+    top: -1px;
+    background-color: #2D2D2D;
+}
+QTabBar::tab {
+    background-color: #3C3C3C;
+    color: #AAAAAA;
+    border: 1px solid #444444;
+    border-bottom: none;
+    padding: 8px 8px;
+    margin-right: 4px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    font-weight: bold;
+    min-width: 120px;
+}
+QTabBar::tab:selected {
+    background-color: #2D2D2D;
+    border-bottom: 1px solid #2D2D2D;
+    color: #00BCD4;
+}
+QTabBar::tab:hover {
+    color: #FFFFFF;
+    border-top: 2px solid #00BCD4;
+}
+QTableWidget {
+    gridline-color: #333333;
+    border: 1px solid #444444;
+    background-color: #1E1E1E;
+    color: #E0E0E0;
     border-radius: 4px;
 }
-QListWidget::item {
-    padding: 6px 8px;
-    border-bottom: 1px solid #282828;
+QTableWidget::item:selected {
+    background-color: #004D40;
+    color: #FFFFFF;
 }
-QListWidget::item:hover {
-    background-color: #3A3A3A;
+QHeaderView::section {
+    background-color: #2D2D2D;
     color: #00BCD4;
+    border: 1px solid #444444;
+    font-weight: bold;
+    padding: 4px;
+}
+QScrollBar:vertical {
+    border: none;
+    background-color: #222222;
+    width: 8px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background-color: #555555;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: #00BCD4;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
 }
 """
 
-class BatchProgressDialog(QtWidgets.QDialog):
-    def __init__(self, mayapy_path, runner_path, config_path, output_path, parent=None):
-        super(BatchProgressDialog, self).__init__(parent=parent)
-        self.setWindowTitle("Tiến trình ghép nối chạy ngầm (mayapy)")
-        self.resize(600, 400)
-        self.setStyleSheet(QSS_STYLE)
+def ensure_scripts_2022_path():
+    # 1. Thử lấy đường dẫn động tương đối theo cấu trúc thư mục của git repo
+    ui_dir = os.path.dirname(os.path.abspath(__file__))
+    package_dir = os.path.dirname(ui_dir)
+    python3_dir = os.path.dirname(package_dir)
+    workspace_root = os.path.dirname(python3_dir)
+    
+    dynamic_path = os.path.join(workspace_root, "Maya_script_2020_python_2", "Tool_reference", "scripts_2022")
+    
+    # 2. Thử đường dẫn tuyệt đối mặc định cũ làm phương án dự phòng
+    hardcoded_path = r"E:\AI_Work\Blender_Maya_Script\Maya_script_2020_python_2\Tool_reference\scripts_2022"
+    
+    # Xác định đường dẫn thực tế tồn tại trên máy hiện hành (Ưu tiên nạp từ thirdparty nội bộ trước)
+    thirdparty_path = os.path.join(package_dir, "thirdparty")
+    path = ""
+    if os.path.exists(thirdparty_path) and os.path.isdir(thirdparty_path) and len(os.listdir(thirdparty_path)) > 1:
+        path = thirdparty_path
+    elif os.path.exists(dynamic_path):
+        path = dynamic_path
+    elif os.path.exists(hardcoded_path):
+        path = hardcoded_path
+
+    if not path:
+        print("[AnimeowToolboard] Khong tim thay thu muc scripts_2022 hay thirdparty chua cac tool bo tro!")
+        return ""
         
-        self.mayapy_path = mayapy_path
-        self.runner_path = runner_path
-        self.config_path = config_path
-        self.output_path = output_path
+    import sys
+    if path not in sys.path:
+        sys.path.insert(0, path)
+        print("[AnimeowToolboard] Da them duong dan Python: %s" % path)
         
-        layout = QtWidgets.QVBoxLayout(self)
+    # Thêm thư mục src của Studio Library vào sys.path
+    sl_path = os.path.join(path, "studiolibrary-2.9.6.b3", "studiolibrary-2.9.6.b3", "src")
+    if os.path.exists(sl_path) and sl_path not in sys.path:
+        sys.path.insert(0, sl_path)
+        print("[AnimeowToolboard] Da them duong dan Studio Library: %s" % sl_path)
         
-        self.status_lbl = QtWidgets.QLabel("Đang khởi động tiến trình...")
-        self.status_lbl.setStyleSheet("font-weight: bold; color: #00BCD4;")
-        layout.addWidget(self.status_lbl)
+    # Thêm vào MAYA_SCRIPT_PATH để source file mel
+    import maya.mel as mel
+    current_script_paths = mel.eval("getenv \"MAYA_SCRIPT_PATH\"") or ""
+    sep = ";" if os.name == 'nt' else ":"
+    paths_list = current_script_paths.split(sep)
+    
+    norm_path = os.path.normpath(path).lower()
+    has_path = any(os.path.normpath(p).lower() == norm_path for p in paths_list if p)
+    
+    if not has_path:
+        new_script_paths = "%s%s%s" % (path, sep, current_script_paths)
+        mel.eval('putenv "MAYA_SCRIPT_PATH" "%s"' % new_script_paths.replace("\\", "/"))
+        print("[AnimeowToolboard] Da them duong dan MEL: %s" % path)
         
-        self.progress_bar = QtWidgets.QProgressBar()
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setStyleSheet("QProgressBar { border: 1px solid #444444; border-radius: 4px; text-align: center; } QProgressBar::chunk { background-color: #00BCD4; }")
-        layout.addWidget(self.progress_bar)
-        
-        self.log_text = QtWidgets.QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setStyleSheet("background-color: #1E1E1E; border: 1px solid #444444; font-family: monospace; font-size: 11px;")
-        layout.addWidget(self.log_text)
-        
-        btn_layout = QtWidgets.QHBoxLayout()
-        self.cancel_btn = QtWidgets.QPushButton("Hủy tiến trình")
-        self.cancel_btn.clicked.connect(self.on_cancel)
-        btn_layout.addStretch()
-        btn_layout.addWidget(self.cancel_btn)
-        layout.addLayout(btn_layout)
-        
-        self.process = QtCore.QProcess(self)
-        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
-        self.process.readyReadStandardOutput.connect(self.on_ready_read)
-        self.process.finished.connect(self.on_finished)
-        
-        QtCore.QTimer.singleShot(200, self.start_process)
-        
-    def start_process(self):
-        self.status_lbl.setText("Đang khởi động mayapy và nạp Standalone...")
-        exec_path = os.path.normpath(self.mayapy_path)
-        args = [os.path.normpath(self.runner_path), os.path.normpath(self.config_path)]
-        
-        self.process.start(exec_path, args)
-        if not self.process.waitForStarted(5000):
-            self.status_lbl.setText("Lỗi: Không thể khởi chạy mayapy.exe!")
-            self.log_text.append("Không thể chạy executable: %s" % exec_path)
-            self.cancel_btn.setText("Đóng")
-            
-    def on_ready_read(self):
-        output = self.process.readAllStandardOutput().data().decode("utf-8", "ignore")
-        for line in output.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            self.log_text.append(line)
-            self.log_text.moveCursor(QtGui.QTextCursor.End)
-            
-            if line.startswith("STANDALONE_STATUS:"):
-                status_msg = line.replace("STANDALONE_STATUS:", "").strip()
-                self.status_lbl.setText(status_msg)
-            elif line.startswith("PROGRESS_UPDATE:"):
-                try:
-                    progress_info = line.replace("PROGRESS_UPDATE:", "").strip()
-                    parts = progress_info.split("|")[0].strip().split("/")
-                    curr = int(parts[0])
-                    total = int(parts[1])
-                    percent = int((curr / total) * 100)
-                    self.progress_bar.setValue(percent)
-                    
-                    msg = progress_info.split("|")[1].strip() if "|" in progress_info else ""
-                    if msg:
-                        self.status_lbl.setText(msg)
-                except Exception:
-                    pass
-            elif line.startswith("STANDALONE_ERROR:"):
-                err_msg = line.replace("STANDALONE_ERROR:", "").strip()
-                self.status_lbl.setText("Lỗi: %s" % err_msg)
-                
-    def on_finished(self, exit_code, exit_status):
-        if os.path.exists(self.config_path):
-            try:
-                os.remove(self.config_path)
-            except:
-                pass
-                
-        if exit_code == 0:
-            self.status_lbl.setText("Hoàn thành thành công!")
-            self.progress_bar.setValue(100)
-            self.cancel_btn.setText("Đóng")
-            
-            res = QtWidgets.QMessageBox.question(
-                self, "Mở file kết quả?",
-                "Ghép nối chuyển động hoàn thành ngầm thành công!\nBạn có muốn mở file tổng hợp vừa ghép vào phiên Maya hiện tại không?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
-            if res == QtWidgets.QMessageBox.Yes:
-                try:
-                    cmds.file(self.output_path, open=True, force=True)
-                except Exception as e:
-                    QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể mở file cảnh: %s" % str(e))
-        else:
-            self.status_lbl.setText("Lỗi: Tiến trình chạy ngầm thất bại!")
-            self.cancel_btn.setText("Đóng")
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi chạy ngầm",
-                "Đã xảy ra lỗi khi chạy ghép nối ngầm. Hãy xem chi tiết log hiển thị trong bảng."
-            )
-            
-    def on_cancel(self):
-        if self.process.state() == QtCore.QProcess.Running:
-            res = QtWidgets.QMessageBox.question(
-                self, "Hủy tiến trình?",
-                "Tiến trình đang chạy. Bạn có chắc chắn muốn hủy không?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            )
-            if res == QtWidgets.QMessageBox.Yes:
-                self.process.kill()
-                self.reject()
-        else:
-            self.accept()
+    mel.eval("rehash;")
+    return path
 
 class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
-    WINDOW_TITLE = "Animeow Anim Combiner Toolboard"
-    WORKSPACE_CONTROL_NAME = "AnimeowAnimCombinerWorkspaceControl"
+    WINDOW_TITLE = "Animeow Maya Toolboard"
+    WORKSPACE_CONTROL_NAME = "AnimeowMayaToolboardWorkspaceControl"
     
-    # OptionVars cache
-    OP_SOURCE_DIR = "AnimeowTbSourceDir"
-    OP_MASTER_SCENE = "AnimeowTbMasterScene"
-    OP_OUTPUT_FILE = "AnimeowTbOutputFile"
-    OP_TIME_MODE = "AnimeowTbTimeMode"
-    OP_START_FRAME = "AnimeowTbStartFrame"
-    OP_BG_MODE = "AnimeowTbBgMode"
+    # optionVars
+    OP_TARGET = "AnimeowTbSmartLinkTarget"
+    OP_OWNER = "AnimeowTbSmartLinkOwner"
+    OP_STEP = "AnimeowTbBakeStep"
+    OP_SMART_CLEAN = "AnimeowTbBakeSmartClean"
+    OP_THRESHOLD = "AnimeowTbBakeThreshold"
+    OP_PB_CAMERA = "AnimeowTbPbCamera"
+    OP_PB_FORMAT = "AnimeowTbPbFormat"
+    OP_PB_WIDTH = "AnimeowTbPbWidth"
+    OP_PB_HEIGHT = "AnimeowTbPbHeight"
+    OP_PB_SCALE = "AnimeowTbPbScale"
+    OP_PB_VIEWER = "AnimeowTbPbViewer"
+    OP_PB_OVERWRITE = "AnimeowTbPbOverwrite"
+    OP_PB_MULTI_CAM = "AnimeowTbPbMultiCam"
+    OP_PB_MULTI_CAMS_LIST = "AnimeowTbPbMultiCamsList"
+    OP_AT_SHOW_TICKS = "AnimeowTbAtShowTicks"
+    OP_AT_SHOW_KEYS = "AnimeowTbAtShowKeys"
+    OP_AT_TICK_SIZE = "AnimeowTbAtTickSize"
+    OP_WB_CHANNELS = "AnimeowTbWbChannels"
+    OP_WB_STEP = "AnimeowTbWbStep"
+    OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
+    OP_RT_PRECISION = "AnimeowTbRtPrecision"
+    OP_RT_TARGET = "AnimeowTbRtTarget"
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, standalone_tab=None):
+        self.standalone_tab = standalone_tab
+        
+        if standalone_tab is not None:
+            if standalone_tab == 0:
+                self.WINDOW_TITLE = "Space & Bake"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowBakeWorkspaceControl"
+            elif standalone_tab == 1:
+                self.WINDOW_TITLE = "Curve & Motion"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowCurveWorkspaceControl"
+            elif standalone_tab == 2:
+                self.WINDOW_TITLE = "Rig & Mirror"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowRigWorkspaceControl"
+            elif standalone_tab == 3:
+                self.WINDOW_TITLE = "Output & Scene"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowOutputWorkspaceControl"
+            elif standalone_tab == "arc_tracker":
+                self.WINDOW_TITLE = "Arc Tracker"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowArcWorkspaceControl"
+            elif standalone_tab == "round_tool":
+                self.WINDOW_TITLE = "Làm tròn số"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowRoundWorkspaceControl"
+                
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
         self.setWindowTitle(self.WINDOW_TITLE)
         self.setStyleSheet(QSS_STYLE)
         
         self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_layout.setSpacing(10)
+        self.main_layout.setContentsMargins(8, 8, 8, 8)
+        self.main_layout.setSpacing(8)
+        
+        # Header Layout
+        header_layout = QtWidgets.QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.title_lbl = QtWidgets.QLabel("<b>ANIMEOW TOOLBOARD v5.0</b>")
+        self.title_lbl.setStyleSheet("color: #00BCD4; font-weight: bold; font-size: 11px;")
+        header_layout.addWidget(self.title_lbl)
+        header_layout.addStretch()
+        
+        self.compact_toggle_btn = QtWidgets.QPushButton("⚡ Gọn")
+        self.compact_toggle_btn.setCheckable(True)
+        self.compact_toggle_btn.setFixedHeight(22)
+        self.compact_toggle_btn.setFixedWidth(65)
+        self.compact_toggle_btn.setStyleSheet("font-size: 10px; padding: 2px 4px; background-color: #333333; border: 1px solid #444444;")
+        self.compact_toggle_btn.clicked.connect(self.on_toggle_compact_mode)
+        header_layout.addWidget(self.compact_toggle_btn)
+        
+        self.main_layout.addLayout(header_layout)
+        
+        self.content_layout = QtWidgets.QHBoxLayout()
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(4)
+        
+        # Left compact toolbar (hidden by default)
+        self.compact_toolbar = QtWidgets.QWidget()
+        self.compact_toolbar.setFixedWidth(38)
+        self.compact_toolbar.setStyleSheet("""
+            QWidget {
+                background-color: #212121;
+                border-right: 1px solid #333333;
+            }
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                border-radius: 4px;
+                font-size: 15px;
+                padding: 4px;
+            }
+            QPushButton:hover {
+                background-color: #333333;
+            }
+            QPushButton:pressed {
+                background-color: #444444;
+            }
+        """)
+        self.compact_toolbar_layout = QtWidgets.QVBoxLayout(self.compact_toolbar)
+        self.compact_toolbar_layout.setContentsMargins(4, 8, 4, 4)
+        self.compact_toolbar_layout.setSpacing(8)
+        
+        icons = ["🔗", "📈", "🎯", "🎬", "🚀"]
+        tooltips = [
+            "Space & Bake",
+            "Curve & Motion",
+            "Rig & Mirror",
+            "Output & Scene",
+            "Launchers"
+        ]
+        self.compact_buttons = []
+        for i, icon in enumerate(icons):
+            btn = QtWidgets.QPushButton(icon)
+            btn.setFixedSize(30, 30)
+            btn.setToolTip(tooltips[i])
+            def make_click(idx):
+                return lambda checked=False: self.tab_widget.setCurrentIndex(idx)
+            btn.clicked.connect(make_click(i))
+            self.compact_toolbar_layout.addWidget(btn)
+            self.compact_buttons.append(btn)
+        self.compact_toolbar_layout.addStretch()
+        
+        self.content_layout.addWidget(self.compact_toolbar)
+        self.compact_toolbar.hide() # Hidden by default
+        
+        # QTabWidget
+        self.tab_widget = QtWidgets.QTabWidget()
+        self.tab_widget.tabBar().setElideMode(QtCore.Qt.ElideNone)
+        self.tab_widget.tabBar().setUsesScrollButtons(True)
+        self.content_layout.addWidget(self.tab_widget)
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
+        
+        self.main_layout.addLayout(self.content_layout)
         
         self.build_ui()
         self.load_settings()
-
     def build_ui(self):
-        # Tiêu đề giao diện
-        title_label = QtWidgets.QLabel("ANIMEOW ANIM COMBINER")
-        title_label.setAlignment(QtCore.Qt.AlignCenter)
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #00BCD4;")
-        self.main_layout.addWidget(title_label)
-        
-        # 1. Khối Shot nguồn (Source Shots)
-        src_group = QtWidgets.QGroupBox("1. Thư mục chứa các Shot lẻ")
-        src_layout = QtWidgets.QVBoxLayout(src_group)
-        src_layout.setContentsMargins(8, 8, 8, 8)
-        src_layout.setSpacing(6)
-        
-        path_layout = QtWidgets.QHBoxLayout()
-        self.src_dir_txt = QtWidgets.QLineEdit()
-        self.src_dir_txt.setPlaceholderText("Đường dẫn đến thư mục chứa các file .ma, .mb con...")
-        self.src_dir_txt.setReadOnly(True)
-        path_layout.addWidget(self.src_dir_txt)
-        
-        self.src_browse_btn = QtWidgets.QPushButton("Browse")
-        self.src_browse_btn.clicked.connect(self.on_browse_source_dir)
-        path_layout.addWidget(self.src_browse_btn)
-        src_layout.addLayout(path_layout)
-        
-        src_layout.addWidget(QtWidgets.QLabel("Danh sách Shot con sẽ ghép (tự động lọc):"))
-        self.shots_list = QtWidgets.QListWidget()
-        src_layout.addWidget(self.shots_list)
-        
-        self.main_layout.addWidget(src_group)
-        
-        # 2. Khối File Master mẫu (Master Template)
-        master_group = QtWidgets.QGroupBox("2. File Master mẫu (Chứa Rig sạch)")
-        master_layout = QtWidgets.QHBoxLayout(master_group)
-        master_layout.setContentsMargins(8, 8, 8, 8)
-        master_layout.setSpacing(6)
-        
-        self.master_path_txt = QtWidgets.QLineEdit()
-        self.master_path_txt.setPlaceholderText("Chọn file .ma hoặc .mb master mẫu...")
-        self.master_path_txt.setReadOnly(True)
-        master_layout.addWidget(self.master_path_txt)
-        
-        self.master_browse_btn = QtWidgets.QPushButton("Browse")
-        self.master_browse_btn.clicked.connect(self.on_browse_master_scene)
-        master_layout.addWidget(self.master_browse_btn)
-        
-        self.main_layout.addWidget(master_group)
-        
-        # 3. Khối Đường dẫn lưu (Output Combined File)
-        out_group = QtWidgets.QGroupBox("3. Đường dẫn lưu file kết quả (Combined Output)")
-        out_layout = QtWidgets.QHBoxLayout(out_group)
-        out_layout.setContentsMargins(8, 8, 8, 8)
-        out_layout.setSpacing(6)
-        
-        self.out_path_txt = QtWidgets.QLineEdit()
-        self.out_path_txt.setPlaceholderText("Nơi lưu file master sau khi ghép anim...")
-        self.out_path_txt.setReadOnly(True)
-        out_layout.addWidget(self.out_path_txt)
-        
-        self.out_browse_btn = QtWidgets.QPushButton("Browse")
-        self.out_browse_btn.clicked.connect(self.on_browse_output_file)
-        out_layout.addWidget(self.out_browse_btn)
-        
-        self.main_layout.addWidget(out_group)
-        
-        # 4. Khối Cấu hình thời gian (Time Settings)
-        time_group = QtWidgets.QGroupBox("4. Thiết lập thời gian (Time Options)")
-        time_layout = QtWidgets.QGridLayout(time_group)
-        time_layout.setContentsMargins(8, 8, 8, 8)
-        time_layout.setSpacing(8)
-        
-        time_layout.addWidget(QtWidgets.QLabel("Chế độ ghép:"), 0, 0)
-        self.time_mode_combo = QtWidgets.QComboBox()
-        self.time_mode_combo.addItems([
-            "Nối đuôi tự động (Sequential Join)",
-            "Giữ nguyên Frame gốc (Keep Original Frames)"
-        ])
-        self.time_mode_combo.currentIndexChanged.connect(self.on_time_mode_changed)
-        time_layout.addWidget(self.time_mode_combo, 0, 1)
-        
-        time_layout.addWidget(QtWidgets.QLabel("Start Frame:"), 1, 0)
-        self.start_frame_spin = QtWidgets.QSpinBox()
-        self.start_frame_spin.setRange(-9999, 99999)
-        self.start_frame_spin.setValue(1)
-        time_layout.addWidget(self.start_frame_spin, 1, 1)
-        
-        # Checkbox Chạy ngầm
-        self.bg_mode_cb = QtWidgets.QCheckBox("Chạy ngầm (Background Mode - Không đơ Maya)")
-        self.bg_mode_cb.setChecked(True)
-        time_layout.addWidget(self.bg_mode_cb, 2, 0, 1, 2)
-        
-        self.main_layout.addWidget(time_group)
-        
-        # 5. Nút thực thi chính
-        self.run_btn = QtWidgets.QPushButton("🎬 Bắt Đầu Ghép Nối Animation")
-        self.run_btn.setObjectName("accent_btn")
-        self.run_btn.setFixedHeight(40)
-        self.run_btn.clicked.connect(self.on_run_combiner)
-        self.main_layout.addWidget(self.run_btn)
-        
-        # Thêm co giãn ở cuối
-        self.main_layout.addStretch()
+        # Helper function to wrap widgets in scroll area
+        def wrap_in_scroll(widget):
+            scroll = QtWidgets.QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QtWidgets.QScrollArea.NoFrame)
+            # Thiết lập nền tối đồng bộ
+            scroll.setStyleSheet("QScrollArea { background-color: #2D2D2D; border: none; }")
+            scroll.setWidget(widget)
+            return scroll
 
-    # --- SỰ KIỆN & LOGIC ---
+        # Khởi tạo QTabWidget
+        # Khói tạo QTabWidget
+        # Tab widget is already initialized in __init__
+        pass
+        
+        # =========================================================================
+        # --- TAB 1: LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
+        # =========================================================================
+        tab1 = QtWidgets.QWidget(self)
+        tab1.hide()
+        tab1_layout = QtWidgets.QVBoxLayout(tab1)
+        tab1_layout.setContentsMargins(6, 10, 6, 6)
+        tab1_layout.setSpacing(10)
+        
+        t1_title = QtWidgets.QLabel("CONSTRAINT, SPACE & BAKE MANAGER")
+        t1_title.setAlignment(QtCore.Qt.AlignCenter)
+        t1_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab1_layout.addWidget(t1_title)
+        
+        # GroupBox 1: Smart Link
+        link_group = QtWidgets.QGroupBox("Smart Link (Liên kết đối tượng)")
+        link_layout = QtWidgets.QVBoxLayout(link_group)
+        link_layout.setContentsMargins(8, 12, 8, 8)
+        link_layout.setSpacing(8)
+        
+        target_row = QtWidgets.QHBoxLayout()
+        target_row.addWidget(QtWidgets.QLabel("Target (Vật dẫn):"))
+        self.target_txt = QtWidgets.QLineEdit()
+        self.target_txt.setPlaceholderText("Xương / Vật dẫn đường (Driver)...")
+        target_row.addWidget(self.target_txt)
+        self.get_target_btn = QtWidgets.QPushButton("Lấy chọn")
+        self.get_target_btn.clicked.connect(self.on_get_target)
+        target_row.addWidget(self.get_target_btn)
+        link_layout.addLayout(target_row)
+        
+        swap_row = QtWidgets.QHBoxLayout()
+        swap_row.addStretch()
+        self.swap_target_owner_btn = QtWidgets.QPushButton("  ⇅ Đổi bên Target / Owner  ")
+        self.swap_target_owner_btn.setFixedHeight(22)
+        self.swap_target_owner_btn.setStyleSheet("font-size: 11px; max-width: 180px; padding: 2px 8px;")
+        self.swap_target_owner_btn.clicked.connect(self.on_swap_target_owner)
+        swap_row.addWidget(self.swap_target_owner_btn)
+        swap_row.addStretch()
+        link_layout.addLayout(swap_row)
+
+        owner_row = QtWidgets.QHBoxLayout()
+        owner_row.addWidget(QtWidgets.QLabel("Owner (Vật bị dẫn):"))
+        self.owner_txt = QtWidgets.QLineEdit()
+        self.owner_txt.setPlaceholderText("Đối tượng đi theo (Driven)...")
+        owner_row.addWidget(self.owner_txt)
+        self.get_owner_btn = QtWidgets.QPushButton("Lấy chọn")
+        self.get_owner_btn.clicked.connect(self.on_get_owner)
+        owner_row.addWidget(self.get_owner_btn)
+        link_layout.addLayout(owner_row)
+        
+        link_ops_row = QtWidgets.QHBoxLayout()
+        self.link_btn = QtWidgets.QPushButton("Tạo Smart Link")
+        self.link_btn.setObjectName("accent_btn")
+        self.link_btn.setFixedHeight(28)
+        self.link_btn.clicked.connect(self.on_link)
+        link_ops_row.addWidget(self.link_btn)
+        
+        self.switch_target_btn = QtWidgets.QPushButton("Đổi Target (Switch)")
+        self.switch_target_btn.setFixedHeight(28)
+        self.switch_target_btn.clicked.connect(self.on_switch_target)
+        link_ops_row.addWidget(self.switch_target_btn)
+        
+        self.bake_clean_btn = QtWidgets.QPushButton("Bake & Clean Link")
+        self.bake_clean_btn.setFixedHeight(28)
+        self.bake_clean_btn.clicked.connect(self.on_bake_clean)
+        link_ops_row.addWidget(self.bake_clean_btn)
+        link_layout.addLayout(link_ops_row)
+        
+        smart_bake_layout = QtWidgets.QGridLayout()
+        smart_bake_layout.addWidget(QtWidgets.QLabel("Step (Bake Link):"), 0, 0)
+        self.bake_step_spin = QtWidgets.QSpinBox()
+        self.bake_step_spin.setRange(1, 100)
+        self.bake_step_spin.setValue(1)
+        smart_bake_layout.addWidget(self.bake_step_spin, 0, 1)
+        
+        self.smart_clean_cb = QtWidgets.QCheckBox("Smart Clean Link (Bảo toàn key cực trị)")
+        self.smart_clean_cb.setChecked(True)
+        smart_bake_layout.addWidget(self.smart_clean_cb, 0, 2)
+        
+        smart_bake_layout.addWidget(QtWidgets.QLabel("Reducer Threshold:"), 1, 0)
+        self.threshold_spin = QtWidgets.QDoubleSpinBox()
+        self.threshold_spin.setRange(0.001, 2.0)
+        self.threshold_spin.setValue(0.05)
+        self.threshold_spin.setSingleStep(0.01)
+        smart_bake_layout.addWidget(self.threshold_spin, 1, 1, 1, 2)
+        link_layout.addLayout(smart_bake_layout)
+        
+        tab1_layout.addWidget(link_group)
+        
+        # GroupBox 2: World Bake
+        wb_group = QtWidgets.QGroupBox("World Bake (Bake không gian thế giới)")
+        wb_layout = QtWidgets.QGridLayout(wb_group)
+        wb_layout.setContentsMargins(8, 12, 8, 8)
+        wb_layout.setSpacing(8)
+        
+        wb_layout.addWidget(QtWidgets.QLabel("Kênh Bake:"), 0, 0)
+        self.wb_channels_combo = QtWidgets.QComboBox()
+        self.wb_channels_combo.addItems(["Both (Translate & Rotate)", "Translate Only", "Rotate Only"])
+        wb_layout.addWidget(self.wb_channels_combo, 0, 1)
+        
+        wb_layout.addWidget(QtWidgets.QLabel("Step (Bake):"), 0, 2)
+        self.wb_step_spin = QtWidgets.QSpinBox()
+        self.wb_step_spin.setRange(1, 100)
+        self.wb_step_spin.setValue(1)
+        wb_layout.addWidget(self.wb_step_spin, 0, 3)
+        
+        self.wb_smart_clean_cb = QtWidgets.QCheckBox("Smart Clean (Bảo toàn Pose cực trị)")
+        self.wb_smart_clean_cb.setChecked(True)
+        wb_layout.addWidget(self.wb_smart_clean_cb, 1, 0, 1, 2)
+        
+        self.wb_smart_bake_cb = QtWidgets.QCheckBox("Smart Bake (Key-on-key từ nguồn)")
+        self.wb_smart_bake_cb.setChecked(True)
+        wb_layout.addWidget(self.wb_smart_bake_cb, 1, 2, 1, 2)
+        
+        wb_layout.addWidget(QtWidgets.QLabel("Reducer Threshold:"), 2, 0)
+        self.wb_threshold_spin = QtWidgets.QDoubleSpinBox()
+        self.wb_threshold_spin.setRange(0.001, 2.0)
+        self.wb_threshold_spin.setValue(0.05)
+        self.wb_threshold_spin.setSingleStep(0.01)
+        wb_layout.addWidget(self.wb_threshold_spin, 2, 1, 1, 3)
+        
+        wb_layout.addWidget(QtWidgets.QLabel("Bake Action:"), 3, 0)
+        self.wb_bake_btn = QtWidgets.QPushButton("Bake sang Locator thế giới (Record)")
+        self.wb_bake_btn.setFixedHeight(26)
+        self.wb_bake_btn.clicked.connect(self.on_world_bake_to_locator)
+        wb_layout.addWidget(self.wb_bake_btn, 3, 1, 1, 3)
+        
+        self.wb_restore_btn = QtWidgets.QPushButton("Bake ngược về Vật thể nguồn (Restore)")
+        self.wb_restore_btn.setFixedHeight(26)
+        self.wb_restore_btn.clicked.connect(self.on_world_bake_from_locator)
+        wb_layout.addWidget(self.wb_restore_btn, 4, 1, 1, 3)
+        
+        tab1_layout.addWidget(wb_group)
+
+        # GroupBox 3: Bake theo bước (Bake on Ns)
+        ns_group = QtWidgets.QGroupBox("Bake theo bước (Bake on Ns)")
+        ns_layout = QtWidgets.QGridLayout(ns_group)
+        ns_layout.setContentsMargins(8, 12, 8, 8)
+        ns_layout.setSpacing(8)
+        
+        ns_layout.addWidget(QtWidgets.QLabel("Bước Bake:"), 0, 0)
+        self.ns_step_combo = QtWidgets.QComboBox()
+        self.ns_step_combo.addItems([
+            "On 2s (Bước 2)",
+            "On 3s (Bước 3)",
+            "On 4s (Bước 4)",
+            "On 5s (Bước 5)",
+            "On 1s (Bước 1)"
+        ])
+        ns_layout.addWidget(self.ns_step_combo, 0, 1)
+        
+        self.ns_remove_constraints_cb = QtWidgets.QCheckBox("Xóa Constraints")
+        self.ns_remove_constraints_cb.setChecked(False)
+        ns_layout.addWidget(self.ns_remove_constraints_cb, 0, 2)
+        
+        self.ns_bake_btn = QtWidgets.QPushButton("Bake đối tượng chọn")
+        self.ns_bake_btn.setObjectName("accent_btn")
+        self.ns_bake_btn.setFixedHeight(26)
+        self.ns_bake_btn.clicked.connect(self.on_bake_selected_ns)
+        ns_layout.addWidget(self.ns_bake_btn, 1, 0, 1, 3)
+        
+        tab1_layout.addWidget(ns_group)
+
+        # GroupBox 3: Temp Pivot
+        tp_group = QtWidgets.QGroupBox("Tâm xoay tạm thời (Temp Pivot)")
+        tp_layout = QtWidgets.QHBoxLayout(tp_group)
+        tp_layout.setContentsMargins(8, 12, 8, 8)
+        tp_layout.setSpacing(8)
+        
+        self.tp_create_btn = QtWidgets.QPushButton("1. Tạo Temp Locator")
+        self.tp_create_btn.setFixedHeight(28)
+        self.tp_create_btn.clicked.connect(self.on_tp_create)
+        tp_layout.addWidget(self.tp_create_btn)
+        
+        self.tp_active_btn = QtWidgets.QPushButton("2. Kích hoạt Pivot")
+        self.tp_active_btn.setFixedHeight(28)
+        self.tp_active_btn.clicked.connect(self.on_tp_active)
+        tp_layout.addWidget(self.tp_active_btn)
+        
+        self.tp_release_btn = QtWidgets.QPushButton("3. Bake & Giải phóng")
+        self.tp_release_btn.setFixedHeight(28)
+        self.tp_release_btn.clicked.connect(self.on_tp_release)
+        tp_layout.addWidget(self.tp_release_btn)
+        
+        tab1_layout.addWidget(tp_group)
+
+        # GroupBox 4: Space & Rotate Order
+        so_group = QtWidgets.QGroupBox("Space & Rotate Order (Bảo toàn Key)")
+        so_layout = QtWidgets.QVBoxLayout(so_group)
+        so_layout.setContentsMargins(8, 12, 8, 8)
+        so_layout.setSpacing(8)
+        
+        order_row = QtWidgets.QHBoxLayout()
+        order_row.addWidget(QtWidgets.QLabel("Đổi Rotate Order:"))
+        self.so_order_combo = QtWidgets.QComboBox()
+        self.so_order_combo.addItems(["XYZ", "YZX", "ZXY", "XZY", "YXZ", "ZYX"])
+        order_row.addWidget(self.so_order_combo)
+        
+        self.so_apply_order_btn = QtWidgets.QPushButton("Đổi Order && Giữ dáng")
+        self.so_apply_order_btn.setFixedHeight(26)
+        self.so_apply_order_btn.clicked.connect(self.on_change_rotate_order)
+        order_row.addWidget(self.so_apply_order_btn)
+        so_layout.addLayout(order_row)
+        
+        space_row = QtWidgets.QHBoxLayout()
+        self.so_record_btn = QtWidgets.QPushButton("Ghi Space Thế giới (Record)")
+        self.so_record_btn.setFixedHeight(26)
+        self.so_record_btn.clicked.connect(self.on_record_world_space)
+        space_row.addWidget(self.so_record_btn)
+        
+        self.so_restore_btn = QtWidgets.QPushButton("Khôi phục Space (Restore)")
+        self.so_restore_btn.setFixedHeight(26)
+        self.so_restore_btn.clicked.connect(self.on_restore_world_space)
+        space_row.addWidget(self.so_restore_btn)
+        so_layout.addLayout(space_row)
+        
+        tab1_layout.addWidget(so_group)
+        tab1_layout.addStretch()
+
+        # =========================================================================
+        # --- TAB 2: CURVE & MOTION (ĐƯỜNG CONG & DIỄN HOẠT) ---
+        # =========================================================================
+        tab2 = QtWidgets.QWidget(self)
+        tab2.hide()
+        tab2_layout = QtWidgets.QVBoxLayout(tab2)
+        tab2_layout.setContentsMargins(6, 10, 6, 6)
+        tab2_layout.setSpacing(10)
+        
+        self.t2_title = QtWidgets.QLabel("CURVE EDITING & MOTION ANALYSIS")
+        self.t2_title.setAlignment(QtCore.Qt.AlignCenter)
+        self.t2_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab2_layout.addWidget(self.t2_title)
+        
+        # GroupBox 1: Arc Tracker
+        self.at_group = QtWidgets.QGroupBox("Arc Tracker (Vẽ Quỹ đạo chuyển động)")
+        at_layout = QtWidgets.QVBoxLayout(self.at_group)
+        at_layout.setContentsMargins(8, 12, 8, 8)
+        at_layout.setSpacing(8)
+        
+        at_opt_row = QtWidgets.QHBoxLayout()
+        self.at_show_ticks_cb = QtWidgets.QCheckBox("Hiển thị Ticks thường (Màu vàng)")
+        self.at_show_ticks_cb.setChecked(True)
+        at_opt_row.addWidget(self.at_show_ticks_cb)
+        
+        self.at_show_keys_cb = QtWidgets.QCheckBox("Hiển thị Ticks Keyframe (Màu đỏ)")
+        self.at_show_keys_cb.setChecked(True)
+        at_opt_row.addWidget(self.at_show_keys_cb)
+        at_layout.addLayout(at_opt_row)
+        
+        at_size_row = QtWidgets.QHBoxLayout()
+        at_size_row.addWidget(QtWidgets.QLabel("Kích thước Ticks (Size):"))
+        self.at_tick_size_spin = QtWidgets.QDoubleSpinBox()
+        self.at_tick_size_spin.setRange(0.01, 5.0)
+        self.at_tick_size_spin.setValue(0.1)
+        self.at_tick_size_spin.setSingleStep(0.05)
+        at_size_row.addWidget(self.at_tick_size_spin)
+        at_layout.addLayout(at_size_row)
+        
+        at_btn_row = QtWidgets.QGridLayout()
+        self.at_create_btn = QtWidgets.QPushButton("Vẽ Arc Trail")
+        self.at_create_btn.setObjectName("accent_btn")
+        self.at_create_btn.setFixedHeight(28)
+        self.at_create_btn.clicked.connect(self.on_create_arc_trail)
+        at_btn_row.addWidget(self.at_create_btn, 0, 0)
+        
+        self.at_update_btn = QtWidgets.QPushButton("Cập nhật Arc Trails (Update)")
+        self.at_update_btn.setFixedHeight(28)
+        self.at_update_btn.clicked.connect(self.on_update_arc_trails)
+        at_btn_row.addWidget(self.at_update_btn, 0, 1)
+        
+        self.at_clear_sel_btn = QtWidgets.QPushButton("Xóa chọn")
+        self.at_clear_sel_btn.setFixedHeight(28)
+        self.at_clear_sel_btn.clicked.connect(self.on_clear_selected_trails)
+        at_btn_row.addWidget(self.at_clear_sel_btn, 1, 0)
+        
+        self.at_clear_all_btn = QtWidgets.QPushButton("Xóa tất cả")
+        self.at_clear_all_btn.setFixedHeight(28)
+        self.at_clear_all_btn.clicked.connect(self.on_clear_all_trails)
+        at_btn_row.addWidget(self.at_clear_all_btn, 1, 1)
+        at_layout.addLayout(at_btn_row)
+        
+        tab2_layout.addWidget(self.at_group)
+        
+        # GroupBox 2: Curve Editor Utilities
+        self.curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
+        curve_layout = QtWidgets.QVBoxLayout(self.curve_group)
+        curve_layout.setContentsMargins(8, 12, 8, 8)
+        curve_layout.setSpacing(8)
+        
+        self.euler_filter_btn = QtWidgets.QPushButton("Euler Filter (Lọc xoay / Gimbal flips)")
+        self.euler_filter_btn.setFixedHeight(28)
+        self.euler_filter_btn.clicked.connect(self.on_euler_filter)
+        curve_layout.addWidget(self.euler_filter_btn)
+        
+        round_sub_layout = QtWidgets.QGridLayout()
+        round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
+        self.round_precision_combo = QtWidgets.QComboBox()
+        self.round_precision_combo.addItems([
+            "Số nguyên (ví dụ: 1)", 
+            "1 chữ số thập phân (ví dụ: 1.1)", 
+            "2 chữ số thập phân (ví dụ: 1.23)"
+        ])
+        round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
+        
+        round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
+        self.round_target_combo = QtWidgets.QComboBox()
+        self.round_target_combo.addItems([
+            "Channel Box (Thuộc tính chọn)", 
+            "Graph Editor (Keyframe chọn)",
+            "Keyframe tại frame hiện tại",
+            "Toàn bộ keyframe (Timeline)"
+        ])
+        round_sub_layout.addWidget(self.round_target_combo, 1, 1)
+        
+        self.round_btn = QtWidgets.QPushButton("Làm tròn số")
+        self.round_btn.setObjectName("accent_btn")
+        self.round_btn.setFixedHeight(28)
+        self.round_btn.clicked.connect(self.on_round_values)
+        round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+        curve_layout.addLayout(round_sub_layout)
+        
+        tab2_layout.addWidget(self.curve_group)
+        tab2_layout.addStretch()
+
+        # =========================================================================
+        # --- TAB 3: RIG & MIRROR (CÔNG CỤ RIG & ĐỐI XỨNG) ---
+        # =========================================================================
+        tab3 = QtWidgets.QWidget(self)
+        tab3.hide()
+        tab3_layout = QtWidgets.QVBoxLayout(tab3)
+        tab3_layout.setContentsMargins(6, 10, 6, 6)
+        tab3_layout.setSpacing(10)
+        
+        t3_title = QtWidgets.QLabel("RIG MAPPING & ANIMATION MIRRORING")
+        t3_title.setAlignment(QtCore.Qt.AlignCenter)
+        t3_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab3_layout.addWidget(t3_title)
+        
+        # GroupBox 1: Rig Retargeting
+        rt_group = QtWidgets.QGroupBox("Rig Retargeting (Ghép nối chuyển động)")
+        rt_layout = QtWidgets.QVBoxLayout(rt_group)
+        rt_layout.setContentsMargins(8, 12, 8, 8)
+        rt_layout.setSpacing(8)
+        
+        ns_layout = QtWidgets.QHBoxLayout()
+        ns_layout.addWidget(QtWidgets.QLabel("Source NS:"))
+        self.rt_src_ns_combo = QtWidgets.QComboBox()
+        ns_layout.addWidget(self.rt_src_ns_combo)
+        
+        ns_layout.addWidget(QtWidgets.QLabel("Target NS:"))
+        self.rt_tgt_ns_combo = QtWidgets.QComboBox()
+        ns_layout.addWidget(self.rt_tgt_ns_combo)
+        
+        self.rt_refresh_ns_btn = QtWidgets.QPushButton("Quét NS")
+        self.rt_refresh_ns_btn.setFixedWidth(65)
+        self.rt_refresh_ns_btn.clicked.connect(self.on_rt_refresh_namespaces)
+        ns_layout.addWidget(self.rt_refresh_ns_btn)
+        rt_layout.addLayout(ns_layout)
+        
+        map_layout = QtWidgets.QVBoxLayout()
+        map_layout.addWidget(QtWidgets.QLabel("Bảng ánh xạ các bộ điều khiển (Green: Ok, Red: Missing):"))
+        self.rt_table = QtWidgets.QTableWidget()
+        self.rt_table.setColumnCount(2)
+        self.rt_table.setHorizontalHeaderLabels(["Source Control", "Target Control"])
+        self.rt_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.rt_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.rt_table.setFixedHeight(150)
+        self.rt_table.itemChanged.connect(self.on_rt_item_changed)
+        map_layout.addWidget(self.rt_table)
+        
+        manual_layout = QtWidgets.QHBoxLayout()
+        self.rt_get_src_btn = QtWidgets.QPushButton("Lấy Nguồn (Get Source)")
+        self.rt_get_src_btn.clicked.connect(self.on_rt_get_source)
+        manual_layout.addWidget(self.rt_get_src_btn)
+        self.rt_get_tgt_btn = QtWidgets.QPushButton("Lấy Đích (Get Target)")
+        self.rt_get_tgt_btn.clicked.connect(self.on_rt_get_target)
+        manual_layout.addWidget(self.rt_get_tgt_btn)
+        map_layout.addLayout(manual_layout)
+        rt_layout.addLayout(map_layout)
+        
+        rt_btn_layout = QtWidgets.QGridLayout()
+        self.rt_auto_map_btn = QtWidgets.QPushButton("Khớp tự động (Auto Map)")
+        self.rt_auto_map_btn.clicked.connect(self.on_rt_auto_map)
+        rt_btn_layout.addWidget(self.rt_auto_map_btn, 0, 0)
+        
+        self.rt_add_row_btn = QtWidgets.QPushButton("Thêm dòng")
+        self.rt_add_row_btn.clicked.connect(self.on_rt_add_row)
+        rt_btn_layout.addWidget(self.rt_add_row_btn, 0, 1)
+        
+        self.rt_del_btn = QtWidgets.QPushButton("Xóa dòng chọn")
+        self.rt_del_btn.clicked.connect(self.on_rt_del_row)
+        rt_btn_layout.addWidget(self.rt_del_btn, 1, 0)
+        
+        self.rt_clear_btn = QtWidgets.QPushButton("Xóa hết bảng")
+        self.rt_clear_btn.clicked.connect(self.on_rt_clear_table)
+        rt_btn_layout.addWidget(self.rt_clear_btn, 1, 1)
+        
+        self.rt_load_btn = QtWidgets.QPushButton("Tải file Mapping (JSON)")
+        self.rt_load_btn.clicked.connect(self.on_rt_load_json)
+        rt_btn_layout.addWidget(self.rt_load_btn, 2, 0)
+        
+        self.rt_save_btn = QtWidgets.QPushButton("Lưu cấu hình Mapping (JSON)")
+        self.rt_save_btn.clicked.connect(self.on_rt_save_json)
+        rt_btn_layout.addWidget(self.rt_save_btn, 2, 1)
+        rt_layout.addLayout(rt_btn_layout)
+        
+        rt_opts = QtWidgets.QHBoxLayout()
+        self.rt_maintain_offset_cb = QtWidgets.QCheckBox("Maintain Offset (Snap vị trí)")
+        self.rt_maintain_offset_cb.setChecked(True)
+        rt_opts.addWidget(self.rt_maintain_offset_cb)
+        self.rt_smart_bake_cb = QtWidgets.QCheckBox("Smart Bake (Timing nguồn)")
+        self.rt_smart_bake_cb.setChecked(True)
+        rt_opts.addWidget(self.rt_smart_bake_cb)
+        rt_layout.addLayout(rt_opts)
+        
+        self.rt_execute_btn = QtWidgets.QPushButton("Thực hiện Retarget Animation (Bake)")
+        self.rt_execute_btn.setObjectName("accent_btn")
+        self.rt_execute_btn.setFixedHeight(30)
+        self.rt_execute_btn.clicked.connect(self.on_rt_execute)
+        rt_layout.addWidget(self.rt_execute_btn)
+        
+        tab3_layout.addWidget(rt_group)
+        
+        # GroupBox 2: Mirror Animation
+        mir_group = QtWidgets.QGroupBox("Mirror Animation (Đối xứng chuyển động)")
+        mir_layout = QtWidgets.QGridLayout(mir_group)
+        mir_layout.setContentsMargins(8, 12, 8, 8)
+        mir_layout.setSpacing(8)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Chế độ Mirror:"), 0, 0)
+        self.mir_mode_combo = QtWidgets.QComboBox()
+        self.mir_mode_combo.addItems([
+            "Swap Left && Right (Đổi bên)",
+            "Left -> Right (Trái sang Phải)",
+            "Right -> Left (Phải sang Trái)",
+            "Flip Selected (Lật đối tượng chọn)"
+        ])
+        mir_layout.addWidget(self.mir_mode_combo, 0, 1)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Phạm vi:"), 0, 2)
+        self.mir_scope_combo = QtWidgets.QComboBox()
+        self.mir_scope_combo.addItems(["Selected Controls (Đối tượng chọn)", "Whole Rig (Toàn bộ Rig)"])
+        mir_layout.addWidget(self.mir_scope_combo, 0, 3)
+        
+        mir_layout.addWidget(QtWidgets.QLabel("Thời gian:"), 1, 0)
+        self.mir_time_combo = QtWidgets.QComboBox()
+        self.mir_time_combo.addItems(["Whole Timeline (Toàn bộ)", "Selected Range (Khoảng chọn)"])
+        mir_layout.addWidget(self.mir_time_combo, 1, 1)
+
+        mir_layout.addWidget(QtWidgets.QLabel("Rig Preset:"), 2, 0)
+        self.mir_preset_combo = QtWidgets.QComboBox()
+        self.mir_preset_combo.addItems([
+            "Chuẩn L/R (L_, _L, Left, Right)",
+            "Mixamo (mixamorig:Left/Right)",
+            "Advanced Skeleton (FKArmL/R)",
+            "MetaHuman (l_hand/r_hand)",
+            "Tự định nghĩa (Custom)"
+        ])
+        self.mir_preset_combo.currentIndexChanged.connect(self.on_mir_preset_changed)
+        mir_layout.addWidget(self.mir_preset_combo, 2, 1)
+
+        self.mir_custom_left_label = QtWidgets.QLabel("Custom Left:")
+        self.mir_custom_left_txt = QtWidgets.QLineEdit()
+        self.mir_custom_left_txt.setPlaceholderText("Ví dụ: _L")
+        self.mir_custom_right_label = QtWidgets.QLabel("Custom Right:")
+        self.mir_custom_right_txt = QtWidgets.QLineEdit()
+        self.mir_custom_right_txt.setPlaceholderText("Ví dụ: _R")
+        
+        mir_layout.addWidget(self.mir_custom_left_label, 2, 2)
+        mir_layout.addWidget(self.mir_custom_left_txt, 2, 3)
+        mir_layout.addWidget(self.mir_custom_right_label, 3, 2)
+        mir_layout.addWidget(self.mir_custom_right_txt, 3, 3)
+        
+        self.mir_custom_left_label.hide()
+        self.mir_custom_left_txt.hide()
+        self.mir_custom_right_label.hide()
+        self.mir_custom_right_txt.hide()
+
+        self.mir_execute_btn = QtWidgets.QPushButton("Thực hiện Mirror Animation (Bake)")
+        self.mir_execute_btn.setObjectName("accent_btn")
+        self.mir_execute_btn.setFixedHeight(30)
+        self.mir_execute_btn.clicked.connect(self.on_mir_execute)
+        mir_layout.addWidget(self.mir_execute_btn, 4, 0, 1, 4)
+        
+        tab3_layout.addWidget(mir_group)
+        tab3_layout.addStretch()
+
+        # =========================================================================
+        # --- TAB 4: OUTPUT & SCENE (XUẤT BẢN & CẢNH QUAN) ---
+        # =========================================================================
+        tab4 = QtWidgets.QWidget(self)
+        tab4.hide()
+        tab4_layout = QtWidgets.QVBoxLayout(tab4)
+        tab4_layout.setContentsMargins(6, 10, 6, 6)
+        tab4_layout.setSpacing(10)
+        
+        t4_title = QtWidgets.QLabel("PLAYBLAST EXPORT & SCENE OPTIMIZATION")
+        t4_title.setAlignment(QtCore.Qt.AlignCenter)
+        t4_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab4_layout.addWidget(t4_title)
+        
+        # GroupBox 1: Playblast Exporter
+        pb_group = QtWidgets.QGroupBox("Playblast Exporter (Xuất video review)")
+        pb_layout = QtWidgets.QGridLayout(pb_group)
+        pb_layout.setContentsMargins(8, 12, 8, 8)
+        pb_layout.setSpacing(8)
+        
+        pb_layout.addWidget(QtWidgets.QLabel("Camera:"), 0, 0)
+        self.camera_combo = QtWidgets.QComboBox()
+        pb_layout.addWidget(self.camera_combo, 0, 1)
+        
+        pb_layout.addWidget(QtWidgets.QLabel("Định dạng:"), 0, 2)
+        self.pb_format_combo = QtWidgets.QComboBox()
+        self.pb_format_combo.addItems(["qt (QuickTime)", "image (Image Sequence)"])
+        pb_layout.addWidget(self.pb_format_combo, 0, 3)
+        
+        pb_layout.addWidget(QtWidgets.QLabel("Kích thước (Rộng x Cao):"), 1, 0)
+        dim_layout = QtWidgets.QHBoxLayout()
+        self.pb_width_spin = QtWidgets.QSpinBox()
+        self.pb_width_spin.setRange(128, 4096)
+        self.pb_width_spin.setValue(1920)
+        dim_layout.addWidget(self.pb_width_spin)
+        
+        dim_layout.addWidget(QtWidgets.QLabel("x"))
+        self.pb_height_spin = QtWidgets.QSpinBox()
+        self.pb_height_spin.setRange(128, 4096)
+        self.pb_height_spin.setValue(1080)
+        dim_layout.addWidget(self.pb_height_spin)
+        pb_layout.addLayout(dim_layout, 1, 1)
+        
+        pb_layout.addWidget(QtWidgets.QLabel("Tỉ lệ (Scale):"), 1, 2)
+        self.pb_scale_spin = QtWidgets.QDoubleSpinBox()
+        self.pb_scale_spin.setRange(0.1, 1.0)
+        self.pb_scale_spin.setValue(1.0)
+        self.pb_scale_spin.setSingleStep(0.1)
+        pb_layout.addWidget(self.pb_scale_spin, 1, 3)
+        
+        self.pb_viewer_cb = QtWidgets.QCheckBox("Tự động mở xem video (Viewer)")
+        self.pb_viewer_cb.setChecked(True)
+        pb_layout.addWidget(self.pb_viewer_cb, 2, 0, 1, 2)
+        
+        self.pb_overwrite_cb = QtWidgets.QCheckBox("Ghi đè tệp cũ mà không hỏi")
+        self.pb_overwrite_cb.setChecked(True)
+        pb_layout.addWidget(self.pb_overwrite_cb, 2, 2, 1, 2)
+        
+        self.multi_cam_cb = QtWidgets.QCheckBox("Quay hàng loạt (Multi-Camera)")
+        self.multi_cam_cb.setChecked(False)
+        self.multi_cam_cb.toggled.connect(self.on_toggle_multi_cam)
+        pb_layout.addWidget(self.multi_cam_cb, 3, 0, 1, 4)
+        
+        self.camera_list_widget = QtWidgets.QListWidget()
+        self.camera_list_widget.setFixedHeight(80)
+        self.camera_list_widget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.camera_list_widget.hide()
+        pb_layout.addWidget(self.camera_list_widget, 4, 0, 1, 4)
+        
+        self.refresh_cam_btn = QtWidgets.QPushButton("Quét lại Cameras")
+        self.refresh_cam_btn.setFixedHeight(22)
+        self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
+        self.refresh_cam_btn.hide()
+        pb_layout.addWidget(self.refresh_cam_btn, 5, 0, 1, 4)
+        
+        self.pb_execute_btn = QtWidgets.QPushButton("Thực hiện Playblast")
+        self.pb_execute_btn.setObjectName("accent_btn")
+        self.pb_execute_btn.setFixedHeight(30)
+        self.pb_execute_btn.clicked.connect(self.on_run_playblast)
+        pb_layout.addWidget(self.pb_execute_btn, 6, 0, 1, 4)
+        
+        tab4_layout.addWidget(pb_group)
+        
+        # GroupBox 2: Scene Management Utilities
+        scene_group = QtWidgets.QGroupBox("Scene Utilities (Quản lý cảnh)")
+        scene_layout = QtWidgets.QGridLayout(scene_group)
+        scene_layout.setContentsMargins(8, 12, 8, 8)
+        scene_layout.setSpacing(8)
+        
+        self.toggle_graph_btn = QtWidgets.QPushButton("Graph Editor (Bật/Tắt)")
+        self.toggle_graph_btn.setFixedHeight(28)
+        self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
+        scene_layout.addWidget(self.toggle_graph_btn, 0, 0)
+        
+        self.toggle_ref_btn = QtWidgets.QPushButton("Reference Editor (Bật/Tắt)")
+        self.toggle_ref_btn.setFixedHeight(28)
+        self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
+        scene_layout.addWidget(self.toggle_ref_btn, 0, 1)
+        
+        self.save_inc_btn = QtWidgets.QPushButton("Save Increment")
+        self.save_inc_btn.setFixedHeight(28)
+        self.save_inc_btn.clicked.connect(self.on_save_increment)
+        scene_layout.addWidget(self.save_inc_btn, 1, 0)
+        
+        self.save_up_ver_btn = QtWidgets.QPushButton("Save Up Version")
+        self.save_up_ver_btn.setFixedHeight(28)
+        self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
+        scene_layout.addWidget(self.save_up_ver_btn, 1, 1)
+
+        self.fix_shader_btn = QtWidgets.QPushButton("Fix Lost Shader (Xanh lưới)")
+        self.fix_shader_btn.setFixedHeight(28)
+        self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
+        scene_layout.addWidget(self.fix_shader_btn, 2, 0)
+        
+        self.clean_folder_btn = QtWidgets.QPushButton("Clean Folder (Dọn dẹp scenes)")
+        self.clean_folder_btn.setFixedHeight(28)
+        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
+        scene_layout.addWidget(self.clean_folder_btn, 2, 1)
+        
+        tab4_layout.addWidget(scene_group)
+        tab4_layout.addStretch()
+
+        # =========================================================================
+        # --- TAB 5: LAUNCHERS (KHỞI CHẠY NHANH) ---
+        # =========================================================================
+        tab5 = QtWidgets.QWidget(self)
+        tab5.hide()
+        tab5_layout = QtWidgets.QVBoxLayout(tab5)
+        tab5_layout.setContentsMargins(6, 10, 6, 6)
+        tab5_layout.setSpacing(10)
+        
+        t5_title = QtWidgets.QLabel("QUICK START THIRD-PARTY PLUGINS")
+        t5_title.setAlignment(QtCore.Qt.AlignCenter)
+        t5_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab5_layout.addWidget(t5_title)
+        
+        launch_group = QtWidgets.QGroupBox("Khởi chạy ứng dụng (Quick Launchers)")
+        launch_layout = QtWidgets.QVBoxLayout(launch_group)
+        launch_layout.setContentsMargins(8, 12, 8, 8)
+        launch_layout.setSpacing(10)
+        
+        self.launch_studiolibrary_btn = QtWidgets.QPushButton("Khởi động Studio Library")
+        self.launch_studiolibrary_btn.setFixedHeight(30)
+        self.launch_studiolibrary_btn.clicked.connect(self.on_launch_studiolibrary)
+        launch_layout.addWidget(self.launch_studiolibrary_btn)
+        
+        self.launch_dwpicker_btn = QtWidgets.QPushButton("Khởi động DWPicker")
+        self.launch_dwpicker_btn.setFixedHeight(30)
+        self.launch_dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
+        launch_layout.addWidget(self.launch_dwpicker_btn)
+        
+        self.launch_tweenmachine_btn = QtWidgets.QPushButton("Khởi động Tween Machine")
+        self.launch_tweenmachine_btn.setFixedHeight(30)
+        self.launch_tweenmachine_btn.clicked.connect(self.on_launch_tweenmachine)
+        launch_layout.addWidget(self.launch_tweenmachine_btn)
+        
+        self.launch_atools_btn = QtWidgets.QPushButton("Khởi động aTools Anim School")
+        self.launch_atools_btn.setFixedHeight(30)
+        self.launch_atools_btn.clicked.connect(self.on_launch_atools)
+        launch_layout.addWidget(self.launch_atools_btn)
+        
+        self.launch_animo_btn = QtWidgets.QPushButton("Khởi động Animo (Cụm Công cụ Anim)")
+        self.launch_animo_btn.setFixedHeight(30)
+        self.launch_animo_btn.clicked.connect(self.on_launch_animo)
+        launch_layout.addWidget(self.launch_animo_btn)
+        
+        tab5_layout.addWidget(launch_group)
+        
+        shelf_group = QtWidgets.QGroupBox("Thanh công cụ nhanh (Shelf)")
+        shelf_layout = QtWidgets.QVBoxLayout(shelf_group)
+        shelf_layout.setContentsMargins(8, 12, 8, 8)
+        shelf_layout.setSpacing(10)
+        
+        self.create_shelf_btn = QtWidgets.QPushButton("✨ Tạo / Cập nhật Shelf Animeow")
+        self.create_shelf_btn.setObjectName("accent_btn")
+        self.create_shelf_btn.setFixedHeight(30)
+        self.create_shelf_btn.clicked.connect(self.on_create_custom_shelf)
+        shelf_layout.addWidget(self.create_shelf_btn)
+        
+        tab5_layout.addWidget(shelf_group)
+        tab5_layout.addStretch()
+
+        # =========================================================================
+        # --- ADD TABS TO TABWIDGET ---
+        # =========================================================================
+        if self.standalone_tab is not None:
+            if self.standalone_tab == 0:
+                self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+            elif self.standalone_tab == 1:
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
+            elif self.standalone_tab == 2:
+                self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
+            elif self.standalone_tab == 3:
+                self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
+            elif self.standalone_tab == "arc_tracker":
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "🎨 Arc Tracker  ")
+                # Ẩn tiêu đề và các công cụ Curve khác, chỉ chừa lại Arc Tracker
+                try:
+                    self.t2_title.hide()
+                    self.curve_group.hide()
+                except Exception:
+                    pass
+            elif self.standalone_tab == "round_tool":
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "🔢 Làm tròn số  ")
+                # Ẩn tiêu đề, Arc Tracker và nút Euler Filter, đổi tên GroupBox
+                try:
+                    self.t2_title.hide()
+                    self.at_group.hide()
+                    self.euler_filter_btn.hide()
+                    self.curve_group.setTitle("Công cụ làm tròn số")
+                except Exception:
+                    pass
+            self.tab_widget.tabBar().hide()
+        else:
+            self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab5), "🚀 Launchers  ")
+    # --- HÀNH ĐỘNG DỮ LIỆU ---
 
     def load_settings(self):
-        """Tải lại các thiết lập trước đó từ optionVar"""
-        if cmds.optionVar(exists=self.OP_SOURCE_DIR):
-            saved_dir = cmds.optionVar(query=self.OP_SOURCE_DIR)
-            if os.path.exists(saved_dir):
-                self.src_dir_txt.setText(saved_dir)
-                self.scan_source_directory(saved_dir)
-                
-        if cmds.optionVar(exists=self.OP_MASTER_SCENE):
-            saved_master = cmds.optionVar(query=self.OP_MASTER_SCENE)
-            if os.path.exists(saved_master):
-                self.master_path_txt.setText(saved_master)
-                
-        if cmds.optionVar(exists=self.OP_OUTPUT_FILE):
-            saved_out = cmds.optionVar(query=self.OP_OUTPUT_FILE)
-            self.out_path_txt.setText(saved_out)
+        if cmds.optionVar(exists=self.OP_TARGET):
+            self.target_txt.setText(cmds.optionVar(query=self.OP_TARGET))
+        if cmds.optionVar(exists=self.OP_OWNER):
+            self.owner_txt.setText(cmds.optionVar(query=self.OP_OWNER))
+        if cmds.optionVar(exists=self.OP_STEP):
+            self.bake_step_spin.setValue(cmds.optionVar(query=self.OP_STEP))
+        if cmds.optionVar(exists=self.OP_SMART_CLEAN):
+            self.smart_clean_cb.setChecked(bool(cmds.optionVar(query=self.OP_SMART_CLEAN)))
+        if cmds.optionVar(exists=self.OP_THRESHOLD):
+            self.threshold_spin.setValue(cmds.optionVar(query=self.OP_THRESHOLD))
+
+        # Khởi tạo danh sách camera trước
+        self.on_refresh_cameras()
+        if cmds.optionVar(exists=self.OP_PB_CAMERA):
+            cam = cmds.optionVar(query=self.OP_PB_CAMERA)
+            idx = self.camera_combo.findText(cam)
+            if idx >= 0:
+                self.camera_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_PB_FORMAT):
+            fmt = cmds.optionVar(query=self.OP_PB_FORMAT)
+            idx = self.pb_format_combo.findText(fmt)
+            if idx >= 0:
+                self.pb_format_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_PB_WIDTH):
+            self.pb_width_spin.setValue(cmds.optionVar(query=self.OP_PB_WIDTH))
+        if cmds.optionVar(exists=self.OP_PB_HEIGHT):
+            self.pb_height_spin.setValue(cmds.optionVar(query=self.OP_PB_HEIGHT))
+        if cmds.optionVar(exists=self.OP_PB_SCALE):
+            self.pb_scale_spin.setValue(cmds.optionVar(query=self.OP_PB_SCALE))
+        if cmds.optionVar(exists=self.OP_PB_VIEWER):
+            self.pb_viewer_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_VIEWER)))
+        if cmds.optionVar(exists=self.OP_PB_OVERWRITE):
+            self.pb_overwrite_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_OVERWRITE)))
             
-        if cmds.optionVar(exists=self.OP_TIME_MODE):
-            mode_idx = cmds.optionVar(query=self.OP_TIME_MODE)
-            self.time_mode_combo.setCurrentIndex(mode_idx)
+        if cmds.optionVar(exists=self.OP_PB_MULTI_CAM):
+            self.multi_cam_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_MULTI_CAM)))
             
-        if cmds.optionVar(exists=self.OP_START_FRAME):
-            start_f = cmds.optionVar(query=self.OP_START_FRAME)
-            self.start_frame_spin.setValue(start_f)
+        if cmds.optionVar(exists=self.OP_PB_MULTI_CAMS_LIST):
+            saved_cams = cmds.optionVar(query=self.OP_PB_MULTI_CAMS_LIST).split(";")
+            for i in range(self.camera_list_widget.count()):
+                item = self.camera_list_widget.item(i)
+                if item.text() in saved_cams:
+                    item.setCheckState(QtCore.Qt.Checked)
+                    
+        # Arc Tracker Settings
+        if cmds.optionVar(exists=self.OP_AT_SHOW_TICKS):
+            self.at_show_ticks_cb.setChecked(bool(cmds.optionVar(query=self.OP_AT_SHOW_TICKS)))
+        if cmds.optionVar(exists=self.OP_AT_SHOW_KEYS):
+            self.at_show_keys_cb.setChecked(bool(cmds.optionVar(query=self.OP_AT_SHOW_KEYS)))
+        if cmds.optionVar(exists=self.OP_AT_TICK_SIZE):
+            self.at_tick_size_spin.setValue(cmds.optionVar(query=self.OP_AT_TICK_SIZE))
             
-        if cmds.optionVar(exists=self.OP_BG_MODE):
-            bg_val = cmds.optionVar(query=self.OP_BG_MODE)
-            self.bg_mode_cb.setChecked(bool(bg_val))
+        # World Bake Settings
+        if cmds.optionVar(exists=self.OP_WB_CHANNELS):
+            fmt = cmds.optionVar(query=self.OP_WB_CHANNELS)
+            idx = self.wb_channels_combo.findText(fmt)
+            if idx >= 0:
+                self.wb_channels_combo.setCurrentIndex(idx)
+        if cmds.optionVar(exists=self.OP_WB_STEP):
+            self.wb_step_spin.setValue(cmds.optionVar(query=self.OP_WB_STEP))
+        if cmds.optionVar(exists=self.OP_WB_SMART_CLEAN):
+            self.wb_smart_clean_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_SMART_CLEAN)))
+            
+        # Round Tool Settings
+        if cmds.optionVar(exists=self.OP_RT_PRECISION):
+            self.round_precision_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_PRECISION))
+        if cmds.optionVar(exists=self.OP_RT_TARGET):
+            self.round_target_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_TARGET))
 
     def save_settings(self):
-        """Lưu cấu hình hiện tại vào optionVar"""
-        cmds.optionVar(stringValue=(self.OP_SOURCE_DIR, self.src_dir_txt.text()))
-        cmds.optionVar(stringValue=(self.OP_MASTER_SCENE, self.master_path_txt.text()))
-        cmds.optionVar(stringValue=(self.OP_OUTPUT_FILE, self.out_path_txt.text()))
-        cmds.optionVar(intValue=(self.OP_TIME_MODE, self.time_mode_combo.currentIndex()))
-        cmds.optionVar(intValue=(self.OP_START_FRAME, self.start_frame_spin.value()))
-        cmds.optionVar(intValue=(self.OP_BG_MODE, int(self.bg_mode_cb.isChecked())))
+        cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
+        cmds.optionVar(stringValue=(self.OP_OWNER, self.owner_txt.text()))
+        cmds.optionVar(intValue=(self.OP_STEP, self.bake_step_spin.value()))
+        cmds.optionVar(intValue=(self.OP_SMART_CLEAN, int(self.smart_clean_cb.isChecked())))
+        cmds.optionVar(floatValue=(self.OP_THRESHOLD, self.threshold_spin.value()))
 
-    def on_browse_source_dir(self):
-        current = self.src_dir_txt.text() or "Z:\\"
-        path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn thư mục chứa các file Shot con", current)
-        if path:
-            norm_path = os.path.normpath(path)
-            self.src_dir_txt.setText(norm_path)
-            self.scan_source_directory(norm_path)
-            self.save_settings()
-
-    def scan_source_directory(self, path):
-        """Quét và tìm các file cảnh .ma hoặc .mb trong thư mục"""
-        self.shots_list.clear()
-        if not path or not os.path.exists(path):
-            return
-            
-        files = []
-        for item in os.listdir(path):
-            if item.lower().endswith(".ma") or item.lower().endswith(".mb"):
-                files.append(item)
-                
-        # Sắp xếp theo tên file (Shot01, Shot02...)
-        files = sorted(files)
+        # Lưu cấu hình Playblast
+        cmds.optionVar(stringValue=(self.OP_PB_CAMERA, self.camera_combo.currentText()))
+        cmds.optionVar(stringValue=(self.OP_PB_FORMAT, self.pb_format_combo.currentText()))
+        cmds.optionVar(intValue=(self.OP_PB_WIDTH, self.pb_width_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_HEIGHT, self.pb_height_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
+        cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_PB_MULTI_CAM, int(self.multi_cam_cb.isChecked())))
         
-        for filename in files:
-            filepath = os.path.join(path, filename)
-            item = QtWidgets.QListWidgetItem(filename)
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Checked) # Check mặc định
-            item.setData(QtCore.Qt.UserRole, filepath)
-            self.shots_list.addItem(item)
-
-    def on_browse_master_scene(self):
-        current = self.master_path_txt.text() or "Z:\\"
-        file_filter = "Maya Files (*.ma *.mb);;Maya ASCII (*.ma);;Maya Binary (*.mb)"
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Chọn File Master mẫu", current, file_filter)
-        if path:
-            norm_path = os.path.normpath(path)
-            self.master_path_txt.setText(norm_path)
-            self.save_settings()
-            
-            # Gợi ý tự động tên file output nằm cùng thư mục file master
-            if not self.out_path_txt.text():
-                dirname = os.path.dirname(norm_path)
-                filename = os.path.basename(norm_path)
-                name, ext = os.path.splitext(filename)
-                suggested_out = os.path.join(dirname, "%s_Combined%s" % (name, ext))
-                self.out_path_txt.setText(os.path.normpath(suggested_out))
-
-    def on_browse_output_file(self):
-        current = self.out_path_txt.text() or "Z:\\"
-        file_filter = "Maya ASCII (*.ma);;Maya Binary (*.mb)"
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Chọn nơi lưu file kết quả", current, file_filter)
-        if path:
-            norm_path = os.path.normpath(path)
-            self.out_path_txt.setText(norm_path)
-            self.save_settings()
-
-    def on_time_mode_changed(self, index):
-        # Chỉ bật spin box nếu chọn chế độ nối đuôi tự động (Sequential Join)
-        self.start_frame_spin.setEnabled(index == 0)
-        self.save_settings()
-
-    def get_selected_shot_paths(self):
-        """Lấy danh sách các file được tick chọn"""
-        paths = []
-        for i in range(self.shots_list.count()):
-            item = self.shots_list.item(i)
+        checked_cams = []
+        for i in range(self.camera_list_widget.count()):
+            item = self.camera_list_widget.item(i)
             if item.checkState() == QtCore.Qt.Checked:
-                paths.append(item.data(QtCore.Qt.UserRole))
-        return paths
+                checked_cams.append(item.text())
+        cmds.optionVar(stringValue=(self.OP_PB_MULTI_CAMS_LIST, ";".join(checked_cams)))
+        
+        # Arc Tracker Settings
+        cmds.optionVar(intValue=(self.OP_AT_SHOW_TICKS, int(self.at_show_ticks_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_AT_SHOW_KEYS, int(self.at_show_keys_cb.isChecked())))
+        cmds.optionVar(floatValue=(self.OP_AT_TICK_SIZE, self.at_tick_size_spin.value()))
+        
+        # World Bake Settings
+        cmds.optionVar(stringValue=(self.OP_WB_CHANNELS, self.wb_channels_combo.currentText()))
+        cmds.optionVar(intValue=(self.OP_WB_STEP, self.wb_step_spin.value()))
+        cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
+        
+        # Round Tool Settings
+        cmds.optionVar(intValue=(self.OP_RT_PRECISION, self.round_precision_combo.currentIndex()))
+        cmds.optionVar(intValue=(self.OP_RT_TARGET, self.round_target_combo.currentIndex()))
 
-    def on_run_combiner(self):
-        """Thực thi gom nhóm và ghép anim"""
-        shot_files = self.get_selected_shot_paths()
-        master_scene = self.master_path_txt.text()
-        output_file = self.out_path_txt.text()
+    def on_get_target(self):
+        sel = cmds.ls(sl=True)
+        if sel:
+            self.target_txt.setText(sel[0])
+            self.save_settings()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Target!")
+
+    def on_get_owner(self):
+        sel = cmds.ls(sl=True)
+        if sel:
+            self.owner_txt.setText(sel[0])
+            self.save_settings()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Owner!")
+
+    # --- LOGIC THỰC THI ---
+
+    def on_link(self):
+        target = self.target_txt.text()
+        owner = self.owner_txt.text()
         
-        if not shot_files:
-            QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng chọn ít nhất 1 file shot con trong danh sách.")
+        # Nếu chưa gán thông tin rõ ràng, tự động sử dụng vùng chọn
+        if not target or not owner:
+            sel = cmds.ls(sl=True) or []
+            if len(sel) >= 2:
+                target = sel[0]
+                owner = sel[1]
+                self.target_txt.setText(target)
+                self.owner_txt.setText(owner)
+                self.save_settings()
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self, "Thiếu thông tin",
+                    "Vui lòng gán Target & Owner hoặc chọn ít nhất 2 đối tượng trên viewport (đầu tiên là Target, thứ hai là Owner)!"
+                )
+                return
+
+        if not cmds.objExists(target) or not cmds.objExists(owner):
+            QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Target hoặc Owner không tồn tại trong scene!")
             return
-            
-        if not master_scene or not os.path.exists(master_scene):
-            QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng chọn file Master mẫu hợp lệ.")
+
+        if target == owner:
+            QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết một đối tượng với chính nó!")
             return
+
+        use_locator = self.use_locator_cb.isChecked()
+        self.save_settings()
+
+        if use_locator:
+            # Kiểm tra xem owner đã có liên kết locator nào chưa
+            baker = smart_link.AnimationBaker(owner)
+            loc_parent, loc_child = baker.find_locator_names()
+            if loc_parent or loc_child:
+                QtWidgets.QMessageBox.warning(
+                    self, "Liên kết đã tồn tại",
+                    "Đối tượng này đã có liên kết locator rồi. Hãy thực hiện Bake & Clean trước khi tạo liên kết mới!"
+                )
+                return
+
+            # Tiến hành tạo Smart Link
+            manager = smart_link.SmartLinkManager(owner, target)
+            has_anim = manager.detect_existing_animation()
             
-        if not output_file:
-            QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng chọn đường dẫn lưu file kết quả.")
-            return
-            
-        # Xác định chế độ thời gian
-        time_mode = "sequential" if self.time_mode_combo.currentIndex() == 0 else "keep_frames"
-        start_frame = self.start_frame_spin.value()
+            s_time = cmds.playbackOptions(q=True, minTime=True)
+            e_time = cmds.playbackOptions(q=True, maxTime=True)
+            curr_time = cmds.currentTime(q=True)
+
+            loc_temp = None
+            if has_anim:
+                print(u"[SmartLink] Đang ghi hình chuyển động cũ của %s..." % owner)
+                loc_temp = manager.record_world_animation(s_time, e_time)
+                manager.clear_owner_keyframes()
+                cmds.currentTime(curr_time, edit=True)
+
+            # Khởi tạo locator
+            manager.create_locator_pair()
+            manager.apply_constraint_to_target()
+            manager.apply_constraint_to_owner()
+
+            # Chuyển anim nếu có
+            if has_anim and loc_temp:
+                manager.match_animation_to_child(loc_temp, s_time, e_time)
+                cmds.currentTime(curr_time, edit=True)
+                smart_link.SmartLinkManager.cleanup_temp(loc_temp)
+                manager.reset_owner_transforms()
+
+            print(u"[SmartLink] Đã liên kết thành công %s đi theo %s thông qua cặp Locator." % (owner, target))
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã tạo liên kết Locator thành công!")
+
+        else:
+            # Gán trực tiếp không qua locator
+            cmds.parentConstraint(target, owner, maintainOffset=True)
+            try:
+                cmds.scaleConstraint(target, owner, maintainOffset=True)
+            except:
+                pass
+            print(u"[SmartLink] Đã liên kết trực tiếp %s đi theo %s." % (owner, target))
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã tạo liên kết trực tiếp thành công!")
+
+    def on_switch_target(self):
+        owner = self.owner_txt.text()
+        if not owner:
+            sel = cmds.ls(sl=True)
+            if sel:
+                owner = sel[0]
+            else:
+                QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn vật bị dẫn (Owner)!")
+                return
+
+        new_target = self.target_txt.text()
+        if not new_target or not cmds.objExists(new_target):
+            # Nếu trống, thử lấy vật chọn đầu tiên không phải owner
+            sel = cmds.ls(sl=True) or []
+            possible = [s for s in sel if s != owner]
+            if possible:
+                new_target = possible[0]
+                self.target_txt.setText(new_target)
+                self.save_settings()
+            else:
+                QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn hoặc gán Target mới để chuyển đổi!")
+                return
+
+        curr_time = cmds.currentTime(q=True)
+        switcher = smart_link.SpaceSwitcher(owner, curr_time)
+        success = switcher.switch_to_target(new_target)
         
+        if success:
+            QtWidgets.QMessageBox.information(
+                self, "Chuyển Driver Thành công",
+                "Đã chuyển đổi driver của %s sang %s thành công tại frame %d." % (owner, new_target, curr_time)
+            )
+        else:
+            QtWidgets.QMessageBox.critical(
+                self, "Thất bại",
+                "Không thể chuyển driver. Vui lòng kiểm tra lại xem đối tượng đã có liên kết locator chưa."
+            )
+
+    def on_bake_clean(self):
+        owner = self.owner_txt.text()
+        if not owner:
+            sel = cmds.ls(sl=True)
+            if sel:
+                owner = sel[0]
+                self.owner_txt.setText(owner)
+                self.save_settings()
+            else:
+                QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn đối tượng cần Bake!")
+                return
+
+        if not cmds.objExists(owner):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Vật thể %s không tồn tại!" % owner)
+            return
+
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận Bake & Clean",
+            "Sẽ Bake chuyển động từ locator/constraint vào keyframe của %s và dọn dẹp các locator/constraint thừa.\nBạn có chắc chắn?" % owner,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+
+        self.save_settings()
+        s_time = cmds.playbackOptions(q=True, minTime=True)
+        e_time = cmds.playbackOptions(q=True, maxTime=True)
+        step = self.bake_step_spin.value()
+        smart_clean = self.smart_clean_cb.isChecked()
+        threshold = self.threshold_spin.value()
+
+        try:
+            baker = smart_link.AnimationBaker(owner)
+            baker.bake(
+                start_frame=s_time,
+                end_frame=e_time,
+                step=step,
+                smart_clean=smart_clean,
+                clean_threshold=threshold
+            )
+            print(u"[SmartLink] Đã bake và dọn dẹp liên kết cho %s thành công." % owner)
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã Bake và dọn dẹp thành công chuyển động cho %s!" % owner)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi Bake", "Lỗi xảy ra khi bake: %s" % smart_link.exception_to_unicode(e))
+
+    def on_launch_studiolibrary(self):
+        ensure_scripts_2022_path()
+        try:
+            import studiolibrary
+            window = getattr(studiolibrary, "_window", None)
+            if window is not None:
+                try:
+                    window.close()
+                    studiolibrary._window = None
+                    print("[StudioLibrary] Da dong Studio Library.")
+                    return
+                except Exception:
+                    pass
+            studiolibrary._window = None
+            studiolibrary.main()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Studio Library:\n%s" % str(e))
+
+    def on_launch_dwpicker(self):
+        ensure_scripts_2022_path()
+        try:
+            import dwpicker
+            from dwpicker.main import WINDOW_CONTROL_NAME
+            if cmds.workspaceControl(WINDOW_CONTROL_NAME, exists=True):
+                dwpicker.close()
+                print("[DWPicker] Da dong DWPicker.")
+            else:
+                dwpicker.show()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy DWPicker:\n%s" % str(e))
+
+    def on_launch_tweenmachine(self):
+        path = ensure_scripts_2022_path()
+        if not path:
+            return
+            
+        tween_mel_path = os.path.join(path, "tweenMachine.mel").replace("\\", "/")
+        if not os.path.exists(tween_mel_path):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy file tweenMachine.mel tại:\n%s" % tween_mel_path)
+            return
+            
+        # Thêm thư mục chứa tweenMachine vào MAYA_SCRIPT_PATH của Maya
+        try:
+            current_script_path = os.environ.get("MAYA_SCRIPT_PATH", "")
+            if path not in current_script_path:
+                os.environ["MAYA_SCRIPT_PATH"] = path + os.pathsep + current_script_path
+                # Đồng bộ lại với Maya
+                import maya.mel as mel
+                mel.eval("rehash;")
+        except Exception:
+            pass
+            
+        try:
+            import maya.mel as mel
+            if cmds.window("tweenMachineWin", exists=True):
+                cmds.deleteUI("tweenMachineWin")
+                print("[TweenMachine] Da dong Tween Machine.")
+            else:
+                mel.eval('source "%s"; tweenMachine;' % tween_mel_path)
+                print("[TweenMachine] Da mo Tween Machine.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Tween Machine:\n%s" % str(e))
+
+    def on_launch_atools(self):
+        ensure_scripts_2022_path()
+        try:
+            from aTools.animTools.animBar import animBarUI
+            # aTools co ho tro mode="toggle" tich hop san
+            animBarUI.show(mode="toggle")
+        except Exception as e:
+            try:
+                import aTools.general.main as aToolsMain
+                aToolsMain.show()
+            except Exception as e2:
+                QtWidgets.QMessageBox.critical(
+                    self, "Lỗi", 
+                    "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
+                )
+
+    def on_launch_animo(self):
+        thirdparty_dir = ensure_scripts_2022_path()
+        if not thirdparty_dir:
+            return
+            
+        animo_data_path = os.path.join(thirdparty_dir, "Animo_v5.9.6", "Animo_v5.9.6", "Animo_Data")
+        if not os.path.exists(animo_data_path):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy thư mục Animo_Data tại:\n%s" % animo_data_path)
+            return
+            
+        # Kiểm tra xem Animo đang mở hay không để thực hiện Bật/Tắt (Toggle)
+        animo_visible = False
+        if cmds.workspaceControl('animo', exists=True):
+            animo_visible = cmds.workspaceControl('animo', query=True, visible=True)
+            
+        # Kiểm tra Qt Toolbar của Animo
+        qt_toolbar_visible = False
+        existing_qt_toolbar = None
+        try:
+            import maya.OpenMayaUI as mui
+            from PySide2 import QtWidgets as QtW
+            from shiboken2 import wrapInstance
+            maya_main_ptr = mui.MQtUtil.mainWindow()
+            if maya_main_ptr:
+                maya_main = wrapInstance(int(maya_main_ptr), QtW.QMainWindow)
+                existing_qt_toolbar = maya_main.findChild(QtW.QWidget, "animo_qt_toolbar")
+                if existing_qt_toolbar and existing_qt_toolbar.isVisible():
+                    qt_toolbar_visible = True
+        except Exception:
+            pass
+
+        if animo_visible or qt_toolbar_visible:
+            # --- ĐÓNG ANIMO ---
+            if cmds.workspaceControl('animo', exists=True):
+                cmds.workspaceControl('animo', edit=True, visible=False)
+            if existing_qt_toolbar:
+                try:
+                    existing_qt_toolbar.hide()
+                except Exception:
+                    pass
+            print("[Animo] Đã đóng Animo.")
+        else:
+            # --- MỞ ANIMO ---
+            if cmds.workspaceControl('animo', exists=True):
+                cmds.deleteUI('animo', control=True)
+            if existing_qt_toolbar:
+                try:
+                    existing_qt_toolbar.hide()
+                    existing_qt_toolbar.setParent(None)
+                    existing_qt_toolbar.deleteLater()
+                except Exception:
+                    pass
+                    
+            # Xoá cache sys.modules
+            mods_to_delete = [mod for mod in list(sys.modules.keys()) 
+                              if 'Animo' in mod or 'animo' in mod or 'styleMod' in mod or 'barMod' in mod]
+            for mod in mods_to_delete:
+                del sys.modules[mod]
+                
+            # Thêm các đường dẫn nạp vào sys.path
+            animo_launcher_dir = os.path.join(animo_data_path, "Animo_Launcher")
+            for p in [animo_data_path, animo_launcher_dir]:
+                if p not in sys.path:
+                    sys.path.insert(0, p)
+                    
+            # Load và thực thi khởi động UI Animo
+            try:
+                launcher_file = os.path.join(animo_launcher_dir, "Animo_Launcher.py")
+                try:
+                    import importlib.util
+                    spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
+                    launcher_module = importlib.util.module_from_spec(spec)
+                    sys.modules["Animo_Launcher_Module"] = launcher_module
+                    spec.loader.exec_module(launcher_module)
+                except ImportError:
+                    import imp
+                    launcher_module = imp.load_source("Animo_Launcher_Module", launcher_file)
+                _tb = launcher_module.toolbar()
+                _tb.startUI()
+                print("[Animo] Đã khởi chạy Animo thành công.")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
+
+    def on_toggle_multi_cam(self, state):
+        is_multi = (state == QtCore.Qt.Checked)
+        self.camera_combo.setVisible(not is_multi)
+        self.refresh_cam_btn.setVisible(not is_multi)
+        self.camera_list_widget.setVisible(is_multi)
+
+    def on_refresh_cameras(self):
+        """Làm mới danh sách camera trong scene"""
+        previously_checked = []
+        for i in range(self.camera_list_widget.count()):
+            item = self.camera_list_widget.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                previously_checked.append(item.text())
+                
+        current_cam = self.camera_combo.currentText()
+        self.camera_combo.clear()
+        self.camera_list_widget.clear()
+        
+        cams = cmds.ls(type="camera")
+        cam_transforms = []
+        for cam in cams:
+            parent = cmds.listRelatives(cam, parent=True)
+            if parent:
+                cam_transforms.append(parent[0])
+                
+        cam_transforms = sorted(list(set(cam_transforms)))
+        startup_cams = ["persp", "top", "front", "side"]
+        custom_cams = [c for c in cam_transforms if c not in startup_cams]
+        sorted_cams = custom_cams + startup_cams
+        
+        # Nạp Combobox
+        self.camera_combo.addItems(sorted_cams)
+        
+        # Nạp ListWidget checkable
+        for cam in sorted_cams:
+            item = QtWidgets.QListWidgetItem(cam)
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            if cam in previously_checked:
+                item.setCheckState(QtCore.Qt.Checked)
+            else:
+                item.setCheckState(QtCore.Qt.Unchecked)
+            self.camera_list_widget.addItem(item)
+            
+        idx = self.camera_combo.findText(current_cam)
+        if idx >= 0:
+            self.camera_combo.setCurrentIndex(idx)
+
+    def on_run_playblast(self):
+        """Thực thi quay thử Playblast (hỗ trợ camera đơn hoặc hàng loạt camera)"""
         self.save_settings()
         
-        if self.bg_mode_cb.isChecked():
-            # CHẾ ĐỘ CHẠY NGẦM (Không gây đóng cảnh hiện tại)
-            self.run_in_background(shot_files, master_scene, output_file, time_mode, start_frame)
+        fmt_text = self.pb_format_combo.currentText()
+        format_ext = "avi" if "avi" in fmt_text.lower() else "qt"
+        
+        width = self.pb_width_spin.value()
+        height = self.pb_height_spin.value()
+        percent = self.pb_scale_spin.value()
+        viewer = self.pb_viewer_cb.isChecked()
+        overwrite = self.pb_overwrite_cb.isChecked()
+        
+        is_multi = self.multi_cam_cb.isChecked()
+        
+        target_cameras = []
+        if is_multi:
+            for i in range(self.camera_list_widget.count()):
+                item = self.camera_list_widget.item(i)
+                if item.checkState() == QtCore.Qt.Checked:
+                    target_cameras.append(item.text())
+            if not target_cameras:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một camera trong danh sách để quay hàng loạt!")
+                return
         else:
-            # CHẾ ĐỘ CHẠY TRỰC TIẾP (Cảnh báo đóng cảnh hiện tại)
+            single_cam = self.camera_combo.currentText()
+            if not single_cam:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy camera khả dụng!")
+                return
+            target_cameras = [single_cam]
+            
+        # Xác nhận nếu xuất nhiều camera cùng lúc
+        if len(target_cameras) > 1:
             res = QtWidgets.QMessageBox.question(
-                self, "Xác nhận ghép nối",
-                "Công cụ sẽ đóng cảnh hiện tại để mở tuần tự các shot con và xuất anim.\nBạn đã lưu công việc hiện tại chưa?",
+                self, "Xác nhận quay hàng loạt",
+                "Bạn có chắc chắn muốn chạy Playblast cho %d camera đã chọn?" % len(target_cameras),
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
             if res == QtWidgets.QMessageBox.No:
                 return
+
+        success_files = []
+        failed_cameras = []
+        
+        # Hiển thị QProgressDialog để báo cáo tiến trình
+        progress_dialog = QtWidgets.QProgressDialog("Đang xuất Playblast...", "Hủy", 0, len(target_cameras), self)
+        progress_dialog.setWindowTitle("Playblast Hàng Loạt")
+        progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
+        progress_dialog.setMinimumDuration(0)
+        
+        pbm = playblast.PlayblastManager()
+        
+        for idx, cam in enumerate(target_cameras):
+            if progress_dialog.wasCanceled():
+                break
                 
-            # Thực hiện ghép nối trực tiếp
-            combiner = anim_combiner.AnimationCombiner(
-                shot_files=shot_files,
-                master_scene_path=master_scene,
-                output_path=output_file,
-                time_mode=time_mode,
-                master_start_frame=start_frame
-            )
-            success = combiner.run()
+            progress_dialog.setLabelText("Đang quay camera: %s (%d/%d)..." % (cam, idx + 1, len(target_cameras)))
+            progress_dialog.setValue(idx)
+            QtCore.QCoreApplication.processEvents()
             
-            if success:
-                # Đọc file kết quả đè lên luôn để hiển thị trực tiếp
-                try:
-                    cmds.file(output_file, open=True, force=True)
-                except:
-                    pass
+            try:
+                # Nếu nhiều camera, chỉ mở video cuối cùng bằng trình phát để tránh mở hàng loạt tab VLC làm đơ máy
+                should_view = viewer if len(target_cameras) == 1 else (viewer and (idx == len(target_cameras) - 1))
+                
+                output_file = pbm.run_playblast(
+                    format_ext=format_ext,
+                    percent=percent,
+                    width=width,
+                    height=height,
+                    camera=cam,
+                    viewer=should_view,
+                    overwrite=overwrite
+                )
+                success_files.append(output_file)
+            except Exception as e:
+                failed_cameras.append((cam, playblast.exception_to_unicode(e)))
+                
+        progress_dialog.setValue(len(target_cameras))
+        
+        # Báo cáo kết quả
+        if not failed_cameras:
+            if len(target_cameras) == 1:
                 QtWidgets.QMessageBox.information(
-                    self, "Thành công",
-                    "Ghép nối chuyển động hoàn thành!\nCảnh tổng hợp hiện đã được mở."
+                    self, "Thành công", 
+                    "Đã xuất Playblast thành công cho camera: %s!\nĐường dẫn:\n%s" % (target_cameras[0], success_files[0])
                 )
             else:
-                QtWidgets.QMessageBox.critical(
-                    self, "Thất bại",
-                    "Đã xảy ra lỗi trong quá trình ghép nối anim. Vui lòng kiểm tra Script Editor."
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã hoàn thành xuất Playblast hàng loạt cho %d camera thành công!\nCác tệp được lưu trong thư mục 'mov'." % len(success_files)
                 )
+        else:
+            err_msg = "Kết quả xuất Playblast:\n\n"
+            if success_files:
+                err_msg += "✅ Thành công %d camera.\n" % len(success_files)
+            err_msg += "❌ Thất bại %d camera:\n" % len(failed_cameras)
+            for f_cam, f_err in failed_cameras:
+                err_msg += "  + %s: %s\n" % (f_cam, f_err)
+            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
 
-    def run_in_background(self, shot_files, master_scene, output_file, time_mode, start_frame):
-        # 1. Tìm mayapy.exe tự động từ sys.executable
-        maya_bin_dir = os.path.dirname(sys.executable)
-        mayapy_path = os.path.join(maya_bin_dir, "mayapy.exe")
-        if not os.path.exists(mayapy_path):
-            # Try default path for Maya 2020 on Windows if sys.executable isn't standard
-            mayapy_path = "C:/Program Files/Autodesk/Maya2020/bin/mayapy.exe"
+    def on_launch_worldbake(self):
+        ensure_scripts_2022_path()
+        try:
+            is_open = False
+            for win in ['ml_worldBake', 'ml_worldBakeWin']:
+                if cmds.window(win, exists=True):
+                    cmds.deleteUI(win)
+                    is_open = True
+                    print("[WorldBake] Da dong World Bake.")
+                    
+            if not is_open:
+                import ml_worldBake
+                try:
+                    from importlib import reload
+                except ImportError:
+                    pass
+                reload(ml_worldBake)
+                ml_worldBake.ui()
+                print("[WorldBake] Da mo World Bake.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy World Bake:\n%s" % str(e))
+
+    def on_create_arc_trail(self):
+        """Tạo Arc Trail cho các vật thể đang chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể để tạo Arc Trail!")
+            return
             
-        if not os.path.exists(mayapy_path):
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        show_ticks = self.at_show_ticks_cb.isChecked()
+        show_keys = self.at_show_keys_cb.isChecked()
+        tick_size = self.at_tick_size_spin.value()
+        
+        tracker = arc_tracker.ArcTracker()
+        
+        # Bọc toàn bộ các thao tác tạo curve và locator vào một undo chunk duy nhất
+        # Tránh làm rác hàng trăm lệnh đơn lẻ trong danh sách Undo của Maya
+        cmds.undoInfo(openChunk=True, chunkName="CreateArcTrail")
+        try:
+            for obj in sel:
+                tracker.create_trail(
+                    obj=obj,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    show_ticks=show_ticks,
+                    show_keys=show_keys,
+                    tick_size=tick_size
+                )
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã tạo Arc Trail thành công cho %d vật thể!" % len(sel)
+            )
+        except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi chạy ngầm", 
-                "Không tìm thấy mayapy.exe tại đường dẫn:\n%s\nVui lòng kiểm tra lại bộ cài đặt Maya." % mayapy_path
+                self, "Lỗi vẽ Trail",
+                "Lỗi xảy ra khi vẽ Arc Trail:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_update_arc_trails(self):
+        """Cập nhật các Arc Trail hiện có (nếu chọn thì update chọn, không chọn thì update hết)"""
+        sel = cmds.ls(sl=True) or []
+        self.save_settings()
+        
+        show_ticks = self.at_show_ticks_cb.isChecked()
+        show_keys = self.at_show_keys_cb.isChecked()
+        tick_size = self.at_tick_size_spin.value()
+        
+        tracker = arc_tracker.ArcTracker()
+        
+        cmds.undoInfo(openChunk=True, chunkName="UpdateArcTrails")
+        try:
+            count = tracker.update_trails(
+                selected_objs=sel,
+                show_ticks=show_ticks,
+                show_keys=show_keys,
+                tick_size=tick_size
+            )
+            if count > 0:
+                cmds.warning("Đã cập nhật thành công %d Arc Trail!" % count)
+            else:
+                QtWidgets.QMessageBox.information(
+                    self, "Thông báo", 
+                    "Không tìm thấy Arc Trail nào hoạt động để cập nhật!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi cập nhật Trail",
+                "Lỗi xảy ra khi cập nhật Arc Trail:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_clear_selected_trails(self):
+        """Xóa trail của các vật thể đang chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn vật thể muốn xóa Arc Trail!")
+            return
+            
+        tracker = arc_tracker.ArcTracker()
+        tracker.clear_selected_trails(sel)
+        QtWidgets.QMessageBox.information(self, "Thành công", "Đã xóa Arc Trail của các vật thể được chọn!")
+
+    def on_clear_all_trails(self):
+        """Xóa sạch toàn bộ các Arc Trails"""
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận xóa",
+            "Bạn có chắc chắn muốn xóa sạch toàn bộ các Arc Trails trong scene?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+            
+        tracker = arc_tracker.ArcTracker()
+        tracker.clear_all_trails()
+        QtWidgets.QMessageBox.information(self, "Thành công", "Đã xóa sạch toàn bộ Arc Trails!")
+
+    def on_world_bake_to_locator(self):
+        """Bake vật thể được chọn sang Locator thế giới"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể để tạo World Locator!")
+            return
+            
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.wb_step_spin.value()
+        smart_clean = self.wb_smart_clean_cb.isChecked()
+        smart_bake = self.wb_smart_bake_cb.isChecked()
+        
+        idx = self.wb_channels_combo.currentIndex()
+        channels = ['both', 'translate', 'rotate'][idx]
+        
+        wbm = world_bake.WorldBakeManager()
+        
+        success_locs = []
+        try:
+            for obj in sel:
+                loc = wbm.bake_to_locator(
+                    obj=obj,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    step=step,
+                    smart_clean=smart_clean,
+                    channels=channels,
+                    smart_bake=smart_bake
+                )
+                success_locs.append(loc)
+                
+            cmds.select(success_locs)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã bake thành công %d vật thể sang Locator không gian thế giới!\nCác locator mới: %s" % (
+                    len(sel), ", ".join(success_locs))
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi World Bake",
+                "Lỗi xảy ra khi Bake sang Locator:\n%s" % world_bake.exception_to_unicode(e)
+            )
+
+    def on_world_bake_from_locator(self):
+        """Bake ngược từ Locator trở về vật thể gốc"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Locator hoặc vật thể gốc để Bake ngược trở lại!")
+            return
+            
+        self.save_settings()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.wb_step_spin.value()
+        smart_clean = self.wb_smart_clean_cb.isChecked()
+        smart_bake = self.wb_smart_bake_cb.isChecked()
+        
+        wbm = world_bake.WorldBakeManager()
+        
+        success_objs = []
+        try:
+            for item in sel:
+                obj = wbm.bake_from_locator(
+                    locator_or_obj=item,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                    step=step,
+                    smart_clean=smart_clean,
+                    smart_bake=smart_bake
+                )
+                success_objs.append(obj)
+                
+            cmds.select(success_objs)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã bake ngược thành công từ Locator về %d vật thể gốc!" % len(success_objs)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi World Bake",
+                "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
+            )
+
+    def on_create_custom_shelf(self):
+        """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
+        try:
+            shelf.create_shelf()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Không thể tạo hoặc cập nhật Shelf:\n%s" % str(e)
+            )
+
+    def on_toggle_graph_editor(self):
+        """Bật/Tắt Graph Editor"""
+        try:
+            shelf.toggle_graph_editor()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Graph Editor:\n%s" % str(e))
+
+    def on_toggle_reference_editor(self):
+        """Bật/Tắt Reference Editor"""
+        try:
+            shelf.toggle_reference_editor()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Reference Editor:\n%s" % str(e))
+
+    def on_save_increment(self):
+        """Lưu file tăng dần (Save Increment)"""
+        try:
+            shelf.save_increment()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể thực hiện Save Increment:\n%s" % str(e))
+
+    def on_save_up_version(self):
+        """Lưu file nâng Version"""
+        try:
+            shelf.save_up_version()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi nâng version:\n%s" % str(e))
+
+    def on_clean_folder(self):
+        """Dọn dẹp thư mục"""
+        try:
+            shelf.clean_folder()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % str(e))
+    def on_round_values(self):
+        """Làm tròn sñ thuûc tính hoộc keyframe"""
+        self.save_settings()
+        
+        # Lấy độ chính xác: 0 = sñ nguyên, 1 = 1 chữ sñ, 2 = 2 chữ sñ thửp phân
+        precision = self.round_precision_combo.currentIndex()
+        
+        # Lấy môi trườnđ đích
+        target_idx = self.round_target_combo.currentIndex()
+        target_map = {
+            0: 'channel_box',
+            1: 'graph_editor',
+            2: 'current_frame',
+            3: 'all_keyframes'
+        }
+        target = target_map.get(target_idx, 'channel_box')
+        
+        # Bọc trong một khối Undo chunk để animator có thể Ctrl + Z hoàn tác nhanh
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = round_tool.round_selected_values(precision, target)
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Làm tròn sñ",
+                "Lỗi xảy ra khi thực hiện làm tròn sñ:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+        # --- TEMP PIVOT CALLBACKS ---
+    def on_tp_create(self):
+        """Tạo Temp Locator tại vị trí của control được chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một Rig Control trong Viewport!")
+            return
+            
+        try:
+            loc = temp_pivot.create_temp_locator(sel)
+            cmds.select(loc)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã tạo Temp Locator: %s\nHãy di chuyển Locator này tới vị trí Pivot mới, sau đó nhấn 'Kích hoạt Pivot'." % loc
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Có lỗi xảy ra khi tạo Temp Locator:\n%s" % str(e)
+            )
+
+    def on_tp_active(self):
+        """Kích hoạt tâm xoay tạm thời"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng!")
+            return
+            
+        obj = sel[0]
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            loc = temp_pivot.active_temp_pivot(obj, start_frame, end_frame)
+            cmds.select(loc)
+            cmds.warning("Đã kích hoạt Temp Pivot thành công! Hãy diễn hoạt xoay/dịch chuyển trên locator này.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Kích hoạt Pivot",
+                "Không thể kích hoạt Temp Pivot:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_tp_release(self):
+        """Nướng ngược lại chuyển động và giải phóng tâm xoay"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng để giải phóng!")
+            return
+            
+        obj = sel[0]
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            control = temp_pivot.release_temp_pivot(obj, start_frame, end_frame)
+            cmds.select(control)
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã nướng trả chuyển động thành công về Control gốc: %s\nLocator tạm thời đã được gỡ bỏ." % control
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Giải phóng Pivot",
+                "Có lỗi xảy ra khi giải phóng Temp Pivot:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    # --- MIRROR ANIM CALLBACKS ---
+    def on_mir_execute(self):
+        """Thực hiện đối xướng chuyển động"""
+        scope_idx = self.mir_scope_combo.currentIndex()
+        
+        selected_objs = cmds.ls(sl=True) or []
+        if not selected_objs:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trong Viewport!")
+            return
+            
+        objects_to_process = []
+        if scope_idx == 0:
+            objects_to_process = selected_objs
+        else:
+            parts = selected_objs[0].split(":")
+            if len(parts) > 1:
+                ns = ":".join(parts[:-1])
+                objects_to_process = cmds.ls(ns + ":*", type="transform") or []
+            else:
+                objects_to_process = cmds.ls(type="transform") or []
+                
+        if not objects_to_process:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thớđ đối tượng nào để xử lý!")
+            return
+            
+        mode_map = {
+            0: 'swap',
+            1: 'left_to_right',
+            2: 'right_to_left',
+            3: 'flip_selected'
+        }
+        mode = mode_map.get(self.mir_mode_combo.currentIndex(), 'swap')
+        
+        time_idx = self.mir_time_combo.currentIndex()
+        time_range = None
+        if time_idx == 1:
+            time_range_slider = mel.eval("timeControl -q -range $gPlayBackSlider")
+            if time_range_slider:
+                clean_range = time_range_slider.replace('"', '').split(':')
+                if len(clean_range) == 2:
+                    time_range = (float(clean_range[0]), float(clean_range[1]))
+            
+            if not time_range:
+                time_range = (cmds.playbackOptions(q=True, minTime=True), cmds.playbackOptions(q=True, maxTime=True))
+                
+        invert_map = {
+            'translateX': self.mir_inv_tx_cb.isChecked(),
+            'translateY': self.mir_inv_ty_cb.isChecked(),
+            'translateZ': self.mir_inv_tz_cb.isChecked(),
+            'rotateX': self.mir_inv_rx_cb.isChecked(),
+            'rotateY': self.mir_inv_ry_cb.isChecked(),
+            'rotateZ': self.mir_inv_rz_cb.isChecked()
+        }
+        
+        # Naming preset
+        preset_idx = self.mir_preset_combo.currentIndex()
+        left_pat = None
+        right_pat = None
+        if preset_idx == 1: # Mixamo
+            left_pat = ["Left", "left", "mixamorig:Left"]
+            right_pat = ["Right", "right", "mixamorig:Right"]
+        elif preset_idx == 2: # Advanced Skeleton
+            left_pat = ["L_", "FKArmL", "FKForeArmL", "FKHandL", "FKLegL", "FKAnkleL"]
+            right_pat = ["R_", "FKArmR", "FKForeArmR", "FKHandR", "FKLegR", "FKAnkleR"]
+        elif preset_idx == 3: # MetaHuman
+            left_pat = ["l_", "L_", "_L", "_l", "left", "Left"]
+            right_pat = ["r_", "R_", "_R", "_r", "right", "Right"]
+        elif preset_idx == 4: # Custom
+            left_pat = [self.mir_custom_left_txt.text().strip()]
+            right_pat = [self.mir_custom_right_txt.text().strip()]
+
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = mirror_tool.execute_mirror(
+                objects=objects_to_process,
+                mode=mode,
+                time_range=time_range,
+                invert_map=invert_map,
+                left_patterns=left_pat,
+                right_patterns=right_pat
+            )
+            if success:
+                QtWidgets.QMessageBox.information(self, "Thành công", msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Mirror Animation",
+                "Có lỗi xảy ra khi thực hiện đối xướng chuyển động:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+        # --- NEW UI UX UPGRADE CALLBACKS ---
+    def on_swap_target_owner(self):
+        """Đổi bên Target và Owner cho nhau"""
+        tgt = self.target_txt.text()
+        own = self.owner_txt.text()
+        self.target_txt.setText(own)
+        self.owner_txt.setText(tgt)
+
+    def on_mir_preset_changed(self, index):
+        """Hiển thị hoặc ẩn các ô nhập Pattern tự định nghĩa"""
+        is_custom = (index == 4)
+        self.mir_custom_left_label.setVisible(is_custom)
+        self.mir_custom_left_txt.setVisible(is_custom)
+        self.mir_custom_right_label.setVisible(is_custom)
+        self.mir_custom_right_txt.setVisible(is_custom)
+
+    def on_tab_changed(self, index):
+        """Cập nhật highlight cho nút tương ứng với Tab đang mở"""
+        for i, btn in enumerate(self.compact_buttons):
+            if i == index:
+                btn.setStyleSheet("background-color: #00BCD4; color: #FFFFFF; font-size: 15px; border: none; border-radius: 4px;")
+            else:
+                btn.setStyleSheet("background-color: transparent; color: #E0E0E0; font-size: 15px; border: none; border-radius: 4px;")
+
+    def on_toggle_compact_mode(self, checked):
+        """Bật/Ẩn chế độ thu gọn Compact Mode"""
+        ctrl_name = self.WORKSPACE_CONTROL_NAME
+        if checked:
+            self.tab_widget.tabBar().hide()
+            self.compact_toolbar.show()
+            self.compact_toggle_btn.setText("⚡ Rộng")
+            self.setMinimumWidth(80)
+            
+            # Highlight currently selected tab
+            self.on_tab_changed(self.tab_widget.currentIndex())
+            
+            # Try to shrink Maya workspace control width
+            if cmds.workspaceControl(ctrl_name, exists=True):
+                try:
+                    cmds.workspaceControl(ctrl_name, edit=True, resizeWidth=150)
+                except Exception:
+                    pass
+        else:
+            self.tab_widget.tabBar().show()
+            self.compact_toolbar.hide()
+            self.compact_toggle_btn.setText("⚡ Gọn")
+            self.setMinimumWidth(320)
+            
+            # Try to expand Maya workspace control width back
+            if cmds.workspaceControl(ctrl_name, exists=True):
+                try:
+                    cmds.workspaceControl(ctrl_name, edit=True, resizeWidth=350)
+                except Exception:
+                    pass
+
+    def on_rt_item_changed(self, item):
+        """Tự động tô màu trạng thái cho control khi chỉnh sửa trong bảng"""
+        self.rt_table.blockSignals(True)
+        try:
+            text = item.text().strip()
+            if text:
+                if cmds.objExists(text):
+                    item.setForeground(QtGui.QColor("#4CAF50")) # Green
+                    item.setToolTip("Vật thể tồn tại trong Scene")
+                else:
+                    item.setForeground(QtGui.QColor("#F44336")) # Red
+                    item.setToolTip("Không tìm thấy vật thể này!")
+            else:
+                item.setForeground(QtGui.QColor("#AAAAAA"))
+        finally:
+            self.rt_table.blockSignals(False)
+
+    def refresh_rt_table_colors(self):
+        """Làm mới toàn bộ màu sắc trạng thái của các ô trong bảng"""
+        self.rt_table.blockSignals(True)
+        try:
+            for row in range(self.rt_table.rowCount()):
+                for col in [0, 1]:
+                    item = self.rt_table.item(row, col)
+                    if item:
+                        text = item.text().strip()
+                        if text:
+                            if cmds.objExists(text):
+                                item.setForeground(QtGui.QColor("#4CAF50"))
+                                item.setToolTip("Vật thể tồn tại trong Scene")
+                            else:
+                                item.setForeground(QtGui.QColor("#F44336"))
+                                item.setToolTip("Không tìm thấy vật thể này!")
+                        else:
+                            item.setForeground(QtGui.QColor("#AAAAAA"))
+        finally:
+            self.rt_table.blockSignals(False)
+
+    def on_bake_selected_ns(self):
+        """Bake đối tượng chọn theo bước 2s, 3s, 4s, 5s hoặc 1s"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng để bake!")
+            return
+            
+        step_idx = self.ns_step_combo.currentIndex()
+        steps = [2, 3, 4, 5, 1]
+        step = steps[step_idx]
+        
+        remove_constraints = self.ns_remove_constraints_cb.isChecked()
+        
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowBakeOnNs")
+        try:
+            cmds.bakeResults(
+                sel,
+                time=(start_frame, end_frame),
+                simulation=True,
+                sampleBy=step,
+                oversamplingRate=1,
+                disableImplicitControl=True,
+                preserveOutsideKeys=True,
+                sparseAnimCurveBake=False, # Không giữ cực trị thưa, tạo key đều tăm tắp
+            )
+            
+            # Nếu người dùng tích chọn Xóa Constraints, thực hiện xóa thủ công
+            if remove_constraints:
+                for obj in sel:
+                    constraints = []
+                    connections = cmds.listConnections(obj, source=True, destination=False) or []
+                    for node in connections:
+                        if cmds.nodeType(node) in [
+                            "parentConstraint", "pointConstraint", "orientConstraint", 
+                            "scaleConstraint", "aimConstraint", "poleVectorConstraint"
+                        ]:
+                            constraints.append(node)
+                    if constraints:
+                        try:
+                            cmds.delete(list(set(constraints)))
+                        except Exception:
+                            pass
+            QtWidgets.QMessageBox.information(
+                self, "Thành công", 
+                "Đã bake thành công %d đối tượng theo bước %ds." % (len(sel), step)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi thực hiện bake:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    # --- RETARGET TOOL CALLBACKS ---
+    def on_rt_get_source(self):
+        """Lấy đối tượng chọn trong Viewport điền vào cột Source"""
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn một đối tượng trong Viewport!")
+            return
+            
+        obj_name = sel[0]
+        selected_ranges = self.rt_table.selectedRanges()
+        if selected_ranges:
+            row = selected_ranges[0].topRow()
+        else:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(""))
+            
+        self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(obj_name))
+        self.rt_table.selectRow(row)
+
+    def on_rt_get_target(self):
+        """Lấy đối tượng chọn trong Viewport điền vào cột Target"""
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn một đối tượng trong Viewport!")
+            return
+            
+        obj_name = sel[0]
+        selected_ranges = self.rt_table.selectedRanges()
+        if selected_ranges:
+            row = selected_ranges[0].topRow()
+        else:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(""))
+            
+        self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(obj_name))
+        self.rt_table.selectRow(row)
+
+    def on_rt_refresh_namespaces(self):
+        namespaces = retarget_tool.get_all_namespaces()
+        self.rt_source_ns_combo.clear()
+        self.rt_target_ns_combo.clear()
+        self.rt_source_ns_combo.addItem("")
+        self.rt_target_ns_combo.addItem("")
+        for ns in namespaces:
+            self.rt_source_ns_combo.addItem(ns)
+            self.rt_target_ns_combo.addItem(ns)
+
+    def on_rt_auto_map(self):
+        source_ns = self.rt_source_ns_combo.currentText()
+        target_ns = self.rt_target_ns_combo.currentText()
+        if source_ns == target_ns and source_ns != "":
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Namespace Nguồn và Namespace Đích không nên trùng nhau!")
+            return
+            
+        pairs = retarget_tool.auto_map_rigs(source_ns, target_ns)
+        self.on_rt_clear_table()
+        
+        for src, tgt in pairs:
+            row = self.rt_table.rowCount()
+            self.rt_table.insertRow(row)
+            self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(src))
+            self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(tgt))
+            
+        QtWidgets.QMessageBox.information(
+            self, "Thành công",
+            "Đã tự động tìm và khớp nối thành công %d cặp control!" % len(pairs)
+        )
+        self.refresh_rt_table_colors()
+
+    def on_rt_add_row(self):
+        row = self.rt_table.rowCount()
+        self.rt_table.insertRow(row)
+        self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(""))
+        self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(""))
+
+    def on_rt_del_row(self):
+        selected_ranges = self.rt_table.selectedRanges()
+        if not selected_ranges:
+            return
+        rows_to_delete = []
+        for r in selected_ranges:
+            for row in range(r.topRow(), r.bottomRow() + 1):
+                rows_to_delete.append(row)
+        rows_to_delete = sorted(list(set(rows_to_delete)), reverse=True)
+        for r in rows_to_delete:
+            self.rt_table.removeRow(r)
+
+    def on_rt_clear_table(self):
+        self.rt_table.setRowCount(0)
+
+    def on_rt_load_json(self):
+        file_filter = "JSON Files (*.json)"
+        filepath, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Chọn file cấu hình Mapping", "", file_filter
+        )
+        if not filepath:
+            return
+            
+        import json
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            self.on_rt_clear_table()
+            for item in data:
+                row = self.rt_table.rowCount()
+                self.rt_table.insertRow(row)
+                self.rt_table.setItem(row, 0, QtWidgets.QTableWidgetItem(item.get("source", "")))
+                self.rt_table.setItem(row, 1, QtWidgets.QTableWidgetItem(item.get("target", "")))
+            print("[Retarget] Đã nạp cấu hình ánh xạ từ file: %s" % filepath)
+            self.refresh_rt_table_colors()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Nạp cấu hình",
+                "Không thể nạp file cấu hình ánh xạ:\n%s" % str(e)
+            )
+
+    def on_rt_save_json(self):
+        rowCount = self.rt_table.rowCount()
+        if rowCount == 0:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Bảng ánh xạ trống, không có gì để lưu!")
+            return
+            
+        file_filter = "JSON Files (*.json)"
+        filepath, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Lưu cấu hình Mapping", "", file_filter
+        )
+        if not filepath:
+            return
+            
+        import json
+        data = []
+        for row in range(rowCount):
+            src_item = self.rt_table.item(row, 0)
+            tgt_item = self.rt_table.item(row, 1)
+            src = src_item.text().strip() if src_item else ""
+            tgt = tgt_item.text().strip() if tgt_item else ""
+            data.append({"source": src, "target": tgt})
+            
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=4)
+            QtWidgets.QMessageBox.information(self, "Thành công", "Đã lưu cấu hình ánh xạ thành công!")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Lưu cấu hình",
+                "Không thể lưu file cấu hình ánh xạ:\n%s" % str(e)
+            )
+
+    def on_rt_execute(self):
+        rowCount = self.rt_table.rowCount()
+        if rowCount == 0:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng thêM hoộc khớp nối ít nhất một cặp control trong bảng!")
+            return
+            
+        mapping_pairs = []
+        for row in range(rowCount):
+            src_item = self.rt_table.item(row, 0)
+            tgt_item = self.rt_table.item(row, 1)
+            src = src_item.text().strip() if src_item else ""
+            tgt = tgt_item.text().strip() if tgt_item else ""
+            if src and tgt:
+                mapping_pairs.append((src, tgt))
+                
+        if not mapping_pairs:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không có cặp đối tượng hợp lệ nào được điền!")
+            return
+            
+        start_frame = cmds.playbackOptions(q=True, minTime=True)
+        end_frame = cmds.playbackOptions(q=True, maxTime=True)
+        
+        step = self.rt_step_spin.value()
+        maintain_offset = self.rt_maintain_offset_cb.isChecked()
+        smart_bake = self.rt_smart_bake_cb.isChecked()
+        
+        idx = self.rt_channels_combo.currentIndex()
+        channels = ['both', 'translate', 'rotate'][idx]
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = retarget_tool.execute_retarget(
+                mapping_pairs=mapping_pairs,
+                start_frame=start_frame,
+                end_frame=end_frame,
+                step=step,
+                maintain_offset=maintain_offset,
+                channels=channels,
+                smart_bake=smart_bake
+            )
+            if success:
+                QtWidgets.QMessageBox.information(self, "Thành công", msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Retarget",
+                "Có lỗi xảy ra trong quá trình Retarget:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+        # --- CONSTRAINT MANAGER CALLBACKS ---
+
+    def on_parent_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Translate bị bỏ chọn
+        skip_t = []
+        if not self.tx_cb.isChecked(): skip_t.append("x")
+        if not self.ty_cb.isChecked(): skip_t.append("y")
+        if not self.tz_cb.isChecked(): skip_t.append("z")
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip_r = []
+        if not self.rx_cb.isChecked(): skip_r.append("x")
+        if not self.ry_cb.isChecked(): skip_r.append("y")
+        if not self.rz_cb.isChecked(): skip_r.append("z")
+        
+        try:
+            cmds.parentConstraint(mo=mo, skipTranslate=skip_t, skipRotate=skip_r)
+            cmds.warning("Đã tạo Parent Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Parent Constraint: " + str(e))
+
+    def on_point_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Translate bị bỏ chọn
+        skip = []
+        if not self.tx_cb.isChecked(): skip.append("x")
+        if not self.ty_cb.isChecked(): skip.append("y")
+        if not self.tz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.pointConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Point Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Point Constraint: " + str(e))
+
+    def on_orient_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip = []
+        if not self.rx_cb.isChecked(): skip.append("x")
+        if not self.ry_cb.isChecked(): skip.append("y")
+        if not self.rz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.orientConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Orient Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Orient Constraint: " + str(e))
+
+    def on_scale_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Dùng các trục Translate làm trục Scale tương ứng
+        skip = []
+        if not self.tx_cb.isChecked(): skip.append("x")
+        if not self.ty_cb.isChecked(): skip.append("y")
+        if not self.tz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.scaleConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Scale Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Scale Constraint: " + str(e))
+
+    def on_aim_constraint(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if len(sel) < 2:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất 2 đối tượng (Driver -> Driven)!")
+            return
+        mo = self.constrain_offset_cb.isChecked()
+        
+        # Lọc các trục Rotate bị bỏ chọn
+        skip = []
+        if not self.rx_cb.isChecked(): skip.append("x")
+        if not self.ry_cb.isChecked(): skip.append("y")
+        if not self.rz_cb.isChecked(): skip.append("z")
+        
+        try:
+            cmds.aimConstraint(mo=mo, skip=skip)
+            cmds.warning("Đã tạo Aim Constraint thành công.")
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Lỗ", "Không thể tạo Aim Constraint: " + str(e))
+
+    def on_delete_constraints(self):
+        import maya.cmds as cmds
+        sel = cmds.ls(sl=True)
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng để xóa Constraint!")
+            return
+        
+        constraint_types = [
+            "parentConstraint", "pointConstraint", "orientConstraint",
+            "scaleConstraint", "aimConstraint", "poleVectorConstraint",
+            "geometryConstraint", "normalConstraint", "tangentConstraint"
+        ]
+        
+        deleted_count = 0
+        for obj in sel:
+            children = cmds.listRelatives(obj, children=True, fullPath=True) or []
+            for child in children:
+                node_type = cmds.nodeType(child)
+                if node_type in constraint_types:
+                    try:
+                        cmds.delete(child)
+                        deleted_count += 1
+                    except Exception:
+                        pass
+            
+            connections = cmds.listConnections(obj, source=True, destination=False) or []
+            for conn in connections:
+                node_type = cmds.nodeType(conn)
+                if node_type in constraint_types:
+                    try:
+                        cmds.delete(conn)
+                        deleted_count += 1
+                    except Exception:
+                        pass
+                        
+        if deleted_count > 0:
+            cmds.warning("Đã xóa thành công %d Constraint khỏi các đối tượng được chọn!" % deleted_count)
+        else:
+            cmds.warning("Không tìm thấy Constraint nào trực tiếp trên các đối tượng được chọn.")
+
+    
+    def on_euler_filter(self):
+        """Áp dụng Euler Filter cho các đường cong xoay được chọn hoặc các vật thể được chọn"""
+        selected = cmds.ls(sl=True) or []
+        selected_curves = cmds.keyframe(query=True, selected=True, name=True) or []
+        
+        # Bọc trong undo chunk để hoàn tác dễ dàng
+        cmds.undoInfo(openChunk=True)
+        try:
+            if selected_curves:
+                cmds.filterCurve(selected_curves)
+                cmds.warning("Đã áp dụng Euler Filter cho các đường cong được chọn trong Graph Editor.")
+            elif selected:
+                # Tìm toàn bộ curve keyframe của đối tượng chọn
+                curves = cmds.keyframe(selected, query=True, name=True) or []
+                # Lọc lấy các curve liên quan tới xoay (rotateX, rotateY, rotateZ, rx, ry, rz)
+                rot_curves = [c for c in curves if any(r in c.lower() for r in ['rotate', 'rx', 'ry', 'rz'])]
+                if rot_curves:
+                    cmds.filterCurve(rot_curves)
+                    cmds.warning("Đã áp dụng Euler Filter cho các kênh xoay của đối tượng được chọn.")
+                else:
+                    QtWidgets.QMessageBox.warning(
+                        self, "Thông báo", 
+                        "Không tìm thấy đường cong xoay (Rotation curves) nào trên vật thể được chọn để áp dụng Euler Filter!"
+                    )
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self, "Cảnh báo", 
+                    "Vui lòng chọn các đường cong xoay trong Graph Editor hoặc chọn đối tượng trong viewport!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Euler Filter", 
+                "Lỗi xảy ra khi thực hiện Euler Filter:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_fix_lost_shader(self):
+        """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
+        try:
+            shelf.fix_lost_shader()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Không thể mở khóa các node mặc định:\n%s" % str(e)
+            )
+    def on_change_rotate_order(self):
+        """Thay đổi Rotate Order bảo toàn keyframe"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể!")
+            return
+            
+        new_order = self.ro_combo.currentText()
+        
+        # Chạy trong một undo chunk của Maya
+        cmds.undoInfo(openChunk=True, chunkName="ChangeRotateOrder")
+        try:
+            success_count = 0
+            for obj in sel:
+                success, msg = space_order_tool.change_rotate_order(obj, new_order)
+                if success:
+                    success_count += 1
+                    print("[SpaceOrder] %s: %s" % (obj, msg))
+                    
+            if success_count > 0:
+                cmds.warning("Đã đổi Rotate Order sang %s cho %d vật thể thành công!" % (new_order, success_count))
+            else:
+                QtWidgets.QMessageBox.warning(self, "Thất bại", "Không thể thay đổi Rotate Order của các vật thể được chọn.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+    def on_record_world_space(self):
+        """Ghi tọa độ thế giới sang locator"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn 1 vật thể muốn ghi nhận Space thế giới!")
+            return
+            
+        # Ta chỉ ghi nhận cho vật thể đầu tiên được chọn
+        obj = sel[0]
+        cmds.undoInfo(openChunk=True, chunkName="RecordWorldSpace")
+        try:
+            loc, msg = space_order_tool.record_world_space(obj)
+            if loc:
+                cmds.warning(msg)
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã ghi nhận chuyển động sang Locator thế giới:\n%s\n\nBây giờ bạn có thể thay đổi Parent, Space hoặc cấu trúc của vật thể tùy ý, sau đó chọn vật thể và Locator để bấm Khôi phục (Restore)." % loc
+                )
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi ghi Space thế giới:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_restore_world_space(self):
+        """Khôi phục tọa độ thế giới từ locator"""
+        sel = cmds.ls(sl=True) or []
+        if len(sel) < 2:
+            # Thử tự động quét xem có locator record nào liên kết với vật thể được chọn không
+            if len(sel) == 1:
+                obj = sel[0]
+                clean_name = obj.replace(":", "_").replace("|", "_")
+                possible_loc = "animeow_space_record_%s" % clean_name
+                if cmds.objExists(possible_loc):
+                    sel = [obj, possible_loc]
+                    
+            if len(sel) < 2:
+                QtWidgets.QMessageBox.warning(
+                    self, "Cảnh báo", 
+                    "Vui lòng chọn vật thể gốc và Locator lưu trữ (animeow_space_record_...) để khôi phục!"
+                )
+                return
+                
+        # Phân biệt đối tượng và locator
+        obj = None
+        locator = None
+        for item in sel:
+            if "animeow_space_record_" in item:
+                locator = item
+            else:
+                obj = item
+                
+        if not obj or not locator:
+            QtWidgets.QMessageBox.warning(
+                self, "Cảnh báo", 
+                "Không tìm thấy đúng cặp vật thể gốc và Locator lưu trữ trong vùng chọn!"
             )
             return
             
-        # 2. Tạo config JSON cấu hình tạm
-        config_data = {
-            "shot_files": shot_files,
-            "master_scene_path": master_scene,
-            "output_path": output_file,
-            "time_mode": time_mode,
-            "master_start_frame": start_frame
-        }
-        
+        cmds.undoInfo(openChunk=True, chunkName="RestoreWorldSpace")
         try:
-            fd, temp_config_path = tempfile.mkstemp(suffix="_combiner_config.json")
-            os.close(fd)
-            with open(temp_config_path, "w") as f:
-                json.dump(config_data, f)
+            success, msg = space_order_tool.restore_world_space(obj, locator)
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi khởi tạo", "Không thể tạo file cấu hình tạm: %s" % str(e))
-            return
-            
-        # 3. Tìm batch_runner.py
-        ui_dir = os.path.dirname(os.path.abspath(__file__))
-        parent_dir = os.path.dirname(ui_dir)
-        runner_path = os.path.join(parent_dir, "core", "batch_runner.py")
-        
-        if not os.path.exists(runner_path):
-            QtWidgets.QMessageBox.critical(self, "Lỗi khởi tạo", "Không tìm thấy file batch_runner.py tại:\n%s" % runner_path)
-            if os.path.exists(temp_config_path):
-                os.remove(temp_config_path)
-            return
-            
-        # 4. Mở hộp thoại tiến trình chạy ngầm
-        dialog = BatchProgressDialog(
-            mayapy_path=mayapy_path,
-            runner_path=runner_path,
-            config_path=temp_config_path,
-            output_path=output_file,
-            parent=self
-        )
-        dialog.exec_()
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
 
 def is_ui_alive(ui_obj):
     """Kiểm tra xem đối tượng Qt UI còn sống ở phía C++ không để tránh lỗi pointer chết"""
@@ -576,63 +2775,99 @@ def is_ui_alive(ui_obj):
         return False
 
 
-def show_window():
+def show_window(tab_index=None, standalone_tab=None):
     import sys
     
+    # Xác định key lưu instance trong sys, tên control và tiêu đề cửa sổ
+    if standalone_tab is None:
+        sys_key = "_animeow_maya_toolboard_ui"
+        ctrl_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME
+        win_title = AnimeowMayaToolboardUI.WINDOW_TITLE
+    else:
+        sys_key = "_animeow_standalone_%s_ui" % str(standalone_tab)
+        if standalone_tab == 0:
+            ctrl_name = "AnimeowBakeWorkspaceControl"
+            win_title = "Space & Bake"
+        elif standalone_tab == 1:
+            ctrl_name = "AnimeowCurveWorkspaceControl"
+            win_title = "Curve & Motion"
+        elif standalone_tab == 2:
+            ctrl_name = "AnimeowRigWorkspaceControl"
+            win_title = "Rig & Mirror"
+        elif standalone_tab == 3:
+            ctrl_name = "AnimeowOutputWorkspaceControl"
+            win_title = "Output & Scene"
+        elif standalone_tab == "arc_tracker":
+            ctrl_name = "AnimeowArcWorkspaceControl"
+            win_title = "Arc Tracker"
+        elif standalone_tab == "round_tool":
+            ctrl_name = "AnimeowRoundWorkspaceControl"
+            win_title = "Làm tròn số"
+        else:
+            ctrl_name = "AnimeowGenericWorkspaceControl"
+            win_title = "Animeow Tool"
+            
     # 1. Đóng và giải phóng widget cũ (nếu có)
-    old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
+    old_ui = getattr(sys, sys_key, None)
     if is_ui_alive(old_ui):
         try:
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
             pass
-        sys._animeow_maya_toolboard_ui = None
+        setattr(sys, sys_key, None)
 
     # 2. Xóa các workspaceControl cũ và dọn dẹp các control rác từ các bản build lỗi trước đó
-    for ctrl_name in [AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
-                      AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME + "WorkspaceControl"]:
-        if cmds.workspaceControl(ctrl_name, exists=True):
+    for name in [ctrl_name, ctrl_name + "WorkspaceControl"]:
+        if cmds.workspaceControl(name, exists=True):
             try:
-                cmds.deleteUI(ctrl_name)
+                cmds.deleteUI(name)
             except Exception:
                 pass
             
     # 3. Tạo instance mới
-    ui_instance = AnimeowMayaToolboardUI()
-    sys._animeow_maya_toolboard_ui = ui_instance
+    ui_instance = AnimeowMayaToolboardUI(standalone_tab=standalone_tab)
+    setattr(sys, sys_key, ui_instance)
     
     # Thiết lập objectName (không bao gồm hậu tố WorkspaceControl) để Maya tự động ghép thêm hậu tố này
-    # tạo thành đúng tên AnimeowMayaToolboardWorkspaceControl khớp với WORKSPACE_CONTROL_NAME
-    obj_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME.replace("WorkspaceControl", "")
+    # tạo thành đúng tên Workspace Control khớp với ctrl_name
+    obj_name = ctrl_name.replace("WorkspaceControl", "")
     ui_instance.setObjectName(obj_name)
     
     # 4. Kiểm tra xem người dùng đã từng có tùy biến vị trí (windowPref) được lưu cho workspace control này chưa
     pref_exists = False
     try:
-        pref_exists = cmds.windowPref(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True)
+        pref_exists = cmds.windowPref(ctrl_name, exists=True)
     except Exception:
         pass
         
     # 5. Hiển thị dưới dạng dockable panel
     if pref_exists:
-        # Nếu đã có tùy chỉnh vị trí trước đó (Ví dụ kéo ra ngoài float hoặc dock chỗ khác),
-        # ta để Maya tự động tải cấu hình cũ bằng cách không áp các giá trị mặc định (floating=False, area="right")
+        # Nếu đã có tùy chỉnh vị trí trước đó, để Maya tự động tải cấu hình cũ
         ui_instance.show(dockable=True)
     else:
-        # Nếu là lần đầu chạy tool, áp dụng docking mặc định ở bên phải
+        # Nếu là lần đầu chạy tool, áp dụng docking mặc định
+        # Đối với các cửa sổ standalone nhỏ, ta để mặc định floating=True để làm nổi tiện sắp xếp
+        is_floating = True if standalone_tab is not None else False
         ui_instance.show(
             dockable=True,
             area="right",
-            floating=False,
+            floating=is_floating,
             allowedArea="left|right"
         )
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+    if cmds.workspaceControl(ctrl_name, exists=True):
         cmds.workspaceControl(
-            AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
+            ctrl_name, 
             edit=True, 
-            label=AnimeowMayaToolboardUI.WINDOW_TITLE
+            label=win_title
         )
+        
+    if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:
+        try:
+            ui_instance.tab_widget.setCurrentIndex(tab_index)
+        except Exception:
+            pass
+            
     return ui_instance
