@@ -72,15 +72,15 @@ def run_anti_virus():
     cleaned = clean_virus.clean_virus()
     if cleaned:
         cmds.confirmDialog(
-            title="Kết quả diệt Virus",
-            message="Đã tìm thấy và tiêu diệt thành công %d node virus độc hại:\n%s" % (len(cleaned), ", ".join(cleaned)),
-            button=["Tuyệt vời"]
+            title=u"Kết quả diệt Virus",
+            message=u"Đã tìm thấy và tiêu diệt thành công %d node virus độc hại:\n%s" % (len(cleaned), ", ".join(cleaned)),
+            button=[u"Tuyệt vời"]
         )
     else:
         cmds.confirmDialog(
-            title="Kết quả diệt Virus",
-            message="Chúc mừng! Scene của bạn hoàn toàn sạch sẽ, không phát hiện virus nào.",
-            button=["Tuyệt vời"]
+            title=u"Kết quả diệt Virus",
+            message=u"Chúc mừng! Scene của bạn hoàn toàn sạch sẽ, không phát hiện virus nào.",
+            button=[u"Tuyệt vời"]
         )
 
 def save_increment():
@@ -634,7 +634,7 @@ def create_shelf():
     
     # 6. Hiển thị thông báo
     cmds.confirmDialog(
-        title="Thành công",
-        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh!",
-        button=["Tuyệt vời"]
+        title=u"Thành công",
+        message=u"Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh!",
+        button=[u"Tuyệt vời"]
     )
