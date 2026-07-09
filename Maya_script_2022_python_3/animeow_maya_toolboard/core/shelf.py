@@ -574,10 +574,16 @@ def create_shelf():
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show()"
         },
         {
+            "label": "Link",
+            "annotation": "Mở cửa sổ Constraint & Smart Link độc lập",
+            "image": get_icon("link_icon.png", "parentConstraint.png"),
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='smart_link')"
+        },
+        {
             "label": "Bake",
-            "annotation": "Mở cửa sổ Space & Bake độc lập",
+            "annotation": "Mở cửa sổ Smart World Bake & Pivot độc lập",
             "image": get_icon("bake_icon.png", "save.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=0)"
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='world_bake')"
         },
         {
             "label": "Curve",

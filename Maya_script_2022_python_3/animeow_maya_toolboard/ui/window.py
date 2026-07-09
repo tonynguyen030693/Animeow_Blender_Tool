@@ -218,9 +218,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.standalone_tab = standalone_tab
         
         if standalone_tab is not None:
-            if standalone_tab == 0:
-                self.WINDOW_TITLE = "Space & Bake"
-                self.WORKSPACE_CONTROL_NAME = "AnimeowBakeWorkspaceControl"
+            if standalone_tab == 0 or standalone_tab == "smart_link":
+                self.WINDOW_TITLE = "Constraint & Smart Link"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowSmartLinkWorkspaceControl"
+            elif standalone_tab == "world_bake":
+                self.WINDOW_TITLE = "Smart World Bake & Pivot"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowWorldBakeWorkspaceControl"
             elif standalone_tab == 1:
                 self.WINDOW_TITLE = "Curve & Motion"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowCurveWorkspaceControl"
@@ -1027,8 +1030,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # --- ADD TABS TO TABWIDGET ---
         # =========================================================================
         if self.standalone_tab is not None:
-            if self.standalone_tab == 0:
+            if self.standalone_tab == 0 or self.standalone_tab == "smart_link":
                 self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+                try:
+                    t1_title.hide()
+                    wb_group.hide()
+                    ns_group.hide()
+                    tp_group.hide()
+                except Exception:
+                    pass
+            elif self.standalone_tab == "world_bake":
+                self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+                try:
+                    t1_title.hide()
+                    link_group.hide()
+                except Exception:
+                    pass
             elif self.standalone_tab == 1:
                 self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
             elif self.standalone_tab == 2:
@@ -2809,9 +2826,12 @@ def show_window(tab_index=None, standalone_tab=None):
         win_title = AnimeowMayaToolboardUI.WINDOW_TITLE
     else:
         sys_key = "_animeow_standalone_%s_ui" % str(standalone_tab)
-        if standalone_tab == 0:
-            ctrl_name = "AnimeowBakeWorkspaceControl"
-            win_title = "Space & Bake"
+        if standalone_tab == 0 or standalone_tab == "smart_link":
+            ctrl_name = "AnimeowSmartLinkWorkspaceControl"
+            win_title = "Constraint & Smart Link"
+        elif standalone_tab == "world_bake":
+            ctrl_name = "AnimeowWorldBakeWorkspaceControl"
+            win_title = "Smart World Bake & Pivot"
         elif standalone_tab == 1:
             ctrl_name = "AnimeowCurveWorkspaceControl"
             win_title = "Curve & Motion"
