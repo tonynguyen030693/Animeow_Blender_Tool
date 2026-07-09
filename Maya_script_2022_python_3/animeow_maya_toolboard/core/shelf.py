@@ -600,7 +600,7 @@ def create_shelf():
         {
             "label": "ClK",
             "annotation": "Dọn dẹp keyframe thừa có giá trị bằng nhau liên tiếp",
-            "image": "deleteKey.png",
+            "image": get_icon("clk_icon.png", "deleteKey.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard.core.clean_redundant_keys as clk\nclk.clean_redundant_keys()"
         },
         {
