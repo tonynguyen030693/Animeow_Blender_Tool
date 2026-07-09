@@ -58,15 +58,16 @@ def round_selected_values(precision=0, target='channel_box'):
                 val_list = cmds.keyframe(curve, index=(idx, idx), query=True, valueChange=True)
                 if val_list is not None and val_list != []:
                     val = val_list[0] if isinstance(val_list, list) else val_list
-                    rounded_val = round(val, precision) if precision > 0 else int(round(val))
+                    rounded_val = 0 if precision == -1 else (round(val, precision) if precision > 0 else int(round(val)))
                     cmds.keyframe(curve, index=(idx, idx), valueChange=rounded_val)
                     key_count += 1
-        return True, "Đã làm tròn %d keyframe được chọn trong Graph Editor!" % key_count
+        action_name = "đặt về 0" if precision == -1 else "làm tròn"
+        return True, "Đã %s %d keyframe được chọn trong Graph Editor!" % (action_name, key_count)
 
     # 2. Chỉ làm tròn keyframe tại đúng frame hiện tại của timeline
     elif target == 'current_frame':
         if not selected_objects:
-            return False, "Vui lòng chọn ít nhất một vật thể!"
+            return False, "Vui lòng chọn nhất một vật thể!"
             
         selected_channels = get_selected_channels(selected_objects[0])
             
@@ -79,11 +80,12 @@ def round_selected_values(precision=0, target='channel_box'):
                     val_list = cmds.keyframe(obj, attribute=attr, time=(curr_frame, curr_frame), query=True, valueChange=True)
                     if val_list is not None and val_list != []:
                         val = val_list[0] if isinstance(val_list, list) else val_list
-                        rounded_val = round(val, precision) if precision > 0 else int(round(val))
+                        rounded_val = 0 if precision == -1 else (round(val, precision) if precision > 0 else int(round(val)))
                         cmds.keyframe(obj, attribute=attr, time=(curr_frame, curr_frame), valueChange=rounded_val)
                         key_count += 1
         if key_count > 0:
-            return True, "Đã làm tròn %d keyframe tại frame %d!" % (key_count, curr_frame)
+            action_name = "đặt về 0" if precision == -1 else "làm tròn"
+            return True, "Đã %s %d keyframe tại frame %d!" % (action_name, key_count, curr_frame)
         else:
             return False, "Không tìm thấy keyframe nào tại frame hiện tại (%d) cho các channel được chọn." % curr_frame
 
@@ -106,10 +108,11 @@ def round_selected_values(precision=0, target='channel_box'):
                         val_list = cmds.keyframe(obj, attribute=attr, time=(t, t), query=True, valueChange=True)
                         if val_list is not None and val_list != []:
                             val = val_list[0] if isinstance(val_list, list) else val_list
-                            rounded_val = round(val, precision) if precision > 0 else int(round(val))
+                            rounded_val = 0 if precision == -1 else (round(val, precision) if precision > 0 else int(round(val)))
                             cmds.keyframe(obj, attribute=attr, time=(t, t), valueChange=rounded_val)
                             total_keys += 1
-        return True, "Đã làm tròn toàn bộ %d keyframe của các channel được chọn!" % total_keys
+        action_name = "đặt về 0" if precision == -1 else "làm tròn"
+        return True, "Đã %s toàn bộ %d keyframe của các channel được chọn!" % (action_name, total_keys)
 
     # 4. Làm tròn thuộc tính tĩnh trong Channel Box
     else:
@@ -125,7 +128,7 @@ def round_selected_values(precision=0, target='channel_box'):
                 if cmds.objExists(attr_path) and not cmds.getAttr(attr_path, lock=True):
                     val = cmds.getAttr(attr_path)
                     if isinstance(val, (int, float)):
-                        rounded_val = round(val, precision) if precision > 0 else int(round(val))
+                        rounded_val = 0 if precision == -1 else (round(val, precision) if precision > 0 else int(round(val)))
                         try:
                             cmds.setAttr(attr_path, rounded_val)
                             if cmds.copyKey(obj, attribute=attr, time=(curr_frame, curr_frame)):
@@ -133,4 +136,5 @@ def round_selected_values(precision=0, target='channel_box'):
                             attr_count += 1
                         except Exception:
                             pass
-        return True, "Đã làm tròn %d thuộc tính trong Channel Box thành công!" % attr_count
+        action_name = "đặt về 0" if precision == -1 else "làm tròn"
+        return True, "Đã %s %d thuộc tính trong Channel Box thành công!" % (action_name, attr_count)

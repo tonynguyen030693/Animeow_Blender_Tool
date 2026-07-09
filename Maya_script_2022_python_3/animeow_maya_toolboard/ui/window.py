@@ -728,7 +728,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.round_precision_combo.addItems([
             "Số nguyên (ví dụ: 1)", 
             "1 chữ số thập phân (ví dụ: 1.1)", 
-            "2 chữ số thập phân (ví dụ: 1.23)"
+            "2 chữ số thập phân (ví dụ: 1.23)",
+            "Đặt giá trị về 0 (Reset)"
         ])
         round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
         
@@ -1262,7 +1263,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.round_precision_combo.addItems([
                     "Số nguyên (ví dụ: 1)", 
                     "1 chữ số thập phân (ví dụ: 1.1)", 
-                    "2 chữ số thập phân (ví dụ: 1.23)"
+                    "2 chữ số thập phân (ví dụ: 1.23)",
+                    "Đặt giá trị về 0 (Reset)"
                 ])
                 round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
                 
@@ -2250,13 +2252,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % str(e))
     def on_round_values(self):
-        """Làm tròn sñ thuûc tính hoộc keyframe"""
+        """Làm tròn số thuộc tính hoặc keyframe"""
         self.save_settings()
         
-        # Lấy độ chính xác: 0 = sñ nguyên, 1 = 1 chữ sñ, 2 = 2 chữ sñ thửp phân
-        precision = self.round_precision_combo.currentIndex()
+        # Lấy độ chính xác: 0 = số nguyên, 1 = 1 chữ số, 2 = 2 chữ số, 3 -> -1 = đặt về 0
+        precision_idx = self.round_precision_combo.currentIndex()
+        precision = -1 if precision_idx == 3 else precision_idx
         
-        # Lấy môi trườnđ đích
+        # Lấy môi trường đích
         target_idx = self.round_target_combo.currentIndex()
         target_map = {
             0: 'channel_box',
@@ -2265,6 +2268,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             3: 'all_keyframes'
         }
         target = target_map.get(target_idx, 'channel_box')
+        
+        action_title = "Đặt về 0" if precision == -1 else "Làm tròn số"
         
         # Bọc trong một khối Undo chunk để animator có thể Ctrl + Z hoàn tác nhanh
         cmds.undoInfo(openChunk=True)
@@ -2276,8 +2281,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi Làm tròn sñ",
-                "Lỗi xảy ra khi thực hiện làm tròn sñ:\n%s" % str(e)
+                self, "Lỗi %s" % action_title,
+                "Lỗi xảy ra khi thực hiện %s:\n%s" % (action_title.lower(), str(e))
             )
         finally:
             cmds.undoInfo(closeChunk=True)
