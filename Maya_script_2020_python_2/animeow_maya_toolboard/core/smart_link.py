@@ -177,6 +177,34 @@ class AnimationBaker(object):
         """Bake chuyển động và dọn dẹp"""
         # 1. Định vị locators
         loc_parent, loc_child = self.find_locator_names()
+        
+        # Tự động tối ưu hóa khoảng bake dựa trên phạm vi keyframe thực tế của locator
+        # để tránh bị mất animation trước/sau timeline hiển thị khi xóa constraint
+        if loc_child and cmds.objExists(loc_child):
+            all_loc_keys = cmds.keyframe(loc_child, q=True, timeChange=True) or []
+            if all_loc_keys:
+                loc_min = min(all_loc_keys)
+                loc_max = max(all_loc_keys)
+                start_frame = min(start_frame, loc_min)
+                end_frame = max(end_frame, loc_max)
+        
+        # Quét thêm keyframe trên target (vật dẫn gốc của loc_parent) để mở rộng thời gian
+        target_obj = None
+        if loc_parent and cmds.objExists(loc_parent):
+            cons = cmds.listConnections(loc_parent, type="parentConstraint") or []
+            if cons:
+                targets = cmds.parentConstraint(cons[0], query=True, targetList=True) or []
+                if targets:
+                    target_obj = targets[0]
+                    
+        if target_obj and cmds.objExists(target_obj):
+            all_target_keys = cmds.keyframe(target_obj, q=True, timeChange=True) or []
+            if all_target_keys:
+                target_min = min(all_target_keys)
+                target_max = max(all_target_keys)
+                start_frame = min(start_frame, target_min)
+                end_frame = max(end_frame, target_max)
+                
         attrs = ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
         incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
         
