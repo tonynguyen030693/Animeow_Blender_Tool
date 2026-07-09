@@ -950,6 +950,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.clean_folder_btn.clicked.connect(self.on_clean_folder)
         scene_layout.addWidget(self.clean_folder_btn, 2, 1)
         
+        self.toggle_outliner_btn = QtWidgets.QPushButton("Outliner (Bật/Tắt)")
+        self.toggle_outliner_btn.setFixedHeight(28)
+        self.toggle_outliner_btn.clicked.connect(self.on_toggle_outliner)
+        scene_layout.addWidget(self.toggle_outliner_btn, 3, 0, 1, 2)
+        
         tab4_layout.addWidget(scene_group)
         tab4_layout.addStretch()
 
@@ -1888,6 +1893,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             shelf.toggle_reference_editor()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Reference Editor:\n%s" % str(e))
+
+    def on_toggle_outliner(self):
+        """Bật/Tắt Outliner"""
+        try:
+            shelf.toggle_outliner()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Outliner:\n%s" % str(e))
 
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""

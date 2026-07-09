@@ -57,6 +57,15 @@ def toggle_reference_editor():
         mel.eval("ReferenceEditor;")
         print("[AnimeowShelf] Đã mở Reference Editor.")
 
+def toggle_outliner():
+    """Bật/Tắt Outliner"""
+    if cmds.window("outlinerPanel1Window", exists=True):
+        cmds.deleteUI("outlinerPanel1Window", window=True)
+        print("[AnimeowShelf] Đã đóng Outliner.")
+    else:
+        mel.eval("OutlinerWindow;")
+        print("[AnimeowShelf] Đã mở Outliner.")
+
 def save_increment():
     """Lưu increment phụ dạng .0001, .0002..."""
     mel.eval("IncrementAndSave;")
@@ -429,7 +438,7 @@ def create_arc_trail():
 # =========================================================================
 
 def create_shelf():
-    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 18 nút công cụ nhanh"""
+    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 19 nút công cụ nhanh"""
     shelf_name = "Animeow"
     
     # 1. Tìm shelf tab layout của Maya
@@ -520,6 +529,12 @@ def create_shelf():
             "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_reference_editor()"
         },
         {
+            "label": "Out",
+            "annotation": "Bật/Tắt Outliner Window",
+            "image": "menuIconWindow.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_outliner()"
+        },
+        {
             "label": "S.Inc",
             "annotation": "Lưu Increment phiên bản phụ",
             "image": "save.png",
@@ -597,6 +612,6 @@ def create_shelf():
     # 6. Hiển thị thông báo
     cmds.confirmDialog(
         title="Thành công",
-        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 18 nút công cụ nhanh!",
+        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 19 nút công cụ nhanh!",
         button=["Tuyệt vời"]
     )
