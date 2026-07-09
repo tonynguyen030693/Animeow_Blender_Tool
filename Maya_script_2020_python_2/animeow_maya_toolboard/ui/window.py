@@ -367,24 +367,43 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         qc_layout.setContentsMargins(8, 8, 8, 8)
         qc_layout.setSpacing(6)
         
-        # Hàng checkbox tùy chọn
-        opts_layout = QtWidgets.QHBoxLayout()
+        # Checkbox Maintain Offset
+        mo_row = QtWidgets.QHBoxLayout()
         self.qc_mo_cb = QtWidgets.QCheckBox("Maintain Offset")
         self.qc_mo_cb.setChecked(True)
-        self.qc_x_cb = QtWidgets.QCheckBox("X")
-        self.qc_x_cb.setChecked(True)
-        self.qc_y_cb = QtWidgets.QCheckBox("Y")
-        self.qc_y_cb.setChecked(True)
-        self.qc_z_cb = QtWidgets.QCheckBox("Z")
-        self.qc_z_cb.setChecked(True)
+        mo_row.addWidget(self.qc_mo_cb)
+        mo_row.addStretch()
+        qc_layout.addLayout(mo_row)
         
-        opts_layout.addWidget(self.qc_mo_cb)
-        opts_layout.addSpacing(10)
-        opts_layout.addWidget(self.qc_x_cb)
-        opts_layout.addWidget(self.qc_y_cb)
-        opts_layout.addWidget(self.qc_z_cb)
-        opts_layout.addStretch()
-        qc_layout.addLayout(opts_layout)
+        # Checkbox Translate axes
+        t_row = QtWidgets.QHBoxLayout()
+        t_row.addWidget(QtWidgets.QLabel("Translate (Dịch chuyển):"))
+        self.qc_tx_cb = QtWidgets.QCheckBox("X")
+        self.qc_tx_cb.setChecked(True)
+        self.qc_ty_cb = QtWidgets.QCheckBox("Y")
+        self.qc_ty_cb.setChecked(True)
+        self.qc_tz_cb = QtWidgets.QCheckBox("Z")
+        self.qc_tz_cb.setChecked(True)
+        t_row.addWidget(self.qc_tx_cb)
+        t_row.addWidget(self.qc_ty_cb)
+        t_row.addWidget(self.qc_tz_cb)
+        t_row.addStretch()
+        qc_layout.addLayout(t_row)
+        
+        # Checkbox Rotate axes
+        r_row = QtWidgets.QHBoxLayout()
+        r_row.addWidget(QtWidgets.QLabel("Rotate (Xoay):            "))
+        self.qc_rx_cb = QtWidgets.QCheckBox("X")
+        self.qc_rx_cb.setChecked(True)
+        self.qc_ry_cb = QtWidgets.QCheckBox("Y")
+        self.qc_ry_cb.setChecked(True)
+        self.qc_rz_cb = QtWidgets.QCheckBox("Z")
+        self.qc_rz_cb.setChecked(True)
+        r_row.addWidget(self.qc_rx_cb)
+        r_row.addWidget(self.qc_ry_cb)
+        r_row.addWidget(self.qc_rz_cb)
+        r_row.addStretch()
+        qc_layout.addLayout(r_row)
         
         # Hàng nút bấm
         btns_layout = QtWidgets.QHBoxLayout()
@@ -1135,24 +1154,43 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 qc_layout.setContentsMargins(6, 6, 6, 6)
                 qc_layout.setSpacing(6)
                 
-                # Checkbox Layout
-                opts_layout = QtWidgets.QHBoxLayout()
-                self.qc_mo_cb = QtWidgets.QCheckBox("Offset")
+                # Checkbox Offset
+                mo_row = QtWidgets.QHBoxLayout()
+                self.qc_mo_cb = QtWidgets.QCheckBox("Maintain Offset")
                 self.qc_mo_cb.setChecked(True)
-                self.qc_mo_cb.setToolTip("Maintain Offset")
+                mo_row.addWidget(self.qc_mo_cb)
+                mo_row.addStretch()
+                qc_layout.addLayout(mo_row)
                 
-                self.qc_x_cb = QtWidgets.QCheckBox("X")
-                self.qc_x_cb.setChecked(True)
-                self.qc_y_cb = QtWidgets.QCheckBox("Y")
-                self.qc_y_cb.setChecked(True)
-                self.qc_z_cb = QtWidgets.QCheckBox("Z")
-                self.qc_z_cb.setChecked(True)
+                # Checkbox Translate
+                t_row = QtWidgets.QHBoxLayout()
+                t_row.addWidget(QtWidgets.QLabel("T: "))
+                self.qc_tx_cb = QtWidgets.QCheckBox("X")
+                self.qc_tx_cb.setChecked(True)
+                self.qc_ty_cb = QtWidgets.QCheckBox("Y")
+                self.qc_ty_cb.setChecked(True)
+                self.qc_tz_cb = QtWidgets.QCheckBox("Z")
+                self.qc_tz_cb.setChecked(True)
+                t_row.addWidget(self.qc_tx_cb)
+                t_row.addWidget(self.qc_ty_cb)
+                t_row.addWidget(self.qc_tz_cb)
+                t_row.addStretch()
+                qc_layout.addLayout(t_row)
                 
-                opts_layout.addWidget(self.qc_mo_cb)
-                opts_layout.addWidget(self.qc_x_cb)
-                opts_layout.addWidget(self.qc_y_cb)
-                opts_layout.addWidget(self.qc_z_cb)
-                qc_layout.addLayout(opts_layout)
+                # Checkbox Rotate
+                r_row = QtWidgets.QHBoxLayout()
+                r_row.addWidget(QtWidgets.QLabel("R: "))
+                self.qc_rx_cb = QtWidgets.QCheckBox("X")
+                self.qc_rx_cb.setChecked(True)
+                self.qc_ry_cb = QtWidgets.QCheckBox("Y")
+                self.qc_ry_cb.setChecked(True)
+                self.qc_rz_cb = QtWidgets.QCheckBox("Z")
+                self.qc_rz_cb.setChecked(True)
+                r_row.addWidget(self.qc_rx_cb)
+                r_row.addWidget(self.qc_ry_cb)
+                r_row.addWidget(self.qc_rz_cb)
+                r_row.addStretch()
+                qc_layout.addLayout(r_row)
                 
                 btn_parent = QtWidgets.QPushButton("Parent Constraint")
                 btn_parent.setFixedHeight(26)
@@ -2919,36 +2957,48 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def get_qc_options(self):
         mo = self.qc_mo_cb.isChecked()
-        skipped = []
-        if not self.qc_x_cb.isChecked():
-            skipped.append("x")
-        if not self.qc_y_cb.isChecked():
-            skipped.append("y")
-        if not self.qc_z_cb.isChecked():
-            skipped.append("z")
-            
-        skip_axes = skipped if skipped else "none"
-        return mo, skip_axes
+        
+        # Lấy các trục Translate bỏ qua (skip)
+        skipped_t = []
+        if not self.qc_tx_cb.isChecked():
+            skipped_t.append("x")
+        if not self.qc_ty_cb.isChecked():
+            skipped_t.append("y")
+        if not self.qc_tz_cb.isChecked():
+            skipped_t.append("z")
+        skip_t = skipped_t if skipped_t else "none"
+        
+        # Lấy các trục Rotate bỏ qua (skip)
+        skipped_r = []
+        if not self.qc_rx_cb.isChecked():
+            skipped_r.append("x")
+        if not self.qc_ry_cb.isChecked():
+            skipped_r.append("y")
+        if not self.qc_rz_cb.isChecked():
+            skipped_r.append("z")
+        skip_r = skipped_r if skipped_r else "none"
+        
+        return mo, skip_t, skip_r
 
     def on_qc_parent(self):
         from ..core import shelf
-        mo, skip_axes = self.get_qc_options()
-        shelf.create_parent_constraint(mo=mo, skip_axes=skip_axes)
+        mo, skip_t, skip_r = self.get_qc_options()
+        shelf.create_parent_constraint(mo=mo, skip_translate=skip_t, skip_rotate=skip_r)
         
     def on_qc_point(self):
         from ..core import shelf
-        mo, skip_axes = self.get_qc_options()
-        shelf.create_point_constraint(mo=mo, skip_axes=skip_axes)
+        mo, skip_t, _ = self.get_qc_options()
+        shelf.create_point_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_orient(self):
         from ..core import shelf
-        mo, skip_axes = self.get_qc_options()
-        shelf.create_orient_constraint(mo=mo, skip_axes=skip_axes)
+        mo, _, skip_r = self.get_qc_options()
+        shelf.create_orient_constraint(mo=mo, skip_axes=skip_r)
         
     def on_qc_scale(self):
         from ..core import shelf
-        mo, skip_axes = self.get_qc_options()
-        shelf.create_scale_constraint(mo=mo, skip_axes=skip_axes)
+        mo, skip_t, _ = self.get_qc_options()
+        shelf.create_scale_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_delete(self):
         from ..core import shelf

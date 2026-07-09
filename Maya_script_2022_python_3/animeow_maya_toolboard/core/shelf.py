@@ -89,12 +89,12 @@ def run_anti_virus():
             button=[u"Tuyệt vời"]
         )
 
-def create_parent_constraint(mo=True, skip_axes="none"):
-    """Tạo Parent Constraint có tùy chọn Maintain Offset và Skip Trục"""
+def create_parent_constraint(mo=True, skip_translate="none", skip_rotate="none"):
+    """Tạo Parent Constraint có tùy chọn Maintain Offset và Skip Trục riêng cho Translate và Rotate"""
     sel = cmds.ls(sl=True) or []
     if len(sel) >= 2:
         try:
-            cmds.parentConstraint(sel[:-1], sel[-1], mo=mo, skipTranslate=skip_axes, skipRotate=skip_axes)
+            cmds.parentConstraint(sel[:-1], sel[-1], mo=mo, skipTranslate=skip_translate, skipRotate=skip_rotate)
             print("[AnimeowShelf] Đã tạo Parent Constraint thành công.")
         except Exception as e:
             cmds.warning("Không thể tạo Parent Constraint: %s" % str(e))
