@@ -32,7 +32,7 @@ def change_rotate_order(obj, new_order):
         
     # Chuyển đổi tên order sang giá trị số nguyên của Maya
     order_map = {'xyz': 0, 'yzx': 1, 'zxy': 2, 'xzy': 3, 'yxz': 4, 'zyx': 5}
-    if isinstance(new_order, str):
+    if hasattr(new_order, 'lower'):
         new_order_val = order_map.get(new_order.lower(), 0)
     else:
         new_order_val = int(new_order)
