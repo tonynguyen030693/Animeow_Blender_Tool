@@ -33,6 +33,12 @@ def ensure_scripts_2022_path():
         
     if path not in sys.path:
         sys.path.insert(0, path)
+        
+    # Thêm thư mục src của Studio Library vào sys.path
+    sl_path = os.path.join(path, "studiolibrary-2.9.6.b3", "studiolibrary-2.9.6.b3", "src")
+    if os.path.exists(sl_path) and sl_path not in sys.path:
+        sys.path.insert(0, sl_path)
+        
     return path
 
 # =========================================================================
