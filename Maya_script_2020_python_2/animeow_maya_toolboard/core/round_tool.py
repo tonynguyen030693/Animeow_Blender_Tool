@@ -4,6 +4,25 @@ from __future__ import print_function, absolute_import, division
 import maya.cmds as cmds
 import maya.mel as mel
 
+def get_selected_channels(obj):
+    """Lấy danh sách các channel đang chọn trong Channel Box, nếu không có thì lấy tất cả keyable channels"""
+    try:
+        chans = mel.eval("selectedChannels")
+    except Exception:
+        chans = []
+        
+    if not chans:
+        chans = []
+    elif hasattr(chans, 'lower'): # Nếu chỉ có 1 channel chọn, mel.eval có thể trả về string đơn lẻ
+        chans = [chans]
+    elif not isinstance(chans, list):
+        chans = []
+        
+    if not chans and obj and cmds.objExists(obj):
+        chans = cmds.listAttr(obj, keyable=True) or []
+        
+    return chans
+
 def round_selected_values(precision=0, target='channel_box'):
     """
     Làm tròn giá trị thuộc tính trong Channel Box hoặc làm tròn các keyframe.
@@ -23,10 +42,12 @@ def round_selected_values(precision=0, target='channel_box'):
         key_count = 0
         for curve in selected_curves:
             indices = cmds.keyframe(curve, query=True, selected=True, indexValue=True) or []
+            if isinstance(indices, (int, float)):
+                indices = [indices]
             for idx in indices:
                 val_list = cmds.keyframe(curve, index=(idx, idx), query=True, valueChange=True)
-                if val_list:
-                    val = val_list[0]
+                if val_list is not None and val_list != []:
+                    val = val_list[0] if isinstance(val_list, list) else val_list
                     rounded_val = round(val, precision) if precision > 0 else int(round(val))
                     cmds.keyframe(curve, index=(idx, idx), valueChange=rounded_val)
                     key_count += 1
@@ -37,9 +58,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn ít nhất một vật thể!"
             
-        selected_channels = mel.eval("selectedChannels") or []
-        if not selected_channels:
-            selected_channels = cmds.listAttr(selected_objects[0], keyable=True) or []
+        selected_channels = get_selected_channels(selected_objects[0])
             
         key_count = 0
         for obj in selected_objects:
@@ -48,8 +67,8 @@ def round_selected_values(precision=0, target='channel_box'):
                 if cmds.objExists(attr_path):
                     # Truy vấn xem tại frame hiện tại có keyframe không
                     val_list = cmds.keyframe(obj, attribute=attr, time=(curr_frame, curr_frame), query=True, valueChange=True)
-                    if val_list:
-                        val = val_list[0]
+                    if val_list is not None and val_list != []:
+                        val = val_list[0] if isinstance(val_list, list) else val_list
                         rounded_val = round(val, precision) if precision > 0 else int(round(val))
                         cmds.keyframe(obj, attribute=attr, time=(curr_frame, curr_frame), valueChange=rounded_val)
                         key_count += 1
@@ -63,9 +82,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn ít nhất một vật thể!"
             
-        selected_channels = mel.eval("selectedChannels") or []
-        if not selected_channels:
-            selected_channels = cmds.listAttr(selected_objects[0], keyable=True) or []
+        selected_channels = get_selected_channels(selected_objects[0])
             
         total_keys = 0
         for obj in selected_objects:
@@ -73,10 +90,12 @@ def round_selected_values(precision=0, target='channel_box'):
                 attr_path = "%s.%s" % (obj, attr)
                 if cmds.objExists(attr_path):
                     times = cmds.keyframe(obj, attribute=attr, query=True, timeChange=True) or []
+                    if isinstance(times, (int, float)):
+                        times = [times]
                     for t in times:
                         val_list = cmds.keyframe(obj, attribute=attr, time=(t, t), query=True, valueChange=True)
-                        if val_list:
-                            val = val_list[0]
+                        if val_list is not None and val_list != []:
+                            val = val_list[0] if isinstance(val_list, list) else val_list
                             rounded_val = round(val, precision) if precision > 0 else int(round(val))
                             cmds.keyframe(obj, attribute=attr, time=(t, t), valueChange=rounded_val)
                             total_keys += 1
@@ -87,9 +106,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn ít nhất một vật thể trong Viewport!"
             
-        selected_channels = mel.eval("selectedChannels") or []
-        if not selected_channels:
-            selected_channels = cmds.listAttr(selected_objects[0], keyable=True) or []
+        selected_channels = get_selected_channels(selected_objects[0])
             
         attr_count = 0
         for obj in selected_objects:
