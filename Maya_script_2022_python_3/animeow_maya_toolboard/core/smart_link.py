@@ -178,6 +178,7 @@ class AnimationBaker(object):
         # 1. Định vị locators
         loc_parent, loc_child = self.find_locator_names()
         attrs = ['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
+        incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
         
         if smart_clean:
             # Thu thập các frame theo lưới Grid Step (ví dụ step=2: 1, 3, 5, 7...)
@@ -189,7 +190,6 @@ class AnimationBaker(object):
             if loc_child and cmds.objExists(loc_child):
                 targets_to_scan.append(loc_child)
             else:
-                incoming_constraints = cmds.listConnections(self.owner, source=True, destination=False, type="constraint") or []
                 for con in incoming_constraints:
                     # Lấy các kết nối đầu vào (drivers) của constraint
                     inputs = cmds.listConnections(con, source=True, destination=False) or []
