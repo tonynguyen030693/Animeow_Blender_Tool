@@ -10,6 +10,9 @@ def get_selected_channels(obj):
     try:
         # Lấy tên Channel Box chính của Maya
         gChannelBoxName = mel.eval('$temp=$gChannelBoxName')
+        if not gChannelBoxName:
+            gChannelBoxName = "mainChannelBox"
+            
         if gChannelBoxName and cmds.channelBox(gChannelBoxName, exists=True):
             sma = cmds.channelBox(gChannelBoxName, query=True, sma=True) or []
             ssa = cmds.channelBox(gChannelBoxName, query=True, ssa=True) or []
@@ -19,7 +22,7 @@ def get_selected_channels(obj):
             raw_chans = list(set(sma + ssa + sha))
             # Đảm bảo các channel hợp lệ
             for c in raw_chans:
-                if c and isinstance(c, (str, unicode)): # Python 2 support
+                if c and hasattr(c, 'lower'):
                     chans.append(str(c))
     except Exception:
         chans = []
