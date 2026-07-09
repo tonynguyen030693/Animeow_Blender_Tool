@@ -2686,7 +2686,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một vật thể!")
             return
             
-        new_order = self.ro_combo.currentText()
+        new_order = self.so_order_combo.currentText()
         
         # Chạy trong một undo chunk của Maya
         cmds.undoInfo(openChunk=True, chunkName="ChangeRotateOrder")
