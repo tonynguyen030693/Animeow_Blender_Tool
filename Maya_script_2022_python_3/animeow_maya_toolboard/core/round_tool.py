@@ -33,12 +33,13 @@ def get_selected_channels(obj):
         
     return chans
 
-def round_selected_values(precision=0, target='channel_box'):
+def round_selected_values(precision=0, target='channel_box', channels=None):
     """
     Làm tròn giá trị thuộc tính trong Channel Box hoặc làm tròn các keyframe.
     
-    precision: Số chữ số sau dấu phẩy (0 = số nguyên, 1 = 1 số thập phân, 2 = 2 số thập phân...)
+    precision: Số chữ số sau dấu phẩy (0 = số nguyên, 1 = 1 số thập phân, 2 = 2 số thập phân, -1 = reset về 0)
     target: 'channel_box', 'graph_editor', 'current_frame', 'all_keyframes'
+    channels: Danh sách thuộc tính chỉ định (ví dụ: ['translateX', 'translateY', 'translateZ'])
     """
     selected_objects = cmds.ls(sl=True) or []
     curr_frame = cmds.currentTime(q=True)
@@ -46,8 +47,12 @@ def round_selected_values(precision=0, target='channel_box'):
     # 1. Chỉ làm tròn các keyframe được chọn thủ công trong Graph Editor
     if target == 'graph_editor':
         selected_curves = cmds.keyframe(query=True, selected=True, name=True) or []
+        if channels:
+            # Lọc các curve tương ứng với channel mong muốn
+            selected_curves = [c for c in selected_curves if any(ch.lower() in c.lower() for ch in channels)]
+            
         if not selected_curves:
-            return False, "Vui lòng quét chọn ít nhất một keyframe trong Graph Editor!"
+            return False, "Vui lòng quét chọn ít nhất một keyframe của thuộc tính tương ứng trong Graph Editor!"
             
         key_count = 0
         for curve in selected_curves:
@@ -69,7 +74,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn nhất một vật thể!"
             
-        selected_channels = get_selected_channels(selected_objects[0])
+        selected_channels = channels if channels is not None else get_selected_channels(selected_objects[0])
             
         key_count = 0
         for obj in selected_objects:
@@ -94,7 +99,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn ít nhất một vật thể!"
             
-        selected_channels = get_selected_channels(selected_objects[0])
+        selected_channels = channels if channels is not None else get_selected_channels(selected_objects[0])
             
         total_keys = 0
         for obj in selected_objects:
@@ -119,7 +124,7 @@ def round_selected_values(precision=0, target='channel_box'):
         if not selected_objects:
             return False, "Vui lòng chọn ít nhất một vật thể trong Viewport!"
             
-        selected_channels = get_selected_channels(selected_objects[0])
+        selected_channels = channels if channels is not None else get_selected_channels(selected_objects[0])
             
         attr_count = 0
         for obj in selected_objects:

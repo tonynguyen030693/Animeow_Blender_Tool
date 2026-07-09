@@ -748,6 +748,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.round_btn.setFixedHeight(28)
         self.round_btn.clicked.connect(self.on_round_values)
         round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+        
+        # Reset row
+        reset_row = QtWidgets.QHBoxLayout()
+        self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
+        self.reset_t_btn.setFixedHeight(24)
+        self.reset_t_btn.clicked.connect(self.on_reset_translate)
+        reset_row.addWidget(self.reset_t_btn)
+        
+        self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
+        self.reset_r_btn.setFixedHeight(24)
+        self.reset_r_btn.clicked.connect(self.on_reset_rotate)
+        reset_row.addWidget(self.reset_r_btn)
+        
+        round_sub_layout.addLayout(reset_row, 3, 0, 1, 2)
         curve_layout.addLayout(round_sub_layout)
         
         tab2_layout.addWidget(self.curve_group)
@@ -1283,6 +1297,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.round_btn.setFixedHeight(28)
                 self.round_btn.clicked.connect(self.on_round_values)
                 round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+                
+                # Reset row
+                reset_row = QtWidgets.QHBoxLayout()
+                self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
+                self.reset_t_btn.setFixedHeight(24)
+                self.reset_t_btn.clicked.connect(self.on_reset_translate)
+                reset_row.addWidget(self.reset_t_btn)
+                
+                self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
+                self.reset_r_btn.setFixedHeight(24)
+                self.reset_r_btn.clicked.connect(self.on_reset_rotate)
+                reset_row.addWidget(self.reset_r_btn)
+                
+                round_sub_layout.addLayout(reset_row, 3, 0, 1, 2)
                 rnd_lay.addLayout(round_sub_layout)
                 fav_layout.addWidget(rnd_group)
                 
@@ -2283,6 +2311,64 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi %s" % action_title,
                 "Lỗi xảy ra khi thực hiện %s:\n%s" % (action_title.lower(), str(e))
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_reset_translate(self):
+        """Đặt Translate X, Y, Z về 0"""
+        self.save_settings()
+        target_idx = self.round_target_combo.currentIndex()
+        target_map = {
+            0: 'channel_box',
+            1: 'graph_editor',
+            2: 'current_frame',
+            3: 'all_keyframes'
+        }
+        target = target_map.get(target_idx, 'channel_box')
+        
+        channels = ['translateX', 'translateY', 'translateZ']
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = round_tool.round_selected_values(-1, target, channels)
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Đặt Translate về 0",
+                "Lỗi xảy ra khi đặt Translate về 0:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_reset_rotate(self):
+        """Đặt Rotate X, Y, Z về 0"""
+        self.save_settings()
+        target_idx = self.round_target_combo.currentIndex()
+        target_map = {
+            0: 'channel_box',
+            1: 'graph_editor',
+            2: 'current_frame',
+            3: 'all_keyframes'
+        }
+        target = target_map.get(target_idx, 'channel_box')
+        
+        channels = ['rotateX', 'rotateY', 'rotateZ']
+        
+        cmds.undoInfo(openChunk=True)
+        try:
+            success, msg = round_tool.round_selected_values(-1, target, channels)
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Đặt Rotate về 0",
+                "Lỗi xảy ra khi đặt Rotate về 0:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -3294,7 +3380,7 @@ def show_window(tab_index=None, standalone_tab=None):
             show_kwargs["height"] = 200
         elif standalone_tab == "fav_tools":
             show_kwargs["width"] = 250
-            show_kwargs["height"] = 270
+            show_kwargs["height"] = 300
         ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
