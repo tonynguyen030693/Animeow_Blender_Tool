@@ -598,6 +598,12 @@ def create_shelf():
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='round_tool')"
         },
         {
+            "label": "ClK",
+            "annotation": "Dọn dẹp keyframe thừa có giá trị bằng nhau liên tiếp",
+            "image": "deleteKey.png",
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard.core.clean_redundant_keys as clk\nclk.clean_redundant_keys()"
+        },
+        {
             "label": "Rig",
             "annotation": "Mở cửa sổ Rig & Mirror độc lập",
             "image": get_icon("rig_icon.png", "polyMesh.png"),

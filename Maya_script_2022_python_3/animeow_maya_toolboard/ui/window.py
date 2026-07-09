@@ -717,6 +717,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.euler_filter_btn.clicked.connect(self.on_euler_filter)
         curve_layout.addWidget(self.euler_filter_btn)
         
+        self.clean_key_btn = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Consecutive Keys)")
+        self.clean_key_btn.setFixedHeight(28)
+        self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
+        curve_layout.addWidget(self.clean_key_btn)
+        
         round_sub_layout = QtWidgets.QGridLayout()
         round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
         self.round_precision_combo = QtWidgets.QComboBox()
@@ -2884,6 +2889,40 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.warning("Không tìm thấy Constraint nào trực tiếp trên các đối tượng được chọn.")
 
     
+    def on_clean_redundant_keys(self):
+        """Dọn dẹp keyframe có giá trị bằng nhau liên tiếp"""
+        from ..core import clean_redundant_keys
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trên viewport!")
+            return
+            
+        res = QtWidgets.QMessageBox.question(
+            self, "Xác nhận dọn dẹp key",
+            "Hành động này sẽ dọn dẹp các keyframe thừa có giá trị bằng nhau liên tục trên đối tượng đang chọn (giữ lại key đầu/cuối của chuỗi phẳng).\nBạn có chắc chắn?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res == QtWidgets.QMessageBox.No:
+            return
+            
+        try:
+            total_deleted = clean_redundant_keys.clean_redundant_keys(objects=sel)
+            if total_deleted > 0:
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã dọn dẹp thành công %d keyframe thừa có giá trị bằng nhau!" % total_deleted
+                )
+            else:
+                QtWidgets.QMessageBox.information(
+                    self, "Thông tin", 
+                    "Không tìm thấy keyframe thừa nào có giá trị bằng nhau để dọn dẹp."
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi dọn dẹp keyframe: %s" % str(e)
+            )
+
     def on_euler_filter(self):
         """Áp dụng Euler Filter cho các đường cong xoay được chọn hoặc các vật thể được chọn"""
         selected = cmds.ls(sl=True) or []
