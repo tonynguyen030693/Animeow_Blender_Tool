@@ -214,7 +214,29 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_RT_PRECISION = "AnimeowTbRtPrecision"
     OP_RT_TARGET = "AnimeowTbRtTarget"
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, standalone_tab=None):
+        self.standalone_tab = standalone_tab
+        
+        if standalone_tab is not None:
+            if standalone_tab == 0:
+                self.WINDOW_TITLE = "Space & Bake"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowBakeWorkspaceControl"
+            elif standalone_tab == 1:
+                self.WINDOW_TITLE = "Curve & Motion"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowCurveWorkspaceControl"
+            elif standalone_tab == 2:
+                self.WINDOW_TITLE = "Rig & Mirror"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowRigWorkspaceControl"
+            elif standalone_tab == 3:
+                self.WINDOW_TITLE = "Output & Scene"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowOutputWorkspaceControl"
+            elif standalone_tab == "arc_tracker":
+                self.WINDOW_TITLE = "Arc Tracker"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowArcWorkspaceControl"
+            elif standalone_tab == "round_tool":
+                self.WINDOW_TITLE = "Làm tròn số"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowRoundWorkspaceControl"
+                
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
         self.setWindowTitle(self.WINDOW_TITLE)
         self.setStyleSheet(QSS_STYLE)
@@ -325,7 +347,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- TAB 1: LINK & BAKE (LIÊN KẾT & NƯỚNG) ---
         # =========================================================================
-        tab1 = QtWidgets.QWidget()
+        tab1 = QtWidgets.QWidget(self)
+        tab1.hide()
         tab1_layout = QtWidgets.QVBoxLayout(tab1)
         tab1_layout.setContentsMargins(6, 10, 6, 6)
         tab1_layout.setSpacing(10)
@@ -543,19 +566,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- TAB 2: CURVE & MOTION (ĐƯỜNG CONG & DIỄN HOẠT) ---
         # =========================================================================
-        tab2 = QtWidgets.QWidget()
+        tab2 = QtWidgets.QWidget(self)
+        tab2.hide()
         tab2_layout = QtWidgets.QVBoxLayout(tab2)
         tab2_layout.setContentsMargins(6, 10, 6, 6)
         tab2_layout.setSpacing(10)
         
-        t2_title = QtWidgets.QLabel("CURVE EDITING & MOTION ANALYSIS")
-        t2_title.setAlignment(QtCore.Qt.AlignCenter)
-        t2_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
-        tab2_layout.addWidget(t2_title)
+        self.t2_title = QtWidgets.QLabel("CURVE EDITING & MOTION ANALYSIS")
+        self.t2_title.setAlignment(QtCore.Qt.AlignCenter)
+        self.t2_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
+        tab2_layout.addWidget(self.t2_title)
         
         # GroupBox 1: Arc Tracker
-        at_group = QtWidgets.QGroupBox("Arc Tracker (Vẽ Quỹ đạo chuyển động)")
-        at_layout = QtWidgets.QVBoxLayout(at_group)
+        self.at_group = QtWidgets.QGroupBox("Arc Tracker (Vẽ Quỹ đạo chuyển động)")
+        at_layout = QtWidgets.QVBoxLayout(self.at_group)
         at_layout.setContentsMargins(8, 12, 8, 8)
         at_layout.setSpacing(8)
         
@@ -601,11 +625,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         at_btn_row.addWidget(self.at_clear_all_btn, 1, 1)
         at_layout.addLayout(at_btn_row)
         
-        tab2_layout.addWidget(at_group)
+        tab2_layout.addWidget(self.at_group)
         
         # GroupBox 2: Curve Editor Utilities
-        curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
-        curve_layout = QtWidgets.QVBoxLayout(curve_group)
+        self.curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
+        curve_layout = QtWidgets.QVBoxLayout(self.curve_group)
         curve_layout.setContentsMargins(8, 12, 8, 8)
         curve_layout.setSpacing(8)
         
@@ -627,10 +651,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
         self.round_target_combo = QtWidgets.QComboBox()
         self.round_target_combo.addItems([
-            "Channel Box (Thuộc tính chọn)", 
-            "Graph Editor (Keyframe chọn)",
-            "Keyframe tại frame hiện tại",
-            "Toàn bộ keyframe (Timeline)"
+            "Channel Box (Thuộc tính chọn)", 
+            "Graph Editor (Keyframe chọn)",
+            "Keyframe tại frame hiện tại",
+            "Toàn bộ keyframe (Timeline)"
         ])
         round_sub_layout.addWidget(self.round_target_combo, 1, 1)
         
@@ -641,13 +665,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
         curve_layout.addLayout(round_sub_layout)
         
-        tab2_layout.addWidget(curve_group)
+        tab2_layout.addWidget(self.curve_group)
         tab2_layout.addStretch()
 
         # =========================================================================
         # --- TAB 3: RIG & MIRROR (CÔNG CỤ RIG & ĐỐI XỨNG) ---
         # =========================================================================
-        tab3 = QtWidgets.QWidget()
+        tab3 = QtWidgets.QWidget(self)
+        tab3.hide()
         tab3_layout = QtWidgets.QVBoxLayout(tab3)
         tab3_layout.setContentsMargins(6, 10, 6, 6)
         tab3_layout.setSpacing(10)
@@ -809,7 +834,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- TAB 4: OUTPUT & SCENE (XUẤT BẢN & CẢNH QUAN) ---
         # =========================================================================
-        tab4 = QtWidgets.QWidget()
+        tab4 = QtWidgets.QWidget(self)
+        tab4.hide()
         tab4_layout = QtWidgets.QVBoxLayout(tab4)
         tab4_layout.setContentsMargins(6, 10, 6, 6)
         tab4_layout.setSpacing(10)
@@ -930,7 +956,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- TAB 5: LAUNCHERS (KHỞI CHẠY NHANH) ---
         # =========================================================================
-        tab5 = QtWidgets.QWidget()
+        tab5 = QtWidgets.QWidget(self)
+        tab5.hide()
         tab5_layout = QtWidgets.QVBoxLayout(tab5)
         tab5_layout.setContentsMargins(6, 10, 6, 6)
         tab5_layout.setSpacing(10)
@@ -989,11 +1016,40 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # =========================================================================
         # --- ADD TABS TO TABWIDGET ---
         # =========================================================================
-        self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
-        self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
-        self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
-        self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
-        self.tab_widget.addTab(wrap_in_scroll(tab5), "🚀 Launchers  ")
+        if self.standalone_tab is not None:
+            if self.standalone_tab == 0:
+                self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+            elif self.standalone_tab == 1:
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
+            elif self.standalone_tab == 2:
+                self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
+            elif self.standalone_tab == 3:
+                self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
+            elif self.standalone_tab == "arc_tracker":
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "🎨 Arc Tracker  ")
+                # Ẩn tiêu đề và các công cụ Curve khác, chỉ chừa lại Arc Tracker
+                try:
+                    self.t2_title.hide()
+                    self.curve_group.hide()
+                except Exception:
+                    pass
+            elif self.standalone_tab == "round_tool":
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "🔢 Làm tròn số  ")
+                # Ẩn tiêu đề, Arc Tracker và nút Euler Filter, đổi tên GroupBox
+                try:
+                    self.t2_title.hide()
+                    self.at_group.hide()
+                    self.euler_filter_btn.hide()
+                    self.curve_group.setTitle("Công cụ làm tròn số")
+                except Exception:
+                    pass
+            self.tab_widget.tabBar().hide()
+        else:
+            self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab2), "📈 Curve & Motion  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab3), "🎯 Rig & Mirror  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab4), "🎬 Output & Scene  ")
+            self.tab_widget.addTab(wrap_in_scroll(tab5), "🚀 Launchers  ")
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
     def load_settings(self):
@@ -2622,7 +2678,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
         finally:
             cmds.undoInfo(closeChunk=True)
-            
     def on_record_world_space(self):
         """Ghi tọa độ thế giới sang locator"""
         sel = cmds.ls(sl=True) or []
@@ -2713,67 +2768,96 @@ def is_ui_alive(ui_obj):
         return False
 
 
-def show_window(tab_index=None):
+def show_window(tab_index=None, standalone_tab=None):
     import sys
     
+    # Xác định key lưu instance trong sys, tên control và tiêu đề cửa sổ
+    if standalone_tab is None:
+        sys_key = "_animeow_maya_toolboard_ui"
+        ctrl_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME
+        win_title = AnimeowMayaToolboardUI.WINDOW_TITLE
+    else:
+        sys_key = "_animeow_standalone_%s_ui" % str(standalone_tab)
+        if standalone_tab == 0:
+            ctrl_name = "AnimeowBakeWorkspaceControl"
+            win_title = "Space & Bake"
+        elif standalone_tab == 1:
+            ctrl_name = "AnimeowCurveWorkspaceControl"
+            win_title = "Curve & Motion"
+        elif standalone_tab == 2:
+            ctrl_name = "AnimeowRigWorkspaceControl"
+            win_title = "Rig & Mirror"
+        elif standalone_tab == 3:
+            ctrl_name = "AnimeowOutputWorkspaceControl"
+            win_title = "Output & Scene"
+        elif standalone_tab == "arc_tracker":
+            ctrl_name = "AnimeowArcWorkspaceControl"
+            win_title = "Arc Tracker"
+        elif standalone_tab == "round_tool":
+            ctrl_name = "AnimeowRoundWorkspaceControl"
+            win_title = "Làm tròn số"
+        else:
+            ctrl_name = "AnimeowGenericWorkspaceControl"
+            win_title = "Animeow Tool"
+            
     # 1. Đóng và giải phóng widget cũ (nếu có)
-    old_ui = getattr(sys, "_animeow_maya_toolboard_ui", None)
+    old_ui = getattr(sys, sys_key, None)
     if is_ui_alive(old_ui):
         try:
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
             pass
-        sys._animeow_maya_toolboard_ui = None
+        setattr(sys, sys_key, None)
 
     # 2. Xóa các workspaceControl cũ và dọn dẹp các control rác từ các bản build lỗi trước đó
-    for ctrl_name in [AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
-                      AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME + "WorkspaceControl"]:
-        if cmds.workspaceControl(ctrl_name, exists=True):
+    for name in [ctrl_name, ctrl_name + "WorkspaceControl"]:
+        if cmds.workspaceControl(name, exists=True):
             try:
-                cmds.deleteUI(ctrl_name)
+                cmds.deleteUI(name)
             except Exception:
                 pass
             
     # 3. Tạo instance mới
-    ui_instance = AnimeowMayaToolboardUI()
-    sys._animeow_maya_toolboard_ui = ui_instance
+    ui_instance = AnimeowMayaToolboardUI(standalone_tab=standalone_tab)
+    setattr(sys, sys_key, ui_instance)
     
     # Thiết lập objectName (không bao gồm hậu tố WorkspaceControl) để Maya tự động ghép thêm hậu tố này
-    # tạo thành đúng tên AnimeowMayaToolboardWorkspaceControl khớp với WORKSPACE_CONTROL_NAME
-    obj_name = AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME.replace("WorkspaceControl", "")
+    # tạo thành đúng tên Workspace Control khớp với ctrl_name
+    obj_name = ctrl_name.replace("WorkspaceControl", "")
     ui_instance.setObjectName(obj_name)
     
     # 4. Kiểm tra xem người dùng đã từng có tùy biến vị trí (windowPref) được lưu cho workspace control này chưa
     pref_exists = False
     try:
-        pref_exists = cmds.windowPref(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True)
+        pref_exists = cmds.windowPref(ctrl_name, exists=True)
     except Exception:
         pass
         
     # 5. Hiển thị dưới dạng dockable panel
     if pref_exists:
-        # Nếu đã có tùy chỉnh vị trí trước đó (Ví dụ kéo ra ngoài float hoặc dock chỗ khác),
-        # ta để Maya tự động tải cấu hình cũ bằng cách không áp các giá trị mặc định (floating=False, area="right")
+        # Nếu đã có tùy chỉnh vị trí trước đó, để Maya tự động tải cấu hình cũ
         ui_instance.show(dockable=True)
     else:
-        # Nếu là lần đầu chạy tool, áp dụng docking mặc định ở bên phải
+        # Nếu là lần đầu chạy tool, áp dụng docking mặc định
+        # Đối với các cửa sổ standalone nhỏ, ta để mặc định floating=True để làm nổi tiện sắp xếp
+        is_floating = True if standalone_tab is not None else False
         ui_instance.show(
             dockable=True,
             area="right",
-            floating=False,
+            floating=is_floating,
             allowedArea="left|right"
         )
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
-    if cmds.workspaceControl(AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, exists=True):
+    if cmds.workspaceControl(ctrl_name, exists=True):
         cmds.workspaceControl(
-            AnimeowMayaToolboardUI.WORKSPACE_CONTROL_NAME, 
+            ctrl_name, 
             edit=True, 
-            label=AnimeowMayaToolboardUI.WINDOW_TITLE
+            label=win_title
         )
         
-    if tab_index is not None and is_ui_alive(ui_instance):
+    if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:
         try:
             ui_instance.tab_widget.setCurrentIndex(tab_index)
         except Exception:

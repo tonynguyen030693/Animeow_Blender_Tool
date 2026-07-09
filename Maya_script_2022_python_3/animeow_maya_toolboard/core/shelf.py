@@ -429,7 +429,7 @@ def create_arc_trail():
 # =========================================================================
 
 def create_shelf():
-    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 14 nút công cụ nhanh"""
+    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 18 nút công cụ nhanh"""
     shelf_name = "Animeow"
     
     # 1. Tìm shelf tab layout của Maya
@@ -456,21 +456,45 @@ def create_shelf():
     tools = [
         {
             "label": "ATB",
-            "annotation": "Mở Animeow Toolboard",
+            "annotation": "Mở Animeow Toolboard đầy đủ",
             "image": "fileOpen.png",
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show()"
         },
         {
+            "label": "Bake",
+            "annotation": "Mở cửa sổ Space & Bake độc lập",
+            "image": "save.png",
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=0)"
+        },
+        {
+            "label": "Curve",
+            "annotation": "Mở cửa sổ Curve & Motion độc lập",
+            "image": "menuIconWindow.png",
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=1)"
+        },
+        {
+            "label": "Rnd",
+            "annotation": "Mở cửa sổ Làm tròn số độc lập",
+            "image": "menuIconWindow.png",
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='round_tool')"
+        },
+        {
+            "label": "Rig",
+            "annotation": "Mở cửa sổ Rig & Mirror độc lập",
+            "image": "polyMesh.png",
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=2)"
+        },
+        {
             "label": "Play",
-            "annotation": "Mở Toolboard và chuyển đến tab Playblast (Output & Scene)",
+            "annotation": "Mở cửa sổ Output & Scene (Playblast) độc lập",
             "image": "playblast.png",
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(tab_index=3)"
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=3)"
         },
         {
             "label": "Arc",
-            "annotation": "Tạo Arc Trail cho các vật thể đang chọn",
+            "annotation": "Mở cửa sổ cấu hình vẽ Arc Tracker độc lập",
             "image": "motionTrail.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_arc_trail()"
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='arc_tracker')"
         },
         {
             "label": "Graph",
@@ -562,6 +586,6 @@ def create_shelf():
     # 6. Hiển thị thông báo
     cmds.confirmDialog(
         title="Thành công",
-        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 14 nút công cụ nhanh!",
+        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 18 nút công cụ nhanh!",
         button=["Tuyệt vời"]
     )
