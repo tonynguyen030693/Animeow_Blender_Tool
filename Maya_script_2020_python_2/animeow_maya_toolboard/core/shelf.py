@@ -66,6 +66,23 @@ def toggle_outliner():
         mel.eval("OutlinerWindow;")
         print("[AnimeowShelf] Đã mở Outliner.")
 
+def run_anti_virus():
+    """Khởi chạy quét và diệt virus trong scene"""
+    from . import clean_virus
+    cleaned = clean_virus.clean_virus()
+    if cleaned:
+        cmds.confirmDialog(
+            title="Kết quả diệt Virus",
+            message="Đã tìm thấy và tiêu diệt thành công %d node virus độc hại:\n%s" % (len(cleaned), ", ".join(cleaned)),
+            button=["Tuyệt vời"]
+        )
+    else:
+        cmds.confirmDialog(
+            title="Kết quả diệt Virus",
+            message="Chúc mừng! Scene của bạn hoàn toàn sạch sẽ, không phát hiện virus nào.",
+            button=["Tuyệt vời"]
+        )
+
 def save_increment():
     """Lưu increment phụ dạng .0001, .0002..."""
     mel.eval("IncrementAndSave;")
@@ -438,7 +455,7 @@ def create_arc_trail():
 # =========================================================================
 
 def create_shelf():
-    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 19 nút công cụ nhanh"""
+    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh"""
     shelf_name = "Animeow"
     
     # 1. Tìm shelf tab layout của Maya
@@ -559,6 +576,12 @@ def create_shelf():
             "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.clean_folder()"
         },
         {
+            "label": "AntiV",
+            "annotation": "Quét và diệt Virus trong Scene (vaccine, gene, fuckvirus...)",
+            "image": "delete.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.run_anti_virus()"
+        },
+        {
             "label": "Studio",
             "annotation": "Khởi chạy Studio Library",
             "image": "fileOpen.png",
@@ -612,6 +635,6 @@ def create_shelf():
     # 6. Hiển thị thông báo
     cmds.confirmDialog(
         title="Thành công",
-        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 19 nút công cụ nhanh!",
+        message="Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh!",
         button=["Tuyệt vời"]
     )

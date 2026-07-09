@@ -953,7 +953,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.toggle_outliner_btn = QtWidgets.QPushButton("Outliner (Bật/Tắt)")
         self.toggle_outliner_btn.setFixedHeight(28)
         self.toggle_outliner_btn.clicked.connect(self.on_toggle_outliner)
-        scene_layout.addWidget(self.toggle_outliner_btn, 3, 0, 1, 2)
+        scene_layout.addWidget(self.toggle_outliner_btn, 3, 0)
+        
+        self.run_antivirus_btn = QtWidgets.QPushButton("Diệt Virus (Quét & Clean)")
+        self.run_antivirus_btn.setFixedHeight(28)
+        self.run_antivirus_btn.clicked.connect(self.on_run_antivirus)
+        scene_layout.addWidget(self.run_antivirus_btn, 3, 1)
         
         tab4_layout.addWidget(scene_group)
         tab4_layout.addStretch()
@@ -1900,6 +1905,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             shelf.toggle_outliner()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Outliner:\n%s" % str(e))
+
+    def on_run_antivirus(self):
+        """Khởi chạy quét và diệt virus trong scene"""
+        try:
+            shelf.run_anti_virus()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy diệt Virus:\n%s" % str(e))
 
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""
