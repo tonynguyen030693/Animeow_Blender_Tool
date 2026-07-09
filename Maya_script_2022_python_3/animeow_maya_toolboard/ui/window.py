@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, temp_pivot
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf
 
 QSS_STYLE = """
 QWidget {
@@ -971,6 +971,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         launch_layout.addWidget(self.launch_animo_btn)
         
         tab5_layout.addWidget(launch_group)
+        
+        shelf_group = QtWidgets.QGroupBox("Thanh công cụ nhanh (Shelf)")
+        shelf_layout = QtWidgets.QVBoxLayout(shelf_group)
+        shelf_layout.setContentsMargins(8, 12, 8, 8)
+        shelf_layout.setSpacing(10)
+        
+        self.create_shelf_btn = QtWidgets.QPushButton("✨ Tạo / Cập nhật Shelf Animeow")
+        self.create_shelf_btn.setObjectName("accent_btn")
+        self.create_shelf_btn.setFixedHeight(30)
+        self.create_shelf_btn.clicked.connect(self.on_create_custom_shelf)
+        shelf_layout.addWidget(self.create_shelf_btn)
+        
+        tab5_layout.addWidget(shelf_group)
         tab5_layout.addStretch()
 
         # =========================================================================
@@ -1314,6 +1327,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if not os.path.exists(tween_mel_path):
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy file tweenMachine.mel tại:\n%s" % tween_mel_path)
             return
+            
+        # Thêm thư mục chứa tweenMachine vào MAYA_SCRIPT_PATH của Maya
+        try:
+            current_script_path = os.environ.get("MAYA_SCRIPT_PATH", "")
+            if path not in current_script_path:
+                os.environ["MAYA_SCRIPT_PATH"] = path + os.pathsep + current_script_path
+                # Đồng bộ lại với Maya
+                import maya.mel as mel
+                mel.eval("rehash;")
+        except Exception:
+            pass
             
         try:
             import maya.mel as mel
@@ -1778,217 +1802,50 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
             )
 
+    def on_create_custom_shelf(self):
+        """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
+        try:
+            shelf.create_shelf()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Không thể tạo hoặc cập nhật Shelf:\n%s" % str(e)
+            )
+
     def on_toggle_graph_editor(self):
         """Bật/Tắt Graph Editor"""
         try:
-            import maya.mel as mel
-            if cmds.window("graphEditor1Window", exists=True):
-                cmds.deleteUI("graphEditor1Window", window=True)
-                print("[Toolboard] Da dong Graph Editor.")
-            else:
-                mel.eval("GraphEditor;")
-                print("[Toolboard] Da mo Graph Editor.")
+            shelf.toggle_graph_editor()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Graph Editor:\n%s" % str(e))
 
     def on_toggle_reference_editor(self):
         """Bật/Tắt Reference Editor"""
         try:
-            import maya.mel as mel
-            if cmds.window("referenceEditorPanel1Window", exists=True):
-                cmds.deleteUI("referenceEditorPanel1Window", window=True)
-                print("[Toolboard] Da dong Reference Editor.")
-            else:
-                mel.eval("ReferenceEditor;")
-                print("[Toolboard] Da mo Reference Editor.")
+            shelf.toggle_reference_editor()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Reference Editor:\n%s" % str(e))
 
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""
         try:
-            import maya.mel as mel
-            mel.eval("IncrementAndSave;")
-            print("[Toolboard] Da thuc hien Save Increment.")
+            shelf.save_increment()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể thực hiện Save Increment:\n%s" % str(e))
 
     def on_save_up_version(self):
-        """Lưu file nâng Version (ví dụ: từ _v01.0001 thành _v02)"""
-        import os
-        import re
-        
-        scene_path = cmds.file(q=True, sceneName=True)
-        if not scene_path:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Scene chưa được lưu! Hãy lưu file trước khi nâng Version.")
-            return
-            
-        scene_dir, scene_file = os.path.split(scene_path)
-        file_name, ext = os.path.splitext(scene_file)
-        
-        # Regex tìm version _v01, _v02,... hoặc .v01, .v02...
-        version_pattern = re.compile(r'([_\.]v)(\d+)(.*)', re.IGNORECASE)
-        
-        match = version_pattern.search(file_name)
-        if match:
-            prefix = file_name[:match.start()]
-            v_prefix = match.group(1) # '_v' hoặc '.v'
-            v_num_str = match.group(2) # '01', '1', '001'
-            
-            # Tăng số version lên 1
-            new_v_num = int(v_num_str) + 1
-            # Đệm số 0 tương ứng độ dài cũ (v01 -> v02)
-            new_v_num_str = str(new_v_num).zfill(len(v_num_str))
-            
-            # Bỏ qua phần hậu tố số increment phía sau (ví dụ: .0001)
-            new_file_name = prefix + v_prefix + new_v_num_str + ext
-        else:
-            # Nếu không có _vXX nhưng có hậu tố increment (ví dụ: .0005)
-            inc_pattern = re.compile(r'\.(\d{3,5})$')
-            inc_match = inc_pattern.search(file_name)
-            if inc_match:
-                prefix = file_name[:inc_match.start()]
-                new_file_name = prefix + "_v02" + ext
-            else:
-                # Không tìm thấy version và increment
-                new_file_name = file_name + "_v02" + ext
-                
-        new_scene_path = os.path.join(scene_dir, new_file_name).replace('\\', '/')
-        
-        # Xác nhận với người dùng trước khi lưu nâng version
-        res = QtWidgets.QMessageBox.question(
-            self, "Xác nhận nâng Version",
-            "Bạn có muốn nâng version hiện tại lên phiên bản mới không?\nTên file mới:\n%s" % new_file_name,
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-        )
-        if res == QtWidgets.QMessageBox.No:
-            return
-            
+        """Lưu file nâng Version"""
         try:
-            cmds.file(rename=new_scene_path)
-            file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
-            cmds.file(save=True, type=file_type)
-            QtWidgets.QMessageBox.information(
-                self, "Thành công",
-                "Đã nâng version thành công!\nTên file mới: %s" % new_file_name
-            )
-            print("[Toolboard] Da nang version thanh cong: %s" % new_file_name)
+            shelf.save_up_version()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi",
-                "Lỗi xảy ra khi nâng version:\n%s" % str(e)
-            )
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi nâng version:\n%s" % str(e))
 
     def on_clean_folder(self):
-        """Dọn dẹp thư mục chứa file: giữ lại 5 version mới nhất, chuyển các file cũ hơn vào thư mục Old"""
-        import os
-        import re
-        import shutil
-        
-        # 1. Lấy thông tin file hiện tại
-        scene_path = cmds.file(q=True, sceneName=True)
-        if not scene_path:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Scene hiện tại chưa được lưu trên đĩa! Hãy lưu file trước khi thực hiện dọn dẹp.")
-            return
-            
-        scene_dir, scene_file = os.path.split(scene_path)
-        file_name, ext = os.path.splitext(scene_file)
-        
-        # 2. Rút trích phần tên gốc (root prefix) bằng cách bỏ version (_v01) và increment (.0001)
-        root_prefix = re.sub(r'([_\.]v\d+)?(\.\d{3,5})?(_org)?$', '', file_name, flags=re.IGNORECASE)
-        
-        # Quét các file trong cùng thư mục
+        """Dọn dẹp thư mục"""
         try:
-            files_in_dir = os.listdir(scene_dir)
+            shelf.clean_folder()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể truy cập thư mục scene:\n%s" % str(e))
-            return
-            
-        # Lọc các file bắt đầu bằng root_prefix và có đuôi .ma/.mb
-        matched_files = []
-        for f in files_in_dir:
-            f_path = os.path.join(scene_dir, f).replace('\\', '/')
-            if os.path.isfile(f_path) and f.lower().startswith(root_prefix.lower()) and f.lower().endswith(('.ma', '.mb')):
-                mtime = os.path.getmtime(f_path)
-                matched_files.append((f, f_path, mtime))
-                
-        if not matched_files:
-            QtWidgets.QMessageBox.information(self, "Thông báo", "Không tìm thấy file nào khớp trong thư mục để dọn dẹp!")
-            return
-            
-        # Sắp xếp các file theo mtime giảm dần (mới nhất lên đầu)
-        matched_files.sort(key=lambda x: x[2], reverse=True)
-        
-        # Xác định 5 tệp mới nhất để giữ lại
-        keep_filenames = [x[0] for x in matched_files[:5]]
-        
-        # Đảm bảo tệp hiện tại đang mở trong Maya LUÔN LUÔN được giữ lại (tránh mất file handle)
-        if scene_file not in keep_filenames:
-            keep_filenames.append(scene_file)
-            
-        # Các tệp cũ cần di chuyển
-        files_to_move = [x for x in matched_files if x[0] not in keep_filenames]
-        
-        if not files_to_move:
-            QtWidgets.QMessageBox.information(
-                self, "Thông báo", 
-                "Thư mục hiện tại đang rất sạch sẽ!\nChỉ có %d tệp khớp và toàn bộ đã được giữ lại (tối đa 5 tệp gần nhất)." % len(matched_files)
-            )
-            return
-            
-        # Hỏi ý kiến người dùng trước khi dọn dẹp
-        confirm_msg = "Bạn có muốn dọn dẹp thư mục này không?\n\n"
-        confirm_msg += "- Giữ lại %d tệp mới nhất (bao gồm file đang mở).\n" % len(keep_filenames)
-        confirm_msg += "- Di chuyển %d tệp cũ hơn vào thư mục 'Old'.\n\nDanh sách file sẽ di chuyển:\n" % len(files_to_move)
-        for f, _, _ in files_to_move[:10]:
-            confirm_msg += "  + %s\n" % f
-        if len(files_to_move) > 10:
-            confirm_msg += "  + ... và %d file khác.\n" % (len(files_to_move) - 10)
-            
-        res = QtWidgets.QMessageBox.question(
-            self, "Xác nhận dọn dẹp thư mục",
-            confirm_msg,
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-        )
-        if res == QtWidgets.QMessageBox.No:
-            return
-            
-        # 3. Tạo thư mục Old và di chuyển các file cũ
-        old_dir = os.path.join(scene_dir, "Old").replace('\\', '/')
-        if not os.path.exists(old_dir):
-            try:
-                os.makedirs(old_dir)
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(self, "Lỗi tạo thư mục", "Không thể tạo thư mục 'Old':\n%s" % str(e))
-                return
-                
-        moved_count = 0
-        error_count = 0
-        error_files = []
-        
-        for f, f_path, _ in files_to_move:
-            dest_path = os.path.join(old_dir, f).replace('\\', '/')
-            try:
-                if os.path.exists(dest_path):
-                    os.remove(dest_path)
-                shutil.move(f_path, dest_path)
-                moved_count += 1
-            except Exception as ex:
-                error_count += 1
-                error_files.append((f, str(ex)))
-                
-        # 4. Hiển thị báo cáo kết quả
-        if error_count == 0:
-            QtWidgets.QMessageBox.information(
-                self, "Dọn dẹp thành công",
-                "Đã di chuyển thành công %d tệp cũ vào thư mục 'Old'!\nThư mục hiện tại chỉ giữ lại 5 tệp mới nhất." % moved_count
-            )
-        else:
-            warn_msg = "Dọn dẹp hoàn thành một phần:\n"
-            warn_msg += "- Di chuyển thành công: %d file.\n" % moved_count
-            warn_msg += "- Thất bại: %d file.\n\nChi tiết lỗi:\n" % error_count
-            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", warn_msg)
-
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % str(e))
     def on_round_values(self):
         """Làm tròn sñ thuûc tính hoộc keyframe"""
         self.save_settings()
@@ -2729,25 +2586,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_fix_lost_shader(self):
         """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
         try:
-            # 1. Unlock initialShadingGroup
-            if cmds.objExists('initialShadingGroup'):
-                cmds.lockNode('initialShadingGroup', lock=False, lockUnpublished=False)
-                
-            # 2. Unlock defaultTextureList1
-            if cmds.objExists('defaultTextureList1'):
-                cmds.lockNode('defaultTextureList1', lock=False, lockUnpublished=False)
-                
-            cmds.warning("Đã mở khóa initialShadingGroup và defaultTextureList1 thành công!")
-            QtWidgets.QMessageBox.information(
-                self, "Thành công", 
-                "Đã mở khóa các node mặc định thành công!\nBạn có thể thử gán lại shader hoặc import/export bình thường."
-            )
+            shelf.fix_lost_shader()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi", 
                 "Không thể mở khóa các node mặc định:\n%s" % str(e)
             )
-
     def on_change_rotate_order(self):
         """Thay đổi Rotate Order bảo toàn keyframe"""
         sel = cmds.ls(sl=True) or []
@@ -2869,7 +2713,7 @@ def is_ui_alive(ui_obj):
         return False
 
 
-def show_window():
+def show_window(tab_index=None):
     import sys
     
     # 1. Đóng và giải phóng widget cũ (nếu có)
@@ -2928,4 +2772,11 @@ def show_window():
             edit=True, 
             label=AnimeowMayaToolboardUI.WINDOW_TITLE
         )
+        
+    if tab_index is not None and is_ui_alive(ui_instance):
+        try:
+            ui_instance.tab_widget.setCurrentIndex(tab_index)
+        except Exception:
+            pass
+            
     return ui_instance
