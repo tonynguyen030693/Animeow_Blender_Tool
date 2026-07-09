@@ -1232,15 +1232,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 fav_layout.setContentsMargins(6, 6, 6, 6)
                 fav_layout.setSpacing(8)
                 
-                # GroupBox 1: Clean Key
-                ck_group = QtWidgets.QGroupBox("Dọn dẹp Keyframe (Clean Key)")
+                # GroupBox 1: Clean & Filter Key
+                ck_group = QtWidgets.QGroupBox("Dọn dẹp & Lọc Keyframe (Clean & Filter)")
                 ck_lay = QtWidgets.QVBoxLayout(ck_group)
                 ck_lay.setContentsMargins(8, 10, 8, 8)
+                ck_lay.setSpacing(6)
                 
                 btn_clean = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Key)")
                 btn_clean.setFixedHeight(28)
                 btn_clean.clicked.connect(self.on_clean_redundant_keys)
                 ck_lay.addWidget(btn_clean)
+                
+                btn_euler = QtWidgets.QPushButton("Euler Filter (Lọc xoay)")
+                btn_euler.setFixedHeight(28)
+                btn_euler.clicked.connect(self.on_euler_filter)
+                ck_lay.addWidget(btn_euler)
+                
                 fav_layout.addWidget(ck_group)
                 
                 # GroupBox 2: Round Tool
@@ -3282,7 +3289,7 @@ def show_window(tab_index=None, standalone_tab=None):
             show_kwargs["height"] = 200
         elif standalone_tab == "fav_tools":
             show_kwargs["width"] = 250
-            show_kwargs["height"] = 230
+            show_kwargs["height"] = 270
         ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
