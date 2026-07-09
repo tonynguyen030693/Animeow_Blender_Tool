@@ -89,6 +89,76 @@ def run_anti_virus():
             button=[u"Tuyệt vời"]
         )
 
+def create_parent_constraint():
+    """Tạo Parent Constraint có Maintain Offset nhanh"""
+    sel = cmds.ls(sl=True) or []
+    if len(sel) >= 2:
+        try:
+            cmds.parentConstraint(sel[:-1], sel[-1], mo=True)
+            print("[AnimeowShelf] Đã tạo Parent Constraint (Maintain Offset) thành công.")
+        except Exception as e:
+            cmds.warning("Không thể tạo Parent Constraint: %s" % str(e))
+    else:
+        cmds.warning("Vui lòng chọn ít nhất 2 đối tượng (đối tượng đầu là driver, đối tượng cuối là driven)!")
+
+def create_point_constraint():
+    """Tạo Point Constraint có Maintain Offset nhanh"""
+    sel = cmds.ls(sl=True) or []
+    if len(sel) >= 2:
+        try:
+            cmds.pointConstraint(sel[:-1], sel[-1], mo=True)
+            print("[AnimeowShelf] Đã tạo Point Constraint (Maintain Offset) thành công.")
+        except Exception as e:
+            cmds.warning("Không thể tạo Point Constraint: %s" % str(e))
+    else:
+        cmds.warning("Vui lòng chọn ít nhất 2 đối tượng!")
+
+def create_orient_constraint():
+    """Tạo Orient Constraint có Maintain Offset nhanh"""
+    sel = cmds.ls(sl=True) or []
+    if len(sel) >= 2:
+        try:
+            cmds.orientConstraint(sel[:-1], sel[-1], mo=True)
+            print("[AnimeowShelf] Đã tạo Orient Constraint (Maintain Offset) thành công.")
+        except Exception as e:
+            cmds.warning("Không thể tạo Orient Constraint: %s" % str(e))
+    else:
+        cmds.warning("Vui lòng chọn ít nhất 2 đối tượng!")
+
+def create_scale_constraint():
+    """Tạo Scale Constraint có Maintain Offset nhanh"""
+    sel = cmds.ls(sl=True) or []
+    if len(sel) >= 2:
+        try:
+            cmds.scaleConstraint(sel[:-1], sel[-1], mo=True)
+            print("[AnimeowShelf] Đã tạo Scale Constraint (Maintain Offset) thành công.")
+        except Exception as e:
+            cmds.warning("Không thể tạo Scale Constraint: %s" % str(e))
+    else:
+        cmds.warning("Vui lòng chọn ít nhất 2 đối tượng!")
+
+def delete_obj_constraints():
+    """Xóa tất cả constraint của đối tượng đang chọn"""
+    sel = cmds.ls(sl=True) or []
+    if not sel:
+        cmds.warning("Vui lòng chọn ít nhất một đối tượng để xóa constraint!")
+        return
+        
+    deleted_count = 0
+    for obj in sel:
+        cons = cmds.listConnections(obj, type="constraint") or []
+        for c in list(set(cons)):
+            if cmds.objExists(c):
+                try:
+                    cmds.delete(c)
+                    deleted_count += 1
+                except Exception:
+                    pass
+    if deleted_count > 0:
+        print("[AnimeowShelf] Đã xóa thành công %d constraint trên các đối tượng được chọn." % deleted_count)
+    else:
+        print("[AnimeowShelf] Không tìm thấy constraint nào trên các đối tượng được chọn.")
+
 def save_increment():
     """Lưu increment phụ dạng .0001, .0002..."""
     mel.eval("IncrementAndSave;")
@@ -556,6 +626,36 @@ def create_shelf():
             "annotation": "Bật/Tắt Outliner Window",
             "image": "menuIconWindow.png",
             "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_outliner()"
+        },
+        {
+            "label": "PRN",
+            "annotation": "Tạo Parent Constraint có Maintain Offset nhanh",
+            "image": "parentConstraint.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_parent_constraint()"
+        },
+        {
+            "label": "PNT",
+            "annotation": "Tạo Point Constraint có Maintain Offset nhanh",
+            "image": "pointConstraint.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_point_constraint()"
+        },
+        {
+            "label": "ORI",
+            "annotation": "Tạo Orient Constraint có Maintain Offset nhanh",
+            "image": "orientConstraint.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_orient_constraint()"
+        },
+        {
+            "label": "SCL",
+            "annotation": "Tạo Scale Constraint có Maintain Offset nhanh",
+            "image": "scaleConstraint.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.create_scale_constraint()"
+        },
+        {
+            "label": "DelC",
+            "annotation": "Xóa toàn bộ constraint trên đối tượng được chọn",
+            "image": "deleteActive.png",
+            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.delete_obj_constraints()"
         },
         {
             "label": "S.Inc",
