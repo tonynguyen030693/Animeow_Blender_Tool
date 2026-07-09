@@ -89,49 +89,49 @@ def run_anti_virus():
             button=[u"Tuyệt vời"]
         )
 
-def create_parent_constraint():
-    """Tạo Parent Constraint có Maintain Offset nhanh"""
+def create_parent_constraint(mo=True, skip_axes="none"):
+    """Tạo Parent Constraint có tùy chọn Maintain Offset và Skip Trục"""
     sel = cmds.ls(sl=True) or []
     if len(sel) >= 2:
         try:
-            cmds.parentConstraint(sel[:-1], sel[-1], mo=True)
-            print("[AnimeowShelf] Đã tạo Parent Constraint (Maintain Offset) thành công.")
+            cmds.parentConstraint(sel[:-1], sel[-1], mo=mo, skipTranslate=skip_axes, skipRotate=skip_axes)
+            print("[AnimeowShelf] Đã tạo Parent Constraint thành công.")
         except Exception as e:
             cmds.warning("Không thể tạo Parent Constraint: %s" % str(e))
     else:
         cmds.warning("Vui lòng chọn ít nhất 2 đối tượng (đối tượng đầu là driver, đối tượng cuối là driven)!")
 
-def create_point_constraint():
-    """Tạo Point Constraint có Maintain Offset nhanh"""
+def create_point_constraint(mo=True, skip_axes="none"):
+    """Tạo Point Constraint có tùy chọn Maintain Offset và Skip Trục"""
     sel = cmds.ls(sl=True) or []
     if len(sel) >= 2:
         try:
-            cmds.pointConstraint(sel[:-1], sel[-1], mo=True)
-            print("[AnimeowShelf] Đã tạo Point Constraint (Maintain Offset) thành công.")
+            cmds.pointConstraint(sel[:-1], sel[-1], mo=mo, skip=skip_axes)
+            print("[AnimeowShelf] Đã tạo Point Constraint thành công.")
         except Exception as e:
             cmds.warning("Không thể tạo Point Constraint: %s" % str(e))
     else:
         cmds.warning("Vui lòng chọn ít nhất 2 đối tượng!")
 
-def create_orient_constraint():
-    """Tạo Orient Constraint có Maintain Offset nhanh"""
+def create_orient_constraint(mo=True, skip_axes="none"):
+    """Tạo Orient Constraint có tùy chọn Maintain Offset và Skip Trục"""
     sel = cmds.ls(sl=True) or []
     if len(sel) >= 2:
         try:
-            cmds.orientConstraint(sel[:-1], sel[-1], mo=True)
-            print("[AnimeowShelf] Đã tạo Orient Constraint (Maintain Offset) thành công.")
+            cmds.orientConstraint(sel[:-1], sel[-1], mo=mo, skip=skip_axes)
+            print("[AnimeowShelf] Đã tạo Orient Constraint thành công.")
         except Exception as e:
             cmds.warning("Không thể tạo Orient Constraint: %s" % str(e))
     else:
         cmds.warning("Vui lòng chọn ít nhất 2 đối tượng!")
 
-def create_scale_constraint():
-    """Tạo Scale Constraint có Maintain Offset nhanh"""
+def create_scale_constraint(mo=True, skip_axes="none"):
+    """Tạo Scale Constraint có tùy chọn Maintain Offset và Skip Trục"""
     sel = cmds.ls(sl=True) or []
     if len(sel) >= 2:
         try:
-            cmds.scaleConstraint(sel[:-1], sel[-1], mo=True)
-            print("[AnimeowShelf] Đã tạo Scale Constraint (Maintain Offset) thành công.")
+            cmds.scaleConstraint(sel[:-1], sel[-1], mo=mo, skip=skip_axes)
+            print("[AnimeowShelf] Đã tạo Scale Constraint thành công.")
         except Exception as e:
             cmds.warning("Không thể tạo Scale Constraint: %s" % str(e))
     else:

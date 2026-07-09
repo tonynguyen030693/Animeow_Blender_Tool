@@ -363,23 +363,44 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # GroupBox 0: Quick Constraint
         qc_group = QtWidgets.QGroupBox("Quick Constraint (Tạo Constraint nhanh)")
-        qc_layout = QtWidgets.QHBoxLayout(qc_group)
-        qc_layout.setContentsMargins(8, 10, 8, 8)
+        qc_layout = QtWidgets.QVBoxLayout(qc_group)
+        qc_layout.setContentsMargins(8, 8, 8, 8)
         qc_layout.setSpacing(6)
         
-        btn_parent = QtWidgets.QPushButton("Parent (mo)")
+        # Hàng checkbox tùy chọn
+        opts_layout = QtWidgets.QHBoxLayout()
+        self.qc_mo_cb = QtWidgets.QCheckBox("Maintain Offset")
+        self.qc_mo_cb.setChecked(True)
+        self.qc_x_cb = QtWidgets.QCheckBox("X")
+        self.qc_x_cb.setChecked(True)
+        self.qc_y_cb = QtWidgets.QCheckBox("Y")
+        self.qc_y_cb.setChecked(True)
+        self.qc_z_cb = QtWidgets.QCheckBox("Z")
+        self.qc_z_cb.setChecked(True)
+        
+        opts_layout.addWidget(self.qc_mo_cb)
+        opts_layout.addSpacing(10)
+        opts_layout.addWidget(self.qc_x_cb)
+        opts_layout.addWidget(self.qc_y_cb)
+        opts_layout.addWidget(self.qc_z_cb)
+        opts_layout.addStretch()
+        qc_layout.addLayout(opts_layout)
+        
+        # Hàng nút bấm
+        btns_layout = QtWidgets.QHBoxLayout()
+        btn_parent = QtWidgets.QPushButton("Parent")
         btn_parent.setFixedHeight(24)
         btn_parent.clicked.connect(self.on_qc_parent)
         
-        btn_point = QtWidgets.QPushButton("Point (mo)")
+        btn_point = QtWidgets.QPushButton("Point")
         btn_point.setFixedHeight(24)
         btn_point.clicked.connect(self.on_qc_point)
         
-        btn_orient = QtWidgets.QPushButton("Orient (mo)")
+        btn_orient = QtWidgets.QPushButton("Orient")
         btn_orient.setFixedHeight(24)
         btn_orient.clicked.connect(self.on_qc_orient)
         
-        btn_scale = QtWidgets.QPushButton("Scale (mo)")
+        btn_scale = QtWidgets.QPushButton("Scale")
         btn_scale.setFixedHeight(24)
         btn_scale.clicked.connect(self.on_qc_scale)
         
@@ -388,11 +409,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         btn_delete.setStyleSheet("background-color: #5A2A2A; color: #FFAAAA;")
         btn_delete.clicked.connect(self.on_qc_delete)
         
-        qc_layout.addWidget(btn_parent)
-        qc_layout.addWidget(btn_point)
-        qc_layout.addWidget(btn_orient)
-        qc_layout.addWidget(btn_scale)
-        qc_layout.addWidget(btn_delete)
+        btns_layout.addWidget(btn_parent)
+        btns_layout.addWidget(btn_point)
+        btns_layout.addWidget(btn_orient)
+        btns_layout.addWidget(btn_scale)
+        btns_layout.addWidget(btn_delete)
+        qc_layout.addLayout(btns_layout)
         
         tab1_layout.addWidget(qc_group)
         
@@ -1113,19 +1135,38 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 qc_layout.setContentsMargins(6, 6, 6, 6)
                 qc_layout.setSpacing(6)
                 
-                btn_parent = QtWidgets.QPushButton("Parent Constraint (mo)")
+                # Checkbox Layout
+                opts_layout = QtWidgets.QHBoxLayout()
+                self.qc_mo_cb = QtWidgets.QCheckBox("Offset")
+                self.qc_mo_cb.setChecked(True)
+                self.qc_mo_cb.setToolTip("Maintain Offset")
+                
+                self.qc_x_cb = QtWidgets.QCheckBox("X")
+                self.qc_x_cb.setChecked(True)
+                self.qc_y_cb = QtWidgets.QCheckBox("Y")
+                self.qc_y_cb.setChecked(True)
+                self.qc_z_cb = QtWidgets.QCheckBox("Z")
+                self.qc_z_cb.setChecked(True)
+                
+                opts_layout.addWidget(self.qc_mo_cb)
+                opts_layout.addWidget(self.qc_x_cb)
+                opts_layout.addWidget(self.qc_y_cb)
+                opts_layout.addWidget(self.qc_z_cb)
+                qc_layout.addLayout(opts_layout)
+                
+                btn_parent = QtWidgets.QPushButton("Parent Constraint")
                 btn_parent.setFixedHeight(26)
                 btn_parent.clicked.connect(self.on_qc_parent)
                 
-                btn_point = QtWidgets.QPushButton("Point Constraint (mo)")
+                btn_point = QtWidgets.QPushButton("Point Constraint")
                 btn_point.setFixedHeight(26)
                 btn_point.clicked.connect(self.on_qc_point)
                 
-                btn_orient = QtWidgets.QPushButton("Orient Constraint (mo)")
+                btn_orient = QtWidgets.QPushButton("Orient Constraint")
                 btn_orient.setFixedHeight(26)
                 btn_orient.clicked.connect(self.on_qc_orient)
                 
-                btn_scale = QtWidgets.QPushButton("Scale Constraint (mo)")
+                btn_scale = QtWidgets.QPushButton("Scale Constraint")
                 btn_scale.setFixedHeight(26)
                 btn_scale.clicked.connect(self.on_qc_scale)
                 
@@ -2877,21 +2918,38 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         finally:
             cmds.undoInfo(closeChunk=True)
 
+    def get_qc_options(self):
+        mo = self.qc_mo_cb.isChecked()
+        skipped = []
+        if not self.qc_x_cb.isChecked():
+            skipped.append("x")
+        if not self.qc_y_cb.isChecked():
+            skipped.append("y")
+        if not self.qc_z_cb.isChecked():
+            skipped.append("z")
+            
+        skip_axes = skipped if skipped else "none"
+        return mo, skip_axes
+
     def on_qc_parent(self):
         from ..core import shelf
-        shelf.create_parent_constraint()
+        mo, skip_axes = self.get_qc_options()
+        shelf.create_parent_constraint(mo=mo, skip_axes=skip_axes)
         
     def on_qc_point(self):
         from ..core import shelf
-        shelf.create_point_constraint()
+        mo, skip_axes = self.get_qc_options()
+        shelf.create_point_constraint(mo=mo, skip_axes=skip_axes)
         
     def on_qc_orient(self):
         from ..core import shelf
-        shelf.create_orient_constraint()
+        mo, skip_axes = self.get_qc_options()
+        shelf.create_orient_constraint(mo=mo, skip_axes=skip_axes)
         
     def on_qc_scale(self):
         from ..core import shelf
-        shelf.create_scale_constraint()
+        mo, skip_axes = self.get_qc_options()
+        shelf.create_scale_constraint(mo=mo, skip_axes=skip_axes)
         
     def on_qc_delete(self):
         from ..core import shelf
