@@ -1349,110 +1349,151 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_get_owner(self):
         sel = cmds.ls(sl=True)
         if sel:
-            self.owner_txt.setText(sel[0])
+            self.owner_txt.setText(", ".join(sel))
             self.save_settings()
         else:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Owner!")
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn ít nhất một đối tượng làm Owner!")
 
     # --- LOGIC THỰC THI ---
 
     def on_link(self):
-        target = self.target_txt.text()
-        owner = self.owner_txt.text()
+        target = self.target_txt.text().strip()
+        owner_raw = self.owner_txt.text().strip()
         
         # Nếu chưa gán thông tin rõ ràng, tự động sử dụng vùng chọn
-        if not target or not owner:
+        if not target or not owner_raw:
             sel = cmds.ls(sl=True) or []
             if len(sel) >= 2:
                 target = sel[0]
-                owner = sel[1]
+                owners = sel[1:]
                 self.target_txt.setText(target)
-                self.owner_txt.setText(owner)
+                self.owner_txt.setText(", ".join(owners))
                 self.save_settings()
             else:
                 QtWidgets.QMessageBox.warning(
                     self, "Thiếu thông tin",
-                    "Vui lòng gán Target & Owner hoặc chọn ít nhất 2 đối tượng trên viewport (đầu tiên là Target, thứ hai là Owner)!"
+                    "Vui lòng gán Target & Owner hoặc chọn ít nhất 2 đối tượng trên viewport (đầu tiên là Target, các đối tượng tiếp theo là Owner)!"
                 )
                 return
+        else:
+            owners = [o.strip() for o in owner_raw.split(",") if o.strip()]
 
-        if not cmds.objExists(target) or not cmds.objExists(owner):
-            QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Target hoặc Owner không tồn tại trong scene!")
+        if not cmds.objExists(target):
+            QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Target: %s không tồn tại trong scene!" % target)
             return
 
-        if target == owner:
-            QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết một đối tượng với chính nó!")
+        valid_owners = []
+        for owner in owners:
+            if not cmds.objExists(owner):
+                QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Owner: %s không tồn tại trong scene!" % owner)
+                return
+            if target == owner:
+                QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết đối tượng %s với chính nó!" % owner)
+                continue
+            valid_owners.append(owner)
+
+        if not valid_owners:
             return
 
         use_locator = True
         self.save_settings()
 
         if use_locator:
-            # Kiểm tra xem owner đã có liên kết locator nào chưa
-            baker = smart_link.AnimationBaker(owner)
-            loc_parent, loc_child = baker.find_locator_names()
-            if loc_parent or loc_child:
-                QtWidgets.QMessageBox.warning(
-                    self, "Liên kết đã tồn tại",
-                    "Đối tượng này đã có liên kết locator rồi. Hãy thực hiện Bake & Clean trước khi tạo liên kết mới!"
-                )
-                return
-
-            # Tiến hành tạo Smart Link
-            manager = smart_link.SmartLinkManager(owner, target)
-            has_anim = manager.detect_existing_animation()
-            
             s_time = cmds.playbackOptions(q=True, minTime=True)
             e_time = cmds.playbackOptions(q=True, maxTime=True)
             curr_time = cmds.currentTime(q=True)
 
-            loc_temp = None
-            if has_anim:
-                print(u"[SmartLink] Đang ghi hình chuyển động cũ của %s..." % owner)
-                loc_temp = manager.record_world_animation(s_time, e_time)
-                manager.clear_owner_keyframes()
-                cmds.currentTime(curr_time, edit=True)
+            success_count = 0
+            failed_owners = []
 
-            # Khởi tạo locator
-            manager.create_locator_pair()
-            manager.apply_constraint_to_target()
-            manager.apply_constraint_to_owner()
+            for owner in valid_owners:
+                # Kiểm tra xem owner đã có liên kết locator nào chưa
+                baker = smart_link.AnimationBaker(owner)
+                loc_parent, loc_child = baker.find_locator_names()
+                if loc_parent or loc_child:
+                    failed_owners.append((owner, "Đã có liên kết locator từ trước."))
+                    continue
 
-            # Chuyển anim nếu có
-            if has_anim and loc_temp:
-                manager.match_animation_to_child(loc_temp, s_time, e_time)
-                cmds.currentTime(curr_time, edit=True)
-                smart_link.SmartLinkManager.cleanup_temp(loc_temp)
-                manager.reset_owner_transforms()
+                try:
+                    # Tiến hành tạo Smart Link
+                    manager = smart_link.SmartLinkManager(owner, target)
+                    has_anim = manager.detect_existing_animation()
 
-            print(u"[SmartLink] Đã liên kết thành công %s đi theo %s thông qua cặp Locator." % (owner, target))
-            QtWidgets.QMessageBox.information(self, "Thành công", "Đã tạo liên kết Locator thành công!")
+                    loc_temp = None
+                    if has_anim:
+                        print(u"[SmartLink] Đang ghi hình chuyển động cũ của %s..." % owner)
+                        loc_temp = manager.record_world_animation(s_time, e_time)
+                        manager.clear_owner_keyframes()
+                        cmds.currentTime(curr_time, edit=True)
+
+                    # Khởi tạo locator
+                    manager.create_locator_pair()
+                    manager.apply_constraint_to_target()
+                    manager.apply_constraint_to_owner()
+
+                    # Chuyển anim nếu có
+                    if has_anim and loc_temp:
+                        manager.match_animation_to_child(loc_temp, s_time, e_time)
+                        cmds.currentTime(curr_time, edit=True)
+                        smart_link.SmartLinkManager.cleanup_temp(loc_temp)
+                        manager.reset_owner_transforms()
+
+                    print(u"[SmartLink] Đã liên kết thành công %s đi theo %s thông qua cặp Locator." % (owner, target))
+                    success_count += 1
+                except Exception as e:
+                    failed_owners.append((owner, smart_link.exception_to_unicode(e)))
+
+            # Báo cáo kết quả
+            if success_count > 0 and not failed_owners:
+                QtWidgets.QMessageBox.information(
+                    self, "Thành công", 
+                    "Đã tạo liên kết Locator thành công cho %d đối tượng!" % success_count
+                )
+            elif success_count > 0 and failed_owners:
+                err_msg = "Đã liên kết thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
+                for f_owner, f_err in failed_owners:
+                    err_msg += "  + %s: %s\n" % (f_owner, f_err)
+                QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+            else:
+                err_msg = "Không thể tạo liên kết cho đối tượng nào:\n"
+                for f_owner, f_err in failed_owners:
+                    err_msg += "  + %s: %s\n" % (f_owner, f_err)
+                QtWidgets.QMessageBox.critical(self, "Thất bại", err_msg)
 
         else:
             # Gán trực tiếp không qua locator
-            cmds.parentConstraint(target, owner, maintainOffset=True)
-            try:
-                cmds.scaleConstraint(target, owner, maintainOffset=True)
-            except:
-                pass
-            print(u"[SmartLink] Đã liên kết trực tiếp %s đi theo %s." % (owner, target))
+            for owner in valid_owners:
+                try:
+                    cmds.parentConstraint(target, owner, maintainOffset=True)
+                    try:
+                        cmds.scaleConstraint(target, owner, maintainOffset=True)
+                    except:
+                        pass
+                    print(u"[SmartLink] Đã liên kết trực tiếp %s đi theo %s." % (owner, target))
+                except Exception as e:
+                    print(u"[SmartLink] Không thể liên kết trực tiếp %s: %s" % (owner, str(e)))
             QtWidgets.QMessageBox.information(self, "Thành công", "Đã tạo liên kết trực tiếp thành công!")
 
     def on_switch_target(self):
-        owner = self.owner_txt.text()
-        if not owner:
-            sel = cmds.ls(sl=True)
+        owner_raw = self.owner_txt.text().strip()
+        owners = []
+        if owner_raw:
+            owners = [o.strip() for o in owner_raw.split(",") if o.strip()]
+        else:
+            sel = cmds.ls(sl=True) or []
             if sel:
-                owner = sel[0]
+                owners = [sel[0]]
+                self.owner_txt.setText(owners[0])
+                self.save_settings()
             else:
                 QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn vật bị dẫn (Owner)!")
                 return
 
-        new_target = self.target_txt.text()
+        new_target = self.target_txt.text().strip()
         if not new_target or not cmds.objExists(new_target):
-            # Nếu trống, thử lấy vật chọn đầu tiên không phải owner
+            # Nếu trống, thử lấy vật chọn đầu tiên không nằm trong danh sách owners
             sel = cmds.ls(sl=True) or []
-            possible = [s for s in sel if s != owner]
+            possible = [s for s in sel if s not in owners]
             if possible:
                 new_target = possible[0]
                 self.target_txt.setText(new_target)
@@ -1462,39 +1503,61 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 return
 
         curr_time = cmds.currentTime(q=True)
-        switcher = smart_link.SpaceSwitcher(owner, curr_time)
-        success = switcher.switch_to_target(new_target)
+        success_count = 0
+        failed_owners = []
         
-        if success:
+        for owner in owners:
+            if not cmds.objExists(owner):
+                continue
+            try:
+                switcher = smart_link.SpaceSwitcher(owner, curr_time)
+                success = switcher.switch_to_target(new_target)
+                if success:
+                    success_count += 1
+                else:
+                    failed_owners.append(owner)
+            except Exception:
+                failed_owners.append(owner)
+                
+        if success_count > 0 and not failed_owners:
             QtWidgets.QMessageBox.information(
                 self, "Chuyển Driver Thành công",
-                "Đã chuyển đổi driver của %s sang %s thành công tại frame %d." % (owner, new_target, curr_time)
+                "Đã chuyển đổi driver của %d đối tượng sang %s thành công tại frame %d." % (success_count, new_target, curr_time)
+            )
+        elif success_count > 0 and failed_owners:
+            QtWidgets.QMessageBox.warning(
+                self, "Hoàn thành có lỗi", 
+                "Đã chuyển driver thành công cho %d đối tượng sang %s.\n❌ Thất bại trên các đối tượng: %s" % (success_count, new_target, ", ".join(failed_owners))
             )
         else:
             QtWidgets.QMessageBox.critical(
                 self, "Thất bại",
-                "Không thể chuyển driver. Vui lòng kiểm tra lại xem đối tượng đã có liên kết locator chưa."
+                "Không thể chuyển driver cho đối tượng nào. Vui lòng kiểm tra lại xem các đối tượng đã có liên kết locator chưa."
             )
 
     def on_bake_clean(self):
-        owner = self.owner_txt.text()
-        if not owner:
-            sel = cmds.ls(sl=True)
+        owner_raw = self.owner_txt.text().strip()
+        owners = []
+        if owner_raw:
+            owners = [o.strip() for o in owner_raw.split(",") if o.strip()]
+        else:
+            sel = cmds.ls(sl=True) or []
             if sel:
-                owner = sel[0]
-                self.owner_txt.setText(owner)
+                owners = sel
+                self.owner_txt.setText(", ".join(owners))
                 self.save_settings()
             else:
-                QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn đối tượng cần Bake!")
+                QtWidgets.QMessageBox.warning(self, "Thiếu đối tượng", "Vui lòng chọn các đối tượng cần Bake!")
                 return
 
-        if not cmds.objExists(owner):
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Vật thể %s không tồn tại!" % owner)
+        valid_owners = [o for o in owners if cmds.objExists(o)]
+        if not valid_owners:
+            QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Không có đối tượng Owner nào tồn tại trong scene!")
             return
 
         res = QtWidgets.QMessageBox.question(
             self, "Xác nhận Bake & Clean",
-            "Sẽ Bake chuyển động từ locator/constraint vào keyframe của %s và dọn dẹp các locator/constraint thừa.\nBạn có chắc chắn?" % owner,
+            "Sẽ Bake chuyển động từ locator/constraint vào keyframe của %d đối tượng:\n%s\nvà dọn dẹp các liên kết thừa. Bạn có chắc chắn?" % (len(valid_owners), ", ".join(valid_owners)),
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         if res == QtWidgets.QMessageBox.No:
@@ -1507,19 +1570,39 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         smart_clean = self.smart_clean_cb.isChecked()
         threshold = self.threshold_spin.value()
 
-        try:
-            baker = smart_link.AnimationBaker(owner)
-            baker.bake(
-                start_frame=s_time,
-                end_frame=e_time,
-                step=step,
-                smart_clean=smart_clean,
-                clean_threshold=threshold
+        success_count = 0
+        failed_owners = []
+        
+        for owner in valid_owners:
+            try:
+                baker = smart_link.AnimationBaker(owner)
+                baker.bake(
+                    start_frame=s_time,
+                    end_frame=e_time,
+                    step=step,
+                    smart_clean=smart_clean,
+                    clean_threshold=threshold
+                )
+                print(u"[SmartLink] Đã bake và dọn dẹp liên kết cho %s thành công." % owner)
+                success_count += 1
+            except Exception as e:
+                failed_owners.append((owner, smart_link.exception_to_unicode(e)))
+                
+        if success_count > 0 and not failed_owners:
+            QtWidgets.QMessageBox.information(
+                self, "Thành công", 
+                "Đã Bake và dọn dẹp thành công chuyển động cho %d đối tượng!" % success_count
             )
-            print(u"[SmartLink] Đã bake và dọn dẹp liên kết cho %s thành công." % owner)
-            QtWidgets.QMessageBox.information(self, "Thành công", "Đã Bake và dọn dẹp thành công chuyển động cho %s!" % owner)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi Bake", "Lỗi xảy ra khi bake: %s" % smart_link.exception_to_unicode(e))
+        elif success_count > 0 and failed_owners:
+            err_msg = "Đã Bake thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
+            for f_owner, f_err in failed_owners:
+                err_msg += "  + %s: %s\n" % (f_owner, f_err)
+            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+        else:
+            err_msg = "Lỗi xảy ra khi bake cho các đối tượng:\n"
+            for f_owner, f_err in failed_owners:
+                err_msg += "  + %s: %s\n" % (f_owner, f_err)
+            QtWidgets.QMessageBox.critical(self, "Thất bại", err_msg)
 
     def on_launch_studiolibrary(self):
         ensure_scripts_2022_path()
