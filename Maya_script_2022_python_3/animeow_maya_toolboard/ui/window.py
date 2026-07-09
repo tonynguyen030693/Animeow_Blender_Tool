@@ -1206,7 +1206,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết một đối tượng với chính nó!")
             return
 
-        use_locator = self.use_locator_cb.isChecked()
+        use_locator = True
         self.save_settings()
 
         if use_locator:
@@ -1489,12 +1489,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     
             # Load và thực thi khởi động UI Animo
             try:
-                import importlib.util
                 launcher_file = os.path.join(animo_launcher_dir, "Animo_Launcher.py")
-                spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
-                launcher_module = importlib.util.module_from_spec(spec)
-                sys.modules["Animo_Launcher_Module"] = launcher_module
-                spec.loader.exec_module(launcher_module)
+                try:
+                    import importlib.util
+                    spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
+                    launcher_module = importlib.util.module_from_spec(spec)
+                    sys.modules["Animo_Launcher_Module"] = launcher_module
+                    spec.loader.exec_module(launcher_module)
+                except ImportError:
+                    import imp
+                    launcher_module = imp.load_source("Animo_Launcher_Module", launcher_file)
                 _tb = launcher_module.toolbar()
                 _tb.startUI()
                 print("[Animo] Đã khởi chạy Animo thành công.")
@@ -1660,8 +1664,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     
             if not is_open:
                 import ml_worldBake
-                import importlib
-                importlib.reload(ml_worldBake)
+                try:
+                    from importlib import reload
+                except ImportError:
+                    pass
+                reload(ml_worldBake)
                 ml_worldBake.ui()
                 print("[WorldBake] Da mo World Bake.")
         except Exception as e:

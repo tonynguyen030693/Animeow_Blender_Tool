@@ -1206,7 +1206,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết một đối tượng với chính nó!")
             return
 
-        use_locator = self.use_locator_cb.isChecked()
+        use_locator = True
         self.save_settings()
 
         if use_locator:
