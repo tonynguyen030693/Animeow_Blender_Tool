@@ -1183,7 +1183,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 self.tab_widget.addTab(qc_widget, "Quick Const")
                 self.setMinimumWidth(180)
-                self.setMaximumWidth(220)
             self.tab_widget.tabBar().hide()
         else:
             self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
@@ -3044,20 +3043,27 @@ def show_window(tab_index=None, standalone_tab=None):
         # Nếu là lần đầu chạy tool, áp dụng docking mặc định
         # Đối với các cửa sổ standalone nhỏ, ta để mặc định floating=True để làm nổi tiện sắp xếp
         is_floating = True if standalone_tab is not None else False
-        ui_instance.show(
-            dockable=True,
-            area="right",
-            floating=is_floating,
-            allowedArea="left|right"
-        )
+        show_kwargs = {
+            "dockable": True,
+            "area": "right",
+            "floating": is_floating,
+            "allowedArea": "left|right"
+        }
+        if standalone_tab == "quick_const":
+            show_kwargs["width"] = 180
+            show_kwargs["height"] = 200
+        ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
     if cmds.workspaceControl(ctrl_name, exists=True):
-        cmds.workspaceControl(
-            ctrl_name, 
-            edit=True, 
-            label=win_title
-        )
+        edit_kwargs = {
+            "edit": True,
+            "label": win_title
+        }
+        if standalone_tab == "quick_const":
+            edit_kwargs["minimumWidth"] = 180
+            edit_kwargs["initialWidth"] = 180
+        cmds.workspaceControl(ctrl_name, **edit_kwargs)
         
     if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:
         try:
