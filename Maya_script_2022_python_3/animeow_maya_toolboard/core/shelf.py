@@ -592,16 +592,10 @@ def create_shelf():
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=1)"
         },
         {
-            "label": "Rnd",
-            "annotation": "Mở cửa sổ Làm tròn số độc lập",
-            "image": get_icon("rnd_icon.png", "menuIconWindow.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='round_tool')"
-        },
-        {
-            "label": "ClK",
-            "annotation": "Dọn dẹp keyframe thừa có giá trị bằng nhau liên tiếp",
-            "image": get_icon("clk_icon.png", "deleteKey.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard.core.clean_redundant_keys as clk\nclk.clean_redundant_keys()"
+            "label": "Fav",
+            "annotation": "Mở cửa sổ công cụ yêu thích (Favorite Tools: Làm tròn số & Dọn Key)",
+            "image": get_icon("fav_icon.png", "menuIconWindow.png"),
+            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='fav_tools')"
         },
         {
             "label": "Rig",

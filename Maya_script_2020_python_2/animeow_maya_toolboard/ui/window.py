@@ -1226,6 +1226,59 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 self.tab_widget.addTab(qc_widget, "Quick Const")
                 self.setMinimumWidth(180)
+            elif self.standalone_tab == "fav_tools":
+                fav_widget = QtWidgets.QWidget(self)
+                fav_layout = QtWidgets.QVBoxLayout(fav_widget)
+                fav_layout.setContentsMargins(6, 6, 6, 6)
+                fav_layout.setSpacing(8)
+                
+                # GroupBox 1: Clean Key
+                ck_group = QtWidgets.QGroupBox("Dọn dẹp Keyframe (Clean Key)")
+                ck_lay = QtWidgets.QVBoxLayout(ck_group)
+                ck_lay.setContentsMargins(8, 10, 8, 8)
+                
+                btn_clean = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Key)")
+                btn_clean.setFixedHeight(28)
+                btn_clean.clicked.connect(self.on_clean_redundant_keys)
+                ck_lay.addWidget(btn_clean)
+                fav_layout.addWidget(ck_group)
+                
+                # GroupBox 2: Round Tool
+                rnd_group = QtWidgets.QGroupBox("Làm tròn số (Round Tool)")
+                rnd_lay = QtWidgets.QVBoxLayout(rnd_group)
+                rnd_lay.setContentsMargins(8, 10, 8, 8)
+                rnd_lay.setSpacing(6)
+                
+                round_sub_layout = QtWidgets.QGridLayout()
+                round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
+                self.round_precision_combo = QtWidgets.QComboBox()
+                self.round_precision_combo.addItems([
+                    "Số nguyên (ví dụ: 1)", 
+                    "1 chữ số thập phân (ví dụ: 1.1)", 
+                    "2 chữ số thập phân (ví dụ: 1.23)"
+                ])
+                round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
+                
+                round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
+                self.round_target_combo = QtWidgets.QComboBox()
+                self.round_target_combo.addItems([
+                    "Channel Box (Thuộc tính chọn)", 
+                    "Graph Editor (Keyframe chọn)",
+                    "Keyframe tại frame hiện tại",
+                    "Toàn bộ keyframe (Timeline)"
+                ])
+                round_sub_layout.addWidget(self.round_target_combo, 1, 1)
+                
+                self.round_btn = QtWidgets.QPushButton("Làm tròn số")
+                self.round_btn.setObjectName("accent_btn")
+                self.round_btn.setFixedHeight(28)
+                self.round_btn.clicked.connect(self.on_round_values)
+                round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+                rnd_lay.addLayout(round_sub_layout)
+                fav_layout.addWidget(rnd_group)
+                
+                self.tab_widget.addTab(fav_widget, "Favorites")
+                self.setMinimumWidth(250)
             self.tab_widget.tabBar().hide()
         else:
             self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
@@ -3169,6 +3222,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "round_tool":
             ctrl_name = "AnimeowRoundWorkspaceControl"
             win_title = "Làm tròn số"
+        elif standalone_tab == "fav_tools":
+            ctrl_name = "AnimeowFavoriteToolsWorkspaceControl"
+            win_title = "Favorite Tools"
         else:
             ctrl_name = "AnimeowGenericWorkspaceControl"
             win_title = "Animeow Tool"
@@ -3224,6 +3280,9 @@ def show_window(tab_index=None, standalone_tab=None):
         if standalone_tab == "quick_const":
             show_kwargs["width"] = 180
             show_kwargs["height"] = 200
+        elif standalone_tab == "fav_tools":
+            show_kwargs["width"] = 250
+            show_kwargs["height"] = 230
         ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
@@ -3235,6 +3294,9 @@ def show_window(tab_index=None, standalone_tab=None):
         if standalone_tab == "quick_const":
             edit_kwargs["minimumWidth"] = 180
             edit_kwargs["initialWidth"] = 180
+        elif standalone_tab == "fav_tools":
+            edit_kwargs["minimumWidth"] = 250
+            edit_kwargs["initialWidth"] = 250
         cmds.workspaceControl(ctrl_name, **edit_kwargs)
         
     if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:
