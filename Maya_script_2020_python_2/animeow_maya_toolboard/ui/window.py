@@ -361,6 +361,41 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         t1_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #00BCD4;")
         tab1_layout.addWidget(t1_title)
         
+        # GroupBox 0: Quick Constraint
+        qc_group = QtWidgets.QGroupBox("Quick Constraint (Tạo Constraint nhanh)")
+        qc_layout = QtWidgets.QHBoxLayout(qc_group)
+        qc_layout.setContentsMargins(8, 10, 8, 8)
+        qc_layout.setSpacing(6)
+        
+        btn_parent = QtWidgets.QPushButton("Parent (mo)")
+        btn_parent.setFixedHeight(24)
+        btn_parent.clicked.connect(self.on_qc_parent)
+        
+        btn_point = QtWidgets.QPushButton("Point (mo)")
+        btn_point.setFixedHeight(24)
+        btn_point.clicked.connect(self.on_qc_point)
+        
+        btn_orient = QtWidgets.QPushButton("Orient (mo)")
+        btn_orient.setFixedHeight(24)
+        btn_orient.clicked.connect(self.on_qc_orient)
+        
+        btn_scale = QtWidgets.QPushButton("Scale (mo)")
+        btn_scale.setFixedHeight(24)
+        btn_scale.clicked.connect(self.on_qc_scale)
+        
+        btn_delete = QtWidgets.QPushButton("Xóa Constraint")
+        btn_delete.setFixedHeight(24)
+        btn_delete.setStyleSheet("background-color: #5A2A2A; color: #FFAAAA;")
+        btn_delete.clicked.connect(self.on_qc_delete)
+        
+        qc_layout.addWidget(btn_parent)
+        qc_layout.addWidget(btn_point)
+        qc_layout.addWidget(btn_orient)
+        qc_layout.addWidget(btn_scale)
+        qc_layout.addWidget(btn_delete)
+        
+        tab1_layout.addWidget(qc_group)
+        
         # GroupBox 1: Smart Link
         link_group = QtWidgets.QGroupBox("Smart Link (Liên kết đối tượng)")
         link_layout = QtWidgets.QVBoxLayout(link_group)
@@ -1034,6 +1069,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.tab_widget.addTab(wrap_in_scroll(tab1), "🔗 Space & Bake  ")
                 try:
                     t1_title.hide()
+                    qc_group.hide()
                     wb_group.hide()
                     ns_group.hide()
                     tp_group.hide()
@@ -1044,6 +1080,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 try:
                     t1_title.hide()
                     link_group.hide()
+                    qc_group.hide()
                 except Exception:
                     pass
             elif self.standalone_tab == 1:
