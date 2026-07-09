@@ -5,19 +5,26 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 def get_selected_channels(obj):
-    """Lấy danh sách các channel đang chọn trong Channel Box, nếu không có thì lấy tất cả keyable channels"""
+    """Lấy danh sách các channel đang chọn trong Channel Box bằng cách truy vấn trực tiếp widget mainChannelBox"""
+    chans = []
     try:
-        chans = mel.eval("selectedChannels")
+        # Lấy tên Channel Box chính của Maya
+        gChannelBoxName = mel.eval('$temp=$gChannelBoxName')
+        if gChannelBoxName and cmds.channelBox(gChannelBoxName, exists=True):
+            sma = cmds.channelBox(gChannelBoxName, query=True, sma=True) or []
+            ssa = cmds.channelBox(gChannelBoxName, query=True, ssa=True) or []
+            sha = cmds.channelBox(gChannelBoxName, query=True, sha=True) or []
+            
+            # Gộp và loại bỏ trùng lặp
+            raw_chans = list(set(sma + ssa + sha))
+            # Đảm bảo các channel hợp lệ
+            for c in raw_chans:
+                if c and isinstance(c, (str, unicode)): # Python 2 support
+                    chans.append(str(c))
     except Exception:
         chans = []
         
-    if not chans:
-        chans = []
-    elif hasattr(chans, 'lower'): # Nếu chỉ có 1 channel chọn, mel.eval có thể trả về string đơn lẻ
-        chans = [chans]
-    elif not isinstance(chans, list):
-        chans = []
-        
+    # Fallback: nếu thực sự không có channel nào được bôi xanh thì mới lấy toàn bộ thuộc tính keyable
     if not chans and obj and cmds.objExists(obj):
         chans = cmds.listAttr(obj, keyable=True) or []
         
