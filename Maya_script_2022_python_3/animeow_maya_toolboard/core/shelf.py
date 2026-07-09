@@ -452,48 +452,59 @@ def create_shelf():
                 pass
         print("[AnimeowShelf] Đã làm sạch Shelf cũ để cập nhật.")
         
-    # 3. Định nghĩa danh sách các nút bấm
+    # 3. Tìm thư mục icons và hàm nạp icon tuyệt đối
+    core_dir = os.path.dirname(os.path.abspath(__file__))
+    package_dir = os.path.dirname(core_dir)
+    icons_dir = os.path.join(package_dir, "icons")
+    
+    def get_icon(icon_name, fallback):
+        full_path = os.path.join(icons_dir, icon_name)
+        if os.path.exists(full_path):
+            return full_path
+        return fallback
+
+    # 4. Định nghĩa danh sách các nút bấm
     tools = [
         {
             "label": "ATB",
             "annotation": "Mở Animeow Toolboard đầy đủ",
-            "image": "fileOpen.png",
+            "image": get_icon("atb_icon.png", "fileOpen.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show()"
         },
         {
             "label": "Bake",
             "annotation": "Mở cửa sổ Space & Bake độc lập",
-            "image": "save.png",
+            "image": get_icon("bake_icon.png", "save.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=0)"
         },
         {
             "label": "Curve",
             "annotation": "Mở cửa sổ Curve & Motion độc lập",
-            "image": "menuIconWindow.png",
+            "image": get_icon("curve_icon.png", "menuIconWindow.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=1)"
         },
         {
             "label": "Rnd",
             "annotation": "Mở cửa sổ Làm tròn số độc lập",
-            "image": "menuIconWindow.png",
+            "image": get_icon("rnd_icon.png", "menuIconWindow.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='round_tool')"
         },
         {
             "label": "Rig",
             "annotation": "Mở cửa sổ Rig & Mirror độc lập",
-            "image": "polyMesh.png",
+            "image": get_icon("rig_icon.png", "polyMesh.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=2)"
         },
         {
             "label": "Play",
             "annotation": "Mở cửa sổ Output & Scene (Playblast) độc lập",
-            "image": "playblast.png",
+            "image": get_icon("play_icon.png", "playblast.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=3)"
         },
         {
             "label": "Arc",
             "annotation": "Mở cửa sổ cấu hình vẽ Arc Tracker độc lập",
-            "image": "motionTrail.png",
+            "image": get_icon("arc_icon.png", "motionTrail.png"),
             "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='arc_tracker')"
         },
         {
