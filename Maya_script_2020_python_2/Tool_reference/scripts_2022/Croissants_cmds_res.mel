@@ -1,0 +1,148 @@
+//This is only need some Project
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+  popupMenu -mm 1 -parent Croissants_msg;
+          menuItem -d true;
+          menuItem -label "by Selected Name" -c "TakeName(3)";              
+          menuItem -d true;   
+    
+        //menuItem -label $pp_label01 -c "Croissants_PrjectTypeEXS(0)";
+        //menuItem -label $pp_label02 -c "Croissants_PrjectTypeEXS(1)";                                                 
+        //menuItem -label $pp_label03 -c "Croissants_PrjectTypeEXS(2)";
+        //menuItem -label $pp_label03 -c "Croissants_PrjectTypeEXS(3)";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc Croissants_PrjectTypeEXS(int $case)
+{
+  switch($case)
+  {
+    case 0 :
+    textField -e -tx "Extra_PR_" Croissants_msg;
+    break;
+  
+    case 1 :
+    textField -e -tx "Extra_CH_" Croissants_msg;
+    break;
+    
+    case 2 :
+    textField -e -tx "Extra_BG_" Croissants_msg;
+    break;  
+
+    case 3 :
+    textField -e -tx "Extra_Object_" Croissants_msg;
+    break;
+
+    
+  }
+}  
+
+
+global proc Croissants_Duplicate_Case31Loop()
+{
+if (`window -q -exists CDC31_loop_UI`)deleteUI CDC31_loop_UI;
+window -widthHeight 200 35 -mnb 0 -tb 1 -toolbox 1 -maximizeButton 0 -menuBar 0 -sizeable 0 -title "Fill Ur CST" CDC31_loop_UI;
+
+string $col =`columnLayout -adjustableColumn 1  -rowSpacing 1`;
+rowColumnLayout -numberOfColumns 3 -cw 1 100 -cw 2 50 -cw 3 50 ;
+
+
+textField -h 30 -tx "BG" CST_tag;
+textField -h 30 -tx "0001" CST_ver;
+button -l "Run" -c "Croissants_Duplicate(31)";
+
+
+    popupMenu -mm 1 -parent CST_tag;
+        
+        menuItem -label "ID" -c "CST_tag_CMD(1)";
+        menuItem -label "DT" -c "CST_tag_CMD(2)";                                                 
+        menuItem -label "SDW" -c "CST_tag_CMD(3)";
+        menuItem -label "MV" -c "CST_tag_CMD(4)";
+        menuItem -label "BG" -c "CST_tag_CMD(0)";
+        
+
+showWindow CDC31_loop_UI;
+}  
+
+global proc CST_tag_CMD(int $case)
+{
+  switch($case)
+  {
+
+    case 0 :
+    textField -e -tx "BG" CST_tag;
+    break;
+
+    case 1 :
+    textField -e -tx "ID" CST_tag;
+    break;
+  
+    case 2 :
+    textField -e -tx "DT" CST_tag;
+    break;
+    
+    case 3 :
+    textField -e -tx "SDW" CST_tag;
+    break;  
+
+    case 4 :
+    textField -e -tx "MV" CST_tag;
+    break; 
+
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////Call Tools
+
+
+   
+global proc Toggle_Natalie()
+{
+      string $winNatalie = "ILY_Natalie_UI";
+      int $getVis_Natalie = `window -q -ex $winNatalie`;
+   
+      if ($getVis_Natalie == 0) 
+      {
+      source "_Natalie.mel"; ILY_Natalie();
+      }
+
+      else 
+      {
+         int $getWin_Natalie =`window  -q -vis  $winNatalie`;
+         if ($getWin_Natalie == 0)
+          {window  -e -vis 1  $winNatalie;}
+         else
+          {window  -e -vis 0  $winNatalie;} 	 
+      } 
+
+      $cPostion =`window -q -tlc  Croissants`; 
+      int $iloveu_natalie = $cPostion[1] +465;
+      window -e -tlc $cPostion[0] $iloveu_natalie ILY_Natalie_UI;
+}  
+
+
+/////Deadline CMD
+global proc DL_submitJob()
+{
+
+  string $Lib_Path =`textField -q -tx  textField_Rule_02`;
+  $DL_submitJobPath = `workspace -q -fn`;
+  string $DL_submitJobMelPath = $DL_submitJobPath+"/"+ $Lib_Path + "/Scripts/submitJob.mel";
+  string $DL_submitJobpath = "source " + "\""+$DL_submitJobMelPath+"\"";
+  eval($DL_submitJobpath);  
+}
+
+
+global proc PipeLine_Call()
+{
+  $ppPath = `workspace -q -fn`;
+  string $Lib_Path =`textField -q -tx  textField_Rule_02`;
+  string $callMelPath = $ppPath+"/" +  $Lib_Path + "/Scripts/PipeLine.mel";
+  string $fpath = "source " + "\""+$callMelPath+"\"";
+  eval($fpath);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////

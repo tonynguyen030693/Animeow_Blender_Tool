@@ -1,0 +1,68 @@
+import maya.cmds as cmds
+
+def bake_selected_constrained_objects():
+    # 1. L?y danh sách b?n dang ch?n (bao g?m c? con c?a chúng n?u b?n ch?n Group)
+    selection = cmds.ls(sl=True, long=True)
+    
+    if not selection:
+        cmds.warning("Hay chon cac Control hoac Group cua nhan vat!")
+        return
+
+    # Liet ke cac loai constraint
+    constraint_types = ['parentConstraint', 'pointConstraint', 'orientConstraint', 
+                        'scaleConstraint', 'aimConstraint', 'geometryConstraint']
+    
+    final_objects_to_bake = []
+    final_constraints_to_del = []
+
+    # 2. Tu dong loc: Chi lay nhung thang co constraint
+    for obj in selection:
+        # Tim cac ket noi vao object nay
+        # Kiem tra ca pairBlend (thuong di kem constraint khi co keyframe)
+        connections = cmds.listConnections(obj, source=True, destination=False) or []
+        
+        found_cons_on_obj = False
+        for node in connections:
+            n_type = cmds.nodeType(node)
+            if n_type in constraint_types or n_type == 'pairBlend':
+                final_constraints_to_del.append(node)
+                found_cons_on_obj = True
+        
+        if found_cons_on_obj:
+            final_objects_to_bake.append(obj)
+
+    # 3. Kiem tra ket qua loc
+    if not final_objects_to_bake:
+        print "Khong tim thay Control nao bi constraint trong vung ban chon."
+        return
+
+    # 4. Lay thoi gian Timeline
+    s_time = cmds.playbackOptions(q=True, minTime=True)
+    e_time = cmds.playbackOptions(q=True, maxTime=True)
+
+    print "Dang bake cho " + str(len(final_objects_to_bake)) + " objects co constraint..."
+
+    # 5. Thuc hien Bake
+    # Mac dinh bake vao cac kenh Transform (t va r)
+    cmds.bakeResults(
+        final_objects_to_bake,
+        t=(s_time, e_time),
+        simulation=True,
+        sampleBy=1,
+        disableImplicitControl=True,
+        preserveOutsideKeys=True,
+        minimizeRotation=True,
+        at=["tx", "ty", "tz", "rx", "ry", "rz"]
+    )
+
+    # 6. Xoa constraint sau khi bake xong
+    if final_constraints_to_del:
+        # Xoa cac node trung lap neu 1 constraint link vao nhieu cho
+        final_constraints_to_del = list(set(final_constraints_to_del))
+        cmds.delete(final_constraints_to_del)
+        print "Da don dep xong " + str(len(final_constraints_to_del)) + " constraints."
+
+    print "--- HOAN THANH ---"
+
+# Chay script
+bake_selected_constrained_objects()

@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+import maya.cmds as cmds
+import maya.mel as mel
+import __main__
+
+# --- LOGIC XỬ LÝ CHÍNH ---
+def core_reverse_logic(mode="start"):
+    """
+    mode="start": Animation xuất hiện tại Start Frame của vùng chọn.
+    mode="current": Animation xuất hiện tại Current Frame.
+    """
+    sel = cmds.ls(sl=True)
+    if not sel: 
+        return cmds.warning("Chua chon Object!")
+
+    target_keys = cmds.keyframe(sel, q=True, selected=True, timeChange=True)
+    gSlider = mel.eval('$tmpVar=$gPlayBackSlider')
+    
+    if not target_keys and cmds.timeControl(gSlider, q=True, rangeVisible=True):
+        t_range = cmds.timeControl(gSlider, q=True, rangeArray=True)
+        target_keys = cmds.keyframe(sel, q=True, time=(t_range[0], t_range[1]-0.01), timeChange=True)
+
+    if not target_keys:
+        return cmds.warning("Hay boi chon Keyframe!")
+
+    target_keys = sorted(list(set(target_keys)))
+    st, en = target_keys[0], target_keys[-1]
+    duration = en - st
+    
+    # Xác định mốc thời gian bắt đầu mới
+    base_time = st if mode == "start" else cmds.currentTime(q=True)
+
+    channels = cmds.listAnimatable(sel)
+    for attr in channels:
+        keys_in_attr = cmds.keyframe(attr, q=True, time=(st, en), timeChange=True, valueChange=True)
+        
+        if keys_in_attr:
+            times = keys_in_attr[0::2]
+            values = keys_in_attr[1::2]
+            
+            # Logic đảo ngược
+            reversed_times = [base_time + (duration - (t - st)) for t in times]
+            
+            cmds.cutKey(attr, time=(st, en), option="keys")
+            for i in range(len(reversed_times)):
+                # Reset to zero feature: Logic giữ nguyên giá trị đảo ngược
+                cmds.setKeyframe(attr, time=reversed_times[i], value=values[i])
+
+    print("Reverse {0} thanh cong: {1} -> {2}".format(mode.upper(), st, en))
+
+# --- GIAO DIỆN ---
+def show_reverse_ui(*args):
+    win_id = "UltraReverseDualWin"
+    if cmds.window(win_id, ex=True): cmds.deleteUI(win_id)
+    
+    cmds.window(win_id, title="Reverse Tool V2", w=250, h=110, s=False)
+    # Đã xóa flag 'ma' gây lỗi trên Maya 2020
+    cmds.columnLayout(adj=True, rs=5) 
+    
+    cmds.text(l="CHOOSE REVERSE MODE:", h=25)
+    
+    # Nút 1: Reverse về Start Frame
+    cmds.button(l="REVERSE TO START FRAME", 
+                h=40, 
+                bgc=(0.4, 0.6, 0.4), 
+                c=lambda x: core_reverse_logic(mode="start"))
+                
+    # Nút 2: Reverse về Current Frame
+    cmds.button(l="REVERSE TO CURRENT FRAME", 
+                h=40, 
+                bgc=(0.4, 0.4, 0.8), 
+                c=lambda x: core_reverse_logic(mode="current"))
+    
+    cmds.showWindow(win_id)
+
+# --- TỰ ĐỘNG THÊM VÀO SHELF ---
+def auto_add_to_shelf():
+    top_shelf = mel.eval('$tmpVar=$gShelfTopLevel')
+    current_shelf = cmds.tabLayout(top_shelf, q=1, st=1)
+    
+    btn_label = "REV_PRO"
+    existing_btns = cmds.shelfLayout(current_shelf, q=1, ca=1) or []
+    for btn in existing_btns:
+        if cmds.shelfButton(btn, q=1, ex=1) and cmds.shelfButton(btn, q=1, l=1) == btn_label:
+            cmds.deleteUI(btn)
+
+    cmds.shelfButton(
+        label=btn_label,
+        annotation="Open Reverse Tool UI",
+        image1="pythonFamily.png", 
+        command="import __main__; __main__.show_reverse_ui()",
+        parent=current_shelf
+    )
+
+# --- ĐĂNG KÝ HỆ THỐNG ---
+__main__.show_reverse_ui = show_reverse_ui
+__main__.core_reverse_logic = core_reverse_logic
+
+def onMayaDroppedPythonFile(*args):
+    """Kích hoạt khi Drag & Drop"""
+    auto_add_to_shelf()
+    show_reverse_ui()
+
+# Chạy ngay lập tức khi load
+auto_add_to_shelf()
+show_reverse_ui()

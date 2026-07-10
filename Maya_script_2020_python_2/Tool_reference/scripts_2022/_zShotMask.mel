@@ -1,0 +1,200 @@
+global proc _zShotMask_cmd(int $case)
+{
+  string $cmz_Directory = dirname(`pluginInfo -query -path Croissants`);
+  string $cmz_ShotMask = substituteAllString($cmz_Directory, "/plug-ins", "/scripts/ShotMask/");
+  string $_ShotMaskPath=$cmz_ShotMask+"ShotMask.mb";
+
+
+  switch($case)
+  {
+  case 0 :
+      string $zm[] =`ls "_Shotmask"`;
+    if (size($zm) == 0)
+    {
+      file -import -type "mayaBinary"  -ignoreVersion -mergeNamespacesOnClash false -rpr "ShotMask" -options "v=0;"  -pr  -importFrameRate true  -importTimeRange "override" $_ShotMaskPath;      
+    }
+    else
+    {  
+      setCameraNamesVisibility(0);
+      setFocalLengthVisibility(0);
+      setAnimationDetailsVisibility(0);
+      setCurrentFrameVisibility(0);
+      setFrameRateVisibility(0);
+      setObjectDetailsVisibility(0);
+      setParticleCountVisibility(0);
+      setPolyCountVisibility(0);
+      setSceneTimecodeVisibility(0);
+      setSelectDetailsVisibility(0);
+      setViewportRendererVisibility(0);
+      setSymmetryVisibility(0);
+      setViewAxisVisibility(0);
+      setCapsLockVisibility(0);
+      setCurrentContainerVisibility(0);
+      setHikDetailsVisibility(0);
+      ToggleMaterialLoadingDetailsHUDVisibility(0);
+      viewManip -v 0;
+      toggleAxis -o 0;
+    }
+  break;
+    
+  case 1 :
+  //noneed fix
+  setAttr -type "string" _ShotmaskShape.camera "_ShotCam";
+
+  //have to set Step & Assignee
+  string $currStep =`aniStep`;
+  string $currAssignee=`_setAssignee`;
+  string $scinfo ="scinfo: {scene} # STEP: [ " + $currStep + "] |Assignee:" + $currAssignee;
+  setAttr -type "string" _ShotmaskShape.topLeftText $scinfo;
+
+  //noneed fix
+  setAttr -type "string" _ShotmaskShape.topRightText "Camera: {camera}|focal length: {focal_length}mm";
+
+  //have to set frame
+  string $currfps =`anifps`;
+  string $cuurDuration =`aniDuration`;
+  string $scDur = "Duration: "+$cuurDuration+"|"+$currfps;
+  setAttr -type "string" _ShotmaskShape.bottomLeftText $scDur;
+
+  //noneed fix
+  setAttr -type "string" _ShotmaskShape.bottomRightText "{date}|Frame:    {counter}";
+  break;
+  
+  }
+}
+
+global proc string aniStep() 
+{
+	string $filename = `file -q -sceneName -shortName`;
+	$filename = basenameEx($filename);
+	string $array[];
+	$array = stringToStringArray($filename, ".");
+	int $StateValue = $array[1];
+	if($StateValue < 201)
+	{
+	return "Layoyt";
+	}
+	else if($StateValue < 301)
+	{
+	return "Blocking";
+	}
+	else if($StateValue < 401)
+	{
+	return "Detail-01";
+	}	
+	else if($StateValue < 501)
+	{
+	return "Detail-02";
+	}
+	else if($StateValue < 601)
+	{
+	return "Detail-03";
+	}	
+	else if($StateValue < 701)
+	{
+	return "Detail-04";
+	}	
+	else if($StateValue < 801)
+	{
+	return "Detail-05";
+	}	
+	else if($StateValue < 901)
+	{
+	return "Detail-06";
+	}
+	else if($StateValue < 1001)
+	{
+	return "Detail-07";
+	}
+	else if($StateValue < 1101)
+	{
+	return "Detail-08";
+	}	
+	else if($StateValue < 1201)
+	{
+	return "Detail-09";
+	}	
+	else if($StateValue < 1301)
+	{
+	return "Detail-10";
+	}				
+	else if($StateValue < 3000)
+	{
+	return "Final";
+	}	
+}
+
+global proc string anifps() 
+{
+	string $time = `currentUnit -q -time`;
+	if (gmatch($time, "film")) 
+	{
+		return "24fps";
+	} 
+	else if (gmatch($time, "ntsc")) 
+	{
+		return "30fps";
+	} 
+	else 
+	{
+		return `currentUnit -q -time`;
+	}
+}
+
+global proc string aniDuration() 
+{
+	float $animationStartFrame = `playbackOptions -q -min`;
+	float $animationEndFrame = `playbackOptions -q -max`;
+	float $runningTime = $animationEndFrame - $animationStartFrame + 1;
+	string $form = $animationStartFrame + " - " + $animationEndFrame + " [ " + $runningTime + " ] ";
+	return $form;
+}
+
+
+global proc string _setAssignee()
+{
+    string $_animator_[] = `getFileList -folder "C:/_pipeline_" -filespec "user.info"`;
+    if (size($_animator_) != 0)
+    {
+        $userID = `fopen "C:/_pipeline_/user.info" "r"` ;  
+        string $data = `fread $userID $data` ; 
+        fclose $userID;     
+        string $assigneeis =$data;
+        return $assigneeis;
+    } 
+    else 
+    {
+        wis_yourname();      
+    } 
+
+}
+
+global proc wis_yourname()
+{
+if (`window -q -exists wis_yourname_UI`)deleteUI wis_yourname_UI;
+window -widthHeight 250 35 -mnb 0 -tb 1 -toolbox 1 -maximizeButton 0 -menuBar 0 -sizeable 0 -rtf 1 -title "what's your name?" wis_yourname_UI;
+
+string $col =`columnLayout -adjustableColumn 1  -rowSpacing 1`;
+    rowColumnLayout -numberOfColumns 3 -cw 1 200 -cw 2 5 -cw 3 45 ;
+
+    textField -h 30 -tx "" yourname_Field;    
+    text -l "";
+    button -l "Sign" -c "set_YourName";
+    setParent..;
+
+
+
+showWindow wis_yourname_UI;
+}
+
+global proc set_YourName()
+{
+
+        string $userSET = `textField -q -tx yourname_Field`;
+        sysFile -makeDir "c:/_pipeline_";
+        $fileId=`fopen "C:/_pipeline_/user.info" "w"`;
+        fprint $fileId $userSET;
+        fclose $fileId;  
+        deleteUI wis_yourname_UI;   
+
+}

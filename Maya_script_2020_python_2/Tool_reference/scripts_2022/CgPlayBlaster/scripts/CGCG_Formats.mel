@@ -1,0 +1,54 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: \\pantheon\MEL\cgcg\scripts\common\CgPlayBlaster/scripts/CGCG_Formats.mel $
+//    $Revision: 8c78dded78c5 $
+//    $Author: indigo $
+//    $Date: 2014/02/11 10:55:03 $
+//
+///////////////////////////////////////////////////////////////////////////////
+
+proc string FormatString(string $str, string $replaceList[])
+{
+	for($rp in $replaceList)
+	{
+		$str = `substitute "%s" $str $rp`;
+	}
+	return $str;
+}
+
+
+proc string toStr(float $value)
+{
+	return (string($value));
+}
+
+proc string padding(int $value, int $size)
+{
+	$str = toStr($value);
+	while(size($str) < $size)
+	{
+		$str = "0"+$str;
+	}
+	return $str;
+}
+
+global proc string CW_FileFormat()
+{
+	string $fileBaseName = `file -q -ns`;
+	$min = `playbackOptions -q -min`;
+	$max = `playbackOptions -q -max`;
+	print(padding($min,4));
+	print(padding($max,4));
+	return FormatString("%s_F%s-F%s",{$fileBaseName, toStr(padding($min,4)), toStr(padding($max,4))});
+}
+//print(CW_FileFormat());
+

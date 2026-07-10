@@ -1,0 +1,160 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: kpNotez (Maya notepad)
+''    Author: mr_dickles 
+''    Last Updated: May 28, 2008
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/animation/2172.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+//kpNotez v.1.1 written by K.Proudfoot 3/2008
+//
+// RUN:   Simply type kpNotez();  to invoke this script. 
+//
+// INFO:  This script is a note pad script which saves your notes with the current maya scene file.
+//        You will see a brief HUD display that tells you that the file contains notes upon opening of the scene.
+//        You can also save out the notes to a text file in a locatin of your choice.
+
+
+global proc kpNotez()
+{
+	global string $kpNotedata;
+	global string $kpTextArea;
+
+	string $kpSaveSel[]=`ls -sl`;
+
+	if (!`objExists "Notez"`)
+	{
+		//if Notez node does NOT exist, do this:
+              string $kpScriptNode = `scriptNode -st 2 -bs "if(`objExists \"Notez\"`) headsUpMessage \"This file contains notes\"" -n "kpNotezScriptNode"`;
+		spaceLocator -n "Notez";
+		setAttr "Notez.visibility" 0;
+		string $kpNotedata="<empty>";
+		addAttr -dt "string" -ln "notes"; 
+		setAttr "Notez.notes" -type "string" $kpNotedata;
+		runNotezz($kpNotedata);
+	}else{
+		//if the HUD warning exists, change it to say ""
+		
+		string $kpNotedata=`getAttr "Notez.notes"`;
+		runNotezz($kpNotedata);
+	}
+	select -r $kpSaveSel;
+}
+
+//*********Erase Notes Proc********
+global proc kpClearNotez()
+{
+	string $kpConfirm=`confirmDialog -title "Remove ALL Notes" -message "This will erase ALL notes from this scene file permanently.\n      Are you sure you want to remove them?" -button "Yes" -button "No" -defaultButton "Yes" -cancelButton "no" -dismissString "No"`;
+	if ($kpConfirm == "Yes")
+	{
+		if (`objExists "kpNotezScriptNode"`)
+			delete kpNotezScriptNode;
+		if (`objExists "Notez"`)
+			delete Notez;
+		warning "   Notes have been removed successfully.";
+		
+		if (`window -ex kpNotezWin`)
+			deleteUI -wnd kpNotezWin;
+	}else{
+		print "\"Remove\" operation cancelled.";
+	} 
+}
+
+//*********Update the notes********
+global proc kpUpdateNotez()
+{
+	string $kpNotedata=`scrollField -q -text poop`;
+	setAttr "Notez.notes" -type "string" $kpNotedata;
+}
+
+//**********Save the notes to an external text file.**********
+global proc kpExportOut()
+{
+	string $kpNotedata=`scrollField -q -text poop`;
+	string $kpExpFile = `fileDialog`; 
+	optionVar -sv "kpExp" $kpExpFile;
+	string $kpExpPath=`optionVar -q "kpExp"`;
+
+	//open the database file in 'write' mode.
+	int $fileId = `fopen $kpExpFile "w"`;
+
+	//error check, if file does not exist, the don't say "successful!"  ;)
+	if (!$fileId == 0)
+	{ 
+		fprint $fileId ($kpNotedata);
+		fclose $fileId;
+
+		//show a confirm dialog to let you know the file was written to.
+		confirmDialog -title "Export Successful." -button "Finish" -ma "center" -message ("Your notes have been successfully written out to the file: \n"+$kpExpPath+"\n");
+	}else{
+	warning "No output file selected, or output file does not exist!";
+	}
+}
+
+//***********The main window script and button setup.***********
+global proc runNotezz(string $kpNotedata)
+{
+	if (`window -ex kpNotezWin`)
+		deleteUI -wnd kpNotezWin;
+
+	string $kpNotedata=`getAttr "Notez.notes"`;
+
+	string $kpNotezWIN=`window -title "kpNotez v1.0" -s 0 -widthHeight 430 580 kpNotezWin`;
+	string $kpForm=`formLayout -nd 100`;
+
+	string $kpSaveButton=`button -label "   Save Notes  " -c kpUpdateNotez`;
+	string $kpExportButton=`button -label "  Export to File " -c kpExportOut`;
+	string $kpClearButton=`button -label "Remove Notes" -c kpClearNotez`;
+
+	string $kpSaveText=`text -label "Save current notes with this scene file."`;
+	string $kpExportText=`text -label "Export notes out to a text file."`;
+	string $kpClearText=`text -label "Permanently removes all notes from this scene file."`;
+
+	string $kpTextArea=`scrollField -wordWrap 1 -h 400 -w 400 -ec kpUpdateNotez -cc kpUpdateNotez -text $kpNotedata poop`;
+
+	string $kpTitletext=`text -align "center" -label (""+ 
+	"Use the space below to create Notes. Click the \"Save Notes\" button to update and\n" +
+	"save your notes with this scene. Click the \"Export to File\" button and select a text file\n" +
+	"to write to. The \"Remove Notes\" button will erase ALL notes from this Maya file.")`;
+
+	string $kpSepa=`separator -w 400 -p $kpForm`;
+
+	formLayout -e 
+		-af $kpTitletext "top" 5
+		-af $kpTitletext "left" 10
+
+		-ac $kpSepa "top" 5 $kpTitletext
+		-af $kpSepa "left" 10
+
+		-af $kpSaveButton "left" 10
+		-ac $kpSaveButton "top" 5 $kpSepa
+
+		-ac $kpSaveText "left" 10 $kpSaveButton
+		-ac $kpSaveText "top" 10 $kpSepa
+
+		-ac $kpExportButton "top" 5 $kpSaveButton
+		-af $kpExportButton "left" 10
+
+		-ac $kpExportText "top" 10 $kpSaveButton
+		-ac $kpExportText "left" 10 $kpExportButton
+
+		-af $kpClearButton "left" 10
+		-ac $kpClearButton "top" 5 $kpExportButton
+
+		-ac $kpClearText "top" 10 $kpExportButton
+		-ac $kpClearText "left" 10 $kpExportButton
+
+		-ac $kpTextArea "top" 5 $kpClearButton
+		-af $kpTextArea "left" 10
+	$kpForm;
+
+	setParent..;
+	setFocus $kpTextArea;
+	showWindow $kpNotezWIN;
+}

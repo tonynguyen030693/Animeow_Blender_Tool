@@ -1,0 +1,694 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//이 스크립트는 오로지 프로젝트에 제한되어 있음
+//
+//1. 컷 리스트 를  구한다.
+//2. 미리 만들어둔 메크로들을 조합하여 구한 리스트대로 적용한다.
+////////////////////////////////////////////메뉴 1
+//=====================================================================================================================
+//Croissants_tokenizLoop(int $case) = > 아래의 나열된 명령을 정해진 컷 넘버만큼만 진행해라
+//=====================================================================================================================
+//Croissants_tokenizLoop(1) = > 구해진 씬 만큼 씬 만들기
+
+  //Croissants_macro_fileBuild_A =>   
+    //Croissants_Pageing(3); 페이지를 넘긴다. == 토크나이즈에선 작동 꺼져 있음
+    //Get_Croissants_ABCList(); 알렘빅 리스트를 구한다.                  
+    //Croissants_macro_attach(); 알렘빅을 어태치 한다.
+    //Croissants_Prefix();       렌더셋팅을 적용시킨다.
+    //Croissants_Duplicate(1);   적용시킨 씬 파일을 지정된 컷 번로호 저장한다.
+//=====================================================================================================================
+//=====================================================================================================================
+//Croissants_tokenizLoop(2) = > 구해진 씬 만큼 알렘빅 어태치 하고 씬 구성하기
+//
+  //Croissants_macro_fileBuild_B =>  
+    //int $litfiles =`textScrollList -q -ni Croissants_Lit_List`;  라이트 파일 전체 갯수를 확인
+    //textScrollList -e -sii $litfiles Croissants_Lit_List; // 그중에 마지막 버전을 선택
+    //OPEN_Croissants_files(2); 선택한 파일을 오픈
+    //Get_Croissants_ABCList();  알렘빅 리스트를 구하고
+    //Croissants_logStats(92); 씬정보를 로드한다. (애니메이션베이크할때 만들어진 .log의 정보)
+    //Croissants_macro_fileArray(); Assets_DL_[에셋이름]의 디스플레이 레어어가 있을때만 작동 (on/off)
+    //file -save; 파일 저장
+    //textScrollList -e -da Croissants_Lit_List; 선택한 모든 리스트를 초기화
+    //Croissants_Pageing(3);  == 토크나이즈에선 작동 꺼져 있음
+//=====================================================================================================================
+//=====================================================================================================================
+//Croissants_tokenizLoop(1) && Croissants_tokenizLoop(2) 는 별도로 수행해서 씬을 만들고 다 만들어지면
+// 캐쉬를 붙이는 과정을 나눠놓음
+//=====================================================================================================================
+//=====================================================================================================================
+//Croissants_tokenizLoop(3) = > 구해진 리스트만큼 씬을 열어서 앞뒤 중간으로 스틸을 렌더하는 레이지 커맨드
+    //Croissants_macro_RenderCheck  // 처음,중간,끝 프레임 스틸 렌더 (tmp)경로가 아닌 / Vray에 한정된 커맨드
+//=====================================================================================================================
+//=====================================================================================================================
+//Croissants_tokenizLoop(4) = > 구해진 리스트만큼 알렘빅 베이크 하기
+    //Croissants_AlembicBatch(2);  //UI는 마야를 사용하지만 마야밖에서 마야배치를 사용하는 윈도우 전용 커멘드
+    //Croissants_AlembicBatch(1); //커맨드 전용 UI 를 빌드하고 Croissants_tokenizLoop(4)로 리턴해서 Croissants_AlembicBatch(2)를 실행한다.
+    //Croissants_AlembicBatch(2)는 디버그 모드와 본 모드가 따로 있고 카메라 전용 베이크가 별도로 있다. 실행하기전 디버그 모드로 한번확인이 필요하다.
+//
+//////////////////////////////Kill UI
+    //button -e -c "Croissants_tokenizLoop(1);" Croissants_tokenizLoop_1;
+    //button -e -c "Croissants_tokenizLoop(2);" Croissants_tokenizLoop_2;
+    //button -e -c "Croissants_macro_attach();Croissants_macro_fileArray();Croissants_logStats(92);Croissants_Prefix();" Croissants_tokenizLoop_3;
+    //button -e -c "Croissants_tokenizLoop(3);" Croissants_tokenizLoop_4;
+    //
+    //button -e -c "Croissants_countKey(1);Croissants_countKey(2);" Croissants_countKey_BTT;
+
+
+
+//button -e -vis 0 Croissants_tokenizLoop_1;
+//button -e -vis 0 Croissants_tokenizLoop_2;
+//button -e -vis 0 Croissants_tokenizLoop_3;
+//button -e -vis 0 Croissants_tokenizLoop_4;
+
+iconTextButton -e -c "Croissants_AniFilesPreCheck();" Croissants_countKey_BTT;
+
+//=====================================================================================================================
+//=====================================================================================================================
+//Croissants_tokenizLoop(5) = > 구해진 리스트만큼 씬을 열어서 플레이 블라스트 만들기
+          //Croissants_tokenizeAniOPEN();
+          //Croissants_Playblast;   
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+global proc Croissants_tokenizLoop(int $case)
+{
+  string $cutlist= `scrollField -q -tx GetCI`;
+  string $tokenized[];
+  tokenize $cutlist "\n" $tokenized;
+  switch($case)
+  {
+
+    case 0:
+          for ($i=0; $i<size($tokenized); $i++)
+          {                     
+          optionMenu -e -v $tokenized[$i] Croissants_CUT;
+          OpenGetInfo(2);
+          Croissants_tokenizeAniOPEN();
+          Croissants_logStats(8);             
+          }
+    break;
+    
+    case 1:
+          for ($i=0; $i<size($tokenized); $i++)
+          {                     
+          optionMenu -e -v $tokenized[$i] Croissants_CUT;
+          OpenGetInfo(2); 
+          Croissants_macro_fileBuild_A;            
+          }
+    break;
+
+    case 2:
+          for ($i=0; $i<size($tokenized); $i++)
+          {                     
+          optionMenu -e -v $tokenized[$i] Croissants_CUT;
+          OpenGetInfo(2); 
+          Croissants_macro_fileBuild_B;            
+          }
+    break;
+
+    case 3:
+          for ($i=0; $i<size($tokenized); $i++)
+          {                     
+          optionMenu -e -v $tokenized[$i] Croissants_CUT;
+          OpenGetInfo(2); 
+          Croissants_macro_RenderCheck;            
+          }
+    break;
+    case 4:         
+          global string $gMainProgressBar;
+          int $full = size($tokenized);
+          for ($i=0; $i<size($tokenized); $i++)
+          {                     
+          optionMenu -e -v $tokenized[$i] Croissants_CUT;
+          OpenGetInfo(2); 
+               
+          progressBar -edit -beginProgress -isInterruptable true -status "Baking ..." -maxValue $full $gMainProgressBar;
+          if(`progressBar -query -isCancelled $gMainProgressBar`)
+          break;                                                        
+          progressBar -edit -step 1 $gMainProgressBar;          
+          Croissants_AlembicBatch(2);             
+          }
+          progressBar -edit -endProgress $gMainProgressBar;
+
+    break;   
+
+    case 5:      
+            for ($i=0; $i<size($tokenized); $i++)
+            {                     
+            optionMenu -e -v $tokenized[$i] Croissants_CUT;          
+            OpenGetInfo(2); 
+            Croissants_tokenizeAniOPEN();
+            Croissants_Playblast;         
+            }
+    break;  
+    case 6:      
+            for ($i=0; $i<size($tokenized); $i++)
+            {                     
+            optionMenu -e -v $tokenized[$i] Croissants_CUT;          
+            OpenGetInfo(2); 
+            Croissants_tokenizeAniOPEN();
+            Croissants_logStats(8); 
+            
+            setAttr "persp.translateX" 0;
+            setAttr "persp.translateY" 0;
+            setAttr "persp.translateZ" 0;
+            setAttr "persp.rotateX" 0;
+            setAttr "persp.rotateY" 0;
+            setAttr "persp.rotateZ" 0;
+            SaveScene;        
+            }
+    break;    
+  }
+}
+
+global proc Croissants_Playblast_UI()
+{
+          int $ckMode = `checkBox -q -v Croissants_PBD_batch`;   
+          if($ckMode == 1)   
+          {      
+            Croissants_tokenizLoop(5);
+          }
+          else
+          {
+            Croissants_Playblast;
+          }  
+
+}
+
+
+global proc Croissants_AniFilesPreCheck()
+{
+          int $ckMode = `checkBox -q -v Croissants_countKey_Op`;   
+          if($ckMode == 1)   
+          {      
+            Croissants_tokenizLoop(6);
+          }
+          else
+          {
+            Croissants_tokenizLoop(0);
+          }  
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+//Macro Pack Command
+global proc Croissants_tokenizeAniOPEN()
+{
+  int $Croissants_aniList = `textScrollList -q -ni Croissants_Ani_List`;
+  if($Croissants_aniList == 0)
+  {
+      print "pass";
+  }
+  else
+  {
+  textScrollList -e -sii $Croissants_aniList Croissants_Ani_List;
+  OPEN_Croissants_files(1);
+  }
+}
+
+global proc Croissants_macro_fileBuild_A()
+{                   
+  //Croissants_Pageing(3);
+  Get_Croissants_ABCList();                  
+  Croissants_macro_attach(); 
+  Croissants_Prefix();       
+  Croissants_Duplicate(1);                       
+}
+
+global proc Croissants_macro_fileBuild_B()
+{                  
+  int $litfiles =`textScrollList -q -ni Croissants_Lit_List`;
+  textScrollList -e -sii $litfiles Croissants_Lit_List;
+  OPEN_Croissants_files(2);
+  Get_Croissants_ABCList();  
+  Croissants_logStats(92);
+  Croissants_macro_fileArray();
+  file -save;
+  textScrollList -e -da Croissants_Lit_List;
+  //Croissants_Pageing(3);                    
+}
+
+
+global proc Croissants_macro_RenderCheck()
+{
+
+  int $litfiles =`textScrollList -q -ni Croissants_Lit_List`;
+  textScrollList -e -sii $litfiles Croissants_Lit_List;
+  OPEN_Croissants_files(2);
+  Croissants_logStats(92);
+           
+  Deadline_submitChoo(1);
+  Croissants_STILLRender;
+  Deadline_submitChoo(2);
+  Croissants_STILLRender;
+  Deadline_submitChoo(3);
+  Croissants_STILLRender;
+  
+  //Croissants_Pageing(3); 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+//Macro Each Command
+
+global proc Croissants_macro_fileArray()
+{
+  string $AL[] =`textScrollList -q -ai Croissants_ABC_List`;
+    for ($i=0; $i<size($AL); $i++)
+        {
+          string $name = substituteAllString($AL[$i], ".abc", "");        
+          if ($name == "_cam")
+          {
+           print "end"; 
+          }
+          else
+          {
+          string $Tpye = `substring $name 1 3`;	
+          string $abcAsset = substituteAllString($name, $Tpye, "");              
+
+          setAttr ("Assets_DL."+$abcAsset) 1;          
+          }
+         }
+}
+
+
+global proc Croissants_macro_attach()
+{
+  int $abclist =`textScrollList -q -ni Croissants_ABC_List`;
+  for ($i=1; $i<($abclist+1); $i++)
+      {
+          textScrollList -e -da Croissants_ABC_List;
+          textScrollList -e -sii $i Croissants_ABC_List;
+          Import_Croissants_Cache(2);
+          textScrollList -e -da Croissants_ABC_List;
+      }
+}
+
+
+
+global proc Deadline_submitChoo(int $preRen)
+{
+int $rSF = `textField -q -tx Croissants_A01_sf`;
+int $rEF = `textField -q -tx Croissants_A02_ef`;
+int $rMF = ((($rEF - $rSF)/2)+100); 
+
+  switch($preRen)
+  {
+    case 1:
+          setAttr "defaultRenderGlobals.startFrame" $rSF;
+          setAttr "defaultRenderGlobals.endFrame" $rSF;
+    break;
+    case 2:
+          setAttr "defaultRenderGlobals.startFrame" $rMF;
+          setAttr "defaultRenderGlobals.endFrame" $rMF;
+    break;
+    case 3:
+          setAttr "defaultRenderGlobals.startFrame" $rEF;
+          setAttr "defaultRenderGlobals.endFrame" $rEF;
+    break;        
+  }
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+global proc Croissants_macro_fileBuild_D()
+{
+  int $GetInof_count =`optionMenu -q -ni Croissants_CUT`;  
+  for ($i=0; $i<($GetInof_count); $i++)
+      {                     
+        int $litfiles =`textScrollList -q -ni Croissants_Lit_List`;
+        textScrollList -e -sii $litfiles Croissants_Lit_List;
+        OPEN_Croissants_files(2);
+        Croissants_logStats(92);
+
+        Deadline_Auto_submitJOB();
+        deleteUI -window DeadlineSubmitWindow; 
+        file -f -new;
+        ogs -pause;                                            
+        Croissants_Pageing(3);
+
+      }                    
+}
+  
+
+global proc int dwin()
+{
+    int $waitd =`window -q -exists DeadlineSubmitWindow`;
+    return $waitd;
+}
+
+global proc Deadline_Auto_submitJOB()
+{
+  SubmitJobToDeadline;
+
+   global int $waitd;   
+   if (`dwin`)
+   {
+
+      optionMenuGrp -e -select (5) frw_deadlinePool;
+      optionMenuGrp -e -select (2) frw_Group;
+      
+      optionMenuGrp -e -select (2) frw_camera;
+      checkBox -e -v 1 frw_submitMayaScene;
+      checkBox -e -v 0 frw_overrideLayerSettings;
+      checkBox -e -v 1 frw_submitEachRenderLayer;
+      checkBox -e -v 1 frw_localRendering;
+      checkBox -e -v 1 frw_submitAsSuspended;
+      
+      intSliderGrp  -e -v 100  frw_JobPriority;
+      intSliderGrp -e -v 1  frw_FrameGroup;
+      SetJobName; 
+      //SetupSubmission; 
+      DeadlineSubmitterOnOk;  
+  }
+  else
+  {
+
+  }
+
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Vray Only now...
+global proc Croissants_STILLRender()
+{
+  $cams=`ls -typ "camera"`;  
+  string $myCam[] = `listRelatives -p $cams[0]`;
+  if($myCam[0] == "_ShotCam")
+  {
+  string $now_cam = "_ShotCam";  
+  ____stillRender($now_cam);
+  }
+  else
+  {      
+    string $Ques = "No Exist Correct Camera in this Scenes \nDo You Want Render with Select Camera?";
+    $response_CamOrder = `confirmDialog -t "Wrong Camera" -m $Ques -ma "left" -b "Yes" -b "No" -db "Yes" -cb "No" -ds "No" `;  
+        if( $response_CamOrder == "Yes" ) 
+          {
+              string $selCam[] = `ls -sl`;
+              if(size($selCam) != 0)
+              {                            
+              string $now_cam = $selCam[0];  
+              ____stillRender($now_cam);
+              select -cl;
+              }
+              else
+              {
+                  confirmDialog -t "!!!" -m "No Camera Selected";
+              }
+          }
+       else
+       {
+           print "Cancle...";
+       }
+  } 
+}
+
+global proc ____stillRender(string $now_cam)
+{  
+  //string $now_cam = "_ShotCam";  
+  int $keep_SF = `getAttr "defaultRenderGlobals.startFrame"`;
+  int $keep_EF = `getAttr "defaultRenderGlobals.endFrame"`;
+  int $REN_frame = `currentTime -q`;
+  int $Check_EF =`getAttr "defaultRenderGlobals.endFrame"`;
+    vray showVFB;
+    if ($Check_EF == 101)
+    {
+      setAttr "vraySettings.animBatchOnly" 0;     
+      renderWindowRenderCamera render renderView $now_cam ;
+      setAttr "vraySettings.animBatchOnly" 1;
+    }
+    else
+    {
+      setAttr "vraySettings.animBatchOnly" 0;
+      setAttr "defaultRenderGlobals.startFrame" $REN_frame;
+      setAttr "defaultRenderGlobals.endFrame" $REN_frame;
+      renderWindowRenderCamera render renderView $now_cam ;
+      setAttr "defaultRenderGlobals.startFrame" $keep_SF;
+      setAttr "defaultRenderGlobals.endFrame" $keep_EF;
+      setAttr "vraySettings.animBatchOnly" 1;
+    }
+
+  currentTime -e $REN_frame;
+}  
+
+
+
+global proc Croissants_AlembicBatch(int $case)
+{  
+  string $AlembicBatch_UI1 ="Croissants_Ani_List";
+  string $AlembicBatch_UI2 ="Croissants_CUT";
+  string $AlembicBatch_UI3 ="Croissants_EP";
+  string $AlembicBatch_project = `workspace -q -fn`;
+  string $AlembicBatch_EP=`optionMenu -q -v $AlembicBatch_UI3`;
+  string $AlembicBatch_CUT=`optionMenu -q -v $AlembicBatch_UI2`;
+  string $AlembicBatch_AniFile_Path = $AlembicBatch_project + "/02_Scenes/03_Animation/"  + "3_KEY" + "/" + $AlembicBatch_EP + "/" + $AlembicBatch_CUT + "/";
+  string $bakeMSG = "Do you want to Bake All Ani Files? if You Run This Command \nMaya is Looks Like Dead ... But please wait for a moment \nUntil the progress bar Reaches 100% \nAnyway, If you Want Stop, Continue to press the \"ESC\" key several times...\nOr TaskKill Maya";
+
+      switch($case)
+      {
+      case 1 :
+         $response_ABCBatch = `confirmDialog -t "Confirm" -m $bakeMSG -ma "left" -b "Yes" -b "No" -db "Yes" -cb "No" -ds "No" `;
+          //timer -s;	
+          // check response_ABCBatch            
+          if( $response_ABCBatch == "Yes" ) 
+          {
+              
+              if (`window -ex Bake_Batch_WIN`) deleteUI Bake_Batch_WIN;
+              window -t "Bake Result Viewer" -widthHeight 230 500  -mnb 0 -tb 1 -toolbox 1 -s 1 -rtf 1 Bake_Batch_WIN;
+              columnLayout;		
+              scrollField -w 230 -h 460 -tx "" getDir;
+              textField -w 230 -h 20 -fn "boldLabelFont" getCount;
+              textField -w 230 -h 20 -fn "boldLabelFont" timeCount;
+              showWindow Bake_Batch_WIN;
+
+              $c_1Postion =`window -q -tlc  GetInof_win`; 
+              int $mag_c1 = $c_1Postion[1] -235;
+              window -e -tlc $c_1Postion[0] $mag_c1 Bake_Batch_WIN;    
+   
+              Croissants_tokenizLoop(4);                                  
+           }
+
+          else if( $response_ABCBatch == "No" ) 
+          {
+           
+            print("Cancel");
+          }
+          int $CountLine =`scrollField -q -nl getDir`;
+          int $Result = $CountLine -1;
+          float $elapsedTime  =`timer -e`;
+          int $elapsedTimeM =($elapsedTime/60);
+          textField -e -tx ("Bake of "+$Result+" files is complete.") getCount;
+          textField -e -tx ("ElapsedTime : "+$elapsedTimeM+"\nMinute") timeCount;                    
+          
+          
+      break;
+
+      case 2 :
+              //make folder via _AlembicBatch.mel
+                
+              int $Croissants_aniList = `textScrollList -q -ni $AlembicBatch_UI1`;
+                if($Croissants_aniList == 0)
+                {
+                    print "pass";
+                }
+                else
+                {
+                    string $myMaya ="C:/Progra~1/Autodesk/Maya2019/bin/mayabatch.exe -proj " + $AlembicBatch_project +" -file ";   
+                    string $myMel  =" -script "+"_AlembicBatch.mel";       
+                    string $myCamMel  =" -script "+"_InfoCollection.mel";            
+                    
+                    textScrollList -e -sii $Croissants_aniList $AlembicBatch_UI1;
+                    string $Croissants_bakeSource[] = `textScrollList -q -si $AlembicBatch_UI1`;
+
+
+                        int $camRun =`checkBox -q -v Alembic_camRun`;
+                        if ($camRun == 0)
+                        {                    
+                            int $preRun =`checkBox -q -v Alembic_preRun`;
+                            if ($preRun == 0)
+                            {
+                              for ($j=0; $j<size($Croissants_bakeSource); $j++)
+                              {                               
+                                string $source_AniFile = $AlembicBatch_AniFile_Path+$Croissants_bakeSource[$j];
+                                string $ABC_command = $myMaya+$source_AniFile+$myMel;
+                                string $ABC_command_win = substituteAllString($ABC_command, "/", "\\\\");                                        
+                                system( $ABC_command_win );
+                                ////////////////////////////////////////////////////////////////////                                 
+                                                             
+                                  string $Otx =`scrollField -q -tx  getDir`;
+                                  string $Ntx = $Otx +"\n"+ $Croissants_bakeSource[$j];
+                                  scrollField -e -tx $Ntx  getDir;
+                                                    
+                              }
+                            }
+                            else
+                            {
+                              for ($j=0; $j<size($Croissants_bakeSource); $j++)
+                              {  
+                                ////////////////////////////////////////////////////////////////////                                                  
+                                                               
+                                  string $Otx =`scrollField -q -tx  getDir`;
+                                  string $Ntx = $Otx +"\n"+ $Croissants_bakeSource[$j];
+                                  scrollField -e -tx $Ntx  getDir;
+
+                              }                    
+                            }
+                        }
+                        else 
+                        {
+                              for ($i=0; $i<size($Croissants_bakeSource); $i++)
+                              {
+                              string $source_AniFile = $AlembicBatch_AniFile_Path+$Croissants_bakeSource[$i];
+                              string $Otx =`scrollField -q -tx  getDir`;
+                              string $Ntx = $Otx +"\n"+ $Croissants_bakeSource[$i];
+                              scrollField -e -tx $Ntx  getDir;                                                    
+                              string $ABC_command = $myMaya+$source_AniFile+$myCamMel;
+                              string $ABC_command_win = substituteAllString($ABC_command, "/", "\\\\");                                        
+                              system( $ABC_command_win );
+                              }                        
+                        
+                        }                            
+                }                                
+      break; 
+      }       
+}
+
+
+global proc Get_Animation_FrameInfo()
+{
+  int $Croissants_FrameInfo_CBIF = `checkBox -q -v Croissants_FrameInfo_CB`; 
+    if($Croissants_FrameInfo_CBIF == 0)
+    {
+    Get_Animation_FrameInfo_UI(2);
+    } 
+    else
+    {
+    Get_Animation_FrameInfo_UI(1);
+    }
+}
+global proc Get_Animation_FrameInfo_UI(int $case)
+{
+    if (`window -ex GetInof_win`) deleteUI GetInof_win;
+    window -t "Get Info" -widthHeight 150 500  -mnb 0 -tb 1 -toolbox 1 -s 0 -rtf 1 GetInof_win;
+    columnLayout;		
+    scrollField -w 150 -h 500 -tx "" GetCI;
+    showWindow GetInof_win;
+    
+    $c_0Postion =`window -q -tlc  Croissants`; 
+    int $mag_c0 = $c_0Postion[1] -153;
+    window -e -tlc $c_0Postion[0] $mag_c0 GetInof_win;    
+    
+    int $GetInof_count =`optionMenu -q -ni Croissants_CUT`;             
+    optionMenu -e -sl 1 Croissants_CUT;
+    string $C000 = `optionMenu -q -v Croissants_CUT`;             
+    scrollField -e -cl GetCI;
+
+    switch($case)
+    {
+        case 1:
+                if ($C000 == "C000")
+                {
+                    Croissants_Pageing(3);
+                    
+                    for ($i=0; $i<($GetInof_count-1); $i++)
+                    { 
+                        string $Old_info =`scrollField -q -tx GetCI`;
+                        string $CN = `optionMenu -q -v Croissants_CUT`;  
+                        string $SF = `intField -q -v Croissants_A01_sf`;
+                        string $EF = `intField -q -v Croissants_A02_ef`;
+                        string $MergeVari = $CN + ":" + $SF +":" +$EF;                                        
+                        if($i == 0)
+                        {
+                          string $New_info = $MergeVari;    
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                        else
+                        {
+                          string $New_info = $Old_info +"\n"+ $MergeVari;
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                      Croissants_Pageing(3);
+                    }         
+                }
+                else
+                {
+                    for ($i=0; $i<$GetInof_count; $i++)
+                    {
+                        string $Old_info =`scrollField -q -tx GetCI`;
+                        string $CN = `optionMenu -q -v Croissants_CUT`;  
+                        string $SF = `intField -q -v Croissants_A01_sf`;
+                        string $EF = `intField -q -v Croissants_A02_ef`;
+                        string $MergeVari = $CN + ":" + $SF +":" +$EF;                                                
+                        if($i == 0)
+                        {
+                          string $New_info = $MergeVari;    
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                        else
+                        {
+                          string $New_info = $Old_info +"\n"+ $MergeVari;
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                      Croissants_Pageing(3);
+                    }  
+                }
+        break;
+        
+        case 2:
+                if ($C000 == "C000")
+                {
+                    Croissants_Pageing(3);
+                    
+                    for ($i=0; $i<($GetInof_count-1); $i++)
+                    {  
+                        string $Old_info =`scrollField -q -tx GetCI`;
+                        string $CN = `optionMenu -q -v Croissants_CUT`;  
+                                        
+                        if($i == 0)
+                        {
+                          string $New_info = $CN;    
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                        else
+                        {
+                          string $New_info = $Old_info +"\n"+ $CN;
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                      Croissants_Pageing(3);
+                    }         
+                }
+                else
+                {
+                    for ($i=0; $i<$GetInof_count; $i++)
+                    { 
+                        string $Old_info =`scrollField -q -tx GetCI`;
+                        string $CN = `optionMenu -q -v Croissants_CUT`;  
+                                                                
+                        if($i == 0)
+                        {
+                          string $New_info = $CN;    
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                        else
+                        {
+                          string $New_info = $Old_info +"\n"+ $CN;
+                          scrollField -e -tx $New_info  GetCI;  
+                        }
+                      Croissants_Pageing(3);
+                    }  
+                }
+        break;        
+    }
+    optionMenu -e -sl 1 Croissants_CUT;
+                
+}

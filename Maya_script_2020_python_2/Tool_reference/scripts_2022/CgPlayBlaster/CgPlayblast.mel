@@ -1,0 +1,1958 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: CgPlayblast.mel $
+//    $Revision: 0ce5627ec9f1 $
+//    $Author: indigo $
+//    $Date: 2017/01/19 07:34:32 $
+//
+///////////////////////////////////////////////////////////////////////////////
+
+global int $pInitTimes;
+
+proc int VERBOSE()
+{
+	return 1;
+}
+
+proc int RUNTIME()
+{
+	return 1;
+}
+
+// 開啟(關閉) MotionBlur Mode
+proc int MotionBlurMode()
+{
+	return 1;
+}
+
+// 2009.02.18 新增：修正顯示的框框
+proc AdjustCameraFrame()
+{
+	// 依照 Model Panel 改變 Camera
+	string $ModelPane = `paneLayout -q -pane1 viewPanes`;
+	string $Camera = `modelPanel -q -camera $ModelPane`;
+	
+	// 直接檢查檔名！
+	string $FileName = basenameEx(`file -q -sn`);
+		
+	// ================================================
+	// FOR FB USE
+	if(size(`match "^FB" $FileName`))
+	{
+		camera -e 
+			-displaySafeAction on 
+			-displaySafeTitle off 
+			-displayResolution on 
+		$Camera;
+	}
+	// ================================================
+}
+
+// 這個部份還要再調整 ===========================
+// 回傳 AliasName
+proc string ReturnAliasName()
+{
+	return "AB";
+}
+
+// 取得 Episode Number
+proc string CGCG_GetEpisode()
+{
+	string $ProjectAliasName = ReturnAliasName();	// Ex: AB
+	string $Episode;
+	
+	string $Basename = basenameEx(`file -q -sn`);
+	if($Basename != "")
+	{
+		// 目前適用
+		// Angelina : AB001, AB001A, 
+		$Episode = `match ($ProjectAliasName+"[0-9]+[^\-]*") $Basename`;
+	}
+	if($Episode == "") $Episode = "UNKNOWN";
+	return $Episode;
+}
+
+// 回傳目前要存檔的 Server Path
+proc string ReturnSaveServerPath()
+{
+	return "D:/";
+	/*
+	string $ProjDriver = `optionVar -q "CGCG_ProjDriver"`;
+	string $Episode = CGCG_GetEpisode();
+	return ($ProjDriver+"/AVI/ANIM/"+$Episode+"/CHECK/");
+	*/
+}
+// 這個部份還要再調整 ===========================
+
+// 回傳補齊 0 後的字串
+proc string paddingNum(int $num, int $pad)
+{
+	string $paddingNum = $num;
+	while(size($paddingNum) < $pad) 
+	{
+		$paddingNum = ("0"+$paddingNum);
+	}
+	return $paddingNum;
+}
+
+// 回傳目前要存檔的 Local Path
+proc string ReturnSaveLocalPath()
+{
+	if(!`optionVar -ex CGCG_Playblast_SaveDir`) optionVar -stringValue CGCG_Playblast_SaveDir "D:/";
+	return (`optionVar -q CGCG_Playblast_SaveDir`);
+	
+	/*
+	string $AliasName = ReturnAliasName();
+	string $Episode = CGCG_GetEpisode();
+	return ("D:/"+$AliasName+"/AVI/"+$Episode+"/");
+	*/
+}
+
+// 回傳播放程式
+proc string ReturnPlayer()
+{
+	string $Player;
+	if(`filetest -x "C:/Program Files/QuickTime/QuickTimePlayer.exe"`)
+	{
+		$Player = "C:/Program Files/QuickTime/QuickTimePlayer.exe";
+	}
+	else if(`filetest -x "C:/Program Files (x86)/QuickTime/QuickTimePlayer.exe"`) 
+	{
+		$Player = "C:/Program Files (x86)/QuickTime/QuickTimePlayer.exe";
+	}
+	else
+	{
+		// 都沒有的時候，就用 mediaplayer 播吧！
+		$Player = "C:/Program Files (x86)/Windows Media Player/wmplayer.exe";
+	}
+	return $Player;
+}
+
+// 回傳 Playblast 的副檔名(原本是 MOV ，後來為了方便串在一起，改使用 AVI)
+// 順便加入 BLOCKING 機制
+proc string ReturnAVIExtension()
+{
+	// 原本是 MOV ，後來為了方便串在一起，改使用 AVI
+	string $Extension = ".mov";
+	
+	// 直接檢查檔名！
+	string $FileName = basenameEx(`file -q -sn`);
+	if(size(`match "^AB" $FileName`)) $Extension = ".mov";	// AB 開頭的，那就用 mov
+	if(size(`match "^BTB" $FileName`)) $Extension = ".mov";	// BTB 開頭的，那就用 mov
+	if(size(`match "^CB" $FileName`)) $Extension = ".mov";	// CB 開頭的，那就用 mov
+	if(size(`match "^TIM" $FileName`)) $Extension = ".mov";	// TIM 開頭的，那就用 mov
+	if(size(`match "^CW" $FileName`)) $Extension = ".mov";	// CW 開頭的，那就用 mov
+	
+	//int $Value = `checkBox -q -value CGCG_Playblast_BlockingCB`;
+	//if($Value) $Extension = (".BLK"+$Extension);
+	return $Extension;
+}
+
+
+proc string GetSourcePath(string $ProcName)
+{
+	if(`gmatch $ProcName "*.mel"`) $ProcName = `substitute ".mel" $ProcName ""`;
+	
+	string $Result;
+	string $WhereIsIt = whatIs($ProcName);
+	if($WhereIsIt == "Unknown")
+	{
+		error ("沒有辦法找到路徑："+$ProcName);
+	}
+	else
+	{
+		$Result = `substitute "Mel procedure found in: " $WhereIsIt ""`; 
+		$Result = dirname($Result);
+		if(!endsWith($Result, "/")) $Result += "/";
+	}
+	
+	return $Result;
+}
+
+proc string[] s_objExists(string $selList[])
+{
+	string $result[] = {};
+	for($sel in $selList)
+	{
+		if(`objExists $sel`)
+		{
+			$result[`size $result`] = $sel;
+		}
+	}
+	return $result;
+}
+
+proc showHUD(int $state)
+{
+	string $sel[] = `ls -sl`;
+	
+	string $defaultProject = `optionMenuGrp -q -v CGCG_Project_Option`;
+	
+	if(`size $defaultProject` == 0)
+		$defaultProject = "CGCG";
+	
+	CGCG_Reticle_Show($state, $defaultProject);
+	
+	x64RetPassShow();
+	x64AspectMaskShow();
+	$sel = s_objExists($sel);
+	select -cl;
+	if(`size $sel`)
+		select -r $sel;
+}
+
+// 額外程式放置的位置
+proc string ReturnExtraProgramPath()
+{
+	return (GetSourcePath("CgPlayblast")+"ExtraProgram");
+}
+
+global proc x64doPlayblast()
+{
+	x64PlayblastDoIt;
+}
+
+// 檢查是否需要同步儲存至 Server 端
+global proc CGCG_Playblast_Save2Server(string $SourceFile)
+{
+	int $Doit = `checkBox -q -value CGCG_Playblast_Save2ServerCB`;
+	if($Doit)
+	{
+		// 讀取這裡，以便日後方便修改
+		string $ServerPath = `textFieldGrp -q -text CGCG_Playblast_ServerPathTFG`;
+		
+		// 不要建好了，假如資料夾不存在，那就不要複製到 Server 端
+		//if(!`filetest -d $ServerPath`) sysFile -makeDir $ServerPath;	
+		if(`filetest -d $ServerPath`)
+		{
+			string $ServerFile = $ServerPath+basename($SourceFile, "");
+			if(VERBOSE()) print("同步儲存至 Server 端 : "+$ServerFile+"\n");
+			if(RUNTIME()) sysFile -copy $ServerFile $SourceFile;
+		}
+		else
+		{
+			if(VERBOSE()) print("Server 端的路徑不存在 : "+$ServerPath+"\n");
+		}
+	}
+}
+
+// Button Command : Check Box Save2Server
+global proc CGCG_Playblast_Save2ServerCBCommand()
+{
+	int $Save2Server = `checkBox -q -value CGCG_Playblast_Save2ServerCB`;
+	textFieldGrp -e -enable $Save2Server CGCG_Playblast_ServerPathTFG;
+	textFieldGrp -e -editable 0 CGCG_Playblast_ServerPathTFG;
+}
+
+//-- from www.ewertb.com
+proc string x64pbGetCurrentCamera()
+{
+	string	$camera,
+			//-- first get the panel that currently has focus
+			$panel = `getPanel -withFocus`;
+
+	//-- compare the panel's type to confirm it is a "modelPanel"
+	if( "modelPanel" == `getPanel -typeOf $panel` )
+	{
+		//-- get the name of the camera using the ?modelEditor? command
+		$camera = `modelEditor -q -camera $panel`;
+		modelEditor -edit -allObjects false -displayAppearance "wireframe" $panel;
+	}
+
+	return $camera;
+}
+
+proc float x64pbGetCurrentCameraFocalLength()
+{
+	string	$cam,
+			$panel = `getPanel -withFocus`;
+	if( "modelPanel" == `getPanel -typeOf $panel` )
+		//-- get the name of the camera using the ?modelEditor? command
+		$cam = `modelEditor -q -camera $panel`;
+	float	$focalLength = `objExists $cam`
+							?` getAttr ( $cam + ".focalLength" )`
+							: -1;
+	return $focalLength;
+}
+
+proc x64pbKUnlockRenderSettingNodes()
+{
+	string $renderSettingNodes[] = `listRenderSettingNodes`,
+	       $strIter;
+
+	appendStringArray( $renderSettingNodes,
+						{ "defaultHardwareRenderGlobals", "time1" }, 2 );
+
+	for( $strIter in $renderSettingNodes )
+	{
+		if( `objExists $strIter` )
+		{
+			string $lockedAttrs[] = `listAttr -locked $strIter`,
+			       $each;
+			for( $each in $lockedAttrs )
+			{
+				setAttr -lock false ( $strIter + "." + $each );
+				print ( "Unlock " + $strIter + "." + $each + " !\n" );
+			}
+		}
+	}
+
+	print "kUnlockRenderSettingNodes executed!\n";
+}
+global proc x64PlayblastRun()
+{
+	int $tabIdx = `tabLayout -q -sti CGCG_Playblast_MainTab`;
+	if($tabIdx == 1)
+	{
+		int $needRestoreWin = 0;
+		if(`checkBoxGrp -q -v1 offWindowChk`)
+		{
+			prePlayblast();
+			//pyEval("postPlayblast");
+			$needRestoreWin = 1;
+		}
+		
+		if(catch(`eval "x64doPlayblast"`))
+		{
+			print "[CGCG_Playblast] :: runtim process get error.\n";
+		}
+		
+		if($needRestoreWin)
+		{
+			//pyEval("postPlayblast");
+			postPlayblast();
+		}
+	}else
+	{
+		x64pbGlRender();
+	}
+}
+
+global proc x64PlayblastHUD()
+{
+	//Show HUD
+	//force disable old HUD
+	global int $pInitTimes;
+	//CGCG_HUD_show(0);
+	if($pInitTimes == 0)
+	{
+		string $CgProject = `getenv "CG_PROJECT"`;
+		if(`size $CgProject`)
+		{
+			if(`CGCG_PlayblastProjectSettingExists $CgProject`)
+				optionMenuGrp -e -v $CgProject CGCG_Project_Option;
+		}
+	}
+	string $defaultProject = `optionMenuGrp -q -v CGCG_Project_Option`;
+	
+	if(`size $defaultProject` == 0)
+		$defaultProject = "CGCG";
+		
+	int $enHUD = `checkBoxGrp -q -v1 enHUDChk`;
+	CGCG_Reticle_Show($enHUD, $defaultProject);
+		
+	//Check Pass Option
+	x64RetPassShow();
+	x64AspectMaskShow();
+	$pInitTimes += 1;
+}
+
+global proc x64RetPassShow()
+{
+	int $passShow = `checkBox -q -v CGCG_Pass_Opt_Chk`;
+	string $passStr = `textFieldGrp -q -tx CGCG_Pass_Txt_Field`;
+	CGCG_Reticle_Pass_Show($passShow, $passStr);
+}
+
+global proc x64AspectMaskShow()
+{
+	int $maskShow = `checkBoxGrp -q -v1 enAspectRatioChk`;
+	CGCG_Aspect_Ratio_Show($maskShow);
+}
+
+proc float getFps()
+{
+	string $unitName = `currentUnit -q -time`;
+	float $unit = 24;
+	switch($unitName) {
+		case "game":$unit=15; break;
+		case "film":$unit=24; break;
+		case "pal":$unit=25; break;
+		case "ntsc":$unit=30; break;
+		case "show":$unit=48; break;
+		case "palf":$unit=50; break;
+		case "ntscf":$unit=60; break;
+		default:$unit=24;break;
+	}
+	return $unit;
+}
+
+proc delSlate()
+{
+	if(`objExists "Slate"`)	
+	{
+		delete "Slate";
+	}
+	if(`checkBoxGrp -q -v1 enHUDChk`)
+	{
+		checkBoxGrp -e -v1 0 enHUDChk;
+	}
+}
+
+global proc x64PlayblastDoIt()
+{
+	
+	// 取得 Width &　Height ，並把它們紀錄起來，下次開啟介面的時候續用！
+	int $Width = `intField -q -value CGCG_Playblast_WidthIF`;
+	int $Height = `intField -q -value CGCG_Playblast_HeightIF`;
+	
+	int $format = `optionMenuGrp -q -sl CGCG_Format_Option`; 	// 1:Mov 2:Avi 3:MP4
+	int $codec = `optionMenuGrp -q -sl CGCG_Codec_Option`; 		// 1: MJPEG 2:H.264
+	int $useOutputFrame = `checkBoxGrp -q -v1 CGCG_Output_Frame_Name_Chk`;
+	string $ext = ".avi"; // default extension
+	
+	int $fixAudioLength = `checkBoxGrp -q -v1 fixAudioLengthChk`;
+	
+	int $playblastHUD = 0;
+	int $enHUD = `checkBoxGrp -q -v1 enHUDChk`;
+	int $showHudDuringPb = `checkBoxGrp -q -v1 showHudDuringPbChk`;
+	float $mayaVersion = `getApplicationVersionAsFloat`;
+	int $useInternal = 0;
+	string $project = getenv("CG_PROJECT");
+	
+	if(!$enHUD)
+	{
+		if($showHudDuringPb)
+		{
+			$playblastHUD = 1;
+		}
+	}
+	
+	if($format == 1)$ext = ".mov";
+	if($format == 2)$ext = ".avi";
+	if($format == 3)$ext = ".mp4";
+	
+	string $fmt = "mov";
+	if($format == 1)$fmt = "mov";
+	if($format == 2)$fmt = "avi";
+	if($format == 3)$fmt = "mp4";
+	
+	
+	//if($codec == 2 && $format== 1 && $mayaVersion > 2012)
+	//if($codec == 2 && $format== 1 && $mayaVersion > 2014)
+	
+	$useInternal = 0; // Force off using internal codec
+		
+	optionVar -intValue CGCG_PlayblastWidth $Width;
+	optionVar -intValue CGCG_PlayblastHeight $Height;
+	optionVar -intValue CGCG_PlayblastFormat $format;
+	optionVar -intValue CGCG_PlayblastCodec $codec;
+	
+	// 取得 MinTime & MaxTime ，並且移到第 1 格 (Playblast Command 也需要用到！)
+	
+	int	$minTime = `playbackOptions -q -minTime`;
+	int	$maxTime = `playbackOptions -q -maxTime`;
+	
+	int $playMin = $minTime;
+	int $playMax = $maxTime;
+	int $totalFrame = ($maxTime - $minTime + 1);
+	currentTime -e $minTime;
+
+	// 把 Playblast 的 AVI 放在 C:/TEMP2
+	string $tmpDir = "C:/TEMP/";
+	string $tmpAviFile = "";
+	
+	if(!`filetest -d $tmpDir`) sysFile -makeDir $tmpDir;
+	
+	// 設定 Playblast AVI 的名稱
+	string $fileName = `file -q -sn`;
+	string $fileNameExtension = `match "\\.[^\\.]+$" $fileName`;
+	$fileName = basename($fileName, $fileNameExtension);
+	if($fileName == "") $fileName = "CGCG_Playblast";
+	
+	/*if($useInternal)
+	{
+		$tmpAviFile = ($tmpDir+$fileName+$ext);
+		
+	}else{
+	
+		$tmpAviFile = ($tmpDir+$fileName+".avi");
+	}*/
+	
+	// 2009.02.18 新增：修正顯示的框框
+	AdjustCameraFrame();
+	
+	if($playblastHUD)
+	{
+		showHUD(1);
+	}
+	
+	// ===== Playblast Command =====
+	string $cmd = "playblast";
+	
+	// format
+	/*if($useInternal)
+		$cmd += " -format qt";
+	else
+		$cmd += " -format movie";*/
+	
+	$tmpAviFile = ($tmpDir+$fileName+".avi");
+	
+	if($mayaVersion > 2014 && $totalFrame > 500)
+	{
+		// Use quicktime-PNG as temp encoder, no 2GB limit.
+		$cmd += " -format qt";
+		$cmd += " -compression \"PNG\" -quality 100";
+		$tmpAviFile = ($tmpDir+$fileName+".mov");
+		
+	}else
+	{
+		// Use AVI-uncompression as temp encoder, but has 2GB limit.
+		$cmd += " -format movie"; 
+		$cmd += " -compression none";
+	}
+	
+	$cmd += " -clearCache true -viewer 0 -showOrnaments 1 -percent 100";
+		
+	$cmd += (" -widthHeight "+$Width+" "+$Height);
+	
+	if($mayaVersion >= 2010)
+	{
+		if(`checkBoxGrp -q -v1 offscreenChk`)
+			$cmd += " -offScreen";
+	}
+	
+	// 檢查是否有聲音檔
+	global string $gPlayBackSlider;
+	string $sound = `timeControl -q -sound $gPlayBackSlider`;
+	
+	if(`timeControl -q -displaySound $gPlayBackSlider`&&`objExists $sound`) 
+	{
+		$cmd = $cmd+" -sound \""+$sound+"\" ";
+		
+	}else{
+		
+		$fixAudioLength = 0;
+	}
+	
+	if($fixAudioLength)
+	{	
+		$playMax += 1;
+	}
+	
+	string $outputDir = `textFieldButtonGrp -q -text CGCG_Playblast_PathTFBG`;
+	
+	// Normal Name Format 
+	string $outputFile = ($outputDir+$fileName+$ext);
+	
+	$frameStr = "";
+	$version = "";
+	$basenameEx = basenameEx( $fileName );
+	if($useOutputFrame)
+	{
+		$frameStr = "-F" + paddingNum( $minTime, 3 ) + "-" + paddingNum( $maxTime, 3 );
+		$version = match( "\\.[^.]*$", $fileName );
+		$outputFile = ($outputDir+$basenameEx+$frameStr+$version+$ext);
+	}
+	
+	$cmd +=("-startTime "+$playMin+" -endTime "+$playMax+" -forceOverwrite ");
+	
+	if($useInternal)
+	{
+		if(!$fixAudioLength)
+		{
+			$tmpAviFile = $outputFile;
+		}
+	}
+	
+	$cmd += ("-filename \""+$tmpAviFile+"\"");
+	// To avoid stream override problem
+	if(`filetest -f $tmpAviFile`)
+	{
+		if(!catch(`sysFile -delete $tmpAviFile`))
+		{
+			if(VERBOSE()) print("--> Pre clean "+$tmpAviFile+"\n");
+		}
+		else
+		{
+			if(VERBOSE()) print("--> Can't clean "+$tmpAviFile+". Please clean it manually.\n");
+		}
+	}
+	
+	// 執行 Playblast
+	if(VERBOSE()) print("Playblast Command : "+$cmd+"\n");
+	if(RUNTIME()) eval($cmd);
+	// ===== Playblast Command =====
+
+	if($playblastHUD)
+	{
+		showHUD(0);
+	}
+	
+	// ===== mencoder Command =====
+	// 利用 mencoder 進行 mjpeg 轉檔的動作！(因為未壓縮的 AVI 檔案太大了！)
+	
+	
+	
+	if(!$useInternal)
+	{
+		if(!`filetest -d $outputDir`) if(RUNTIME()) sysFile -makeDir $outputDir;
+
+		if(`filetest -r $outputFile`) catch(`sysFile -delete $outputFile`);
+		
+		string $ProgramPath = ReturnExtraProgramPath();	// 取得 mencoder 程式的路徑
+		
+		// Write encoding command bat file.
+		string $PlayblastBAT = ($tmpDir+"CGCG_Playblast.bat");
+		int $BatId=`fopen $PlayblastBAT "w"`;
+		
+		float $fps = getFps();
+		float $playLength = (float($maxTime - $minTime + 1)) / $fps;
+		
+		if($codec == 1)
+		{
+			if($format == 1 || $format == 2)
+			{
+				//Quicktime or Microsoft AVI
+				$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -i \""+$tmpAviFile+"\"";
+				if($fixAudioLength)
+					$cmd += (" -ss 00:00:00 -t "+$playLength);
+				$cmd +=" -f "+$fmt+" -vcodec mjpeg -b 18000k -r "+$fps+" -pix_fmt yuv420p -acodec copy -async 512 \""+$outputFile+"\"";
+
+			}else{
+				//MP4 with H.264(AVC)
+				$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -i \""+$tmpAviFile+"\"";
+				if($fixAudioLength)
+					$cmd += (" -ss 00:00:00 -t "+$playLength);
+					
+				// Audio stream do not use aac 
+				// (shift problem....!!!!!)
+				$cmd +=" -tune stillimage -f "+$fmt+" -c:v libx264 -profile:v main -g 1 -coder 0 -pix_fmt yuv420p -crf 15 -qp 1 -preset slow -x264opts min-keyint=1:ref=1 -acodec copy \""+$outputFile+"\"";
+			}
+					
+		}else if($codec == 2){
+		
+			//Quicktime with H.264(AVC)
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			$cmd += " -tune stillimage -f mov -c:v libx264 -profile:v main -g 1 -coder 0 -pix_fmt yuv420p -crf 15 -qp 1 -preset slow -x264opts min-keyint=1:ref=1 -strict -2 -acodec aac \""+$outputFile+"\"";
+			
+		}else if($codec == 3){
+			//Quicktime with H.264(AVC) 23.976
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			$cmd += " -tune stillimage -f mov -c:v libx264 -profile:v main -g 1 -coder 0 -pix_fmt yuv420p -crf 15 -qp 1 -preset slow -x264opts min-keyint=1:ref=1 -acodec copy";
+			if($fps == 24)
+				$cmd += " -r 23.976";
+			$cmd += " \""+$outputFile+"\"";
+			
+		}else if($codec == 4){
+			// Quicktime with Prores HQ
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+				
+			//$cmd += " -c:v prores_ks -profile:v 1 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r "+$fps+" -acodec copy \""+$outputFile+"\"";
+			$cmd += " -c:v prores_ks -profile:v 3 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r "+$fps+" -acodec copy \""+$outputFile+"\"";
+			
+		}else if($codec == 5){
+			// Quicktime with Prores HQ 23.976
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			//$cmd += " -c:v prores_ks -profile:v 1 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r 23.976 -acodec copy";
+			$cmd += " -c:v prores_ks -profile:v 3 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r 23.976 -acodec copy ";
+			$cmd += "\""+$outputFile+"\"";
+		}else if($codec == 6){
+			// Quicktime with Prores Proxy
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+				
+			//$cmd += " -c:v prores_ks -profile:v 1 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r "+$fps+" -acodec copy \""+$outputFile+"\"";
+			$cmd += " -c:v prores_ks -profile:v 0 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r "+$fps+" -acodec copy \""+$outputFile+"\"";
+			
+		}else if($codec == 7){
+			// Quicktime with Prores Proxy 23.976
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			//$cmd += " -c:v prores_ks -profile:v 1 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r 23.976 -acodec copy";
+			$cmd += " -c:v prores_ks -profile:v 0 -mbs_per_slice 8 -quant_mat auto -qscale:v 1 -vendor ap10 -bits_per_mb 2400 -pix_fmt yuv422p10le -r 23.976 -acodec copy ";
+			$cmd += "\""+$outputFile+"\"";
+		}else if($codec == 8){
+			//Quicktime with DNxHD90 23.976
+			//$cmd = "\""+$ProgramPath+"/ffmbc.exe\" -y -i \""+$tmpAviFile+"\"";
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			$cmd += " -vcodec dnxhd -b 90M -acodec copy -r 23.976 ";
+			$cmd += "\""+$outputFile+"\"";
+		}else if($codec == 9){
+			//Quicktime with DNxHD60 23.976
+			//$cmd = "\""+$ProgramPath+"/ffmbc.exe\" -y -i \""+$tmpAviFile+"\"";
+			$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+			if($fixAudioLength)
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+			$cmd += " -vcodec dnxhd -b 60M -acodec copy -r 23.976 ";
+			$cmd += "\""+$outputFile+"\"";
+		}
+
+		fprint $BatId $cmd;
+		fclose $BatId;
+		
+		if(VERBOSE()) print("--> Write batch files : "+$PlayblastBAT+"\n");
+		
+		// 執行 batch convert movie
+		if(VERBOSE()) print("--> Encode command : "+$cmd+"\n");
+		if(RUNTIME()) system($PlayblastBAT);
+		
+	}else
+	{
+		// if use internal codec(H.264), fix audio length must cutting video again.
+		string $ProgramPath = ReturnExtraProgramPath();	// 取得 mencoder 程式的路徑
+		string $PlayblastBAT = ($tmpDir+"CGCG_Playblast.bat");
+		int $BatId=`fopen $PlayblastBAT "w"`;
+		
+		float $fps = getFps();
+		float $playLength = (float($maxTime - $minTime + 1)) / $fps;
+		
+		if($codec == 2)
+		{
+			if($fixAudioLength)
+			{
+				print "--> Fix Audio Length (use internal codec)...\n";
+				$cmd = "\""+$ProgramPath+"/ffmpeg.exe\" -y -i \""+$tmpAviFile+"\"";
+				$cmd += (" -ss 00:00:00 -t "+$playLength);
+				$cmd += " -tune stillimage -f "+$fmt+" -c:v libx264 -profile:v main -g 1 -coder 0 -pix_fmt yuv420p -crf 15 -qp 1 -preset slow -x264opts min-keyint=1:ref=1 -acodec copy \""+$outputFile+"\"";
+				fprint $BatId $cmd;
+				fclose $BatId;
+				
+				if(VERBOSE()) print("--> Write fix audio length batch files : "+$PlayblastBAT+"\n");
+		
+				// 執行 batch convert movie
+				if(VERBOSE()) print("--> Encode command : "+$cmd+"\n");
+				if(RUNTIME()) system($PlayblastBAT);
+			}
+		}
+	}
+	
+	// 利用 QuickTime Player 播放
+	string $Player = ReturnPlayer();
+	$cmd = "start \""+toNativePath($Player)+"\" \""+toNativePath($outputFile)+"\"";
+	
+	// 執行 Player
+	if(VERBOSE()) print("--> Launch player command : "+$cmd+"\n");
+	if(RUNTIME()) system($cmd);
+	
+	//-- 刪除 TEMP Playblast AVI
+	/*if(!catch(`sysFile -delete $tmpAviFile`))
+	{
+		if(VERBOSE()) print("--> Post delete "+$tmpAviFile+"\n");
+	}
+	else
+	{
+		if(VERBOSE()) print("--> Can't post delete "+$tmpAviFile+". Please delete it manually.\n");
+	}*/
+}
+
+global proc x64pbBrowserChoose( string $uiName, string $fileName, string $fileType )
+{
+	switch( $uiName )
+	{
+		case "CGCG_Playblast_PathTFBG":
+			string	$dir = endsWith( $fileName, "/" ) ? $fileName : ( $fileName + "/" );
+			optionVar -stringValue CGCG_Playblast_SaveDir $dir;
+			textFieldButtonGrp -edit -text $dir $uiName;
+			break;
+		default:
+			textFieldButtonGrp -edit -text $fileName $uiName;
+			break;
+	}
+}
+
+global proc x64pbTFBGChangeCmd( string $uiName )
+{
+	string	$text = `textFieldButtonGrp -q -text $uiName`;
+	switch( $uiName )
+	{
+		case "CGCG_Playblast_PathTFBG":
+			string	$dir = endsWith( $text, "/" ) ? $text : ( $text + "/" );
+			optionVar -stringValue CGCG_Playblast_SaveDir $dir;
+			textFieldButtonGrp -edit -text $dir $uiName;
+			break;
+		default:
+			textFieldButtonGrp -edit -text $text $uiName;			
+			break;
+	}
+}
+
+//-- violence
+//-- the best quality of burn-in information fonts
+//-- this can be replace by glRender, but keep it here.
+//-- but remove it from global
+proc x64pbViolence()
+{
+	if(!`filetest -d "C:/temp/x64pb/img"`) sysFile -makeDir "C:/temp/x64pb/img";
+
+	global	string	$gPlayBackSlider;
+	string $ProgramPath = ReturnExtraProgramPath();
+	string	$audio[] = `ls -type audio`,
+			$si,
+			$timeUnit = `currentUnit -q -time`,
+			$sound = `timeControl -q -sound $gPlayBackSlider`,
+			$sox = ($ProgramPath + "/sox.exe"),
+			$cmd,
+			$soundFile,
+			$processedSoundFile = "C:/temp/x64pb/processedSoundFile.wav";
+
+	int	$isSound = `timeControl -q -displaySound $gPlayBackSlider`;
+
+	//-- what if sound offset and minTime are not the same?
+	//-- might have to get sound offset and check
+	float	$minTime = `playbackOptions -q -minTime`,
+			$maxTime = `playbackOptions -q -maxTime`,
+			$fps,
+			$trimLength = $maxTime - $minTime + 1,
+			$focalLength = x64pbGetCurrentCameraFocalLength();
+
+	switch( $timeUnit )
+	{
+		case "game":
+			$fps = 15.0;
+			break;
+		case "film":
+			$fps = 24.0;
+			break;
+		case "pal":
+			$fps = 25.0;
+			break;
+		case "ntsc":
+			$fps = 30.0;
+			break;
+		case "show":
+			$fps = 48.0;
+			break;
+		case "palf":
+			$fps = 50.0;
+			break;
+		case "ntscf":
+			$fps = 60.0;
+			break;
+	}
+
+	$trimLength /= $fps;
+
+	if( $isSound && "" != $sound )
+	{
+		$soundFile = `sound -q -file $sound`;
+		$cmd = $sox + " " + $soundFile + " -r 48000 " + $processedSoundFile + " trim 0 " +
+				$trimLength;
+		print ( "sox cmd: " + $cmd + "\n" );
+		system $cmd;
+	}
+
+	//-- set up defaultRenderGlobal
+	int $origImageFormat = `getAttr "defaultRenderGlobals.imageFormat"`;
+	setAttr "defaultRenderGlobals.imageFormat" 19;
+
+	//-- width height
+	int	$wh[2] = `intFieldGrp -q -value _kuiX64PBIFG01`;
+	optionVar -intValue playblastWidth $wh[0];
+	optionVar -intValue playblastHeight $wh[1];
+
+	//-- find tmp folder
+	string	$tmpDir = `internalVar -userTmpDir`,
+			$tmpAviFile = "";
+	print ( $tmpDir + "\n" );
+
+	//-- get range here or embed them when assembling cmd
+	currentTime -e $minTime;
+
+	//-- get file name
+	string	$fileName = `file -q -sceneName`,
+			$basenameEx,
+			$frameStr,
+			$version;
+
+	if( "" == $fileName )
+		$tmpAviFile = $tmpDir + "tmp";
+	else
+	{
+		$basenameEx = basenameEx( $fileName );
+		//$frameStr = "-F" + paddingNum( $minTime, 3 ) + "-" + paddingNum( $maxTime, 3 );
+		$frameStr = "";
+		$version = match( "\\.[^.]*$", $basenameEx );
+		$tmpAviFile = $tmpDir + basenameEx( $basenameEx ) + $frameStr + $version;
+	}
+
+	//-- assemble cmd
+	$cmd = "playblast -format image -clearCache true -viewer 0 -showOrnaments 1 -percent 100 -widthHeight " + $wh[0] + " " + $wh[1];
+
+	$cmd = $cmd + " -startTime " + $minTime +
+			" -endTime " + $maxTime + " " +
+			"-forceOverwrite -filename \"" + $tmpAviFile + "\"";
+	print ( $cmd + "\n" );
+
+	//-- playblast
+	string	$output = eval( $cmd );
+	print ( $output + "\n" );
+
+	//-- mencoder
+	string	$outputMov = (`textFieldButtonGrp -q -text CGCG_Playblast_PathTFBG`+basenameEx($tmpAviFile)+ReturnAVIExtension());
+	print ( $outputMov + "\n" );
+
+	string	$img,
+			$padNum,
+			$listFile = "c:/temp/x64pb/imageList.txt",
+			$fontImgCmd,
+			$imgCompCmd,
+			$userName = `getenv USERNAME`,
+			$timeStr = (string)substitute( " .*$", system( "date /t" ), "" ),
+			$date = (string)substitute( "^[^/]*/", $timeStr, "" ) + "/" +
+					(string)match( "^[^/]*", $timeStr ),
+			$delImg[1000],
+			$imgCompBat[1000];
+	int $i,
+		$id = 0,
+		$fileId,
+		$fileIds[1000];
+	$fileId = `fopen $listFile w`;
+
+	for( $i = (int)$minTime; $i <= (int)$maxTime; $i++ )
+	{
+		$padNum = paddingNum( $i, 4 );
+		$img = substitute( "####", $output, $padNum );
+		$delImg[`size $delImg`] = $img;
+
+		$imgCompBat[$id] = "C:/temp/x64pb/imgCompBat" + $i + ".bat";
+		$fileIds[$id] = `fopen $imgCompBat[$id] w`;
+		fprint $fileIds[$id] "@echo off\n";	
+
+		//string $ProgramPath = ReturnExtraProgramPath();
+		$imgCompCmd = $ProgramPath + "/convert.exe " +
+						"-font tahoma -pointsize 18 \"" + $img + "\"";
+		$img = "C:/temp/x64pb/img/" + basenameEx( $img ) + ".tga";
+		$delImg[`size $delImg`] = $img;
+		$imgCompCmd = $imgCompCmd +
+						" -gravity South -fill white -annotate +0+12 " +
+						basenameEx( $basenameEx ) + $frameStr + $version +
+						" -gravity SouthWest -annotate +60+12 " + $i +
+						" -gravity SouthEast -annotate +30+12 " + $date +
+						" -gravity NorthWest -annotate +60+12 " + $userName +
+						" -gravity NorthEast -annotate +60+12 \"Lens: " + $focalLength +
+						"\" " + $img + "\n";
+		fprint $fileIds[$id] $imgCompCmd;
+		print ( $imgCompCmd + "\n" );
+		fprint $fileIds[$id] ( "echo done >> " + substitute( "bat$",
+																$imgCompBat[$id],
+																"done" ) );
+		fclose $fileIds[$id++];
+		fprint $fileId ( $img + "\n" );
+	}
+	fclose $fileId;
+
+	for( $i = 0; $i < $id; $i++ )
+	{
+		print ( "imgCompCmd " + $imgCompBat[$i] + "\n" );
+		system( "shell " + $imgCompBat[$i] );
+	}
+
+	while( !`filetest -r ( substitute( "bat$", $imgCompBat[size( $imgCompBat ) - 1],
+										"done" ) )` );
+	while( 1 )
+	{
+		if( size( `getFileList -folder "C:/temp/x64pb/img/" -filespec "*.tga"` ) >=
+					(int)$trimLength )
+			break;
+	}
+
+	if(`filetest -r $outputMov`) catch(`sysFile -delete $outputMov`);
+	//string $ProgramPath = ReturnExtraProgramPath();
+	string	$sysEvalCmd = $ProgramPath + "/" +
+							"mencoder.exe mf://@\"" + $listFile + "\"" +
+							" -mf w=720:h=405:fps=24:type=tga" +
+							" -ovc lavc -lavcopts vcodec=mjpeg:keyint=1:" +
+							"mbd=1:vbitrate=1800 -vf eq2=1:1.1:-0.045,crop=" + $wh[0] +
+							":" + $wh[1] + " -oac pcm -audiofile " +
+							$processedSoundFile + " -of lavf -o " + $outputMov;
+	
+	print ( $sysEvalCmd + "\n" );
+	system( $sysEvalCmd );
+
+	//-- open movie file
+	string	$qt = `textFieldButtonGrp -q -text _kuiX64PBTFBG02`;
+	if( "" != $qt )
+	{
+		$qt = "start \"" + toNativePath( $qt ) + "\" \"" + toNativePath( $outputMov ) +
+				"\"";
+		print ( $qt + "\n" );
+	}
+	else
+		system( ( "start explorer " + toNativePath( dirname( $outputMov ) ) ) );
+
+	system $qt;
+
+	//-- delete files
+	catch( `sysFile -delete $processedSoundFile` );
+	catch( `sysFile -delete $listFile` );
+	for( $i = 0; $i < `size $delImg`; $i++ )
+		catch( `sysFile -delete $delImg[$i]` );
+	system ( "shell del C:\\temp\\x64pb\\img*.bat" );
+	system ( "shell del C:\\temp\\x64pb\\img*.done" );
+
+	setAttr "defaultRenderGlobals.imageFormat" $origImageFormat;
+}
+
+// 這個部份是 Show 不出 HUD
+global proc x64pbGlRenderFlipbookCallback_BACK(	string $image,
+											int $fs,
+											int $fe,
+											int $fi,
+											int $rate,
+											string $path,
+											string $filename )
+{
+	print "Finished hardware render\n";
+  	print ( "    Image name       " + $image + "\n" );
+  	print ( "    Frames           " + $fs + " to " + $fe + " by " + $fi + "\n" );
+  	print ( "    Frame rate       " + $rate + "\n" );
+  	print ( "    File path        " + $path + "\n" );
+  	print ( "    Filename pattern " + $filename + "\n" );
+
+	string	$img,
+			$padNum,
+			$listFile = "c:/temp/x64pb/imageList.txt",
+			$imgCompCmd,
+			$userName = `getenv USERNAME`,
+			$timeStr = (string)substitute( " .*$", system( "date /t" ), "" ),
+			$date = (string)substitute( "^[^/]*/", $timeStr, "" ) + "/" +
+					(string)match( "^[^/]*", $timeStr ),
+			$delImg[1000],
+			$outputMov = `optionVar -q x64bpOpVDefaultSaveDir` + $image + ".avi",
+			$processedSoundFile = "C:/temp/x64pb/processedSoundFile.wav",
+			$glRenderGlobalsRes = `getAttr "defaultHardwareRenderGlobals.resolution"`,
+			$resolutionTok[],
+			$imgCompBat[1000];
+
+	tokenize( $glRenderGlobalsRes, " ", $resolutionTok );
+
+	int $i,
+		$id = 0,
+		$fileId,
+		$fileIds[1000];
+
+	float	$focalLength = x64pbGetCurrentCameraFocalLength();
+
+	$fileId = `fopen $listFile w`;
+
+	for( $i = $fs; $i <= $fe; $i++ )
+	{
+		$padNum = paddingNum( $i, 4 );
+		$img = substitute( "####", $filename, $padNum );
+		
+		fprint $fileId ( $path + $img + "\n" );
+	}
+	fclose $fileId;
+
+	if( `filetest -r $outputMov` )
+		catch( `sysFile -delete $outputMov` );
+	string $ProgramPath = ReturnExtraProgramPath();
+	
+	string	$sysEvalCmd;
+	// 有聲音的時候
+	if(`filetest -r $processedSoundFile`)
+	{
+		$sysEvalCmd = $ProgramPath + "/" +
+						"mencoder.exe mf://@\"" + $listFile + "\"" +
+						" -mf w=" + $resolutionTok[1] + ":h=" + $resolutionTok[2] +
+						":fps=24:type=tga -ovc lavc -lavcopts vcodec=mjpeg:keyint=1:" +
+						"mbd=1:vbitrate=1800 -vf eq2=1:1.1:-0.045,crop=" +
+						$resolutionTok[1] + ":" + $resolutionTok[2] +
+						" -oac pcm -audiofile " + $processedSoundFile +
+						" -of lavf -o " + $outputMov;
+	}
+	// 沒聲音的時候
+	else
+	{
+		$sysEvalCmd = $ProgramPath + "/" +
+						"mencoder.exe mf://@\"" + $listFile + "\"" +
+						" -mf w=" + $resolutionTok[1] + ":h=" + $resolutionTok[2] +
+						":fps=24:type=tga -ovc lavc -lavcopts vcodec=mjpeg:keyint=1:" +
+						"mbd=1:vbitrate=1800 -vf eq2=1:1.1:-0.045,crop=" +
+						$resolutionTok[1] + ":" + $resolutionTok[2] +
+						" -of lavf -o " + $outputMov;
+	}
+	
+	print ( $sysEvalCmd + "\n" );
+	system( $sysEvalCmd );
+
+	//-- open movie file
+	string	$qt = `textFieldButtonGrp -q -text _kuiX64PBTFBG02`;
+	if( "" != $qt )
+	{
+		$qt = "start \"" + toNativePath( $qt ) + "\" \"" + toNativePath( $outputMov ) +
+				"\"";
+		print ( $qt + "\n" );		
+	}
+	else
+		system( ( "start explorer " + toNativePath( dirname( $outputMov ) ) ) );
+
+	system $qt;
+
+	//-- delete files
+	catch( `sysFile -delete $processedSoundFile` );
+	catch( `sysFile -delete $listFile` );
+
+	setAttr "defaultHardwareRenderGlobals.backgroundColor" -type double3 0 0 0;
+	glRender -e -flipbookCallback "flipbookRW";
+}
+
+// 利用 ImageMagic 來顯示 HUD
+global proc x64pbGlRenderFlipbookCallback(	string $image,
+											int $fs,
+											int $fe,
+											int $fi,
+											int $rate,
+											string $path,
+											string $filename )
+{
+	if(VERBOSE())
+	{
+		print "Finished hardware render\n";
+	  	print ( "    Image name       " + $image + "\n" );
+	  	print ( "    Frames           " + $fs + " to " + $fe + " by " + $fi + "\n" );
+	  	print ( "    Frame rate       " + $rate + "\n" );
+	  	print ( "    File path        " + $path + "\n" );
+	  	print ( "    Filename pattern " + $filename + "\n" );
+	}
+
+	string	$img,
+			$padNum,
+			$listFile = "c:/temp/x64pb/imageList.txt",
+			$imgCompCmd,
+			$userName = `getenv USERNAME`,
+			$timeStr = (string)substitute( " .*$", system( "date /t" ), "" ),
+			$date = (string)substitute( "^[^/]*/", $timeStr, "" ) + "/" +
+					(string)match( "^[^/]*", $timeStr ),
+			$delImg[1000],
+			$outputMov = (`textFieldButtonGrp -q -text CGCG_Playblast_PathTFBG`+$image+ReturnAVIExtension()),
+			$processedSoundFile = "C:/temp/x64pb/processedSoundFile.wav",
+			$glRenderGlobalsRes = `getAttr "defaultHardwareRenderGlobals.resolution"`,
+			$resolutionTok[],
+			$imgCompBat[1000];
+	string $ProgramPath = ReturnExtraProgramPath();
+	string $ShowSceneName = `optionVar -q "CGCG_Easy_HUD_SceneName"`;
+	
+	tokenize( $glRenderGlobalsRes, " ", $resolutionTok );
+
+	int $i,
+		$id = 0,
+		$fileId,
+		$fileIds[1000];
+
+	float	$focalLength = x64pbGetCurrentCameraFocalLength();
+
+	$fileId = `fopen $listFile w`;
+	
+	for( $i = $fs; $i <= $fe; $i++ )
+	{
+		$padNum = paddingNum( $i, 4 );
+		$img = substitute( "####", $filename, $padNum );
+		$delImg[`size $delImg`] = $path + $img;
+
+		//-- annotate number is for 720x405, do something for other resolution
+		$imgCompBat[$id] = "C:/temp/x64pb/imgCompBat" + $i + ".bat";
+		$fileIds[$id] = `fopen $imgCompBat[$id] w`;
+		fprint $fileIds[$id] "@echo off\n";
+
+		$imgCompCmd = $ProgramPath + "/convert.exe " +
+						"-font \"Tahoma\" -pointsize 14 \"" + $path + $img + "\"";
+		$img = "C:/temp/x64pb/" + $img;
+		$delImg[`size $delImg`] = $img;
+		$imgCompCmd = $imgCompCmd +
+						//" -gravity South -fill white -annotate +0+12 " + $image +
+						" -gravity South -strokewidth 0.3 -stroke white -fill white -annotate +0+12 " + "\""+ $ShowSceneName + "\" " +
+						" -gravity NorthEast -strokewidth 0.3 -stroke green -fill green -annotate +90+12 \"Frame:\" " +
+						" -gravity NorthEast -strokewidth 0.3 -stroke white -fill white -annotate +30+12 \"" + $i + "\/" + $fe + "\" " +
+						
+						" -gravity SouthEast -strokewidth 0.3 -stroke green -fill green -annotate +90+12 \"User:\" " +
+						" -gravity SouthEast -strokewidth 0.3 -stroke white -fill white -annotate +30+12 \"" + $userName + "\" " +
+						
+						" -gravity SouthWest -strokewidth 0.3 -stroke green -fill green -annotate +30+12 \"Focal Length:\" "+ 
+						" -gravity SouthWest -strokewidth 0.3 -stroke white -fill white -annotate +130+12 \"" + $focalLength + "\" " + 
+						$img + "\n";
+		fprint $fileIds[$id] $imgCompCmd;
+		fprint $fileIds[$id] ( "echo done >> " + substitute( "bat$",
+																$imgCompBat[$id],
+																"done" ) );
+		//print ( $imgCompCmd + "\n" );
+		fclose $fileIds[$id++];
+		fprint $fileId ( $img + "\n" );
+	}
+	fclose $fileId;
+	
+	for( $i = 0; $i < $id; $i++ )
+	{
+		system( "shell " + $imgCompBat[$i] );
+	}
+
+	while(!`filetest -r ( substitute( "bat$", $imgCompBat[size( $imgCompBat ) - 1],	"done" ) )`);
+	while(1)
+	{
+		if(size(`getFileList -folder "C:/temp/x64pb/" -filespec "*.tga"`) >= ($fe-$fs+1)) break;
+	}
+	
+	if( `filetest -r $outputMov` ) catch( `sysFile -delete $outputMov` );
+	//string $ProgramPath = ReturnExtraProgramPath();
+	
+	string	$sysEvalCmd;
+	// 有聲音的時候
+	if(`filetest -r $processedSoundFile`)
+	{
+		$sysEvalCmd = $ProgramPath + "/" +
+						"mencoder.exe mf://@\"" + $listFile + "\"" +
+						" -mf w=" + $resolutionTok[1] + ":h=" + $resolutionTok[2] +
+						":fps=24:type=tga -ovc lavc -lavcopts vcodec=mjpeg:keyint=1:" +
+						"mbd=1:vbitrate=1800 -vf eq2=1:1.1:-0.045,crop=" +
+						$resolutionTok[1] + ":" + $resolutionTok[2] +
+						" -oac pcm -audiofile " + $processedSoundFile +
+						" -of lavf -o " + $outputMov;
+	}
+	// 沒聲音的時候
+	else
+	{
+		$sysEvalCmd = $ProgramPath + "/" +
+						"mencoder.exe mf://@\"" + $listFile + "\"" +
+						" -mf w=" + $resolutionTok[1] + ":h=" + $resolutionTok[2] +
+						":fps=24:type=tga -ovc lavc -lavcopts vcodec=mjpeg:keyint=1:" +
+						"mbd=1:vbitrate=1800 -vf eq2=1:1.1:-0.045,crop=" +
+						$resolutionTok[1] + ":" + $resolutionTok[2] +
+						" -of lavf -o " + $outputMov;
+	}
+	
+	if(VERBOSE()) print($sysEvalCmd+"\n");
+	if(RUNTIME()) system($sysEvalCmd);
+
+	//-- open movie file
+	string	$qt = ReturnPlayer();
+	$qt = "start \""+toNativePath($qt)+"\" \""+toNativePath($outputMov)+"\"";
+	if(VERBOSE()) print($qt+"\n");
+	if(RUNTIME()) system($qt);
+	
+	//-- delete files
+	catch(`sysFile -delete $processedSoundFile`);
+	catch(`sysFile -delete $listFile`);
+	for( $i = 0; $i < `size $delImg`; $i++ )
+		catch( `sysFile -delete $delImg[$i]` );
+	system ( "shell del C:\\temp\\x64pb\\img*.bat" );
+	system ( "shell del C:\\temp\\x64pb\\img*.done" );
+		
+	setAttr "defaultHardwareRenderGlobals.backgroundColor" -type double3 0 0 0;
+	glRender -e -flipbookCallback "flipbookRW";
+}
+
+global proc x64pbOpenGlRenderWindow(	int $w,
+										int $h,
+										int $frameStart,
+										int $frameEnd,
+										int $renderPasses,
+										float $motionBlur,
+										string $imgName )
+{
+	string	$cam = x64pbGetCurrentCamera();
+
+	x64pbKUnlockRenderSettingNodes();
+
+	setAttr -type "string" "defaultHardwareRenderGlobals.filename" $imgName;
+	setAttr "defaultHardwareRenderGlobals.extension" 4;
+	setAttr "defaultHardwareRenderGlobals.startFrame" $frameStart;
+	setAttr "defaultHardwareRenderGlobals.endFrame" $frameEnd;
+	setAttr "defaultHardwareRenderGlobals.imageFormat" 19;
+	setAttr -type "string" "defaultHardwareRenderGlobals.resolution"
+			( "Custom " + $w + " " + $h + " " + ( (float)$w / (float)$h ) );
+	setAttr "defaultHardwareRenderGlobals.texturing" 0;
+	setAttr "defaultHardwareRenderGlobals.multiPassRendering" 1;
+	setAttr "defaultHardwareRenderGlobals.renderPasses" $renderPasses;
+	setAttr "defaultHardwareRenderGlobals.motionBlur" $motionBlur;
+	setAttr "defaultHardwareRenderGlobals.backgroundColor" -type double3 0.631 0.631 0.631;
+
+
+	glRenderWin();
+	if( `objExists $cam` )
+		glRenderEditor -e -lookThru $cam hardwareRenderView;
+
+	int	$larger = $w > $h ? $w : $h;
+	float	$factor;
+	if( $larger > 1280 )
+//		$factor = 720.0 / $larger;
+		$factor = 0.5;
+	else
+		$factor = 1;
+	resizeBufferRW( $factor );
+
+	glRender -e -flipbookCallback "x64pbGlRenderFlipbookCallback";
+}
+
+global proc x64pbGlRender()
+{
+	if(!`filetest -d "C:/temep/x64pb/img"` ) sysFile -makeDir "C:/temp/x64pb/img";
+
+	// 處理聲音檔
+	global	string	$gPlayBackSlider;
+	string $ProgramPath = ReturnExtraProgramPath();
+	string	$audio[] = `ls -type audio`,
+			$timeUnit = `currentUnit -q -time`,
+			$sound = `timeControl -q -sound $gPlayBackSlider`,
+			$sox = ($ProgramPath + "/sox.exe"),
+			$cmd,
+			$soundFile,
+			$processedSoundFile = "C:/temp/x64pb/processedSoundFile.wav";
+
+	int	$isSound = `timeControl -q -displaySound $gPlayBackSlider`;
+
+	//-- what if sound offset and minTime are not the same?
+	//-- might have to get sound offset and check
+	float	$minTime = `playbackOptions -q -minTime`,
+			$maxTime = `playbackOptions -q -maxTime`,
+			$fps,
+			$trimLength = $maxTime - $minTime + 1;
+
+	switch( $timeUnit )
+	{
+		case "game":
+			$fps = 15.0;
+			break;
+		case "film":
+			$fps = 24.0;
+			break;
+		case "pal":
+			$fps = 25.0;
+			break;
+		case "ntsc":
+			$fps = 30.0;
+			break;
+		case "show":
+			$fps = 48.0;
+			break;
+		case "palf":
+			$fps = 50.0;
+			break;
+		case "ntscf":
+			$fps = 60.0;
+			break;
+	}
+
+	$trimLength /= $fps;
+
+	if($isSound && "" != $sound )
+	{
+		$soundFile = `sound -q -file $sound`;
+		$cmd = $sox+" "+$soundFile+" -r 48000 "+$processedSoundFile+" trim 0 "+$trimLength;
+		print ( "sox cmd: " + $cmd + "\n" );
+		system $cmd;
+	}
+
+	// 取得 Width &　Height ，並把它們紀錄起來，下次開啟介面的時候續用！
+	int $Width = `intField -q -value CGCG_Playblast_WidthIF`;
+	int $Height = `intField -q -value CGCG_Playblast_HeightIF`;
+	optionVar -intValue CGCG_PlayblastWidth $Width;
+	optionVar -intValue CGCG_PlayblastHeight $Height;
+	
+	// 把 Playblast 的 AVI 放在 C:/TEMP
+	//string $tmpDir = `internalVar -userTmpDir`;		// 以前阿凱老師是放在 UserTemp 的資料夾(太深了，不是那麼好找！)
+	string $tmpDir = "C:/TEMP/";
+	string $tmpAviFile = "";
+	if(!`filetest -d $tmpDir`) sysFile -makeDir $tmpDir;
+	
+	
+	//-- get range here or embed them when assembling cmd
+	// 取得 MinTime & MaxTime ，並且移到第 1 格 (Playblast Command 也需要用到！)
+	currentTime -e $minTime;
+
+	
+	// 設定 Playblast AVI 的名稱
+	string $fileName = `file -q -sn`;
+	string $fileNameExtension = `match "\\.[^\\.]+$" $fileName`;
+	$fileName = basename($fileName, $fileNameExtension);
+	if($fileName == "") $fileName = "CGCG_Playblast";
+	
+
+	// 開啟 glRender Window
+	int $renderPasses = `optionMenuGrp -q -value CGCG_Playblast_RenderPassesOMG`;
+	float $motionBlur = `floatSliderGrp -q -value CGCG_Playblast_MotionBlurFSG`;
+	x64pbOpenGlRenderWindow($Width, $Height, $minTime, $maxTime, $renderPasses, $motionBlur, $fileName);
+
+	//-- glRender
+	string $glRenderCmd = ("glRender -imageSize "+$Width+" "+$Height+" "+($Width / $Height)+" -fullResolution true -renderSequence hardwareRenderView");
+	evalDeferred($glRenderCmd);
+}
+
+global proc CGCG_PlayblastUpdateOffWindowChk()
+{
+	int $value = `checkBoxGrp -q -v1 offWindowChk`;
+	optionVar -iv CGCG_PlayblastOffWindow $value;	
+}
+
+global proc CGCG_PlayblastUpdateOffScreenChk()
+{
+	int $value = `checkBoxGrp -q -v1 offscreenChk`;
+	optionVar -iv CGCG_PlayblastOffScreen $value;	
+}
+
+global proc CGCG_PlayblastUpdateShowHUDChk()
+{
+	int $value = `checkBoxGrp -q -v1 showHUDChk`;
+	optionVar -iv CGCG_PlayblastShowHUD $value;	
+	CGCG_HUD_show($value);
+	
+}
+
+global proc CGCG_PlayblastShowHUDEditor()
+{
+	string $hudScriptPath = ("source \""+GetSourcePath("CgPlayblast")+"/CGCG_HUD.mel\"");
+	if(catch(eval($hudScriptPath)))
+	{
+		//print "// Error: Source show HUD script .\n";
+		print ("// Error: "+$hudScriptPath+"\n");
+		
+	}else
+	{
+		CGCG_HUD_win();
+	}
+}
+
+global proc CGCG_PlayblastUpdateEnableHUDChk()
+{
+	int $enHUD = `checkBoxGrp -q -v1 enHUDChk`;
+	optionVar -iv CGCG_PlayblastEnableHUD $enHUD;
+	
+	checkBoxGrp -e -en $enHUD enAspectRatioChk;
+	
+	checkBoxGrp -e -en 1 showHudDuringPbChk;
+	
+	if($enHUD)
+		checkBoxGrp -e -en 0 showHudDuringPbChk;
+		
+	showHUD($enHUD);
+	
+}
+
+proc CGCG_PlayblastProjectMenu()
+{
+	$configPath = (GetSourcePath("CgPlayblast")+"config/");
+	$fileList = `getFileList -folder $configPath -filespec "*.xml"`;
+	$fileList = sort($fileList);
+	for($file in $fileList)
+	{
+		$fileBaseName = `basenameEx $file`;
+		menuItem -l $fileBaseName;
+	}
+}
+global proc int CGCG_PlayblastProjectSettingExists(string $project)
+{
+	$configPath = (GetSourcePath("CgPlayblast")+"config/");
+	$fileList = `getFileList -folder $configPath -filespec "*.xml"`;
+	for($file in $fileList)
+	{
+		$fileBaseName = `basenameEx $file`;
+		if($fileBaseName == $project)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+global proc string[] CGCG_PlayblastGetExistProjects()
+{
+	string $result[] = {};
+	$configPath = (GetSourcePath("CgPlayblast")+"config/");
+	$fileList = `getFileList -folder $configPath -filespec "*.xml"`;
+	for($file in $fileList)
+	{
+		$fileBaseName = `basenameEx $file`;
+		$result[`size $result`] = $fileBaseName;
+	}
+	$result = sort($result);
+	return $result;
+}
+
+global proc CGCG_PlayblastChangeProject()
+{
+	string $defaultProject = `optionMenuGrp -q -v CGCG_Project_Option`;
+	optionVar -sv "CG_PlayblastProject" $defaultProject;
+	
+	if(`size $defaultProject` == 0)
+		$defaultProject = "CGCG";
+	int $enHUD = `checkBoxGrp -q -v1 enHUDChk`;
+	
+	CGCG_Reticle_Show(0, $defaultProject); //Clean HUD
+	
+	CGCG_Reticle_Show($enHUD, $defaultProject);
+	
+	//Check Pass Option
+	x64RetPassShow();
+	x64AspectMaskShow();
+}
+
+global proc CGCG_PlayblastChangeFormat()
+{
+	optionVar -iv "CGCG_PlayblastFormat" `optionMenuGrp -q -sl CGCG_Format_Option`;
+}
+
+global proc CGCG_PlayblastChangeCodec()
+{
+	int $codec = `optionMenuGrp -q -sl CGCG_Codec_Option`;
+	optionVar -iv "CGCG_PlayblastCodec" $codec;
+	string $menuList[] = `optionMenuGrp -q -itemListLong CGCG_Format_Option`;
+	
+	for($menu in $menuList)
+		menuItem -e -en 1 $menu;
+	
+	if($codec == 1)
+	{
+		//menuItem -e -en 0 $menuList[1]; //avi
+		menuItem -e -en 0 $menuList[2]; //mp4
+	}
+	
+}
+
+global proc CGCG_PlayblastChangeOutputFrame()
+{
+	optionVar -iv "CGCG_PlayblastOutputFrame" `checkBoxGrp -q -v1 CGCG_Output_Frame_Name_Chk`;
+}
+
+// CGCG_Playblast 的 Layout
+proc CGCG_PlayblastLayout()
+{
+	// 取得參數
+	string $SafeLocalPath = ReturnSaveLocalPath();
+	string $SafeServerPath = ReturnSaveServerPath();
+	
+	int $pb_width = `optionVar -query CGCG_PlayblastWidth`;
+	//if(size(`getenv "CG_PROJECT_MOVIE_WIDTH"`))
+	//	$pb_width = `getenv "CG_PROJECT_MOVIE_WIDTH"`;
+		
+	int $pb_height = `optionVar -query CGCG_PlayblastHeight`;
+	//if(size(`getenv "CG_PROJECT_MOVIE_HEIGHT"`))
+	//	$pb_height = `getenv "CG_PROJECT_MOVIE_HEIGHT"`;
+		
+	string $MainForm = `formLayout`;
+		int $ColumnWidth = 60;
+		// Width x Height
+		rowColumnLayout 
+			-columnWidth 1 $ColumnWidth 
+			-columnWidth 2 $ColumnWidth 
+			-columnWidth 3 $ColumnWidth 
+			-columnWidth 4 $ColumnWidth
+			-numberOfColumns 4
+		CGCG_Playblast_WidthHeightLayout;
+										
+			text -align "right" -label "Width   ";
+			intField -value $pb_width CGCG_Playblast_WidthIF;
+			intField -value $pb_height CGCG_Playblast_HeightIF;
+			text -align "left" -label "   Height";
+		setParent $MainForm;
+		
+		// 路徑設定
+		$saveTo = `textFieldButtonGrp 
+					-label "儲存路徑"
+					-buttonLabel "Browse"
+					-columnWidth 1 60 
+					-buttonCommand ("fileBrowser \"x64pbBrowserChoose CGCG_Playblast_PathTFBG\" \"Choose\" \"\" 4")
+					-changeCommand "x64pbTFBGChangeCmd( \"CGCG_Playblast_PathTFBG\" )"
+					-text $SafeLocalPath
+					-adjustableColumn 2 
+					CGCG_Playblast_PathTFBG`;
+					
+		text -e -fn "fixedWidthFont" ($saveTo+"|label");
+		
+		// Build Project Menu
+		string $ProjectOpt = `optionMenuGrp -cw2 60 10 -p $MainForm -cc "CGCG_PlayblastChangeProject" -l "Project" CGCG_Project_Option`;
+		CGCG_PlayblastProjectMenu();
+		$itemList = `optionMenuGrp -q -ill $ProjectOpt`;
+		
+		for($item in $itemList)
+		{
+			$itemValue = `menuItem -q -l $item`;
+			
+			if($itemValue == `optionVar -q "CG_PlayblastProject"`)
+			{
+				optionMenuGrp -e -v $itemValue $ProjectOpt;
+				break;
+			}
+			
+			if($itemValue == getenv("CG_PROJECT"))
+			{
+				optionMenuGrp -e -v $itemValue $ProjectOpt;
+				break;
+			}
+		}
+		optionMenuGrp -cw 1 40 -p $MainForm -l "Format" -cc "CGCG_PlayblastChangeFormat" CGCG_Format_Option;
+		for($fmt in {"Quicktime (mov)", "Microsoft (avi)", "H.264 (mp4)"})
+		{
+			menuItem -l $fmt;
+		}
+		if(`optionVar -ex CGCG_PlayblastFormat`)
+			optionMenuGrp -e -sl `optionVar -q CGCG_PlayblastFormat` CGCG_Format_Option;
+			
+		optionMenuGrp -cw 1 60 -p $MainForm -l "Codec" -cc "CGCG_PlayblastChangeCodec" CGCG_Codec_Option;
+		//for($codec in {"MJPEG", "H.264 AVC", "H.264 AVC-23.976", "ProRes LT", "ProRes LT-23.976"})
+		//for($codec in {"MJPEG", "H.264 AVC", "H.264 AVC-23.976", "ProRes HQ", "ProRes HQ-23.976"})
+		for($codec in {"MJPEG", "H.264 AVC", "H.264 AVC-23.976", "ProRes HQ", "ProRes HQ-23.976", "ProRes Proxy", "ProRes Proxy-23.976", "DNxHD90-23.976", "DNxHD60-23.976"})
+		{
+			menuItem -l $codec;
+		}
+		
+		$passOptRow = `rowLayout -p $MainForm -nc 2 -adj 2`;
+		
+		$passOpt = `checkBox -l "" 
+							 -w 13 -p $passOptRow 
+							 -cc "CGCG_Pass_Opt_Changed()" CGCG_Pass_Opt_Chk`;
+		
+		
+		$passField = `textFieldGrp -l "Pass" -en 0 -p $passOptRow -cw2 25 120 -adj 2 -cc "CGCG_Pass_TextChanged" CGCG_Pass_Txt_Field`;
+		
+		
+		$passMenu = `popupMenu -p $passField`;
+		for($pm in {"Blocking", "First Pass", "Second Pass", "Final Pass"})
+		{
+			menuItem -l $pm -c ("CGCG_Pass_Menu_Update(\""+$pm+"\")");
+		}
+		
+		setParent $MainForm;
+		
+		// Load codec settings
+		//----------------------
+		int $currentCodec = 1;
+		if(`optionVar -ex CGCG_PlayblastCodec`)
+		{
+			$currentCodec = `optionVar -q CGCG_PlayblastCodec`;
+			
+		}
+		if(`getenv "CG_PROJECT_MOVIE_CODEC"` == "h264")
+		{
+			if(`getenv "CG_PROJECT_MOVIE_FRAME_RATE"` == "23.976")
+			{
+				$currentCodec = 3;
+			}
+		}
+		if(`getenv "CG_PROJECT_MOVIE_CODEC"` == "prores")
+		{
+			if(`getenv "CG_PROJECT_MOVIE_FRAME_RATE"` == "23.976")
+			{
+				$currentCodec = 5;
+			}
+		}
+		if(`getenv "CG_PROJECT_MOVIE_CODEC"` == "dnxhd")
+		{
+			if(`getenv "CG_PROJECT_MOVIE_FRAME_RATE"` == "23.976")
+			{
+				$currentCodec = 6;
+			}
+		}
+		optionMenuGrp -e -sl $currentCodec CGCG_Codec_Option;
+		
+		checkBoxGrp -cw 1 60 -p $MainForm -l "" -l1 "Enable output with frame range" -cc "CGCG_PlayblastChangeOutputFrame" CGCG_Output_Frame_Name_Chk;
+		
+		if(`optionVar -ex CGCG_PlayblastOutputFrame`)
+			checkBoxGrp -e -v1 `optionVar -q CGCG_PlayblastOutputFrame` CGCG_Output_Frame_Name_Chk;
+				
+		
+		// 一般模式 & Motion Blur 模式的 Playblast
+		float $Color[] = { 0.75, 0.75, 0.75 };
+		string $TabFrame = `tabLayout -scrollable 1 -cr 1 -innerMarginWidth 5 -innerMarginHeight 5 CGCG_Playblast_MainTab`;
+			
+			// 一般模式的 Playblast
+			columnLayout -adj 1 CGCG_Playblast_GeneralColumn;
+			
+				text -fn "fixedWidthFont" -backgroundColor $Color[0] $Color[1] $Color[2] -label "如果您是第一次使用這個程式, 或是曾經更改過壓縮格式";
+				text -fn "fixedWidthFont" -backgroundColor $Color[0] $Color[1] $Color[2] -label "請設定 Compression... 為 \"全畫面(未壓縮)\" ";
+				
+				text -height 5 -label "";
+				string $compressCmd = "playblast -options";
+				if(`getApplicationVersionAsFloat` >= 2015 )
+					$compressCmd = "playblast -codecOptions";
+				button -bgc 0.8 0.5 0.2 -command $compressCmd -label "Compression...";
+				
+				separator -h 5;
+				
+				checkBoxGrp -l "" -l1 "offScreen" -cc "CGCG_PlayblastUpdateOffScreenChk" -cw2 100 100 offscreenChk;
+				
+				if(`getApplicationVersionAsFloat` < 2011)
+				{
+					checkBoxGrp -e -en 0 offscreenChk;
+				}
+				checkBoxGrp -l "" -l1 "Fix Audio Length" -v1 0 -cc "CGCG_FixAudioLength" -cw2 100 100 fixAudioLengthChk;
+				checkBoxGrp -l "" -l1 "Turn off Windows" -cc "CGCG_PlayblastUpdateOffWindowChk" -cw2 100 100 offWindowChk;
+				checkBoxGrp -l "" -l1 "Enable HUD" -v1 0 -cc "CGCG_PlayblastUpdateEnableHUDChk" -cw2 100 100 enHUDChk;
+				checkBoxGrp -l "" -l1 "Enable HUD During the Playblast" -en 0 -v1 1 -cc "CGCG_showHudDuringPb" -cw2 100 100 showHudDuringPbChk;
+				checkBoxGrp -l "" -l1 "Show Aspect Ratio Mask" -cc "CGCG_ShowAspectRatioMask" -v1 1 -cw2 100 100 enAspectRatioChk;
+				
+				//checkBoxGrp -l "" -l1 "Show HUD" -en $enHUD -cc "CGCG_PlayblastUpdateShowHUDChk" -cw2 100 100 showHUDChk;
+				//button -l "Open HUD Editor" -en $enHUD -c "CGCG_PlayblastShowHUDEditor" showHUDBtn;
+				//if(`optionVar -ex CGCG_PlayblastShowHUD`)
+				//{
+				//	int $showHUD = `optionVar -q CGCG_PlayblastShowHUD`;
+				//	checkBoxGrp -e -v1 $showHUD showHUDChk;
+				//}
+				
+				$playBtn = `button -bgc 0.5 0.7 0.6 -p $MainForm -label "Playblast" -height 50 -command "x64PlayblastRun"`;
+				
+		setParent $TabFrame;
+		
+		// 是否開啟 Motion Blur Mode
+		if(MotionBlurMode())
+		{
+			// Motion Blur 模式的 Playblast
+			columnLayout -adj 1 CGCG_Playblast_AdvanceColumn;
+				text -fn "fixedWidthFont" -backgroundColor $Color[0] $Color[1] $Color[2] -label "Motion Blur 測試也許會很久，請耐心等候";
+				text -fn "fixedWidthFont" -backgroundColor $Color[0] $Color[1] $Color[2] -label "建議不要小於 640 (寬)";
+				text -fn "fixedWidthFont" -height 10 -label "";
+				optionMenuGrp 
+					-label "Render Passes"
+					-columnWidth2 90 100
+					-columnAlign 1 "right" 
+				CGCG_Playblast_RenderPassesOMG;
+				
+					menuItem -label "3";
+					menuItem -label "4";
+					menuItem -label "5";
+					menuItem -label "7";
+					menuItem -label "9";
+					menuItem -label "16";
+					menuItem -label "25";
+					menuItem -label "36";
+				
+				floatSliderGrp 
+					-label "Motion Blur"
+					-minValue 0.0 
+					-maxValue 1.0
+					-fieldMinValue 0.0 
+					-field 1
+					-columnWidth3 90 40 50
+				CGCG_Playblast_MotionBlurFSG;
+				
+				text -height 10 -label "";
+				//button -label "Playblast" -height 50 -command "x64pbGlRender";
+			setParent $TabFrame;
+			
+			tabLayout -edit
+				-tabLabel CGCG_Playblast_GeneralColumn "一般的 Playblast"
+				-tabLabel CGCG_Playblast_AdvanceColumn "Motion Blur 的 Playblast"
+			$TabFrame;
+		}
+		else
+		{
+			tabLayout -edit	-tabLabel CGCG_Playblast_GeneralColumn "一般的 Playblast" $TabFrame;
+		}
+		
+	int $Padding = 1;
+	int $Offset = 5;
+	formLayout -edit
+		-attachForm		CGCG_Playblast_WidthHeightLayout	"top"		($Padding+10)
+		-attachForm		CGCG_Playblast_WidthHeightLayout	"left"		$Padding
+		-attachForm		CGCG_Playblast_WidthHeightLayout	"right"		$Padding
+		
+		-attachControl	CGCG_Playblast_PathTFBG	"top"		$Padding CGCG_Playblast_WidthHeightLayout
+		-attachForm		CGCG_Playblast_PathTFBG	"left"		$Padding
+		-attachForm		CGCG_Playblast_PathTFBG	"right"		$Padding
+		
+		-ac CGCG_Project_Option "top" $Padding CGCG_Playblast_PathTFBG
+		
+		-ac CGCG_Format_Option "top" $Padding CGCG_Playblast_PathTFBG
+		-ac CGCG_Format_Option "left" ($Padding+5) CGCG_Project_Option
+		
+		-ac CGCG_Codec_Option "top" $Padding CGCG_Project_Option
+		
+		-ac $passOptRow top $Padding CGCG_Project_Option
+		-ac $passOptRow left $Padding CGCG_Codec_Option
+		
+		-ac CGCG_Output_Frame_Name_Chk top $Padding CGCG_Codec_Option
+		
+		-attachControl	$TabFrame	"top"		($Padding) CGCG_Output_Frame_Name_Chk
+		-attachForm		$TabFrame	"left"		($Padding+$Offset)
+		-attachForm		$TabFrame	"right"		($Padding+$Offset)
+		-attachForm		$TabFrame	"bottom"	($Padding+80)
+		
+		
+		-ac $playBtn "top" ($Padding+10) $TabFrame
+		-af $playBtn "left" ($Padding+$Offset)
+		-af $playBtn "right" ($Padding+$Offset)
+		-af $playBtn "bottom" ($Padding+10)
+		
+	$MainForm;
+	
+	CGCG_LoadSettings();
+}
+
+
+global proc CGCG_LoadSettings()
+{
+	if(`optionVar -ex "CGCG_PassOption"`)
+	{
+		checkBox -e -v `optionVar -q "CGCG_PassOption"` CGCG_Pass_Opt_Chk;
+		CGCG_Pass_Opt_Changed();
+	}
+	
+	if(`optionVar -ex "CGCG_PassText"`)
+	{
+		textFieldGrp -e -tx `optionVar -q "CGCG_PassText"` CGCG_Pass_Txt_Field;
+	}
+	
+	if(`optionVar -ex "CGCG_PlayblastOffScreen"`)
+	{
+		int $offScreen = `optionVar -q CGCG_PlayblastOffScreen`;
+		checkBoxGrp -e -v1 $offScreen offscreenChk;
+	}
+	if(`optionVar -ex CGCG_PlayblastOffWindow`)
+	{
+		int $offScreen = `optionVar -q CGCG_PlayblastOffWindow`;
+		checkBoxGrp -e -v1 $offScreen offWindowChk;
+	}
+	if(`optionVar -ex CGCG_PlayblastEnableHUD`)
+	{
+		int $enHUD = `optionVar -q CGCG_PlayblastEnableHUD`;
+		checkBoxGrp -e -v1 $enHUD enHUDChk;
+	}
+	
+	if(`optionVar -ex "CGCG_ShowAspectMask"`)
+	{
+		checkBoxGrp -e -v1 `optionVar -q "CGCG_ShowAspectMask"` enAspectRatioChk;
+	}
+	
+	if(`optionVar -ex "CGCG_FixAudioLength"`)
+	{
+		checkBoxGrp -e -v1 `optionVar -q "CGCG_FixAudioLength"` fixAudioLengthChk;
+	}
+	
+	if(`optionVar -ex "CGCG_ShowHudDuringPb"`)
+	{
+		checkBoxGrp -e -v1 `optionVar -q "CGCG_ShowHudDuringPb"` showHudDuringPbChk;
+		if(!`optionVar -q CGCG_PlayblastEnableHUD`)
+		{
+			checkBoxGrp -e -en 1 showHudDuringPbChk;
+		}
+	}
+}
+global proc CGCG_Pass_Menu_Update(string $passName)
+{
+	textFieldGrp -e -tx $passName CGCG_Pass_Txt_Field;
+	CGCG_Pass_TextChanged();
+}
+
+global proc CGCG_Pass_TextChanged()
+{
+	optionVar -sv "CGCG_PassText" `textFieldGrp -q -tx CGCG_Pass_Txt_Field`;
+	x64PlayblastHUD();
+}
+
+global proc CGCG_Pass_Opt_Changed()
+{
+	textFieldGrp -e -en `checkBox -q -v CGCG_Pass_Opt_Chk` CGCG_Pass_Txt_Field;
+	optionVar -iv "CGCG_PassOption" `checkBox -q -v CGCG_Pass_Opt_Chk`;
+	x64PlayblastHUD();
+	//x64RetPassShow();
+}
+global proc CGCG_FixAudioLength()
+{
+	int $state = `checkBoxGrp -q -v1 fixAudioLengthChk`;
+	optionVar -iv "CGCG_FixAudioLength" $state;
+}
+global proc CGCG_ShowAspectRatioMask()
+{
+	int $state = `checkBoxGrp -q -v1 enAspectRatioChk`;
+	optionVar -iv "CGCG_ShowAspectMask" $state;
+	x64PlayblastHUD();
+}
+
+global proc CGCG_showHudDuringPb()
+{
+	int $state = `checkBoxGrp -q -v1 showHudDuringPbChk`;
+	optionVar -iv "CGCG_ShowHudDuringPb" $state;
+}
+
+// Playblast 的相關工具
+proc string getMayaVersion()
+{
+	return basename(dirname(`internalVar -userScriptDir`), "");
+}
+
+global proc PreSourceScripts()
+{
+	// pre source scripts
+	$scriptPath = (GetSourcePath("CgPlayblast")+"scripts/");
+	$scriptList = `getFileList -folder $scriptPath -filespec "*.mel"`;
+	for($script in $scriptList)
+	{
+		string $scriptFilePath = ($scriptPath+""+$script);
+		
+		if(catch(eval("source \""+$scriptFilePath+"\"")))
+		{
+			print("--> source "+$script+" error.\n");
+		}else
+		{
+			print ("--> source "+$scriptFilePath+".\n");
+		}
+	}
+	// pre source maya version scripts
+	float $mayaVer = `getMayaVersion`;
+	string $scriptVerPath = ($scriptPath + $mayaVer+"/");
+	$scriptList = `getFileList -folder $scriptVerPath -filespec "*.mel"`;
+	for($script in $scriptList)
+	{
+		string $scriptVerFilePath = ($scriptVerPath + $script);
+		
+		if(catch(eval("source \""+$scriptVerFilePath+"\"")))
+		{
+			print("--> source "+$script+" error.\n");
+		}else
+		{
+			print ("--> source "+$scriptVerFilePath+".\n");
+		}
+	}
+}
+
+global proc CgPlayblast()
+{
+	//Reset init timer
+	global int $pInitTimes;
+	$pInitTimes = 0;
+	
+	string $Window = "CGCG_PlayblastEditor";
+	if(`window -ex $Window`) deleteUI $Window;
+	window -t "CGCG Playblast v1.48" $Window;
+	
+	// Default Setting
+	if(!`optionVar -ex CGCG_PlayblastWidth`) optionVar -intValue CGCG_PlayblastWidth 640;
+	if(!`optionVar -ex CGCG_PlayblastHeight`) optionVar -intValue CGCG_PlayblastHeight 360;
+	if(!`optionVar -ex CGCG_PlayblastOffScreen`) optionVar -intValue CGCG_PlayblastOffScreen 0;
+	if(!`optionVar -ex CGCG_PlayblastOffWindow`) optionVar -intValue CGCG_PlayblastOffWindow 0;
+	if(!`optionVar -ex CGCG_PlayblastEnableHUD`) optionVar -intValue CGCG_PlayblastEnableHUD 0;
+	if(!`optionVar -ex CGCG_PlayblastShowHUD`) optionVar -intValue CGCG_PlayblastShowHUD 0;
+	if(!`optionVar -ex CGCG_ShowAspectMask`) optionVar -intValue CGCG_ShowAspectMask 1;
+	if(!`optionVar -ex CGCG_ShowHudDuringPb`) optionVar -intValue CGCG_ShowHudDuringPb 1;
+	if(!`optionVar -ex CGCG_FixAudioLength`) optionVar -intValue CGCG_FixAudioLength 1;
+	
+	
+	CGCG_PlayblastLayout;
+	
+	showWindow;
+	window -e -wh 408 425 $Window;
+	if(catch(`x64PlayblastHUD`))
+	{
+		print "[CGCG_Playblast] :: hud initialize error.\n";
+	}
+}
+PreSourceScripts();

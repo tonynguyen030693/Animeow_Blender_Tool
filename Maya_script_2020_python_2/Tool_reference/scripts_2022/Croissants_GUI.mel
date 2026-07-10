@@ -1,0 +1,1388 @@
+///////////////////////////////////////////////Run
+global proc Croissants_GUI()
+{	
+if(`window -q -ex "Croissants"`)deleteUI("Croissants");
+window -le 1005 -mnb false -s false -rtf true -t "Croissants 1.0.0.3" -mxb false -h 560 -tb true -vis true -te 700 -tlb true -w 406 -mb true "Croissants";
+columnLayout -w 406 -cal "left" -rs 0 -cw 406 -adj true -h 550 "columnLayout_Croissants";
+
+rowLayout -w 300 -cal  1 "left" -cal  2 "left" -cal  3 "left" -cal  4 "left" -cal  5 "left" -en true -vis true -cw  1 25 -cw  4 25 -cw  3 25 -cw  2 219 -nc 4 -h 27;
+iconTextButton -i "bar_1.ico" -h 25 -st "iconOnly" -w 25 "Croissants_winS";
+textField -hlc 0.1 0.6 0.1 -fn boldLabelFont -tx "..." -ed true -h 25 -w 215 "Croissants_wks";
+iconTextButton -i "Croissants_GR.ico" -h 20 -st "iconOnly" -w 20 -al "center" "Croissants_get_PL_Btt";
+iconTextButton -i "bar_2.ico" -h 25 -w 25 -al "center" "Croissants_winW";
+rowLayout -p "columnLayout_Croissants" -w 406 -cw  1 406 -nc 1 -h 523;
+tabLayout -en true -h 523 -vis true -tv true -w 406 "tabLayout_FileIO";
+columnLayout -w 406  -h 523;
+formLayout -w 406 -h 523 "formLayout_ListFile";
+columnLayout -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 90 "columnLayout_Op";
+formLayout -w 300 -h 90 "formLayout_Op_sub";
+columnLayout -w 300 -cal "left" -rs 0 -cw 300 -adj true;
+formLayout "formLayout_EP";
+columnLayout -w 250 -h 30 "columnLayout_EP_sub";
+gridLayout -cw 250 -w 250 -nc 1 -h 27 -ch 27;
+optionMenu "Croissants_EP";
+button -p "formLayout_EP" -w 17 -h 27 -l "R" "Croissants_ReEP";
+iconTextButton -p "formLayout_EP" -i "UP.ico" -h 15 -w 15 "Croissants_scD_2";
+iconTextButton -p "formLayout_EP" -i "DW.ico" -h 15 -w 15 "Croissants_scU_2";
+columnLayout -p "formLayout_Op_sub" -w 300 -h 32 "columnLayout_CUT";
+formLayout -w 300 -h 35 "formLayout_CUT";
+columnLayout -w 270 -h 30 "columnLayout_CUT_sub";
+gridLayout -cw 270 -w 270 -nc 1 -h 27 -ch 27;
+optionMenu "Croissants_CUT";
+iconTextButton -p "formLayout_CUT" -i "UP.ico" -h 15 -w 15 "Croissants_scD";
+iconTextButton -p "formLayout_CUT" -i "DW.ico" -h 15 -w 15 "Croissants_scU";
+columnLayout -p "formLayout_ListFile" -w 300 -cal "left" -rs 0 -cw 295 -adj true -h 150 "columnLayout_Ani";
+tabLayout -h 150 -tv true -w 295 "tabLayout_Ani";
+columnLayout -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 150;
+scrollLayout -w 285 -cr true -h 150 -mcw 1;
+textScrollList -w 250 -ams true -h 125 -ann "Animation File List" "Croissants_Ani_List";
+columnLayout -p "tabLayout_Ani" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 150;
+scrollLayout -w 285 -cr true -h 150 -mcw 1;
+scrollField -ed true -h 125 -ww true -w 250 -bgc  0.0 0.0 0.0 "Croissants_note_textEdit";
+columnLayout -p "tabLayout_Ani" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 150;
+scrollLayout -w 285 -cr true -h 150 -mcw 1;
+scrollField -ed true -h 125 -ww true -w 250 -bgc  0.0 0.0 0.0 "Croissants_log_textEdit";
+columnLayout -p "formLayout_ListFile" -cal "left" -rs 0 -w 300 -cw 295 -adj true -h 170 "columnLayout_Lit";
+tabLayout -h 170 -tv true -w 295 "tabLayout_Lit";
+columnLayout -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 170;
+scrollLayout -w 285 -cr true -h 170 -mcw 1;
+
+textScrollList -vis 1 -h 145 -w 250 -ann "Light File List" "Croissants_Lit_List";
+textScrollList -vis 0 -h 145 -w 250 -bgc  0.5 0.2 0.33 -ann "Reference Node List" "Croissants_aniRN_H";
+
+columnLayout -p "tabLayout_Lit" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 170;
+scrollLayout -w 285 -cr true -h 170 -mcw 1;
+textScrollList -bgc  0.2 0.334004730297 0.500007629511 -w 250 -h 145 "Croissants_src_List";
+columnLayout -p "tabLayout_Lit" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 170;
+scrollLayout -w 285 -cr true -h 170 -mcw 1;
+textScrollList -bgc  0.500007629511 0.2 0.334004730297 -w 250 -h 145 "Croissants_HIs_List";
+columnLayout -p "formLayout_ListFile" -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 42 "columnLayout_buttons_001";
+formLayout -w 300 -h 40 "formLayout_buttones_01";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  .38 .38 .38 "Croissants_ReRe";
+iconTextButton -i "Write.ico" -h 32 -w 32 -bgc  .38 .38 .38 -ann "Write Frame Rnage to file." "Croissants_infoWriting";
+iconTextButton -i "LookUp.ico" -h 32 -w 32 -bgc  .38 .38 .38 -ann "Loads Frame Rnage from a saved file." "Croissants_infoLoading";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  .38 .38 .38 "Croissants_SAVE";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  .38 .38 .38 "Croissants_SVAEPlus";
+iconTextButton -i "Swiss_knife.ico" -h 32 -w 32 -bgc  .38 .38 .38 -ann "Run Natalie Tool(Quick Toolbar)." "Croissants_NatalienQ";
+iconTextButton -i "Croi_Rename.ico" -h 32 -w 32 -bgc  .38 .38 .38 -ann "Run ReName Tool." "Croissants_RenUI";
+separator -st "in" -w 300 -hr true -h 3 "separator_button";
+columnLayout -p "formLayout_ListFile" -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 100 "columnLayout_prefix";
+formLayout -w 300 -h 100 "formLayout_prefix";
+checkBox -h 16 -v true -l "EP" -w 35 "Episodic";
+button -w 51 -h 25 -l "PreFix" "Croissants_renPreFix";
+intField -ed true -h 25 -v 101 -w 60 -s 1 -sbm "Change Start Frame..." -max 999999 -min 0 "Croissants_A01_sf";
+button -w 40 -h 25 -ann "Set Duration" -l "<       >" "Croissants_rangeAuto";
+intField -ed true -h 25 -v 130 -w 60 -s 1 -sbm "Change End Frame..."  -max 999999 -min 0 "Croissants_A02_ef";
+button -bgc  0.0 0.0 0.0 -w 30 -h 19 -l "=" "Croissants_rangeCopy";
+textField -tx "24-FPS" -ed true -h 25 -w 227 -bgc  0.0 0.0 0.0 "Croissants_msg";
+iconTextButton -i "arrow_R.ico" -h 23 -w 40 "Croissants_EXS";
+iconTextButton -i "Plug-in.ico" -h 25 -w 25 "PipeLineCall";
+button -p "formLayout_ListFile" -w 14 -h 14 -l ""  -c "Croi_playPreViz_Tgl" "checkNote_Btt"; //
+button -p "formLayout_ListFile" -w 14 -h 14 -l "" "checkLog_Btt";
+button -p "formLayout_ListFile" -w 14 -h 14 -l "I" "Croissants_File_Import";
+button -p "formLayout_ListFile" -w 14 -h 14 -l "H" "makeHis_Btt";
+button -p "formLayout_ListFile" -w 14 -h 14 -l "S" "checksource_Btt";
+
+
+iconTextButton -p "formLayout_ListFile" -i "Reference_Ani.ico" -h 14 -w 14 "Croissants_File_Call_Ani";
+iconTextButton -p "formLayout_ListFile" -i "Reference_Ani2.ico" -h 14 -w 14 "Croissants_File_Call_Ani_2";
+iconTextButton -p "formLayout_ListFile" -en true -w 32 -i "play_hover.png" -h 32 -vis 0 "Crio_PlayBackBTT";
+
+iconTextButton -p "formLayout_ListFile" -i "Reference.ico" -h 14 -w 14 "Croissants_File_Call";
+
+
+columnLayout -p "formLayout_ListFile" -cal "left" -rs 3 -w 100 -cw 100 -adj true -h 550 "columnLayout_sideBar";
+frameLayout -en true -cl false -w 105 -mw 1 -vis true -l "Array" -mh 1 -cll true -ann "" -la "top" FL_Array;
+formLayout -w 105 -h 285 "formLayout_Side01";
+separator -st "in" -w 100 -hr true -h 3 "separator__Side01";
+button -bgc  0.220202944991 0.53000686656 0.515098802167 -w 97 -h 18 -l "AniFile Array" "Assets_Rule_BTT02";
+separator -st "in" -w 100 -hr true -h 3 "separator__Side02";
+textField -tx "*" -ed true -h 23 -w 98 -ec "Croissants_Filter(2);"  -sf "Croissants_Filter";
+textField -ed true -h 23 -w 98 "Croissants_MakeDir_FLD";
+button -bgc  0.220202944991 0.53000686656 0.515098802167 -w 98 -h 23 -l "_ShotCam" "Croissants_Cam_ReName_Btt";
+textField -h 23 -w 98 "MakeGrp_NF";
+button -bgc  0.12 0.12 0.12 -w 98 -h 23 -l "Make Group" "MakeGrp_BTT";
+text -ww true -w 98 -h 13 -l "- Make Folder -" "label_makeFolder";
+text -ww true -w 98 -al "center" -h 13 -l "- List Filter -" "label_filter";
+separator -w 100 -st "in" -hr true -h 3 "separator__Side03";
+separator -w 100 -st "in" -hr true -h 3 "separator__Side04";
+text -ww true -w 98 -h 13 -l "- Make Group -" "label_makeGroup";
+iconTextButton -i "Folder_root.ico" -h 32 -w 32  "Croissants_Filter_EP"; //-st "iconOnly" -olb  0.0 0.0 0.0 0.25 -olc  0.8 0.8 0.8  -al "center" -iol "Root"
+iconTextButton -i "Folder_sub.ico" -h 32 -w 32 "Croissants_Filter_CUT";
+iconTextButton -i "Folder_root.ico" -h 32 -w 32 "MakeDir_E_BTT";
+iconTextButton -i "Folder_sub.ico" -h 32 -w 32 "MakeDir_C_BTT";
+frameLayout -p "columnLayout_sideBar" -cl true -lv true -cll true -w 105 -l "Quick" -mh 1 -mw 1 FL_Quick;
+columnLayout -cal "left" -rs 8 -w 100 -cw 100 -h 350 -adj true;
+button -bgc  0.207705806058 0.268497749294 0.149904631113 -h 18 -l "NameSpace" "Assets_Rule_BTT1";
+button -h 18 -l "NameRemover" "Assets_Rule_BTT0";
+button -h 18 -l "AiPPT" "AiPPT_Btt"; //-bgc  0.664896620127 0.189898527504 0.224505989166
+button -h 18 -l "VRaySubdiv" "Croissants_VRayTool_01";
+button -h 18 -l "+6" "Croissants_VRayTool_02";
+button -h 18 -l "Smell Ass" "HandyST01_2";
+button -bgc  0.0 0.0 0.0 -h 18 -l "Switch Path" "HandyST01";
+button -bgc  0.872800793469 0.630197604334 0.0905928130007 -h 18 -l "Light Link" "Croissants_LRE";
+button -h 18 -l "RelationShip.Editor" "Croissants_RRE";
+button -bgc  0.963607232776 0.298695353628 1.0 -h 18 -l "Cnn.Editor" "ConnectionEditor_Btt";
+button -h 18 -l "Attr.S.S" "Attribute_BTT";
+button -h 18 -l "Render Global" "Croissants_RenBtt_01";
+button -bgc  0.0247043564508 0.557701991302 0.6354009308 -h 18 -l "Reference Ed" "Croissants_Refedit";
+frameLayout -p "columnLayout_sideBar" -cl true -lv true -cll true -l "LIT" FL_LIT;
+columnLayout -w 100 -cal "left" -rs 10 -cw 250 -adj true -h 250;
+button -bgc  0.333202944991 0.53000686656 0.515098802167 -l "VRayJob (DL)" "Croissants_RenBtt_01_B_3";
+button -bgc  0.333202944991 0.53000686656 0.515098802167 -l "ArnoldJob (DL)" "Croissants_RenBtt_01_B_2";
+button -l "Render Global" "Croissants_RenBtt_01_B";
+button -bgc  0.0 0.0 0.0 -l "R001" "Croissants_RenderV";
+button -l "RenSTILL" -ann "Render Still & Save Correct Path the Current Frame. Just Click :-)" "Croissants_RenSTILL" ;
+button -bgc  0.220202944991 0.53000686656 0.515098802167 -l "Get RN Nodes" "Croi_get_RN";
+frameLayout -p "columnLayout_sideBar" -cl true -l "Tools" -cll true -lv true FL_Tools;
+columnLayout -w 100 -cal "left" -rs 5 -cw 148 -adj true -h 285;
+separator -w 100 -st "none" -hr true -h 10;
+text -ww true -al "center" -l "+ Constrain +";
+button -w 100 -h 20 -l ">>" "Croi_TakeName";
+textField "Croissants_PUtil_name";
+button -h 23 -l "Run" "Assets_Rule_Run";
+frameLayout -p "columnLayout_sideBar" -cl true -l "Tokeniz" -cll true -lv true FL_Tokeniz;
+formLayout -w 100 -h 285 "formLayout_tokeniz";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz01";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz02";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz03";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz04";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz05";
+separator -w 100 -st "in" -hr true -h 3 "separator_tokeniz06";
+columnLayout -w 60 -cal "left" -rs 20 -cw 60 -adj true -h 285 "columnLayout_checkbox";
+formLayout -w 60 -h 285 "formLayout_subCheckbox";
+checkBox -h 16 -v false -l "+Info" -w 61 "Croissants_FrameInfo_CB";
+checkBox -h 16 -v true -l "Debug" -w 61 "Alembic_preRun";
+checkBox -h 16 -v false -l "cam" -w 61 "Alembic_camRun";
+checkBox -h 16 -v true -l "+Time" -w 61 "Croissants_PBD";
+checkBox -h 16 -v false -l "Batch" -w 61 "Croissants_PBD_batch";
+checkBox -h 16 -v false -l "+Save" -w 61 "Croissants_countKey_Op";
+columnLayout -p "formLayout_tokeniz" -w 25 -cal "left" -rs 18 -cw 25 -adj true -h 285 "columnLayout_iconsBTT";
+iconTextButton -i "Print.ico" -h 25 -w 25 "Get_Animation_FrameInfo_BTT";
+iconTextButton -i "AlembicPipe.ico" -h 25 -w 25 "_Alembic_Batch_CMD";
+iconTextButton -i "Croissants_tokenizLoop_5.ico" -h 25 -w 25 "Croissants_tokenizLoop_5";
+iconTextButton -i "exTractor.ico" -h 25 -w 25 "Croissants_countKey_BTT";
+columnLayout -p "formLayout_tokeniz" -w 100 -cal "left" -rs 0 -cw 100 -adj true -h 150 "columnLayout_tokenBTT";
+formLayout -w 100 -h 150 "formLayout_tokeBTT";
+rowLayout -w 100 -cal  1 "left" -cal  2 "left" -cal  3 "left" -cw  1 32 -cw  2 32 -cw  3 32 -nc 3 -h 30 "rowLayout_tokenLine01";
+iconTextButton -i "Croissants_tokenizLoop_1.ico" -h 25 -w 25 "Croissants_tokenizLoop_1";
+iconTextButton -i "Croissants_tokenizLoop_2.ico" -h 25 -w 25 "Croissants_tokenizLoop_2";
+iconTextButton -i "Croissants_tokenizLoop_3.ico" -h 25 -w 25 "Croissants_tokenizLoop_3";
+rowLayout -p "formLayout_tokeBTT" -w 100 -nc 1 -h 30 "rowLayout_tokenLine02";
+iconTextButton -i "Croissants_tokenizLoop_4.ico" -h 25 -w 25 "Croissants_tokenizLoop_4";
+frameLayout -p "columnLayout_sideBar" -cl true -lv true -cll true -l "Etc" FL_Etc;
+formLayout -w 100 -h 350 "formLayout_etc";
+button -bgc  0.0 0.0 0.0 -w 60 -h 18 -l "Deadline" "Croissants_Deadline";
+button -bgc  0.0 0.0 0.0 -w 30 -h 18 -l "+OP" "Croissants_Deadline_OP";
+
+iconTextButton -i "Croffle.ico" -h 32 -w 32 -ann "Run Croffle UI" "Croissants_croffle";
+
+columnLayout -p "tabLayout_FileIO" -w 406 -ann "Assets" -h 523;
+formLayout -w 406 -h 523 "formLayout_Assets_ListFile";
+columnLayout -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 130 "columnLayout_Assets_Op";
+formLayout -w 300 -h 130 "formLayout_Assets_Op_sub";
+columnLayout -w 300 -h 25;
+formLayout -w 300 -h 25 "formLayout_Assets_Type";
+columnLayout -w 190 -cal "center" -rs 0 -cw 190 -adj true -h 25 "columnLayout_Assets_Type_sub";
+gridLayout -cw 190 -w 190 -nc 1 -h 25 -ch 25;
+optionMenu "Croissants_Assets";
+iconTextButton -p "formLayout_Assets_Type" -i "Refresh_L.ico" -h 20 -w 20 "Croissants_Asset_Get";
+checkBox -p "formLayout_Assets_Type" -h 16 -v true -l "NS" -w 35 "ref_namerule";
+columnLayout -p "formLayout_Assets_Op_sub" -w 300 -h 25 "columnLayout_Assets_EP";
+formLayout -w 300 -h 25 "formLayout_Assets_EP";
+columnLayout -cal "center" -rs 0 -w 270 -cw 270 -adj true -h 25 "columnLayout_Assets_EP_sub";
+gridLayout -cw 270 -w 270 -nc 1 -h 25 -ch 25;
+optionMenu "Croissants_Assets_2";
+columnLayout -p "formLayout_Assets_Op_sub" -w 300 -h 25 "columnLayout_Assets_Names";
+formLayout -w 300 -h 25 "formLayout_Assets_Names";
+columnLayout -w 270 -cal "center" -rs 0 -cw 270 -adj true -h 25;
+gridLayout -cw 270 -w 270 -nc 1 -h 25 -ch 25;
+optionMenu "Croissants_Assets_3";
+gridLayout -p "formLayout_Assets_Names" -cw 13 -w 300 -nc 1 -h 25 -ch 13 "gridLayout_AssUD";
+iconTextButton -en 1 -i "UP.ico" -h 12 -w 12 "Croissants_AssUp";
+iconTextButton -en 1 -i "DW.ico" -h 12 -w 12 "Croissants_AssDn";
+columnLayout -p "formLayout_Assets_Op_sub" -w 300 -h 20 "columnLayout_Assets_Filter";
+formLayout -h 20 -w 300 "formLayout_Assets_Filet";
+gridLayout -cw 240 -w 240 -nc 1 -h 20 -ch 20 "gridLayout__Assets_Filet";
+textField -tx "*" -ed true -h 20 -w 210 "Croissants_Filter_Asset";
+button -p "formLayout_Assets_Filet" -vis true -w 20 -h 20 -l "R" "Croissants_Filter_Assets_B";
+columnLayout -p "formLayout_Assets_ListFile" -w 300 -h 330 "columnLayout_LDP";
+tabLayout -h 330 -tv true -w 300 "tabLayout_LDP";
+columnLayout -w 300 -h 3300;
+formLayout -w 300 -h 300 "formLayout_LDP";
+textScrollList -h 100 -ams false -w 295 "Croissants_Assets_List_1";
+columnLayout -w 300 -h 130 "columnLayout_AssetsBackUP";
+tabLayout -h 130 -tv true -w 300 "tabLayout_AssetsBackUp";
+columnLayout -w 300 -h 130;
+textScrollList -w 290 -ams true -h 108 "Croissants_Assets_List_His";
+columnLayout -p "tabLayout_AssetsBackUp" -w 300 -h 130;
+scrollField -tx "..." -ed true -h 108 -ww true -w 290;
+textField -p "formLayout_LDP" -tx "0001" -ed true -h 23 -w 61 "Croissants_AssetsHisV";
+button -p "formLayout_LDP" -w 61 -h 23 -l "Backup" "Assets_Backup_Btt";
+checkBox -p "formLayout_LDP" -h 16 -v false -l "Copy" -w 51 "ABackupOp";
+iconTextButton -p "formLayout_LDP" -i "LookDev_to.ico" -h 28 -ann "Make LookDev Pub" -w 28 -bgc  0.38 0.38 0.38 "Croissants_MakeLookDev";
+columnLayout -p "formLayout_LDP" -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 42 "columnLayout_buttons_002";
+formLayout -w 300 -h 40 "formLayout_buttones_02";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Assets_Refresh";
+iconTextButton -i "arrow.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Asset_Import";
+iconTextButton -i "Reference_Call.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Asset_Call";
+iconTextButton -i "Trash.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Asset_XX";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Asset_Save";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Asset_SavePlus";
+iconTextButton -i "Change_0.ico" -h 32 -ann "1. Select RefNOD 2. Select Asset of list 3. run" -w 32 -bgc  0.38 0.38 0.38 "Croissants_Assets_Change";
+columnLayout -p "tabLayout_LDP" -w 290 -h 300;
+formLayout -h 300 -w 300 "formLayout_PUB";
+textScrollList -w 295 -ams true -h 100 "Croissants_LookDevPub_List";
+columnLayout -w 300 -h 130 "columnLayout_PUBBackUp";
+tabLayout -h 130 -w 300 "tabLayout_PUBBackUp";
+columnLayout -w 300 -h 130;
+textScrollList -h 108 -ams true -w 290 "Croissants_Assets_List_His_2";
+columnLayout -p "tabLayout_PUBBackUp" -w 300 -h 130;
+scrollField -tx "..." -ed true -h 108 -ww true -w 290;
+textField -p "formLayout_PUB" -tx "0001" -ed true -h 23 -w 61 "Croissants_AssetsHisV_2";
+button -p "formLayout_PUB" -w 61 -h 23 -l "Backup" "Assets_Backup_Btt_2";
+checkBox -p "formLayout_PUB" -h 16 -v false -l "Copy" -w 51 "ABackupOp_2";
+columnLayout -p "formLayout_PUB" -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 42 "columnLayout_buttons_002L";
+formLayout -w 300 -h 40 "formLayout_buttones_02L";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_LookDev_Refresh";
+iconTextButton -i "arrow.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_LookDev_Import";
+iconTextButton -i "Reference_Call.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_LookDev_Call";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_LookDev_Save";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_LookDev_SavePlus";
+columnLayout -p "formLayout_Assets_ListFile" -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 100 "columnLayout_AssetBottom";
+formLayout -w 300 -h 100 "formLayout_AssetBottom";
+button -w 90 -h 20 -l "SGReName"  "Croissants_SGReName_Btt";
+button -w 90 -h 20 -l "BakeSetAuto"  "Croissants_BakeSetAuto";
+button -w 90 -h 20 -l "VProxy_Change"  "Croissants_VProxy_Change";
+button -w 90 -h 20 -l "RN_Change" "Croissants_RN_Change";
+
+
+columnLayout -p "formLayout_Assets_ListFile" -w 100 -cal "left" -rs 3 -cw 100 -adj true -h 550 "columnLayout_Assets_sideBar";
+frameLayout -en true -cl true -vis true -cll true -mw 1 -w 105 -l "SubTools" -mh 1 -ann "" -la "top";
+formLayout -w 105 -h 285;
+columnLayout -w 100 -cal "left" -rs 5 -cw 105 -adj true -h 285;
+separator -w 100 -st "in" -hr true -h 3;
+button -w 100 -h 25 -l "C/ReName(b)" "Assets_Rule_CamRE";
+button -w 100 -h 25 -l "Set Info" "HUD_SefInfo_BTT";
+
+columnLayout -p "tabLayout_FileIO" -w 406 -h 523;
+formLayout -w 406 -h 523 "formLayout_MOD_ListFile";
+columnLayout -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 120 "columnLayout_MOD_Op";
+formLayout -w 300 -h 120 "formLayout_MOD_Op_sub";
+columnLayout -w 300 -h 25;
+formLayout -w 300 -h 25 "formLayout_MOD_Type";
+columnLayout -cal "center" -rs 0 -w 190 -cw 190 -adj true -h 25 "columnLayout_MOD_Type_sub";
+gridLayout -cw 190 -nc 1 -ch 25 -w 190 -h 25;
+optionMenu "Croissants_MOD";
+checkBox -p "formLayout_MOD_Type" -h 16 -v true -l "NS" -w 35 "MOD_ref_namerule";
+iconTextButton -p "formLayout_MOD_Type" -i "Refresh_L.ico" -h 20 -w 20 "Croissants_MOD_Get";
+columnLayout -p "formLayout_MOD_Op_sub" -w 300 -h 25 "columnLayout_MOD_EP";
+formLayout -w 300 -h 25 "formLayout_MOD_EP";
+columnLayout -w 270 -cal "center" -rs 0 -cw 270 -adj true -h 25 "columnLayout_MOD_EP_sub";
+gridLayout -cw 270 -nc 1 -ch 25 -w 270 -h 25;
+optionMenu "Croissants_MOD_2";
+columnLayout -p "formLayout_MOD_Op_sub" -w 300 -h 25 "columnLayout_MOD_Names";
+formLayout -h 25 -w 300 "formLayout_MOD_Names";
+columnLayout -cal "center" -rs 0 -w 270 -cw 270 -adj true -h 25;
+gridLayout -cw 270 -nc 1 -ch 25 -w 270 -h 25;
+optionMenu "Croissants_MOD_3";
+gridLayout -p "formLayout_MOD_Names" -cw 13 -nc 1 -ch 13 -w 300 -h 25 "gridLayout_ModUD";
+iconTextButton -i "UP.ico" -h 12 -w 12 "Croissants_ModUp";
+iconTextButton -i "DW.ico" -h 12 -w 12 "Croissants_ModDn";
+columnLayout -p "formLayout_MOD_Op_sub" -w 300 -h 20 "columnLayout_MOD_Filter";
+formLayout -h 20 -w 300 "formLayout_MOD_Filet";
+gridLayout -cw 240 -nc 1 -ch 20 -w 240 -h 20 "gridLayout__MOD_Filet";
+textField -tx "*" -ed true -h 20 -w 210 "Croissants_Filter_MOd";
+button -p "formLayout_MOD_Filet" -w 20 -h 20 -l "R" "Croissants_Filter_MOD_B";
+columnLayout -p "formLayout_MOD_ListFile" -w 300 -h 300 "columnLayout_MOD_List";
+tabLayout -h 285 -tv true -w 300 "tabLayout_MOD_List";
+columnLayout -w 300 -h 280;
+textScrollList -w 295 -ams true -h 260 "Croissants_Model_List_1";
+columnLayout -p "tabLayout_MOD_List" -w 300 -h 280;
+formLayout -w 300 -h 280 "formLayout_MOD_Crosswalk";
+textScrollList -w 295 -ams true -h 220 "Croissants_Model_List_2";
+button -w 61 -l "obj" -h 15 "Mod_func_2";
+button -w 61 -l "abc" -h 15 "Mod_func_1";
+columnLayout -p "tabLayout_MOD_List" -w 300 -h 280;
+textScrollList -w 295 -ams true -h 260 "Croissants_Model_List_3";
+columnLayout -p "tabLayout_MOD_List" -w 300 -h 280;
+scrollField -tx "" -ed true -h 260 -ww true -w 295 "Croissants_Model_List_4";
+columnLayout -p "formLayout_MOD_ListFile" -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 42 "columnLayout_buttons_MOD";
+formLayout -w 300 -h 40 "formLayout_buttones_MOD";
+iconTextButton -i "arrow.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_MOD_Call";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_MOD_Save";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_MOD_SavePlus";
+iconTextButton -i "OPEN_CTS.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Mod_OpenFolder";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "Croissants_Mod_RF";
+iconTextButton -i "Reference_Call.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "Croissants_MOD_Ref";
+iconTextButton -i "Trash.ico" -h 32 -ann "1. Select RefNOD 2. Select Asset of list 3. run" -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "Croissants_MOD_RefX";
+separator -st "in" -w 300 -hr true -h 3 "separator_button_MOD_Line";
+columnLayout -p "formLayout_MOD_ListFile" -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 100 "columnLayout_MOD_Bottom";
+formLayout -w 300 -h 100 "formLayout_MOD_Bottom";
+button -w 90 -h 20 -l "Clean-Up" "CleanUP_BTT";
+button -w 90 -h 20 -l "BakeSet" "Croissants_Asset_Cmmd";
+columnLayout -p "formLayout_MOD_ListFile" -cal "left" -rs 3 -w 105 -cw 100 -adj true -h 550 "columnLayout_MOD_sideBar";
+frameLayout -en true -cl false -w 105 -la "top" -vis true -l "Builder" -mh 1 -cll true -ann "" -mw 1;
+formLayout -w 105 -h 305 "formLayout_MOD_Builder";
+gridLayout -cw 100 -w 100 -nc 1 -ch 25 -h 25 "gridLayout_MOD_OptionMenu_0";
+optionMenu "Croissants_MOD_Type";
+menuItem -l "CH";
+menuItem -l "PR";
+menuItem -l "BG";
+menuItem -l "VC";
+menuItem -l "VE";
+menuItem -l "EX";
+menuItem -l "CP";
+menuItem -l "BP";
+menuItem -l "RS";
+menuItem -l "MC";
+separator -p "formLayout_MOD_Builder" -w 100 -st "in" -hr true -h 3 "separator_MOD_01";
+textField -p "formLayout_MOD_Builder" -tx "EP100" -ed true -h 20 -w 100 "MakeDir_Epi";
+textField -p "formLayout_MOD_Builder" -tx "..." -ed true -h 20 -w 100 "MakeDir_Mod";
+gridLayout -p "formLayout_MOD_Builder" -cw 100 -w 100 -nc 1 -ch 25 -h 50 "gridLayout_MOD_OptionMenu_1";
+text -w 100 -ww true -al "center" -l "Asset Option" -h 15 "label_";
+optionMenu "Croissants_PUBType_A";
+menuItem -l "_RIG.0001" "Croissants_PUBType_A_menu_01";
+menuItem -l "_PUB" "Croissants_PUBType_A_menu_02";
+menuItem -l "_SET" "Croissants_PUBType_A_menu_03";
+
+gridLayout -p "formLayout_MOD_Builder" -cw 100 -w 100 -nc 1 -ch 25 -h 25 "gridLayout_MOD_OptionMenu_2";
+optionMenu "Croissants_PUBType_B";
+menuItem -l ".ma" "Croissants_PUBType_B_menu_01";
+menuItem -l ".mb" "Croissants_PUBType_B_menu_02";
+separator -w 100 -st "in" -hr true -h 2;
+
+columnLayout -p "formLayout_MOD_Builder" -w 100 -cal "left" -rs 28 -cw 100 -adj true -h 150 "columnLayout_RunBTT";
+button -w 90 -bgc  0.336095216297 0.442099641413 0.2354009308 -l "START" -h 25 "Mod_Final_Bttl_A";
+button -w 90 -bgc  0.0 0.0 0.0 -l "To Asset File" -h 25 "Mod_Final_Bttl_B";
+separator -w 100 -st "in" -hr true -h 3;
+separator -p "formLayout_MOD_Builder" -w 100 -st "in" -hr true -h 3 "separator_MOD_02";
+
+frameLayout -p "columnLayout_MOD_sideBar" -en true -cl true -vis true -cll true -mw 1 -w 105 -l "SubTools" -mh 1 -h 300 -la "top";
+formLayout -w 105  "formLayout_MOD_subTools";
+gridLayout -p "formLayout_MOD_subTools" -cw 100 -w 100 -nc 1 -ch 25 -h 250 "gridLayout_MOD_OptionMenu_3";
+text -w 100 -ww true -al "center" -l "subTree Option" -h 15 "label_2";
+optionMenu "Croissants_ModSubTrees";
+menuItem -l "" "Croissants_ModSubTrees_menu_01";
+menuItem -l "" "Croissants_ModSubTrees_menu_02";
+menuItem -l "" "Croissants_ModSubTrees_menu_03";
+
+separator -w 100 -st "in" -hr true -h 2;
+
+optionMenu "Croissants_ModHisTree";
+menuItem -l "" "Croissants_ModHisTree_menu_01";
+menuItem -l "" "Croissants_ModHisTree_menu_02";
+
+
+
+columnLayout ;
+button -p "formLayout_MOD_ListFile" -w 13 -h 13 -bgc  0.35 0.35 0.35 -l "N" "Croi_Mill_Note_Btt";
+
+
+//Alembig Tab Start
+columnLayout -p "tabLayout_FileIO" -w 300 -ann "Alembic Arg" -h 523;
+formLayout -w 406 -h 523;
+columnLayout "columnLayout_ABC_Sub";
+frameLayout -lw 300 -cl false -w 300 -li 1 -mw 1 -l "Alembic I/O" -mh 1 -cll true -lv true -la "top";
+columnLayout -w 300 -h 30;
+rowLayout -w 300 -cw  1 50 -cw  2 250 -nc 2 -h 30;
+button -w 45 -l ">>" -h 23 "Assets_Rule_GetObjectName";
+textField -tx "" -ed true -h 23 -w 235 "Croissants_ABC_name";
+frameLayout -p "columnLayout_ABC_Sub" -lw 300 -cl true -w 300 -li 1 -mw 1 -l "Arguments" -mh 1 -cll true -lv true -la "top" Arguments_FL;
+gridLayout -cw 100 -w 300 -nc 3 -ch 20;
+checkBox -v 0 -l "-worldSpace" "abc_arg_01";
+checkBox -v 1 -l "-uvWrite" "abc_arg_02";
+checkBox -v 1 -l "-writeColorSets" "abc_arg_03";
+checkBox -v 1 -l "-writeFaceSets" "abc_arg_04";
+checkBox -v 1 -l "-writeVisibility" "abc_arg_05";
+checkBox -v 1 -l "-autoSubd" "abc_arg_06";
+checkBox -v 1 -l "-writeUVSets" "abc_arg_07";
+checkBox -v 1 -l "-dataFormat" "abc_arg_08";
+checkBox -v 0 -l "-sl" "abc_arg_09";
+checkBox -v 1 -l "-root" "abc_arg_10";
+checkBox -v 1 -l "-frameRange" "abc_arg_11";
+frameLayout -p "columnLayout_ABC_Sub" -lw 300 -cl false -w 300 -li 1 -mw 1 -l "List Lookup" -mh 1 -cll true -lv true -la "top";
+columnLayout -w 295 -cal "left" -rs 2 -cw 300 -adj true -h 315 "columnLayout__alembic_FuncButton";
+rowLayout -w 295 -cw  5 41 -cw  4 41 -cw  3 41 -cw  7 42 -cw  1 42 -cw  6 41 -cw  2 41 -nc 7 -h 33;
+iconTextButton -w 32 -i "cycleList.png" -h 32 -bgc  0.35 0.35 0.35 -ann "Look up the list." "Croissants_GET_ABC";
+
+iconTextButton  -w 32 -i "newPreset.png" -h 32 -bgc  0.35 0.35 0.35 -ann "Reset Arguments.\nClick = Export Selected by Group mode, Select Only one Top Root Group. \nPreset 01 = Export Shapes Mode | Use flag -sl. \nPreset 02 = same Preset 01, Just Turn Off GeoColorSet. \nPreset 03 = Camera Mode, Without Hierarchy." "Assets_Rule_BTT3";
+iconTextButton -w 32 -i "abc_BakeFire.ico" -h 32 -bgc  0.35 0.35 0.35 -ann "Bake Alembic | It's executed using the selected argument." "Croissants_ABC_HBtt";
+iconTextButton -w 32 -i "camera.svg" -h 32 -bgc  0.35 0.35 0.35 -ann "Bake Camera" "Croissants_CamBake_Func";
+iconTextButton -w 32 -i "selectByHierarchy.png" -h 32 -bgc  0.35 0.35 0.35 -ann "Bake Alembic Seleted Shapes | Keep Hierarchy"  "Croissants_ABC_BakePointCache";
+
+iconTextButton -en 0 -w 32 -i "blendTwoAttr.svg" -h 32 -bgc  0.35 0.35 0.35 "Croissants_GET_ABC_3";
+iconTextButton -w 32 -i "teImport.svg" -h 32 -bgc  0.35 0.35 0.35 "Croissants_Call_ABC";
+textScrollList -p "columnLayout__alembic_FuncButton" -w 280 -ams true -h 250 "Croissants_ABC_List";
+columnLayout -p "columnLayout__alembic_FuncButton" -w 300 -cal "center" -rs 0 -cw 300 -adj true -h 24;
+rowLayout -w 298 -cw  3 30 -cw  4 30 -cw  1 90 -cw  2 30 -nc 5 -h 23;
+separator ;
+button -w 28 -l "-" -h 23 "pushButton_9";
+intField -ed true -h 23 -s 1 -min 0 -w 35 "Croissants_Increment_Tag";
+button -w 28 -l "+" -h 23 "pushButton_7";
+button -w 28 -l "0" -h 23 "pushButton_8";
+frameLayout -p "columnLayout_ABC_Sub" -lw 300 -cl false -w 300 -li 1 -mw 1 -h 80 -l "ATOM" -mh 1 -cll true -lv true -la "top";
+columnLayout -w 300 -rs 5 -h 80 "columnLayout_ATOM";
+rowLayout -w 300 -cw  1 150 -cw  3 25 -cw  2 50 -cw  4 25 -nc 4 -h 23;
+textField -tx "BG" -ed true -h 23 -w 150 "ATOM_Tag";
+separator ;
+button -w 20 -l "E" -h 20 -c "Croissants_ATOM(12)" "ATOM_Tag_BTT1";
+button -w 20 -l "I" -h 20 -c "Croissants_ATOM(13)" "ATOM_Tag_BTT2";
+gridLayout -p "columnLayout_ATOM" -cw 100 -w 300 -nc 3 -ch 20 -h 20;
+button -l "ATOM- Export" "ATOM_E";
+button -bgc  0.23 0.23 0.23 -l "ATOM - Get" "ATOM_G";
+button -l "ATOM - Import" "ATOM_I";
+//Tap End
+
+columnLayout -p "tabLayout_FileIO" -w 406 -h 523;
+tabLayout -tv true "tabLayout_tokenHIDE";
+formLayout -w 406 -h 550 "formLayout_info";
+columnLayout -w 150 -cal "left" -en true -rs 5 -vis true -cw 150 -adj true -h 550 "columnLayout_infofield";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenA";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenB";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenC";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenD";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenE";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenF";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenG";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenH";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenI";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenJ";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenK";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenL";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenN";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenO";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenP";
+textField -en true -ed true -h 24 -vis true -w 150 "croissants_TokenQ";
+columnLayout -p "formLayout_info" -cal "left" -rs 5 -w 150 -cw 150 -adj true -h 550 "columnLayout_infolabel";
+text -w 100 -ww true -al "left" -h 24 -l "Epsodic(A)" "label_Epsodic";
+text -w 100 -ww true -al "left" -h 24 -l "Name Rule(B)" "label_Name_Rule";
+text -w 100 -ww true -al "left" -h 24 -l "Title(C)" "label_Title";
+text -w 100 -ww true -al "left" -h 24 -l "Scenes(D)" "label_Scenes";
+text -w 100 -ww true -al "left" -h 24 -l "Lighting(E)" "label_Lighting";
+text -w 100 -ww true -al "left" -h 24 -l "Animation(F)" "label_Animation";
+text -w 100 -ww true -al "left" -h 24 -l "subA(G)" -ann "" "label_subA";
+text -w 100 -ww true -al "left" -h 24 -l "subB(H)" -ann "" "label_subB";
+text -w 100 -ww true -al "left" -h 24 -l "Assets(I)" "label_Assets";
+text -w 100 -ww true -al "left" -h 24 -l "Modeling(J)" "label_Modeling";
+text -w 100 -ww true -al "left" -h 24 -l "FX(K)" -ann "" "label_FX";
+text -w 100 -ww true -al "left" -h 24 -l "Comp(L)" -ann "" "label_Comp";
+text -w 100 -ww true -al "left" -h 24 -l "Images(N)" -ann "" "label_Images";
+text -w 100 -ww true -al "left" -h 24 -l "File Depth(O)" -ann "" "label_File_Depth";
+text -w 100 -ww true -al "left" -h 24 -l "V Type(P)" -ann "Key 폴더 밑에 하위 폴더 더 있으면 1 , 기본값은 0" "label_V_Type";
+text -w 100 -ww true -al "left" -h 24 -l "Shot Type(Q)" -ann "1자리 컷은 1, 3자리컷은 2 기본은 2" "label_Shot_Type";
+formLayout -p "tabLayout_tokenHIDE" -w 405 -h 550 "formLayout_token";
+gridLayout -cw 100 -w 405 -nc 3 -h 15 -ch 15 "cmz_UI";
+checkBox -l "Hight Size q" "CMZ_S";
+checkBox -l "With Side q" "CMZ_W";
+checkBox -l "CMD Wire" "CMZ_P";
+columnLayout -p "formLayout_token" -cal "left" -rs 10 -w 300 -cw 300 -h 300 -adj true "Path_info";
+textField -ed true -tx "1" textField_Rule_01;
+textField -ed true -tx "03_Lib" textField_Rule_02;
+textField -ed true textField_Rule_03;
+textField -ed true textField_Rule_04;
+textField -ed true textField_Rule_05;
+textField -ed true textField_Rule_06;
+textField -ed true textField_Rule_07;
+
+
+columnLayout -p "tabLayout_FileIO" -w 406 -h 523;
+scrollField -ed 0 -nbg 1 -fn fixedWidthFont -tx "\n\nCoroissants (code Mozzarella) 1.0.0.3\nBuilder . Yi HYUN HO\nFirst Build 2020 05/03 03:30\nLast Update 2022 07/14\n\nCopyright(c) 2022 . Studio Shelter.\nAll rights reserved \n\n\n\nLakenko Titpalalu \nAbinu Shevashamaim \nitkadesh shimeka \nTabo Malkuteka \nYeace lezonka chemo bashamime \nken baaretz \nEtrehem Hukenu \nten lanu hayom \nurslach lanu t hobotenu \nKaasher Salahnu \nGamm Anahnu Rehayabenu \nBeal Tevienu Reday Nissayon \nKey Im Hallzenu Min-Hara \nkireka hamamlaka \nBohagbura Bohatiferet \nLeolmei Olamim Amen \n" -h 500 -ww 0 -w 406 ;
+
+
+tabLayout  -e -tli  1 "File" -tli  2 "Assets" -tli  4 "ABC" -tli  5 "Token" -tli  3 "Mill" -tli  6 "About" "tabLayout_FileIO";
+formLayout  -e -ap  "columnLayout_Ani" "left" 0 0 -ap  "columnLayout_Op" "left" 0 0 -ap  "columnLayout_Op" "top" 0 0 -ap  "columnLayout_Ani" "top" 75 0 -ap  "columnLayout_Lit" "top" 225 0 -ap  "columnLayout_buttons_001" "top" 398 0 -ap  "checkNote_Btt" "left" 205 0 -ap  "checkLog_Btt" "left" 230 0 -ap  "Croissants_File_Call_Ani" "left" 255 0 -ap  "Croissants_File_Call_Ani_2" "left" 280 0 -ap  "checksource_Btt" "left" 275 0 -ap  "Croissants_File_Call" "left" 200 0 -ap  "Croissants_File_Import" "left" 225 0 -ap  "makeHis_Btt" "left" 250 0 -ap  "columnLayout_sideBar" "left" 298 0 -ap  "columnLayout_prefix" "top" 438 0 -ap  "checkNote_Btt" "top" 78 0 -ap  "checkLog_Btt" "top" 78 0 -ap  "Croissants_File_Call_Ani" "top" 78 0 -ap  "Croissants_File_Call_Ani_2" "top" 78 0 -ap  "makeHis_Btt" "top" 228 0 -ap  "Croissants_File_Call" "top" 228 0 -ap  "Croissants_File_Import" "top" 228 0 -ap  "checksource_Btt" "top" 228 0 -ap  "Crio_PlayBackBTT" "left" 260 0 -ap  "Crio_PlayBackBTT" "top" 185 0 "formLayout_ListFile";
+formLayout  -e -ap  columnLayout_CUT "left" 0 0 -ap  columnLayout_CUT "top" 35 0 "formLayout_Op_sub";
+formLayout  -e -ap  "Croissants_scD_2" "left" 275 0 -ap  "Croissants_scU_2" "left" 275 0 -ap  columnLayout_EP_sub "left" 0 0 -ap  "Croissants_ReEP" "left" 253 0 -ap  "Croissants_ReEP" "top" 3 0 -ap  columnLayout_EP_sub "top" 3 0 -ap  "Croissants_scU_2" "top" 18 0 "formLayout_EP";
+formLayout  -e -ap  Croissants_scU "left" 275 0 -ap  Croissants_scD "left" 275 0 -ap  columnLayout_CUT_sub "top" 2 0 -ap  "Croissants_scU" "top" 18 0 "formLayout_CUT";
+tabLayout  -e -tli  2 "NOTE" -tli  3 "STATS" -tli  1 "Animation" "tabLayout_Ani";
+tabLayout  -e -tli  2 "Resource" -tli  1 "Light" -tli  3 "History" "tabLayout_Lit";
+formLayout  -e -ap  "Croissants_ReRe" "left" 2 0 -ap  "Croissants_infoWriting" "left" 45 0 -ap  "Croissants_infoLoading" "left" 88 0 -ap  "Croissants_SAVE" "left" 130 0 -ap  "Croissants_SVAEPlus" "left" 172 0 -ap  "Croissants_RenUI" "right" 0 0 -ap  "Croissants_RenUI" "left" 258 0 -ap  "Croissants_NatalienQ" "left" 215 0 -ap  separator_button "left" 2 0 -ap  "separator_button" "top" 36 0 "formLayout_buttones_01";
+formLayout  -e -ap  "Croissants_renPreFix" "left" 45 0 -ap  "Croissants_A01_sf" "left" 100 0 -ap  "Croissants_A02_ef" "left" 238 0 -ap  "Croissants_rangeCopy" "top" 3 0 -ap  "Croissants_rangeCopy" "left" 207 0 -ap  "Croissants_rangeAuto" "left" 163 0 -ap  "Episodic" "top" 5 0 -ap  "Croissants_msg" "top" 29 0 -ap  "Croissants_EXS" "left" 2 0 -ap  "Croissants_EXS" "top" 29 0 -ap  "PipeLineCall" "top" 29 0 -ap  "PipeLineCall" "left" 273 0 -ap  "Croissants_msg" "left" 44 0 "formLayout_prefix";
+formLayout  -e -ap  "separator__Side01" "top" 23 0 -ap  "label_filter" "top" 26 0 -ap  "separator__Side02" "top" 105 0 -ap  "label_makeFolder" "top" 110 0 -ap  "Croissants_MakeDir_FLD" "top" 125 0 -ap  "separator__Side03" "top" 190 0 -ap  "Croissants_Cam_ReName_Btt" "top" 193 0 -ap  "separator__Side04" "top" 220 0 -ap  "label_makeGroup" "top" 225 0 -ap  "MakeGrp_NF" "top" 240 0 -ap  "MakeGrp_BTT" "top" 262 0 -ap  "MakeDir_C_BTT" "top" 150 0 -ap  "MakeDir_C_BTT" "left" 60 0 -ap  "MakeDir_E_BTT" "left" 10 0 -ap  "MakeDir_E_BTT" "top" 150 0 -ap  "Croissants_Filter_CUT" "top" 67 0 -ap  "Croissants_Filter_EP" "top" 67 0 -ap  "Croissants_Filter_CUT" "left" 60 0 -ap  "Croissants_Filter_EP" "left" 10 0 -ap  "Croissants_Filter" "top" 41 0 -ap  "Assets_Rule_BTT02" "left" 0 0 -ap  "Assets_Rule_BTT02" "top" 3 0 "formLayout_Side01";
+formLayout  -e -ap  "columnLayout_checkbox" "left" 40 0 -ap  "columnLayout_checkbox" "top" 10 0 -ap  "columnLayout_iconsBTT" "top" 5 0 -ap  "columnLayout_iconsBTT" "left" 5 0 -ap  "separator_tokeniz01" "top" 40 0 -ap  "separator_tokeniz02" "top" 85 0 -ap  "separator_tokeniz03" "top" 130 0 -ap  "separator_tokeniz04" "top" 170 0 -ap  "columnLayout_tokenBTT" "top" 170 0 -ap  "separator_tokeniz05" "top" 210 0 -ap  "separator_tokeniz06" "top" 250 0 -ap  "columnLayout_tokenBTT" "left" 3 0 "formLayout_tokeniz";
+formLayout  -e -ap  "Croissants_countKey_Op" "top" 130 0 -ap  "Croissants_PBD_batch" "top" 95 0 -ap  "Croissants_PBD" "top" 79 0 -ap  "Alembic_camRun" "top" 53 0 -ap  "Alembic_preRun" "top" 35 0 "formLayout_subCheckbox";
+formLayout  -e -ap  "rowLayout_tokenLine01" "top" 5 0 -ap  "rowLayout_tokenLine02" "top" 43 0 "formLayout_tokeBTT";
+formLayout  -e -ap  "Croissants_Deadline_OP" "left" 65 0 -ap  "Croissants_Deadline_OP" "top" 4 0 -ap  "Croissants_Deadline" "top" 4 0 -ap  "Croissants_croffle" "top" 35 0 -ap  "Croissants_croffle" "left" 15 0 "formLayout_etc";
+formLayout  -e -ap  columnLayout_LDP "left" 0 0 -ap  columnLayout_Assets_Op "left" 0 0 -ap  columnLayout_Assets_Op "top" 0 0 -ap  columnLayout_Assets_sideBar "left" 298 0 -ap  columnLayout_AssetBottom "top" 438 0 -ap  "columnLayout_LDP" "top" 110 0 "formLayout_Assets_ListFile";
+formLayout  -e -ap  columnLayout_Assets_EP "left" 0 0 -ap  "columnLayout_Assets_EP" "top" 25 0 -ap  "columnLayout_Assets_Names" "top" 52 0 -ap  "columnLayout_Assets_Filter" "top" 80 0 "formLayout_Assets_Op_sub";
+formLayout  -e -ap  columnLayout_Assets_Type_sub "left" 0 0 -ap  columnLayout_Assets_Type_sub "top" 3 0 -ap  "Croissants_Asset_Get" "left" 200 0 -ap  "ref_namerule" "left" 235 0 -ap  "ref_namerule" "top" 6 0 -ap  "Croissants_Asset_Get" "top" 4 0 "formLayout_Assets_Type";
+formLayout  -e -ap  columnLayout_Assets_EP_sub "top" 2 0 "formLayout_Assets_EP";
+formLayout  -e -ap  "gridLayout_AssUD" "left" 275 0 "formLayout_Assets_Names";
+formLayout  -e -ap  "Croissants_Filter_Assets_B" "left" 250 0 -ap  "gridLayout__Assets_Filet" "left" 1 0 "formLayout_Assets_Filet";
+tabLayout  -e -tli  2 "LookDevPub" -tli  1 "Final Assets" "tabLayout_LDP";
+formLayout  -e -ap  "columnLayout_AssetsBackUP" "top" 130 0 -ap  "Croissants_AssetsHisV" "top" 105 0 -ap  "Assets_Backup_Btt" "top" 105 0 -ap  "Croissants_MakeLookDev" "top" 100 0 -ap  "Croissants_MakeLookDev" "left" 260 0 -ap  "ABackupOp" "top" 108 0 -ap  "ABackupOp" "left" 180 0 -ap  "Assets_Backup_Btt" "left" 110 0 -ap  "Croissants_AssetsHisV" "left" 45 0 -ap  "columnLayout_buttons_002" "top" 268 0 "formLayout_LDP";
+tabLayout  -e -tli  1 "BackUp" -tli  2 "__NOTE" "tabLayout_AssetsBackUp";
+formLayout  -e -ap  Croissants_Asset_Call "left" 88 0 -ap  Croissants_Asset_XX "left" 130 0 -ap  Croissants_Asset_Save "left" 172 0 -ap  Croissants_Assets_Change "right" 0 0 -ap  Croissants_Assets_Change "left" 258 0 -ap  Croissants_Asset_SavePlus "left" 215 0 -ap  "Croissants_Assets_Refresh" "left" 0 0 -ap  "Croissants_Asset_Import" "left" 43 0 "formLayout_buttones_02";
+formLayout  -e -ap  "columnLayout_PUBBackUp" "top" 130 0 -ap  "Croissants_AssetsHisV_2" "left" 45 0 -ap  "Croissants_AssetsHisV_2" "top" 105 0 -ap  "Assets_Backup_Btt_2" "top" 105 0 -ap  "Assets_Backup_Btt_2" "left" 110 0 -ap  "ABackupOp_2" "left" 180 0 -ap  "ABackupOp_2" "top" 108 0 -ap  "columnLayout_buttons_002L" "top" 268 0 "formLayout_PUB";
+tabLayout  -e -tli  1 "BackUp" -tli  2 "__NOTE" "tabLayout_PUBBackUp";
+formLayout  -e -ap  "Croissants_LookDev_Call" "left" 88 0 -ap  "Croissants_LookDev_Import" "left" 43 0 -ap  "Croissants_LookDev_Save" "left" 172 0 -ap  "Croissants_LookDev_SavePlus" "left" 215 0 "formLayout_buttones_02L";
+formLayout  -e -ap  "Croissants_BakeSetAuto" "top" 30 0 -ap  "Croissants_VProxy_Change" "top" 30 0 -ap  "Croissants_VProxy_Change" "left" 100 0 -ap  "Croissants_SGReName_Btt" "top" 5 0 -ap  "Croissants_RN_Change" "left" 100 0 -ap  "Croissants_RN_Change" "top" 5 0 "formLayout_AssetBottom";
+formLayout  -e -ap  columnLayout_MOD_List "left" 0 0 -ap  columnLayout_MOD_Op "left" 0 0 -ap  columnLayout_MOD_Op "top" 0 0 -ap  columnLayout_MOD_sideBar "left" 298 0 -ap  columnLayout_MOD_Bottom "top" 438 0 -ap  columnLayout_buttons_MOD "top" 398 0 -ap  "columnLayout_MOD_List" "top" 110 0 -ap  Croi_Mill_Note_Btt "top" 114 0 -ap  Croi_Mill_Note_Btt "left" 285 0 "formLayout_MOD_ListFile";
+formLayout  -e -ap  columnLayout_MOD_EP "left" 0 0 -ap  "columnLayout_MOD_EP" "top" 25 0 -ap  "columnLayout_MOD_Names" "top" 52 0 -ap  "columnLayout_MOD_Filter" "top" 80 0 "formLayout_MOD_Op_sub";
+formLayout  -e -ap  columnLayout_MOD_Type_sub "left" 0 0 -ap  columnLayout_MOD_Type_sub "top" 3 0 -ap  Croissants_MOD_Get "left" 200 0 -ap  MOD_ref_namerule "left" 235 0 -ap  MOD_ref_namerule "top" 6 0 -ap  "Croissants_MOD_Get" "top" 4 0 "formLayout_MOD_Type";
+formLayout  -e -ap  columnLayout_MOD_EP_sub "top" 2 0 "formLayout_MOD_EP";
+formLayout  -e -ap  gridLayout_ModUD "left" 275 0 "formLayout_MOD_Names";
+formLayout  -e -ap  "Croissants_Filter_MOD_B" "left" 250 0 -ap  "gridLayout__MOD_Filet" "left" 1 0 "formLayout_MOD_Filet";
+tabLayout  -e -tli  1 "Modeling" -tli  2 "Crosswalk" -tli  3 "BackUp" -tli  4 "__NOTE" "tabLayout_MOD_List";
+formLayout  -e -ap  "Mod_func_2" "top" 228 0 -ap  "Mod_func_1" "top" 228 0 -ap  "Mod_func_1" "left" 210 0 -ap  "Mod_func_2" "left" 130 0 "formLayout_MOD_Crosswalk";
+formLayout  -e -ap  Croissants_MOD_Call "left" 2 0 -ap  Croissants_MOD_Save "left" 45 0 -ap  Croissants_MOD_SavePlus "left" 88 0 -ap  Croissants_Mod_OpenFolder "left" 130 0 -ap  Croissants_Mod_RF "left" 172 0 -ap  Croissants_MOD_RefX "right" 0 0 -ap  Croissants_MOD_RefX "left" 258 0 -ap  Croissants_MOD_Ref "left" 215 0 -ap  separator_button_MOD_Line "left" 2 0 -ap  separator_button_MOD_Line "top" 36 0 "formLayout_buttones_MOD";
+formLayout  -e -ap  Croissants_Asset_Cmmd "top" 30 0 -ap  CleanUP_BTT "top" 5 0 "formLayout_MOD_Bottom";
+formLayout  -e -ap  "gridLayout_MOD_OptionMenu_0" "top" 10 0 -ap  "separator_MOD_01" "top" 40 0 -ap  "MakeDir_Epi" "top" 45 0 -ap  "separator_MOD_02" "top" 68 0 -ap  "MakeDir_Mod" "top" 73 0 -ap  "gridLayout_MOD_OptionMenu_2" "top" 280 0 -ap  "gridLayout_MOD_OptionMenu_1" "top" 225 0 -ap  "columnLayout_RunBTT" "top" 110 0 "formLayout_MOD_Builder";
+
+tabLayout  -e -tli  1 "Rule" -tli  2 "Token" "tabLayout_tokenHIDE";
+formLayout  -e -ap  "columnLayout_infolabel" "top" 10 0 -ap  "columnLayout_infofield" "top" 10 0 -ap  "columnLayout_infolabel" "left" 10 0 -ap  "columnLayout_infofield" "left" 100 0 "formLayout_info";
+formLayout  -e -ap  "cmz_UI" "left" 10 0 -ap  "cmz_UI" "top" 10 0 -ap  "Path_info" "top" 50 0 "formLayout_token";
+showWindow "Croissants";
+
+
+
+  window -e -w 304 -h 550 Croissants;
+  //window -e -tlc 700 1005 Croissants;
+
+
+iconTextButton -e -c "Start_CMZ;" "Croissants_get_PL_Btt";
+checkBox -e -v 0 CMZ_P;
+  }
+
+////////////////////////////////////////////
+//Start UI Command 
+
+global proc Start_CMZ()
+{
+ 
+  int $CMZ_PM = `checkBox -q -v CMZ_P`;
+  if($CMZ_PM == 0)
+  {
+    checkBox -e -v 1 CMZ_P;
+    iconTextButton -e -i "Croissants.ico" -c "Croissants_get_PL(1);" "Croissants_get_PL_Btt";
+    CMZ_Wire(); 
+    get_CurrUnit_CC();
+    Croissants_reUI();
+    Croissants_DA_CMD();    
+    //Croissants_get_PL(1);
+  }
+  else 
+  {
+    Croissants_get_PL(1);
+  }
+}
+  
+global proc Croissants_reUI()
+{  
+    cycleCheck - e off;  
+    eval ( "source \"init.mel\"" );
+    
+    $Curr_project = `Croi_C_workspace`;
+    textField -e -tx $Curr_project Croissants_wks;  
+    
+    Croissant_setWorkspace;
+    
+    catchQuiet(Get_Croissants_ABCList());    
+    catchQuiet(Croissants_get_EPs(1));
+    catchQuiet(OpenGetInfo(1));
+    catchQuiet(OpenGetInfo(2));
+    
+    int $checkRoot=`optionMenu -q -ni Croissants_EP`;    
+    if($checkRoot == 0)
+    {
+      textField -e -tx "Empty Trees :D" Croissants_msg;
+    }
+    else
+    {
+        int $checkSub=`optionMenu -q  -ni Croissants_CUT`;  
+        if($checkSub == 0)
+        {
+          textField -e -tx "Empty Trees :D" Croissants_msg;
+        } 
+        else
+        {
+        optionMenu -e  -sl 1 Croissants_EP;
+        optionMenu -e  -sl 1 Croissants_CUT; 
+        catchQuiet(UI_ReFrash_CC(1));
+        }
+    }
+
+    Croissants_get_EPs(100);  
+     
+    
+    Croissants_BakeSet_List_PM(1);
+
+    //read_python(); 
+}    
+
+global proc Croissants_DA_CMD()
+{
+  textScrollList -e -da Croissants_Ani_List;
+  textScrollList -e -da Croissants_Lit_List;
+  textScrollList -e -da Croissants_src_List;
+  textScrollList -e -da Croissants_HIs_List;
+  textScrollList -e -da Croissants_ABC_List;
+  textScrollList -e -da Croissants_Assets_List_1;
+  textScrollList -e -da Croissants_Assets_List_His;
+  textScrollList -e -da Croissants_Model_List_1;
+  //textScrollList -e -da Croissants_Mod_List_His;
+}
+  
+global proc CMZ_Wire()
+{
+      //Wire Buttons
+
+      iconTextButton -e -c "toggle_WinX(0);"  Croissants_winS;
+      iconTextButton -e -c "toggle_WinX(1);"  Croissants_winW;
+      //iconTextButton -e -c "Croissants_get_PL(1);" Croissants_get_PL_Btt;
+    
+      optionMenu -e -changeCommand "OpenGetInfo(1);" Croissants_EP;
+      optionMenu -e -changeCommand "OpenGetInfo(2);" Croissants_CUT;       
+      button -e -c "catchQuiet(Croissants_get_EPs(1));" Croissants_ReEP;    
+      iconTextButton -e -c "Croissants_Pageing(3);Get_Croissants_ABCList();"   Croissants_scD;
+      iconTextButton -e -c "Croissants_Pageing(4);Get_Croissants_ABCList();"   Croissants_scU;
+      iconTextButton -e -c "Croissants_Pageing(1);"   Croissants_scD_2;
+      iconTextButton -e -c "Croissants_Pageing(2);"   Croissants_scU_2;
+    
+      iconTextButton -e -c "OpenGetInfo(2);" Croissants_ReRe;
+      iconTextButton -e -c "Croissants_logStats(9);"   Croissants_infoLoading;
+      iconTextButton -e -c "Croissants_logStats(8);"   Croissants_infoWriting;    
+      iconTextButton -e -c "Cori_unknownPlugins;Cori_KillNinza;SaveScene" -ann "Save This File With CleanUp Command" Croissants_SAVE ;      
+
+          popupMenu -mm 1 -parent Croissants_SAVE;
+              menuItem -label "+ Referece Editor" -c "ReferenceEditor" -i "reference.png" ;    
+              
+      iconTextButton -e -c "Croissant_save_Files" Croissants_SVAEPlus;      
+      iconTextButton -e -c "Croissants_REN_UI();" Croissants_RenUI;    
+      iconTextButton -e -c "Toggle_Natalie();" Croissants_NatalienQ;
+
+      iconTextButton -e -c "Croissants_ImportList(4);" Croissants_File_Call;   //Croissants_ImportList(11); <-Lightfile but Now fix for Source
+      button -e -c "Croissants_ImportList(1);"  Croissants_File_Import;    
+      button -e -c "makeMUltiSelect(1);" makeHis_Btt;      
+      iconTextButton -e -c "Croissants_ImportList(31);" Croissants_File_Call_Ani;
+      iconTextButton -e -c "Croissants_ImportList(33);" Croissants_File_Call_Ani_2;
+      iconTextButton -e -c "Croi_playPreViz;" -vis 0 Crio_PlayBackBTT;
+      
+    
+      button -e -c "Croissants_Prefix();"  Croissants_renPreFix;  
+      button -e -c "FrameUTIL_CC(2);"  Croissants_rangeAuto;
+      button -e -c "copyTime();" Croissants_rangeCopy;
+      iconTextButton -e -c "Croissants_ExportList();" Croissants_EXS;
+      iconTextButton -e -c "PipeLine_Call();" PipeLineCall;
+      textField -e -ec  "get_CurrUnit_CC();"  Croissants_msg;
+    
+      button -e -c "DL_submitJob();"   Croissants_Deadline_OP;
+      button -e -c "SubmitJobToDeadline;"   Croissants_Deadline;    
+      iconTextButton -e -c "waffle_RUN();" Croissants_croffle;
+
+      frameLayout -e -ec "CMZ_FL_CLL_Func(0)" FL_Array; 
+      frameLayout -e -ec "CMZ_FL_CLL_Func(1)" FL_Quick;
+      frameLayout -e -ec "CMZ_FL_CLL_Func(2)" FL_LIT; 
+      frameLayout -e -ec "CMZ_FL_CLL_Func(3)" FL_Tools; 
+      frameLayout -e -ec "CMZ_FL_CLL_Func(4)" FL_Tokeniz; 
+      frameLayout -e -ec "CMZ_FL_CLL_Func(5)" FL_Etc; 
+
+      //Side Bar    
+      iconTextButton -e -c "Get_Animation_FrameInfo();" Get_Animation_FrameInfo_BTT;
+      iconTextButton -e -c "Croissants_Playblast_UI();" Croissants_tokenizLoop_5;      
+      button -e -c "unifiedRenderGlobalsWindow;" Croissants_RenBtt_01;
+      button -e -en 0 -c "unifiedRenderGlobalsWindow;" Croissants_RenBtt_01_B;
+      button -e -c "Croissants_RenVersion" Croissants_RenderV;   
+      button -e -c "TakeName(2);" Croi_TakeName;
+      button -e -c "Croissants_ConstrainBatch" Assets_Rule_Run;
+      iconTextButton -e -c "LDPExport();" Croissants_MakeLookDev;
+      button -e -c "ReferenceEditor;" Croissants_Refedit;  
+      button -e -c "LightCentricLightLinkingEditor;"   Croissants_LRE;
+      button -e -c "RenderLayerRelationshipEditor;"   Croissants_RRE;
+      button -e -c "Croissants_VRayTool(1);" Croissants_VRayTool_01;
+      button -e -c "Croissants_VRayTool(2);" Croissants_VRayTool_02;  
+      button -e -en 1 -c "ASSlocations();" Croissants_RenBtt_01_B_2;
+      button -e -en 1 -c "VrayExportJobSetPath();" Croissants_RenBtt_01_B_3;
+      button -e -c "Croissants_STILLRender" Croissants_RenSTILL;
+      button -e -c "Croi_GATE" Croi_get_RN;
+      button -e -en 0 -c "NSEditor();" Assets_Rule_BTT0;
+      button -e -c "NamespaceEditor;" Assets_Rule_BTT1;
+      button -e -c "Croissants_Cam_ReName" Croissants_Cam_ReName_Btt;
+
+      //Only InHouse
+      ////////////////////////////////////////////////////////
+      button -e -en 0 -c "ai_ppt();"  AiPPT_Btt;
+      button -e -en 0 -c "RS_switch_path();"  HandyST01; 
+      button -e -en 0 -c "ai_SmellAss();"  HandyST01_2;
+
+      //Assets Tab
+      /////////////////////////////////////////////////////////////////////////////
+
+      optionMenu -e -changeCommand "Croissants_assets_OM(1);" Croissants_Assets;
+      optionMenu -e -changeCommand "Croissants_assets_OM(2);" Croissants_Assets_2;
+      optionMenu -e -changeCommand "Croissants_assets_OM(3);" Croissants_Assets_3;
+
+      iconTextButton -e -c "catchQuiet(Croissants_assets_OM(4));" Croissants_Asset_Get;
+
+      iconTextButton -e -c "Croissants_Assets_Pageing(2)"   Croissants_AssUp;
+      iconTextButton -e -c "Croissants_Assets_Pageing(1)"   Croissants_AssDn;
+
+      iconTextButton -e -c "Croissants_Mill_Pageing(2)"   Croissants_ModUp;
+      iconTextButton -e -c "Croissants_Mill_Pageing(1)"   Croissants_ModDn;
+
+
+      iconTextButton -e -c "OPEN_Croissants_files(41);" Croissants_Asset_Import;
+      iconTextButton -e -c "OPEN_Croissants_files(4);" Croissants_Asset_Call;
+      iconTextButton -e -c "Cori_unknownPlugins;Cori_KillNinza;SaveScene" Croissants_Asset_Save;
+      iconTextButton -e -c "GCAL();" Croissants_Assets_Refresh;
+      iconTextButton -e -c "IncrementAndSave;GCAL();" Croissants_Asset_SavePlus;   //UI_ReFrash_CC(2);
+      button -e -c "BakeSET();" Croissants_Asset_Cmmd;
+      button -e -c "BakeSET_F();" Croissants_BakeSetAuto;
+
+      button -e -c "Croissants_SGReName()" Croissants_SGReName_Btt;
+
+
+
+
+
+      //LookDevPub
+      //GCAL == Check Epsodic Type Func
+      iconTextButton -e -c "OPEN_Croissants_files(43);" Croissants_LookDev_Import;
+      iconTextButton -e -c "OPEN_Croissants_files(44);" Croissants_LookDev_Call;
+      iconTextButton -e -c "RemoveREF();" Croissants_Asset_XX;      
+      iconTextButton -e -c "Get_Croissants_AssetsList(33)" Croissants_LookDev_Refresh;
+      iconTextButton -e -c "Cori_unknownPlugins;Cori_KillNinza;SaveScene" Croissants_LookDev_Save;
+      iconTextButton -e -c "IncrementAndSave;Get_Croissants_AssetsList(33)" Croissants_LookDev_SavePlus;
+
+      button -e -c "Croissants_MakeDir(1);"  Assets_Rule_BTT02;
+
+
+      iconTextButton -e -c "Croissants_Filter(1);" Croissants_Filter_EP;                      
+      iconTextButton -e -c "Croissants_Filter(2);" Croissants_Filter_CUT;
+
+      button -e -c "Croissants_Filter_Assets(2);" Croissants_Filter_Assets_B;
+      textField -e -ec "Croissants_Filter_Assets(1);" Croissants_Filter_Asset;
+
+      button -e -c "Croissants_Filter_Assets(4);" Croissants_Filter_MOD_B;
+      textField -e -ec "Croissants_Filter_Assets(3);" Croissants_Filter_MOd;
+
+
+      button -e -c "GetRN_List_UI();" Croissants_RN_Change;
+      button -e -c "VXY_switch();" Croissants_VProxy_Change;
+      iconTextButton -e -c "Croissants_Assets_Changer();" Croissants_Assets_Change;
+       
+        
+      //Bake Tab
+      /////////////////////////////////////////////////////////////////////////////
+
+      iconTextButton -e -c "Croissants_AlembicBatch(1);" _Alembic_Batch_CMD;
+      
+      iconTextButton -e -c "Get_Croissants_ABCList();"  Croissants_GET_ABC;
+      
+      iconTextButton -e -c "abc_arg_cmd_run(1)"  Croissants_ABC_HBtt;  
+      iconTextButton -e -c "abc_arg_cmd_run(2)" Croissants_CamBake_Func;   
+      iconTextButton -e -c "abc_arg_cmd_run(3)" Croissants_ABC_BakePointCache;      
+      iconTextButton -e -c "abc_arg_cmd_run(4)" Assets_Rule_BTT3;
+          popupMenu -mm 1 -parent Assets_Rule_BTT3;
+              menuItem -label "Arguments Preset 001" -c "abc_arg_cmd_run(5)";
+              menuItem -label "Arguments Preset 002" -c "abc_arg_cmd_run(6)";
+              menuItem -label "Arguments Preset 003" -c "abc_arg_cmd_run(7)";
+      
+      
+      //Attach command have to fix to maya alembic
+      iconTextButton -e -c "Import_Croissants_Cache_Op(2);"  Croissants_GET_ABC_3;
+      iconTextButton -e -c "Import_Croissants_Cache_Op(1);"  Croissants_Call_ABC;      
+
+            
+      button -e -c "TakeName(1);" Assets_Rule_GetObjectName;
+      button -e -c "FrameUTIL_CC(1);" Assets_Rule_CamRE;
+
+          popupMenu -mm 1 -parent Croissants_ABC_name;
+              menuItem -label "CH" -c "Croissants_customTypeEXS(5)";
+              menuItem -label "CP" -c "Croissants_customTypeEXS(6)";                                                 
+              menuItem -label "BP" -c "Croissants_customTypeEXS(7)";
+      
+      //Pack 3 command to 1 button
+      button -e -c "IncremnetTAG(1);"  pushButton_7;
+      button -e -c "IncremnetTAG(2);"  pushButton_8;
+      button -e -c "IncremnetTAG(3);"  pushButton_9;      
+
+      button -e -c "Croissants_ATOM(1)" ATOM_E;
+      button -e -c "Croissants_ATOM(2)" ATOM_I;
+      button -e -c "Croissants_ATOM(5)" ATOM_G;  
+
+
+      //Modeling Tab
+      /////////////////////////////////////////////////////////////////////////////
+      optionMenu -e -changeCommand "Croissants_Mod_OM(1);" Croissants_MOD;
+      optionMenu -e -changeCommand "Croissants_Mod_OM(2);" Croissants_MOD_2;
+      optionMenu -e -changeCommand "Croissants_Mod_OM(3);" Croissants_MOD_3;    
+
+      iconTextButton -e -c "Croissants_Open_MOD(0);"  Croissants_Mod_OpenFolder;
+      button -e -c "Croissants_Open_MOD(1);"  Mod_func_2;
+
+      iconTextButton -e -c "catchQuiet(Croissants_Mod_OM(4));" Croissants_MOD_Get;
+      iconTextButton -e -c "OPEN_Croissants_files(62);" Croissants_MOD_Call;
+
+      iconTextButton -e -c "Cori_unknownPlugins;Cori_KillNinza;SaveScene" Croissants_MOD_Save;
+      iconTextButton -e -c "IncrementAndSave;UI_ReFrash_CC(3);" Croissants_MOD_SavePlus;
+
+
+      iconTextButton -e -c "OPEN_Croissants_files(64);" Croissants_MOD_Ref;
+      iconTextButton -e -c "RemoveREF();" Croissants_MOD_RefX;
+      
+      button -e -c "MOD_CleanUP()" CleanUP_BTT;
+      //button -e -c "Get_Croissants_MOD_List(4)" Mod_Backup_Btt;
+
+      button -e -c "Assets_BackUpSwitch" Assets_Backup_Btt;
+
+      iconTextButton -e -c "Croissants_MakeDir(3)" MakeDir_E_BTT;
+      iconTextButton -e -c "Croissants_MakeDir(2)" MakeDir_C_BTT;
+      button -e -c "Croissants_SetinfoHUD()" HUD_SefInfo_BTT;
+
+      button -e -c "Croissants_MakeGrpFunc(1)" MakeGrp_BTT;
+
+      button -e -c "SpreadSheetEditor;" Attribute_BTT;
+      button -e -c  "ConnectionEditor;" ConnectionEditor_Btt;  
+
+
+       
+          popupMenu -mm 1 -parent  Croissants_Assets_List_1;
+                        menuItem-rp "N" -label "Delete Select File" -c "Get_Croissants_AssetsList(5)";  
+                        menuItem-rp "NW" -label "Remove Select Assets" -c "Get_Croissants_AssetsList(6)";                                                                      
+                        //menuItem-rp "NE" -label "make History" -c "" -i "DeleteHistory.png";                    
+                        //menuItem-rp "W" -label "make RIG" -c "" -i "QR_QuickRigTool.png";   
+                        menuItem-rp "E" -label "make SnapShot" -c "Croi_ThumbsMulti(3);Croi_Thumbs_Assets(1);Croi_Thumbs_Assets(2);" -i "out_snapshot.png";
+                        menuItem-rp "SE" -label "Close SnapShot" -c "Croi_ThumbsMulti(4);" -i "nodeGrapherClose.png";
+                        menuItem-rp "S" -label "Show SnapShot" -c "Croi_ThumbsMulti(3);Croi_Thumbs_Assets(2);" -i "searchEngine.png";
+                        
+          popupMenu -mm 1 -parent  Croissants_Model_List_1;
+                        menuItem-rp "N" -label "Delete Select File" -c "Get_Croissants_MOD_List(5)";                          
+                        menuItem-rp "NE" -label "make History" -c "Get_Croissants_MOD_List(4)" -i "DeleteHistory.png";                    
+                        menuItem-rp "W" -label "make RIG" -c "Croi_make_Rig()" -i "QR_QuickRigTool.png";   
+                        menuItem-rp "E" -label "make SnapShot" -c "Croi_ThumbsMulti(3);Croi_Thumbs(1);Croi_Thumbs(2);" -i "out_snapshot.png";
+                        menuItem-rp "SE" -label "Close SnapShot" -c "Croi_ThumbsMulti(4);" -i "nodeGrapherClose.png";
+                        menuItem-rp "S" -label "Show SnapShot" -c "Croi_ThumbsMulti(3);Croi_Thumbs(2);" -i "searchEngine.png";
+                        
+      button -e -c "Get_Croissants_MOD_List(33)" Mod_Final_Bttl_A;
+      button -e -c "Get_Croissants_MOD_List(32)" Mod_Final_Bttl_B;
+
+      iconTextButton -e -c "Croissants_Mod_OM(3);" Croissants_Mod_RF;
+
+
+      //Attach UI
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      popupMenu -mm 1 -parent Croissants_wks;
+           menuItem -rp "E" -label "+ Add Project" -c "Croissants_get_PL(3);";  
+           menuItem -rp "W" -label "- Remove Project" -c "Croissants_get_PL(4);";  
+           menuItem -rp "N" -label "Cameleon" -c "CMZ_view_Helper" -i "Cameleon.ico";
+           menuItem -rp "S" -label "DeSelect" -c "Croissants_DA_CMD" ;
+
+      popupMenu -mm 1 -parent Croissants_EXS;     
+          menuItem -label "_CAM" -c "Croissants_customTypeEXS(0)";
+          menuItem -d true;
+          menuItem -label "_CH_SET" -c "Croissants_customTypeEXS(1)";
+          menuItem -d true;                                                 
+          menuItem -label "_BG_SET" -c "Croissants_customTypeEXS(2)";
+          menuItem -d true;
+          menuItem -label "_SHD_SET" -c "Croissants_customTypeEXS(3)"; 
+          menuItem -d true;
+          menuItem -label "_LGT_SET" -c "Croissants_customTypeEXS(4)";
+          menuItem -d true;
+          menuItem -label "_PR_SET" -c "Croissants_customTypeEXS(44)";
+          menuItem -d true;
+
+      popupMenu -mm 1 -parent MakeGrp_NF;
+          menuItem -label "FG_Grp" -c "Croissants_MakeGrpName(0)";
+          menuItem -label "BG_Grp" -c "Croissants_MakeGrpName(1)";                                                 
+          menuItem -label "PR_Grp" -c "Croissants_MakeGrpName(2)";
+          menuItem -label "__LGT__" -c "Croissants_MakeGrpName(3)";
+          menuItem -label "__TMP" -c "Croissants_MakeGrpName(4)";
+
+      //Note Func
+      //Note for Modeling
+      popupMenu -mm 1 -parent  Croissants_Model_List_4;
+                      menuItem-rp "S" -label "Write Note" -c "Get_Croissants_MOD_List(7)" -i "save.png";
+                      menuItem-rp "N" -label "Read Note" -c "Get_Croissants_MOD_List(8)" -i "loadPreset.png"; 
+
+
+      //Note for Lighting
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      popupMenu -mm 1 -parent  Croissants_note_textEdit;
+                      menuItem-rp "S" -label "Write Note" -c "Croissants_logStats(3)" -i "save.png";
+                      menuItem-rp "N" -label "Delete Note" -c "Croissants_logStats(15)" -i "deleteActive.png"; 
+      popupMenu -mm 1 -parent  Croissants_log_textEdit;
+                      menuItem-rp "SE" -label "Write Stats" -c "Croissants_logStats(1)" -i "save.png";
+
+                      menuItem-rp "SW" -subMenu true -label "Preset..." -i "saveToShelf.png";        
+                                menuItem -rp "N" -label "Blue" -c "";
+                                menuItem -rp "E" -label "Green" -c "";
+                                menuItem -rp "S" -label "Yellow" -c "";
+                                setParent -menu ..;
+
+                      menuItem-rp "W" -label "Retake !!!" -c "Croissants_logStats(12);Croissants_logStats(1);" -i "error.png";
+                      menuItem-rp "N" -label "work in progress" -c "Croissants_logStats(11);Croissants_logStats(1);" -i "profilerSettings.png";                                                                                                
+                      menuItem-rp "E" -label "Finish" -c "Croissants_logStats(13);Croissants_logStats(1);" ;                       
+                      menuItem-rp "S" -label "Delete Log" -c "Croissants_logStats(14)" -i "deleteActive.png"; 
+
+
+                      menuItem -label ".Log Folder - Show" -c "Croissants_logStats(71)" ;
+                      menuItem -divider true;
+                      menuItem -label ".Log Folder - Hide" -c "Croissants_logStats(72)" ;
+
+
+
+      //Attach Field UI
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      popupMenu -mm 1 -parent  Croissants_Ani_List;
+
+
+                      menuItem -rp "N" -label "Playback Preview" -c "Croi_playPreViz_Tgl" -bld 1  -i "playblast.png" "Croi_PA_toggle"; 
+                                                                  
+                      menuItem -rp "NE" -label "Save As Custom"  -c "Croissants_MakeAni(9)" -bld 1  -i "save.png";                                    
+                      menuItem -rp "E" -label "This to (Layout)"   -c "Croissants_MakeAni(1)" -bld 1 -i "poseEditor.png";
+                      menuItem -rp "SE" -label "This to (Block)"    -c "Croissants_MakeAni(2)" -bld 1 -i "ghostOff.png";  
+                      menuItem -rp "S" -label "This to (Detail-1)" -c "Croissants_MakeAni(3)" -bld 1 -i "ghost.png";                      
+                      menuItem -rp "NW" -label "Import File" -bld 1 -c "Croissants_ImportList(3)" -i "greasePencilImport.png";
+                      menuItem -rp "W" -label "Delete Select File" -c "Croissants_ByeByeFile(3)" -i "deleteActive.png";
+
+                      menuItem -label  "Next Step" -sm 1 -bld 1 -i "greasePencilPreGhostOff.png";                                                      
+                              menuItem -label "This to (Detail-2)" -c "Croissants_MakeAni(4)" -bld 1 -i "greasePencilPreGhostOff.png"; 
+                              menuItem -label "This to (Final)"    -c "Croissants_MakeAni(5)" -bld 1 -i "playblast.png";                               
+                              setParent -m ..;    
+                                                          
+                      menuItem -divider true ; 
+                      menuItem -label "" -en 0; 
+                      menuItem -label  "Save As Preset..." -sm 1  -i "greasePencilPreGhostOff.png";                                                               
+                      menuItem -label "This to CH_Bake" -c "Croissants_MakeAni(7)" ;
+                      menuItem -label "This to PR_Bake" -c "Croissants_MakeAni(8)" ;
+                      menuItem -divider true ; 
+                      menuItem -label "This to (Layout) Batch" -c "Croissants_MakeAni(6)" ;                      
+                      setParent -m ..; 
+                      menuItem -divider true ; 
+                      menuItem -label "" -en 0;
+                      menuItem -label "Remove Directory" -c "Croissants_ByeByeFile(33)" -i "deleteActive.png";
+                      
+                      menuItem -divider true ;
+                      
+
+                  
+                      
+
+
+      popupMenu -mm 1 -parent  Croissants_Lit_List;
+                      menuItem-rp "N" -label "Delete Select File" -c "Croissants_ByeByeFile(1)" -i "deleteActive.png";
+                      menuItem-rp "NE" -label "make History" -c "Croissants_ByeByeFile(4)" -i "DeleteHistory.png";
+                      menuItem-rp "NW" -label "+ DisplayLayers" -c "getDL_list" -i "layerEditor.png";
+                      
+                      menuItem-rp "SW" -label "Import File(Reference)" -c "Croissants_ImportList(11)" -i "reference.png";
+                      menuItem-rp "SE" -label "Increment Version" -c "Croissants_Duplicate(21)" -i "addClip.png";
+                      menuItem-rp "S" -label "This to Light file(As Custom Tag)" -c "Croissants_Duplicate(2)";
+                      
+                      menuItem-rp "W" -label "Import File" -c "Croissants_ImportList(1)";
+                      menuItem-rp "E" -label "This to Light file(As)" -c "Croissants_Duplicate(1)" -i "save.png";
+                      
+                      menuItem -divider true;
+                      menuItem -label "(As Custom Tag) + Version" -c "Croissants_Duplicate_Case31Loop()" -i "UVTkDuplicateSet.png";
+                      menuItem -divider true;
+                      menuItem -label "Custom Save As" -c "Croissants_Duplicate(22)" -i "rename.png";
+                      menuItem -divider true;
+                      menuItem -divider true;
+                      menuItem -label "";
+                      menuItem -divider true;
+                      menuItem -label "Ani RN Mode" -c "Croi_GATE" -i "animateSnapshot.png";
+
+
+      popupMenu -mm 1 -parent  Croissants_aniRN_H;
+                      menuItem -rp "N" -label "Light Mode" -c "Croi_GATE" -i "directionallight.png";
+                      
+
+      popupMenu -mm 1 -parent  Croissants_src_List;
+                      menuItem-rp "N" -label "Delete Select File" -c "Croissants_ByeByeFile(2)" -i "deleteActive.png";
+                      menuItem-rp "W" -label "Import File" -c "Croissants_ImportList(2)";
+                      menuItem-rp "E" -label "Reference File" -c "Croissants_ImportList(4)" -i "reference.png";
+                      menuItem-rp "S" -label "Replace Reference File" -c "Croissants_ImportList(34)" -i "Reference_Ani2.ico";
+
+      popupMenu -mm 1 -parent Croissants_MakeDir_FLD;
+          menuItem -label "LookDev" -c "Croissants_MakeDir_Preset(0)";
+          menuItem -label "EP100" -c "Croissants_MakeDir_Preset(1)";                                                 
+          menuItem -label "EP101" -c "Croissants_MakeDir_Preset(2)";
+          menuItem -label "C000" -c "Croissants_MakeDir_Preset(3)";
+          menuItem -label "S001_001_0" -c "Croissants_MakeDir_Preset(4)";
+          menuItem -label "(Range)" -c "Croissants_MakeDir_Preset(5)";
+
+
+
+      popupMenu -mm 1 -parent  Croissants_A01_sf;
+                    menuItem-rp "N" -label "+ 1" -c "Croissants_FrameCtrl(1)";  
+                    menuItem-rp "S" -label "- 1" -c "Croissants_FrameCtrl(2)";   
+
+      popupMenu -mm 1 -parent  Croissants_A02_ef;
+                    menuItem-rp "N" -label "+ 1" -c "Croissants_FrameCtrl(3)";  
+                    menuItem-rp "S" -label "- 1" -c "Croissants_FrameCtrl(4)";    
+
+
+      popupMenu -mm 1 -parent  Croissants_CUT;
+                      menuItem-rp "E" -label "Open Aniamtion Folder" -c "Croissants_Open_workDir(0);" -bld on -i "folder-open.png";
+                      menuItem-rp "W" -label "Open Lighting Folder" -c "Croissants_Open_workDir(1);" -bld on -i "folder-open.png";
+
+//////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////////end wire
+}
+
+
+global proc Croissants_FrameCtrl(int $case)
+{          
+
+int $f_value_s =`intField -q -v "Croissants_A01_sf"`;
+int $f_value_e =`intField -q -v "Croissants_A02_ef"`;
+
+  switch($case)
+  {
+  case  1 :
+  int $Nf_value_s_A = ($f_value_s + 1);
+  intField -e -v $Nf_value_s_A "Croissants_A01_sf";
+  break;
+  
+  case 2 :
+  int $Nf_value_s_B = ($f_value_s - 1);
+  intField -e -v $Nf_value_s_B "Croissants_A01_sf";  
+  break;
+
+  case 3 :
+  int $Nf_value_e_A = ($f_value_e + 1);
+  intField -e -v $Nf_value_e_A "Croissants_A02_ef";  
+  break;
+  
+  case 4 :
+  int $Nf_value_e_B = ($f_value_e - 1);
+  intField -e -v $Nf_value_e_B "Croissants_A02_ef";    
+  break;
+
+  }
+}  
+
+global proc CMZ_view_Helper()
+{
+
+  optionMenu -e -bgc 0.4 0.5 0.2 Croissants_EP;
+  optionMenu -e -bgc 0.32 0.15 0.35 Croissants_CUT; 
+  textScrollList  -e -bgc 0.4 0.5 0.2 Croissants_Ani_List;    
+  textScrollList  -e -bgc 0.32 0.15 0.35 Croissants_Lit_List;
+
+  textScrollList  -e -bgc 0.1 0.22 0.33 Croissants_Assets_List_1;
+      
+  optionMenu -e -bgc 0.4 0.5 0.2 Croissants_Assets;
+  optionMenu -e -bgc 0.32 0.15 0.35 Croissants_Assets_2;
+  optionMenu -e -bgc 0.1 0.22 0.33 Croissants_Assets_3;  
+}
+
+global  proc UI_dc_CC(int $case)
+{
+  switch($case)
+      {
+        case 1 :
+          textScrollList -e -da Croissants_Lit_List;
+        break;
+        
+        case 2 :
+          textScrollList -e -da Croissants_Ani_List;
+        break;
+      }    
+}
+  
+global proc get_CurrUnit_CC()
+{
+  string $xxx =`currentUnit -q -time`;
+  if($xxx == "ntsc")
+    {textField -e -tx  "30-FPS"  Croissants_msg;   }
+    else if($xxx == "pal")
+    {textField -e -tx  "25-FPS"  Croissants_msg;   }
+    else if($xxx == "ntscf")
+    {textField -e -tx  "60-FPS"  Croissants_msg;   }
+    else if($xxx == "film")
+    {textField -e -tx  "24-FPS"  Croissants_msg;   }
+    else
+    {textField -e -tx  "Others-FPS"  Croissants_msg;   }         
+}
+
+global proc UI_ReFrash_CC(int $case)
+{
+  switch($case)
+  {
+  case 1 :     
+   catchQuiet(Croissants_get_EPs(3));
+   //catchQuiet(Croissants_get_EPs(4));
+   catchQuiet(Croissants_Check_Z_Source());
+   catchQuiet(Croissants_logStats(5));
+   catchQuiet(Croissants_logStats(6));
+ 
+  break;
+  
+  case 2 :
+   catchQuiet(Croissants_assets_OM(2));
+   catchQuiet(Croissants_assets_OM(3));    
+  break;
+  
+  case 3 :
+  //catchQuiet(Croissants_Mod_OM(2));
+  catchQuiet(Croissants_Mod_OM(3));
+
+  break; 
+  }
+}
+
+
+
+global proc GCAL()
+{
+//Episodic Type or Not
+  int $EpisodicG = `checkBox -q -v Episodic`;
+  if($EpisodicG == 0)
+  {
+    Get_Croissants_AssetsList(3);
+  }
+  else
+  Get_Croissants_AssetsList(31);
+}
+
+
+global proc Croissants_get_PL(int $case)
+{
+//GET Project List
+    string $Croissants_ProjectList = dirname(`pluginInfo -query -path "Croissants"`)+"/../scripts/_Project_List.ini";
+    $Croissants_fileId = `fopen $Croissants_ProjectList "r"` ;  
+    string $Croissants_data = `fread $Croissants_fileId $Croissants_data` ; 
+
+    //get all data
+    string $Croissants_dataArray[] ;  
+    $Croissants_dataArray = stringToStringArray($Croissants_data, ","); 
+
+    //Add custom Project from Field
+    string $newPL=`textField -q -tx  Croissants_wks`;
+    string $MelStylePL = substituteAllString($newPL, "\\", "/");  
+    
+
+  switch($case)
+  {
+  //UI
+  case 1 :
+        if(`window -q -ex "PR_list_UI"`)deleteUI("PR_list_UI");
+        window -rtf true -w 304 -t "Project List" -h 30 -tb true -s false -bgc  0.1 0.1 0.1 -tlb true -mb true "PR_list_UI";
+        gridLayout -cw 304 -w 304 -nc 1 -h 32 -ch 32;
+        optionMenu -cc "Croissants_get_PL(2);" "Croissants_PL";
+        showWindow "PR_list_UI";
+
+        $crPostion =`window -q -tlc  Croissants`; 
+        int $mag_cr = $crPostion[0] -100;
+        window -e -tlc $mag_cr $crPostion[1] -vis 1 PR_list_UI;  
+    
+        $menuItems_Croissants = `optionMenu -q -itemListLong Croissants_PL`;
+          if(size($menuItems_Croissants) != 0)
+          {deleteUI($menuItems_Croissants);}
+        
+          string $pree_list_sort[];
+          $pree_list_sort=sort($Croissants_dataArray);
+
+          for ($i = 1; $i < size($pree_list_sort); $i++)
+          {           
+          menuItem -l $pree_list_sort[$i] -p Croissants_PL;
+          }
+  break;
+  
+  //SET Project 
+  case 2 :      
+        string $ProjectName=`optionMenu -q -v Croissants_PL`;  
+
+        int $Project_checkFolder =`file -q -exists $ProjectName`;
+        if($Project_checkFolder != 0)
+        {
+        setProject $ProjectName;
+        Croissants_reUI();
+
+        deleteUI PR_list_UI;
+        get_CurrUnit_CC;
+        }
+        else
+        {
+            string $msg = "The project folder is not in the path. Do you want to create a folder and set it up?";
+            $response_OKSet = `confirmDialog -t "Nonexistent Directory" -m $msg -ma "left" -b "Yes" -b "No" -db "Yes" -cb "No" -ds "No" `;  
+            if( $response_OKSet == "Yes" ) 
+              {
+              sysFile -makeDir $ProjectName;
+              setProject $ProjectName;
+              Croissants_reUI();
+             
+              deleteUI PR_list_UI;               
+              }
+             else
+             {
+                 print "Cancle...";
+             }        
+        }
+        Croissants_get_EPs(100);
+        Croissants_get_EPs(101);
+  break; 
+
+
+ //Add project to List file
+  case 3 :
+          string $samsam =`match $MelStylePL $Croissants_data`; 
+          int $mat =`gmatch $samsam $MelStylePL`;
+          if ($mat == 1)
+          {
+             textField -e -tx "Already in the list." Croissants_msg;
+          }
+          else
+          {    
+          string $combine = $MelStylePL + "," +$Croissants_data;
+          $Croissants_fileId = `fopen $Croissants_ProjectList "w"` ;  
+          fprint $Croissants_fileId $combine;
+          fclose $Croissants_fileId;
+          }
+          textField -e -tx "..." Croissants_wks;
+          Croissants_get_PL(1);       
+  break;
+  
+  //remove project of List file
+  case 4 :
+          string $samsam4 =`match $MelStylePL $Croissants_data`; 
+          int $mat4 =`gmatch $samsam4 $MelStylePL`;
+          if ($mat4 == 1)
+          {
+            string $remove = $MelStylePL+",";  
+            string $substitute = substituteAllString($Croissants_data, $remove, "");   
+            $Croissants_fileId = `fopen $Croissants_ProjectList "w"` ;  
+            fprint $Croissants_fileId $substitute;
+            fclose $Croissants_fileId; 
+            textField -e -tx "..." Croissants_wks;
+            Croissants_get_PL(1); 
+          }
+          else
+          {    
+            textField -e -tx "Not on the list." Croissants_msg; 
+          }     
+  break;      
+  }
+  
+  Croissant_setWorkspace;
+}  
+
+
+global proc FrameUTIL_CC(int $case)
+{
+  switch($case)
+  {
+    case 1 :
+      projectCamReN();
+    break;
+    
+    case 2 :
+      Croissants_PlayBlastFrame(1);
+      Croissants_PlayBlastFrame(2);
+    break;  
+  }
+
+}
+
+global proc GET_Croissants_TIME()
+{
+  int $Croissants_pMin = `playbackOptions -q -min`;
+  int $Croissants_pMax = `playbackOptions -q -max`;
+  intField -e -v $Croissants_pMax  Croissants_A02_ef; 
+  intField -e -v $Croissants_pMin  Croissants_A01_sf; 
+}
+
+global proc Croissants_PlayBlastFrame(int $case)
+{
+    switch ($case)
+    {    
+    case 1 :    
+      $EndFrame = `intField  -q -v Croissants_A02_ef`;
+      setAttr "defaultRenderGlobals.endFrame" $EndFrame;
+      playbackOptions -aet $EndFrame;
+      playbackOptions -min `getAttr "defaultRenderGlobals.startFrame"` -max $EndFrame;    
+    break;
+    
+    case 2 :
+      $StartFrame = `intField  -q -v Croissants_A01_sf`;
+      setAttr "defaultRenderGlobals.startFrame" $StartFrame;
+      playbackOptions -ast $StartFrame;
+      playbackOptions -max `getAttr "defaultRenderGlobals.endFrame"` -min $StartFrame;    
+    break;
+    }
+}  
+
+global proc Croissants_Prefix()
+{
+  string $EPs=`optionMenu -q -v Croissants_EP`;
+  string $CUTs=`optionMenu -q -v Croissants_CUT`;
+  string $Croissants_scinfo = `file -q -namespace`;
+
+  string $RenVersion = "R001";        
+  string $scene_D_Label = $EPs + "/" + $CUTs; 
+  string $scene_F_Label = $EPs + "_" + $CUTs;
+
+  $maya_versionLabel = "defaultRenderGlobals.renderVersion";            
+  $maya_fileNamePreFix = "defaultRenderGlobals.imageFilePrefix";
+
+  string $c_renderer = currentRenderer();
+    if( $c_renderer != "vray" )
+    {
+      string $_preFix = $scene_D_Label + "/" + "<Version>" + "/" + "<RenderLayer>" + "/" +$scene_F_Label + "_" + "<RenderLayer>";
+      setAttr -type "string"  $maya_versionLabel $RenVersion;
+      setAttr -type "string"  $maya_fileNamePreFix $_preFix;
+    }
+    else
+    {  
+      $vray_fileNamePreFix = "vraySettings.fileNamePrefix";
+      string $_preFix_VRay = $scene_D_Label + "/" + "<Version>" + "/" + "<Layer>" + "/" +$scene_F_Label + "_" + "<Layer>";
+      setAttr -type "string"  $vray_fileNamePreFix $_preFix_VRay;
+      setAttr -type "string"  $maya_versionLabel $RenVersion;
+    }
+
+  Croissants_PlayBlastFrame(1);
+  Croissants_PlayBlastFrame(2);
+
+}
+
+global proc copyTime()
+{
+  int $S_time = `intField -q -v Croissants_A01_sf`;
+  intField -e -v $S_time Croissants_A02_ef;  
+}
+
+global proc projectCamReN()
+{
+string $gets[] =`ls -sl`;
+
+$Path = `workspace -q -fn`;
+string $init[]= `getFileList -folder $Path -filespec "*.ini"`;
+string $ini_gets = $init[0]; 
+string $G_I[] = stringToStringArray($ini_gets, ".");
+
+
+string $EP_N=`optionMenu -q -v Croissants_EP`;
+string $Cut_N = `optionMenu -q -v Croissants_CUT`;
+string $prEF =`intField -q -v Croissants_A02_ef`; 
+string $prSF =`intField -q -v Croissants_A01_sf`; 
+string $camName = $G_I[0] +"_" + $Cut_N + "_" + $prSF + "_" + $prEF +"_Cam";
+rename $gets[0] $camName;
+
+}  
+
+
+global proc read_python()
+{
+  //string $cmd_1 = "import _Chocolat\nreload(_Chocolat)";
+  string $cmd_1 = "import _Chocolat";
+  python($cmd_1);
+}
+
+
+
+global proc Croissants_Check_Z_Source()
+{
+    string $Croissants_check_Z = `textScrollList -q -ni Croissants_src_List`;
+    int $valueZ = $Croissants_check_Z;
+      if ($valueZ == 0)
+      {
+        button -e -bgc 0.5 0.5 0.5 checksource_Btt;                                      
+      } 
+      else 
+      {
+        button -e -bgc 0.9 0.3 0.11 checksource_Btt;          
+      }   
+}    
+

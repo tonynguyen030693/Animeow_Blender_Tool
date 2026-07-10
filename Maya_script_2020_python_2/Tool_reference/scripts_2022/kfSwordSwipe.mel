@@ -1,0 +1,796 @@
+//////////////////////////////////////////////////////
+//kfSwordSwipe
+//////////////////////////
+//Written by Kiel Figgins
+//www.3dfiggins.com
+//////////////////////////
+//Use to create a lofted surface over time between two points
+//////////////////////////
+//Version History
+//////////////////////////
+//2.01 (09-21-2021) - Simplying for public release focused only on Swipes not tron trails
+//							-Changed UI order, R click on S/E frame to current frame, create mesh by default
+//							-Create Shader option, changed top group name, default trail to 3, clean top group
+//							-Lock mesh transforms, show mid frame of swipe, Help button added
+//1.06 (05-29-2012) - Added single cv per frame non animated path obj
+//1.05 (05-24-2012) - Changed naming of taper groups, fixed taper equation, added scale min/max, added tail length check, added tail length min, added sub min
+//1.04 (05-23-2012) - Stripped out workflow
+//1.03 (05-10-2012) - Cleaning up, trying to get to actually work
+//1.02 (01-27-2012) - Added substep, clean up procs a bit
+//1.01 (01-23-2012) - Added output mesh option, multiple object option, end frame half way
+//1.00 (01-21-2012) - Orginal version
+//////////////////////////
+//Coming Soon
+/*
+//Coming Up
+
+
+
+//Wishlist
+-progress bar
+-determine if you need to get the vert/pivot location of a target
+-fade on/off
+	-curves actually shrink as gets closer to end of frame range
+
+*/
+
+
+
+
+global proc kfSwordSwipe()
+{
+
+if (`window -q -ex kfSwordSwipeWin`)
+    	{
+    	showWindow kfSwordSwipeWin ;
+    	return ;
+    	}
+
+
+window -w 250 -h 600 -t "Sword Swipe" kfSwordSwipeWin ;
+formLayout mainSaveForm ;
+
+//UI pieces
+text -l "1. Create 2 or more locators constrained to the blade" txST_Locs;
+text -l "2. Select Sword Locators from tip to base" txST_LocSel;
+text -l "3. Define Locators" txSTDefNum;
+textField -w 90 -ed false -tx "" tfSTDefNum;
+button -l " < " -w 20 -ann "Fills in field based off selection" -c ("kfSTDefNumFill();") btnSTDefNumFill; 
+
+text -l "4. Start / End Frame (R-Click to set)" txSTStartEnd;
+intField -w 40 -v 10 intSTStart;
+	popupMenu();
+		menuItem -l "Set to Current Frame" -c ("kfSS_SetFrame(1);");
+intField -w 40 -v 20 intSTEnd;
+	popupMenu();
+		menuItem -l "Set to Current Frame" -c ("kfSS_SetFrame(2);");
+
+text -l "5. Swipe Frame Length" txSTLength;
+intField -min 1 -w 40 -v 3 intSTLength;
+
+text -l "6. Swipe Taper %: " txSTScale;
+floatField -min 0 -max 100 -pre 1 -w 40 -v 0 floatSTScale;
+
+text -l "7. Frame Sub Steps: " txSTStep;
+intField -min 0 -w 40 -v 20 intSTStep;
+
+text -l "8. Turn on Nurbs Surfaces and Viewport 2.0" txST_View;
+
+text -l "9. Naming: " txSTNaming;
+textField -w 140 -tx "Swipe_A" tfSTNaming;
+button -l "Help" -bgc .2 .55 .75 -w 40 -ann "" -c ("kfSS_Instruct();") btnST_Help; 
+
+separator -style "in" -h 3 sepSTA;
+
+button -l "Create Sword Swipe" -w 150 -ann "" -c ("kfSTTailLen(); kfSTCreate();") btnSTCreate; 
+checkBox -l "Create Shader" -v 1 chBxSTShader;
+
+
+
+//UI FormLayout
+formLayout -e
+    
+    	-af txST_Locs "top" 8 
+    	-an txST_Locs "bottom" 
+    	-af txST_Locs "left" 5 
+    	-an txST_Locs "right"
+		
+    	-ac txST_LocSel "top" 8 txST_Locs
+    	-an txST_LocSel "bottom" 
+    	-af txST_LocSel "left" 5 
+    	-an txST_LocSel "right" 
+		
+    	-ac txSTDefNum "top" 8 txST_LocSel
+    	-an txSTDefNum "bottom" 
+    	-af txSTDefNum "left" 5 
+    	-an txSTDefNum "right" 
+    	
+    	-ac tfSTDefNum "top" 8 txST_LocSel
+    	-an tfSTDefNum "bottom" 
+    	-ac tfSTDefNum "left" 5 txSTDefNum
+    	-an tfSTDefNum "right" 
+    	
+    	-ac btnSTDefNumFill "top" 8 txST_LocSel
+    	-an btnSTDefNumFill "bottom" 
+    	-ac btnSTDefNumFill "left" 5 tfSTDefNum
+    	-an btnSTDefNumFill "right" 
+    	
+    	-ac txSTStartEnd "top" 8 btnSTDefNumFill
+    	-an txSTStartEnd "bottom" 
+    	-af txSTStartEnd "left" 5 
+    	-an txSTStartEnd "right" 
+    	
+    	-ac intSTStart "top" 8 btnSTDefNumFill
+    	-an intSTStart "bottom" 
+    	-ac intSTStart "left" 5 txSTStartEnd
+    	-an intSTStart "right" 
+    
+    	-ac intSTEnd "top" 8 btnSTDefNumFill
+    	-an intSTEnd "bottom" 
+    	-ac intSTEnd "left" 5 intSTStart
+    	-an intSTEnd "right" 
+    	
+    	-ac txSTLength "top" 8 intSTEnd
+    	-an txSTLength "bottom" 
+    	-af txSTLength "left" 5 
+    	-an txSTLength "right" 
+    	
+    	-ac intSTLength "top" 8 intSTEnd
+    	-an intSTLength "bottom" 
+    	-ac intSTLength "left" 5 txSTLength
+    	-an intSTLength "right" 
+    	
+    	-ac txSTScale "top" 8 intSTLength
+    	-an txSTScale "bottom" 
+    	-af txSTScale "left" 5 
+    	-an txSTScale "right" 
+    	
+    	-ac floatSTScale "top" 8 intSTLength
+    	-an floatSTScale "bottom" 
+    	-ac floatSTScale "left" 5 txSTScale
+    	-an floatSTScale "right" 
+    	
+		-ac txSTStep "top" 8 floatSTScale
+    	-an txSTStep "bottom" 
+    	-af txSTStep "left" 5 
+    	-an txSTStep "right" 
+    	
+		-ac intSTStep "top" 8 floatSTScale
+    	-an intSTStep "bottom" 
+    	-ac intSTStep "left" 5 txSTStep
+    	-an intSTStep "right" 
+		
+		-ac txST_View "top" 8 intSTStep
+    	-an txST_View "bottom" 
+    	-af txST_View "left" 5 
+    	-an txST_View "right" 
+    	
+    	-ac txSTNaming "top" 8 txST_View
+    	-an txSTNaming "bottom" 
+    	-af txSTNaming "left" 5 
+    	-an txSTNaming "right"
+    	     
+    	-ac tfSTNaming "top" 8 txST_View
+    	-an tfSTNaming "bottom" 
+    	-ac tfSTNaming "left" 5 txSTNaming
+    	-an tfSTNaming "right" 
+		
+		-ac btnST_Help "top" 8 txST_View
+    	-an btnST_Help "bottom" 
+    	-an btnST_Help "left" 
+    	-af btnST_Help "right" 5
+    	
+    	-ac sepSTA "top" 5 tfSTNaming 
+    	-an sepSTA "bottom" 
+    	-af sepSTA "left" 0
+    	-af sepSTA "right" 0
+    	
+    	-ac btnSTCreate "top" 8 sepSTA
+    	-an btnSTCreate "bottom" 
+    	-af btnSTCreate "left" 5 
+    	-an btnSTCreate "right" 
+		
+		-ac chBxSTShader "top" 8 sepSTA
+    	-an chBxSTShader "bottom" 
+    	-an chBxSTShader "left" 
+    	-af chBxSTShader "right" 5
+
+    	mainSaveForm ;
+
+    showWindow kfSwordSwipeWin ;
+
+    //Resize the main window
+    window -e -widthHeight 270 275 kfSwordSwipeWin;
+
+}//end of proc kfSwordSwipe
+
+////////////////////
+//UI Specific Procs
+
+//////////////////////////////////////////////////////////////////
+global proc kfSS_SetFrame(int $which)
+{
+int $cF = `currentTime -q`;
+
+if($which == 1){intField -e -v $cF intSTStart;}
+if($which == 2){intField -e -v $cF intSTEnd;}
+
+
+}//end of proc
+
+
+//////////////////////////////////////////////////////////////////
+global proc kfSTTailLen()
+{
+
+	int $startFrame = `intField -q -v intSTStart`;
+	int $endFrame = `intField -q -v intSTEnd`;
+	int $tailLength = `intField -q -v intSTLength`;
+
+int $frameLength = ($endFrame - $startFrame);
+
+if($tailLength > $frameLength){intField -e -v $frameLength intSTLength;}
+
+}
+
+
+//////////////////////////////////////////////////////////////////
+global string $kfSTDefNum[];
+
+global proc kfSTDefNumFill()
+{
+	global string $kfSTDefNum[];
+	
+	string $userSel[] =`ls -sl`;
+	
+	int $theSize = size($userSel);
+	
+	if($theSize == 0)
+	{
+		$kfSTDefNum = `ls -sl`;
+		textField -e -tx "" tfSTDefNum;
+		//checkBox -e -en false -v 0 chBxSTMesh;
+		print "\nFAIL: Please Select at Least (1) Object";
+	}
+
+	if($theSize == 1)
+	{
+		$kfSTDefNum = `ls -sl`;
+		//checkBox -e -en false -v 0 chBxSTMesh;
+		textField -e -tx $userSel[0] tfSTDefNum;
+	}
+
+	if($theSize > 1)
+	{
+		$kfSTDefNum = `ls -sl`;
+		//checkBox -e -en true -v 1 chBxSTMesh;
+		textField -e -tx ($theSize + " Objects") tfSTDefNum;
+	}
+}//end of global proc
+
+
+
+//////////////////////////////////////////////////////////////////
+global proc kfSTDefNumSel()
+{
+	global string $kfSTDefNum[];
+	
+	select $kfSTDefNum;
+}//end of global proc
+
+
+
+//////////////////////////////////////////////////////////////////
+global proc kfSTCreate()
+{
+	global string $kfSTDefNum[];
+	select $kfSTDefNum;
+	string $targets[] = `ls -sl`;
+	
+	string $namer = `textField -q -tx tfSTNaming`;
+	int $startFrame = `intField -q -v intSTStart`;
+	int $endFrame = `intField -q -v intSTEnd`;
+	int $tailLength = `intField -q -v intSTLength`;
+	int $subStep = `intField -q -v intSTStep`;
+	
+	float $falloffPercent = `floatField -q -v floatSTScale`;
+
+	//0 no, 1 yes
+	//int $outputMesh = `checkBox -q -v chBxSTMesh`;
+	int $outputMesh = 1;
+
+	int $createShader = `checkBox -q -v chBxSTShader`;
+	
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Work - Single Stroke
+
+//Delete if already exists
+if(`objExists ($namer + "_Swipe_Elements")`){delete ($namer + "_Swipe_Elements");}
+
+if($createShader == 1 && `objExists ("mat_" + $namer)` == 1){delete ("mat_" + $namer);}
+
+
+
+//////////////////////////
+//Create Curves and Groups
+group -empty -n ($namer + "_Swipe_Elements");
+group -empty -n ($namer + "_Loft_Curves");
+group -empty -n ($namer + "_Loft_Mesh");
+group -empty -n ($namer + "_Loft_Nulls");
+
+parent ($namer + "_Loft_Curves") ($namer + "_Loft_Mesh") ($namer + "_Loft_Nulls") ($namer + "_Swipe_Elements");
+setAttr ($namer + "_Loft_Curves.v") 0;
+
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.tx");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.ty");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.tz");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.rx");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.ry");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.rz");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.sx");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.sy");
+setAttr -lock true -keyable false -channelBox false ($namer + "_Swipe_Elements.sz");
+
+
+//for each target, create Nulls
+int $counter;
+int $sizer = `size($targets)`;
+
+for ($counter = 0; $counter < $sizer; $counter++)
+{
+	//////////////////////////
+	//Go through timeline and create placment nulls
+	currentTime $startFrame;
+	
+	group -empty -n ("rig_" + $namer + "_" + $counter + "_Nulls");
+	string $nullGrp[] = `ls -sl`;
+	parent $nullGrp ($namer + "_Loft_Nulls");
+	
+	//////////////////
+	//Go Through Frames
+	int $counterF;
+	int $sizerF = ($endFrame - $startFrame);
+	
+	for ($counterF = 0; $counterF <= $sizerF; $counterF++)
+	{
+		//if $counterF = 0, its first frame, make all nulls at default position
+		if($counterF == 0)
+		{
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				float $pos[] = `xform -q -ws -rp $targets[$counter]`;
+				group -empty -n ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				move -ws $pos[0] $pos[1] $pos[2] ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				parent ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN) $nullGrp;
+			}//end of create nulls
+		}//end of if counterF = 0
+
+
+		if($counterF <= $tailLength && $counterF != 0)
+		{
+			float $counterFFloat = $counterF;
+			float $frameStep = ($counterFFloat / $subStep);
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				currentTime ($startFrame + ($frameStep * $counterN));
+				float $pos[] = `xform -q -ws -rp $targets[$counter]`;
+				group -empty -n ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				move -ws $pos[0] $pos[1] $pos[2] ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				parent ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN) $nullGrp;
+			}
+			
+		}//end of if counterF != 0
+
+
+		if($counterF > $tailLength && $counterF != 0)
+		{
+			float $counterFFloat = $counterF;
+			float $frameStep = (($counterFFloat - ($counterFFloat - $tailLength))  / $subStep);
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				currentTime ($startFrame + ($counterF - $tailLength) + ($frameStep * $counterN));
+				float $pos[] = `xform -q -ws -rp $targets[$counter]`;
+				group -empty -n ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				move -ws $pos[0] $pos[1] $pos[2] ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN);
+				parent ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN) $nullGrp;
+			}
+			
+		}//end of if counterF != 0
+	}//end of loop through frames
+	
+}//end of loop through all targets for creating nulls
+
+
+
+
+
+
+
+
+
+
+
+//scale Nulls for taper
+int $counterF;
+int $sizerF = ($endFrame - $startFrame);
+
+for ($counterF = 0; $counterF <= $sizerF; $counterF++)
+{
+//int $subStep = `intField -q -v intSTStep`;
+//float $falloffPercent = `floatField -q -v floatSTScale`;
+
+
+
+
+
+		//if $counterF = 0, its first frame, make all nulls at default position
+		if($counterF == 0)
+		{
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				select ("rig_" + $namer + "_*_FinderNull_" + $counterF + "_" + $counterN);
+				group -n ("rig_" + $namer + "_" + $counterF + "_" + $counterN + "_Taper");
+				string $taperGrp[] = `ls -sl`;
+				select $taperGrp;
+				CenterPivot;
+				
+				float $subStepF = $subStep;
+				float $counterNFloat = $counterN;
+				setAttr ($taperGrp[0] + ".sx") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sy") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sz") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+			}//end of create nulls
+		}//end of if counterF = 0
+
+
+		if($counterF <= $tailLength && $counterF != 0)
+		{
+			float $counterFFloat = $counterF;
+			float $frameStep = ($counterFFloat / $subStep);
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				select ("rig_" + $namer + "_*_FinderNull_" + $counterF + "_" + $counterN);
+				group -n ("rig_" + $namer + "_" + $counterF + "_" + $counterN + "_Taper");
+				string $taperGrp[] = `ls -sl`;
+				select $taperGrp;
+				CenterPivot;
+				
+				float $subStepF = $subStep;
+				float $counterNFloat = $counterN;
+				setAttr ($taperGrp[0] + ".sx") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sy") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sz") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+			}
+			
+		}//end of if counterF != 0
+
+
+		if($counterF > $tailLength && $counterF != 0)
+		{
+			float $counterFFloat = $counterF;
+			float $frameStep = (($counterFFloat - ($counterFFloat - $tailLength))  / $subStep);
+			int $counterN;
+			int $sizerN = $subStep;
+			
+			for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+			{
+				select ("rig_" + $namer + "_*_FinderNull_" + $counterF + "_" + $counterN);
+				group -n ("rig_" + $namer + "_" + $counterF + "_" + $counterN + "_Taper");
+				string $taperGrp[] = `ls -sl`;
+				select $taperGrp;
+				CenterPivot;
+				
+				float $subStepF = $subStep;
+				float $counterNFloat = $counterN;
+				setAttr ($taperGrp[0] + ".sx") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sy") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+				setAttr ($taperGrp[0] + ".sz") (1 - ($falloffPercent * .01) + ((($falloffPercent / $subStepF) * $counterNFloat) * .01));
+			}
+			
+		}//end of if counterF != 0
+
+
+
+
+
+
+}//end of scaling nulls for taper
+
+
+
+
+
+
+
+
+
+
+
+//create/align curves
+int $counter;
+int $sizer = `size($targets)`;
+
+for ($counter = 0; $counter < $sizer; $counter++)
+{
+	curve -d 3 -p 0 0 0 -p 0 0 1 -p 0 0 2 -p 0 0 3 -p 0 0 4  -k 0 -k 0 -k 0 -k 1 -k 2 -k 2 -k 2 ;
+	rename ("rig_" + $namer + "_curve_" + $counter);
+	rebuildCurve -ch 1 -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kep 1 -kt 0 -s ($subStep - 2) -d 3 -tol 0.01 ("rig_" + $namer + "_curve_" + $counter);
+	
+	parent ("rig_" + $namer + "_curve_" + $counter) ($namer + "_Loft_Curves");
+	
+	select ("rig_" + $namer + "_curve_" + $counter);
+	string $curve[] = `ls -sl`;
+
+	/////////////////////////////
+	//Go through and align curve to placement nulls
+	
+	select ("rig_" + $namer + "_curve_" + $counter);
+	string $curve[] = `ls -sl`;
+	
+	int $counterF;
+	int $sizerF = ($endFrame - $startFrame);
+	
+	for ($counterF = 0; $counterF <= $sizerF; $counterF++)
+	{
+		currentTime ($startFrame + $counterF);
+		
+		int $counterN;
+		int $sizerN = $subStep;
+		
+		for ($counterN = 0; $counterN <= $sizerN; $counterN++)
+		{
+			float $pos[] = `xform -q -ws -rp ("rig_" + $namer + "_" + $counter + "_FinderNull_" + $counterF + "_" + $counterN)`;
+			move -ws $pos[0] $pos[1] $pos[2] ($curve[0] + ".cv[" + $counterN + "]");
+			setKeyframe -breakdown 0 -hierarchy none -controlPoints 0 -shape 0 {($curve[0] + ".cv[" + $counterN + "]")};
+		}
+		
+	}//end of loop through time alignint curve to nulls
+
+}//end of create/align curves
+
+
+
+
+
+
+
+if($createShader == 1)
+{
+//Base Material
+shadingNode -asShader lambert -n ("mat_" + $namer);
+string $sColor[] = `ls -sl`;
+
+sets -renderable true -noSurfaceShader true -empty -name ($sColor[0] + "SG");
+connectAttr -f ($sColor[0] + ".outColor") ($sColor[0] + "SG.surfaceShader");
+
+setAttr ($sColor[0] + ".diffuse") 1;
+setAttr ($sColor[0] + ".translucence") 1;
+setAttr ($sColor[0] + ".ambientColor") -type double3 0 0 1 ;
+
+//Noise
+string $noise = `shadingNode -asTexture noise -n ($namer + "_Noise")`;
+string $noiseP = `shadingNode -asUtility place2dTexture -n ($namer + "_Noise_Place2dText")`;
+
+connectAttr ($noiseP + ".outUV") ($noise + ".uv");
+connectAttr ($noiseP + ".outUvFilterSize") ($noise + ".uvFilterSize");
+connectAttr -force ($noise + ".outColor") ($sColor[0] + ".color");
+
+setAttr ($noise + ".time") 0.45;
+setAttr ($noise + ".frequency") 6;
+setAttr ($noiseP + ".repeatU") 0.1;
+
+//Transp Ramp
+string $ramp = `shadingNode -asTexture ramp -n ($namer + "_Ramp")`;
+string $rampP = `shadingNode -asUtility place2dTexture -n ($namer + "_Ramp_Place2dText")`;
+
+connectAttr ($rampP + ".outUV") ($ramp + ".uv");
+connectAttr ($rampP + ".outUvFilterSize") ($ramp + ".uvFilterSize");
+connectAttr -force ($ramp + ".outColor") ($sColor[0] + ".transparency");
+
+removeMultiInstance -break true ($ramp + ".colorEntryList[1]");
+
+setAttr ($ramp + ".type") 1;
+setAttr ($ramp + ".interpolation") 2;
+
+setAttr ($ramp + ".colorEntryList[0].color") -type double3 .5 .5 .5 ;
+setAttr ($ramp + ".colorEntryList[2].color") -type double3 1 1 1;
+
+setAttr ($ramp + ".colorEntryList[0].position") 1;
+setAttr ($ramp + ".colorEntryList[2].position") 0.3;
+
+//Assign to Loft
+//sets -e -forceElement ($sColor[0] + "SG");
+
+}
+
+
+
+
+
+
+	
+	select ("rig_" + $namer + "_curve_*");
+	string $loftCurves[] = `ls -tr -sl`;
+	
+	if($outputMesh)
+	{
+		loft -n ("mesh_" + $namer + "_LoftSurface") -ch 1 -u 1 -c 0 -ar 0 -d 3 -ss 1 -rn 0 -po 0 -rsn true $loftCurves;
+		string $loftMesh[] = `ls -sl`;
+		
+		parent $loftMesh ($namer + "_Loft_Mesh");
+		
+		select $loftMesh;
+		
+		if($createShader == 1){sets -e -forceElement ("mat_" + $namer + "SG");}
+		
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".tx");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".ty");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".tz");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".rx");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".ry");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".rz");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".sx");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".sy");
+		setAttr -lock true -keyable false -channelBox false ($loftMesh[0] + ".sz");
+		
+	}
+	else
+	{
+		setAttr ($namer + "_Loft_Curves.v") 1;
+	}
+	
+	//Key Vis on Mesh output
+	setKeyframe -v 0 -t ($startFrame - 1) ($namer + "_Loft_Mesh.v");
+	setKeyframe -v 1 -t $startFrame ($namer + "_Loft_Mesh.v");
+	
+	setKeyframe -v 1 -t $endFrame ($namer + "_Loft_Mesh.v");
+	setKeyframe -v 0 -t ($endFrame + 1) ($namer + "_Loft_Mesh.v");
+	
+	int $midF = ((($endFrame - $startFrame) * .5) + $startFrame);
+	
+	currentTime $midF;
+	
+	print "\nSUCCESS: Sword Trail Created";
+
+
+
+}//end of global proc kfMUListCommand
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////
+global proc kfSTCreateObjPath()
+{
+
+	global string $kfSTDefNum[];
+	select $kfSTDefNum;
+	string $targets[] = `ls -sl`;
+	
+	string $namer = `textField -q -tx tfSTNaming`;
+	int $startFrame = `intField -q -v intSTStart`;
+	int $endFrame = `intField -q -v intSTEnd`;
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Work - Single Stroke
+
+//for each target, create Nulls
+int $counter;
+int $sizer = `size($targets)`;
+
+for ($counter = 0; $counter < $sizer; $counter++)
+{
+
+	curve -d 3 -p 0 0 0 -p 0 0 1 -p 0 0 2 -p 0 0 3 -p 0 0 4  -k 0 -k 0 -k 0 -k 1 -k 2 -k 2 -k 2 ;
+	rename ("rig_" + $namer + "_curve_" + $counter);
+	rebuildCurve -ch 1 -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kep 1 -kt 0 -s ($endFrame - $startFrame - 2) -d 3 -tol 0.01 ("rig_" + $namer + "_curve_" + $counter);
+
+	//////////////////
+	//Go Through Frames
+	int $counterF;
+	int $sizerF = ($endFrame - $startFrame);
+	
+	for ($counterF = 0; $counterF <= $sizerF; $counterF++)
+	{
+	    //Go through timeline and create placment nulls
+	    currentTime ($startFrame + $counterF);
+
+	float $pos[] = `xform -q -ws -rp $targets[$counter]`;
+	move -ws $pos[0] $pos[1] $pos[2] ("rig_" + $namer + "_curve_" + $counter + ".cv[" + $counterF + "]");
+	}//end of loop through frames
+	
+}//end of loop through all targets for creating nulls
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////
+//Instructions
+
+
+
+global proc kfSS_Instruct()
+{
+
+if (`window -q -ex kfSS_InstructWin`)
+        {
+        showWindow kfSS_InstructWin ;
+        return ;
+        }
+
+
+window -w 850 -h 500 -t "Sword Swipe Instructions" kfSS_InstructWin ;
+formLayout mainSaveForm ;
+
+//UI pieces
+scrollField -w 100 -h 100 -wordWrap true -tx 
+
+(
+"Sword Swipe - by Kiel Figgins - KielFiggins22@gmail.com - 3dFiggins.com"
++ "\n\n" + 
+"For a full breakdown with examples and images, visit 3dFiggins.com/Store/Support/SwordSwipe"
++ "\n\n" + 
+"Website contains steps for Flame Trails, Tron Trails, troubleshooting and more!"
+)
+
+-ed 0 scrollSS_Instruct;
+
+//UI FormLayout
+formLayout -e
+    
+        -af scrollSS_Instruct "top" 5 
+        -af scrollSS_Instruct "bottom" 5
+        -af scrollSS_Instruct "left" 5 
+        -af scrollSS_Instruct "right" 5
+
+        mainSaveForm ;
+
+    showWindow kfSS_InstructWin ;
+    
+    //Resize the main window
+    window -e -widthHeight 650 150 kfSS_InstructWin;
+}//end of proc 
+
+
+
+
+

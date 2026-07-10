@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<CgReticle displaySafeAction="1" displaySafeTitle="1" enableOrtho="0" focalLengthFloating="1" framePadding="4" panScanDisplayMode="0">
+	<AspectRatio aspectDisplaySafeAction="False" aspectDisplaySafeTitle="False" aspectLineColor="[0.80000001192092896, 0.80000001192092896, 0.80000001192092896]" aspectLineColorB="0.800000011921" aspectLineColorG="0.800000011921" aspectLineColorR="0.800000011921" aspectLineTrans="0.0" aspectMaskColor="[0.0, 0.0, 0.0]" aspectMaskColorB="0.0" aspectMaskColorG="0.0" aspectMaskColorR="0.0" aspectMaskTrans="0.75" aspectRatio="1.77777779102" displayMode="2" id="0"/>
+	<Label textARLevel="0" textAlign="1" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[0.0, 5.0]" textPosRel="1" textPosX="0.0" textPosY="5.0" textStr="" textTrans="0.0" textType="16"/>
+	<Label textARLevel="0" textAlign="2" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[-5.0, 5.0]" textPosRel="2" textPosX="-5.0" textPosY="5.0" textStr="" textTrans="0.0" textType="3"/>
+	<Label textARLevel="0" textAlign="0" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[5.0, -20.0]" textPosRel="6" textPosX="5.0" textPosY="-20.0" textStr="" textTrans="0.0" textType="1"/>
+	<Label textARLevel="0" textAlign="0" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[5.0, 5.0]" textPosRel="0" textPosX="5.0" textPosY="5.0" textStr="" textTrans="0.0" textType="13"/>
+	<Label textARLevel="0" textAlign="2" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[-5.0, -20.0]" textPosRel="8" textPosX="-5.0" textPosY="-20.0" textStr="" textTrans="0.0" textType="12"/>
+	<Label textARLevel="0" textAlign="2" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[-100.0, -20.0]" textPosRel="8" textPosX="-100.0" textPosY="-20.0" textStr="" textTrans="0.0" textType="32"/>
+	<Label textARLevel="0" textAlign="1" textColor="[1.0, 1.0, 0.0]" textColorB="0.0" textColorG="1.0" textColorR="1.0" textLevel="2" textPos="[0.0, -20.0]" textPosRel="7" textPosX="0.0" textPosY="-20.0" textStr="" textTrans="0.0" textType="23"/>
+</CgReticle>

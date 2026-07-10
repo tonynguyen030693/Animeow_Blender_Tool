@@ -1,0 +1,283 @@
+// ----------------------------
+// WRITTEN BY STIJN VANDE MAELE
+// ----------------------------
+// Props to Alex Florica for helping out with the UI scaling.
+// ----------------------------------------------------------
+
+
+
+if (`objExists svm_tweenMachine_UI`) delete svm_tweenMachine_UI;
+global proc svm_tweenMachine_UI()
+{
+    global int $svm_tweenMachine_sliderState;
+	
+    //if (`windowPref -exists WIN_svm_tweenMachine` == true) windowPref -r WIN_svm_tweenMachine;
+    if (`window -q -ex WIN_svm_tweenMachine` == true) deleteUI -window WIN_svm_tweenMachine;
+	window	-t "svm_tweenMachine"
+    		-wh 242 84
+    		-rtf false
+            -maximizeButton false
+            -menuBar true
+            -menuBarVisible true
+    		-s true
+    		-bgc 0.25 0.25 0.25
+    		WIN_svm_tweenMachine;
+        
+        menu    -l "Options"
+                -tearOff true
+                -parent WIN_svm_tweenMachine
+            	MENU_svm_tweenMachine_options;
+
+            menuItem    -l "Reset slider"
+                        -c ("floatSlider -e -v 0.500 SLIDER_svm_tweenMachine; svm_tweenMachine_printVal(0.500);")
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_resetSlider;
+
+            menuItem    -l "Special tick color"
+                        -checkBox false
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_tickColor;
+
+            menuItem    -d true
+                        -dl "Operate on:"
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_divOperateOn;
+
+            menuItem    -l "Keys in graphEditor"
+                        -checkBox true
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_operateKeys;
+
+            menuItem    -l "Channels in channelBox"
+                        -checkBox true
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_operateChannels;
+
+            menuItem    -d true
+                        -dl "Tween calculation:"
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_divCalc;
+                
+	                radioMenuItemCollection RADIO_COLLECTION_svm_tweenMachine_calc;
+
+	                    menuItem    -l "Neutral"
+	                                -radioButton true
+	                                -collection RADIO_COLLECTION_svm_tweenMachine_calc
+	                                -parent MENU_svm_tweenMachine_options
+	                            	MENUITEM_svm_tweenMachine_calcNeutral;
+
+	                    menuItem    -l "Incremental"
+	                                -radioButton false
+	                                -collection RADIO_COLLECTION_svm_tweenMachine_calc
+	                                -parent MENU_svm_tweenMachine_options
+	                            	MENUITEM_svm_tweenMachine_calcIncremental;
+
+            menuItem    -d true
+                        -dl "Slider:"
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_divSlider;
+
+            menuItem    -l "Tween on drag"
+                        -checkBox false
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_dragSlider;
+
+            menuItem    -l "Reset to center"
+                        -checkBox true
+                        -parent MENU_svm_tweenMachine_options
+                    	MENUITEM_svm_tweenMachine_resetToCenter;
+
+        menu    -l "Help"
+                //-helpMenu true
+                -parent WIN_svm_tweenMachine
+            	MENU_svm_tweenMachine_help;
+
+            menuItem    -l "Help on svm_tweenMachine"
+                        -c ("svm_tweenMachine_helpWindow();")
+                        -parent MENU_svm_tweenMachine_help
+                    MENUITEM_svm_tweenMachine_showHelp;
+
+            menuItem    -d true
+                        -dl "by Stijn Vande Maele"
+                        -italicized true
+                        -parent MENU_svm_tweenMachine_help
+                    MENUITEM_svm_tweenMachine_dividerSVM;
+
+        menu    -l "50%"
+                -en true
+                -pmc ("string $val = `menu -q -l MENU_svm_tweenMachine_sliderValue`; print $val;")
+                -parent WIN_svm_tweenMachine
+            	MENU_svm_tweenMachine_sliderValue;
+
+        columnLayout    -adj true 
+                        -parent WIN_svm_tweenMachine
+	                    COL_svm_tweenMachine_mainCol;
+	                    separator -h 1 -style "in" -parent COL_svm_tweenMachine_mainCol;
+
+        formLayout 	-numberOfDivisions 96 -h 26 -parent WIN_svm_tweenMachine FORM_svm_tweenMachine_01;
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.9 0.5 0.4 -c("svm_tweenMachine_buttonCommand(-0.500);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_01; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.5 0.4 -c("svm_tweenMachine_buttonCommand(-0.375);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_02; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.6 0.4 -c("svm_tweenMachine_buttonCommand(-0.250);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_03; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.7 0.3 -c("svm_tweenMachine_buttonCommand(-0.125);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_04; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.8 0.2 -c("svm_tweenMachine_buttonCommand(-0.000);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_05; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.7 0.8 0.3 -c("svm_tweenMachine_buttonCommand(0.125);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_06; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.6 0.8 0.4 -c("svm_tweenMachine_buttonCommand(0.250);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_07; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.5 0.8 0.5 -c("svm_tweenMachine_buttonCommand(0.375);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_08; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.5 0.9 0.5 -c("svm_tweenMachine_buttonCommand(0.500);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_09; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.5 0.8 0.5 -c("svm_tweenMachine_buttonCommand(0.625);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_10; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.6 0.8 0.4 -c("svm_tweenMachine_buttonCommand(0.750);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_11; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.6 0.8 0.4 -c("svm_tweenMachine_buttonCommand(0.875);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_12; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.8 0.2 -c("svm_tweenMachine_buttonCommand(1.000);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_13; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.7 0.3 -c("svm_tweenMachine_buttonCommand(1.125);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_14; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.6 0.4 -c("svm_tweenMachine_buttonCommand(1.250);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_15; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.8 0.5 0.4 -c("svm_tweenMachine_buttonCommand(1.375);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_16; 
+                    button -l "" -ann "" -w 5 -h 10 -bgc 0.9 0.5 0.4 -c("svm_tweenMachine_buttonCommand(1.500);") -parent FORM_svm_tweenMachine_01 BTN_svm_tweenMachine_17;
+
+                    int $t = 43;
+                    int $b = 53;
+
+                    formLayout  -e 
+                                
+                                -attachPosition 	BTN_svm_tweenMachine_01 "top"     0 22 		-attachPosition BTN_svm_tweenMachine_01 "left"    0  0	// 3      
+                                -attachPosition 	BTN_svm_tweenMachine_01 "bottom" -1 76		-attachPosition BTN_svm_tweenMachine_01 "right"  -4  2
+  
+                                -attachPosition 	BTN_svm_tweenMachine_02 "top"    -3 $t		-attachPosition BTN_svm_tweenMachine_02 "left"    5  4
+                                -attachPosition 	BTN_svm_tweenMachine_02 "bottom"  3 $b		-attachPosition BTN_svm_tweenMachine_02 "right"  -5  8
+   
+                                -attachPosition 	BTN_svm_tweenMachine_03 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_03 "left"    4  10
+                                -attachPosition 	BTN_svm_tweenMachine_03 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_03 "right"  -4  14
+   
+                                -attachPosition 	BTN_svm_tweenMachine_04 "top"    -3 $t      -attachPosition BTN_svm_tweenMachine_04 "left"    4  16
+                                -attachPosition 	BTN_svm_tweenMachine_04 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_04 "right"  -4  20
+   
+                                -attachPosition 	BTN_svm_tweenMachine_05 "top"     0 1 		-attachPosition BTN_svm_tweenMachine_05 "left"    3  22	// 2
+                                -attachPosition 	BTN_svm_tweenMachine_05 "bottom"  0 96	 	-attachPosition BTN_svm_tweenMachine_05 "right"  -3  26
+   
+                                -attachPosition 	BTN_svm_tweenMachine_06 "top"    -3 $t	 	-attachPosition BTN_svm_tweenMachine_06 "left"    3  28
+                                -attachPosition 	BTN_svm_tweenMachine_06 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_06 "right"  -3  32
+   
+                                -attachPosition 	BTN_svm_tweenMachine_07 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_07 "left"    2  34
+                                -attachPosition 	BTN_svm_tweenMachine_07 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_07 "right"  -2  38
+   
+                                -attachPosition 	BTN_svm_tweenMachine_08 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_08 "left"    2  40
+                                -attachPosition 	BTN_svm_tweenMachine_08 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_08 "right"  -2  44
+   
+                                -attachPosition 	BTN_svm_tweenMachine_09 "top"     0 14 		-attachPosition BTN_svm_tweenMachine_09 "left"    1  46	// 1
+                                -attachPosition 	BTN_svm_tweenMachine_09 "bottom" -1 83	 	-attachPosition BTN_svm_tweenMachine_09 "right"   0  50
+   
+                                -attachPosition 	BTN_svm_tweenMachine_10 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_10 "left"    0  52
+                                -attachPosition 	BTN_svm_tweenMachine_10 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_10 "right"   0  56
+    
+                                -attachPosition 	BTN_svm_tweenMachine_11 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_11 "left"    0  58
+                                -attachPosition 	BTN_svm_tweenMachine_11 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_11 "right"   0  62
+   
+                                -attachPosition 	BTN_svm_tweenMachine_12 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_12 "left"   -1  64
+                                -attachPosition 	BTN_svm_tweenMachine_12 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_12 "right"   1  68
+   
+                                -attachPosition 	BTN_svm_tweenMachine_13 "top"     0 1 		-attachPosition BTN_svm_tweenMachine_13 "left"   -1  70	// 2
+                                -attachPosition 	BTN_svm_tweenMachine_13 "bottom"  0 96	 	-attachPosition BTN_svm_tweenMachine_13 "right"   1  74
+   
+                                -attachPosition 	BTN_svm_tweenMachine_14 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_14 "left"   -2  76
+                                -attachPosition 	BTN_svm_tweenMachine_14 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_14 "right"   2  80
+   
+                                -attachPosition 	BTN_svm_tweenMachine_15 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_15 "left"   -2  82
+                                -attachPosition 	BTN_svm_tweenMachine_15 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_15 "right"   2  86
+   
+                                -attachPosition 	BTN_svm_tweenMachine_16 "top"    -3 $t 		-attachPosition BTN_svm_tweenMachine_16 "left"   -3  88
+                                -attachPosition 	BTN_svm_tweenMachine_16 "bottom"  3 $b	 	-attachPosition BTN_svm_tweenMachine_16 "right"   3  92
+   
+                                -attachPosition 	BTN_svm_tweenMachine_17 "top"     0 22 		-attachPosition BTN_svm_tweenMachine_17 "left"   -4  94	// 3  
+                                -attachPosition 	BTN_svm_tweenMachine_17 "bottom" -1 76	 	-attachPosition BTN_svm_tweenMachine_17 "right"   0  96
+ 
+                                
+                                /*-attachNone  	SEP_svm_tweenMachine_01 "top" 									-attachPosition SEP_svm_tweenMachine_01 "left"   0 0 
+                                -attachControl  SEP_svm_tweenMachine_01 "bottom" 0  SLIDER_svm_tweenMachine		-attachPosition SEP_svm_tweenMachine_01 "right"  0 96
+
+                                -attachNone		SLIDER_svm_tweenMachine "top"									-attachPosition SLIDER_svm_tweenMachine "left"   0 0
+                                -attachForm 	SLIDER_svm_tweenMachine "bottom"  5								-attachPosition SLIDER_svm_tweenMachine "right"  0 96*/
+                                
+
+                                FORM_svm_tweenMachine_01;
+
+        columnLayout    -adj true 
+                        -parent WIN_svm_tweenMachine
+	                    COL_svm_tweenMachine_01;
+	                    
+	                    separator -h 1 -style "in" -parent COL_svm_tweenMachine_01 SEP_svm_tweenMachine_01;
+	                    
+	                    separator -h 3 -style "none" -parent COL_svm_tweenMachine_01;
+						
+						floatSlider     -min -0.500 -max 1.500 -value 0.500 -step 0.001 
+	                                    -dragCommand ("svm_tweenMachine_slider_dragCommand();") 
+	                                    -changeCommand ("svm_tweenMachine_slider_changeCommand();") 
+	                                    -parent COL_svm_tweenMachine_01 SLIDER_svm_tweenMachine;
+	                    
+	                    separator -h 1 -style "none" -parent COL_svm_tweenMachine_01;
+
+	showWindow WIN_svm_tweenMachine;
+    print ("\n[CREATED].......svm_tweenMachine_UI");
+}
+
+if (`objExists svm_tweenMachine_printVal`) delete svm_tweenMachine_printVal;
+global proc svm_tweenMachine_printVal(float $tweenValue)
+{
+	int $val = $tweenValue*100;
+	menu -e -l ($val + "%") MENU_svm_tweenMachine_sliderValue;
+}
+
+if (`objExists svm_tweenMachine_buttonCommand`) delete svm_tweenMachine_buttonCommand;
+global proc svm_tweenMachine_buttonCommand(float $tweenValue)
+{
+    undoInfo -openChunk; 
+    catch(svm_tweenMachine_calc($tweenValue));
+    floatSlider -e -v $tweenValue SLIDER_svm_tweenMachine; 
+    svm_tweenMachine_printVal($tweenValue); 
+    global string $gMainPane; setFocus $gMainPane;
+    undoInfo -closeChunk;
+}
+
+if (`objExists svm_tweenMachine_slider_dragCommand`) delete svm_tweenMachine_slider_dragCommand;
+global proc svm_tweenMachine_slider_dragCommand()
+{
+    if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_dragSlider` == true) 
+    { 
+        float $tweenValue = `floatSlider -q -v SLIDER_svm_tweenMachine`; 
+        global int $svm_tweenMachine_sliderState; 
+        if ($svm_tweenMachine_sliderState == 0) 
+        { 
+            $svm_tweenMachine_sliderState = 1; 
+            undoInfo -openChunk;
+        } 
+        catch(svm_tweenMachine_calc($tweenValue));
+        svm_tweenMachine_printVal($tweenValue);
+    }
+}
+
+if (`objExists svm_tweenMachine_slider_changeCommand`) delete svm_tweenMachine_slider_changeCommand;
+global proc svm_tweenMachine_slider_changeCommand()
+{
+    global int $svm_tweenMachine_sliderState; 
+    if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_dragSlider` == true) 
+    { 
+        if ($svm_tweenMachine_sliderState == 1) 
+        { 
+            undoInfo -closeChunk; 
+            $svm_tweenMachine_sliderState = 0;
+            global string $gMainPane; setFocus $gMainPane;
+        } 
+    } 
+    else if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_dragSlider` == false) 
+    { 
+        undoInfo -openChunk;
+        float $tweenValue = `floatSlider -q -v SLIDER_svm_tweenMachine`; 
+        catch(svm_tweenMachine_calc($tweenValue));
+        global string $gMainPane; setFocus $gMainPane;
+        undoInfo -closeChunk;
+    } 
+    
+    if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_resetToCenter` == true) 
+    { 
+        floatSlider -e -v 0.500 SLIDER_svm_tweenMachine; 
+        svm_tweenMachine_printVal(0.500);
+    } 
+}

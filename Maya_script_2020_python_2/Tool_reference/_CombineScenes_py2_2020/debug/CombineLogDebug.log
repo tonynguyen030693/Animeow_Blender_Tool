@@ -1,0 +1,31 @@
+INFO:2026-05-05 15:54:38,680:----Proceed All Batch Mode ---
+INFO:2026-05-05 15:54:38,680:Current Maya Version : maya2020
+INFO:2026-05-05 15:54:38,681:Current Maya batch Path : C:/Program Files/Autodesk/maya2020/bin/mayapy.exe
+INFO:2026-05-05 15:55:02,290:-------------Start Import Anim---------------
+INFO:2026-05-05 15:55:02,293:------------------------------
+Current Import File : C:/Users/Admin/Desktop/Uyen/Target/CTS_V1_Shot _32-36_Anim_v02.ma
+ERROR:2026-05-05 15:56:29,946:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_L.iris
+ERROR:2026-05-05 15:56:29,950:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_L.blink
+ERROR:2026-05-05 15:56:29,951:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_L.pupil
+ERROR:2026-05-05 15:56:29,957:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_R.iris
+ERROR:2026-05-05 15:56:29,960:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_R.blink
+ERROR:2026-05-05 15:56:29,963:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:ctrlEye_R.pupil
+ERROR:2026-05-05 15:56:30,153:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:upperLid_R.blinkCenter
+ERROR:2026-05-05 15:56:30,168:Paste value error as: Nothing to paste to
+paste operation failed
+, At attribute : Baby_Lua_rig:upperLid_L.blinkCenter
+INFO:2026-05-05 15:56:31,880:-------------Finish Anim---------------

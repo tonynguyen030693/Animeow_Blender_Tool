@@ -1,0 +1,125 @@
+
+
+Synopsis: file [flags] String 
+Flags:
+   -e -edit
+   -q -query
+   -a -activate                        
+ -add -                                
+ -amf -anyModified                     
+  -an -absoluteName                    
+  -ap -activeProxy                     
+  -at -applyTo                          String
+ -bls -buildLoadSettings               
+   -c -command                          String String
+  -ch -constructionHistory              on|off
+ -chn -channels                         on|off
+ -cmp -compress                        
+ -cnl -copyNumberList                  
+ -con -constraints                      on|off
+  -cr -cleanReference                   String
+  -de -defaultExtensions                on|off
+ -dns -defaultNamespace                
+  -dr -deferReference                   on|off
+  -ea -exportAll                       
+ -ean -exportAnim                      
+ -ear -exportAnimFromReference         
+ -eas -exportSelectedAnim              
+  -ec -editCommand                      String
+  -er -exportAsReference               
+ -err -errorStatus                     
+  -es -exportSelected                  
+ -esa -exportSelectedAnimFromReference 
+ -esc -exportSnapshotCallback           Script String
+ -esn -executeScriptNodes               on|off
+ -esr -exportSelectedNoReference       
+ -ess -exportSelectedStrict            
+ -eur -exportUnloadedReferences        
+  -ex -exists                          
+ -exn -expandName                      
+ -exp -expressions                      on|off
+ -exs -exportAsSegment                 
+   -f -force                           
+ -fmd -fileMetaData                    
+  -fr -flushReference                   String
+  -gl -groupLocator                    
+  -gn -groupName                        String
+  -gr -groupReference                  
+   -i -import                          
+ -ifr -importFrameRate                  on|off
+  -ir -importReference                 
+ -itr -importTimeRange                  String
+  -iv -ignoreVersion                   
+   -l -list                            
+ -lad -loadAllDeferred                  on|off
+ -lar -loadAllReferences               
+ -lck -lockReference                   
+ -lcu -lockContainerUnpublished         on|off
+  -lf -lockFile                         on|off
+ -lfo -lastFileOption                  
+ -lnr -loadNoReferences                
+ -loc -location                        
+  -lr -loadReference                    String
+ -lrd -loadReferenceDepth               String
+ -lrp -loadReferencePreview             String
+  -ls -loadSettings                     String
+ -ltf -lastTempFile                    
+  -mf -modified                         on|off
+ -mnc -mergeNamespacesOnClash           on|off
+ -mnp -mergeNamespaceWithParent        
+ -mnr -mergeNamespaceWithRoot          
+ -mns -mapPlaceHolderNamespace          String String (multi-use)
+  -ms -moveSelected                    
+ -new -newFile                         
+  -ns -namespace                        String
+   -o -open                            
+  -op -options                          String
+  -pm -proxyManager                     String
+ -pmt -prompt                           on|off
+  -pn -preserveName                    
+ -pns -parentNamespace                 
+ -pos -postSaveScript                   String
+  -pr -preserveReferences              
+ -prs -preSaveScript                    String
+  -pt -proxyTag                         String
+  -pu -preserveUndo                     on|off
+  -pv -preview                         
+   -r -reference                       
+  -ra -renameAll                        on|off
+ -rdi -referenceDepthInfo               UnsignedInt
+ -rdn -removeDuplicateNetworks         
+ -rep -replaceName                      String String (multi-use)
+ -rer -resetError                      
+ -rfn -referenceNode                    String (Query Arg Optional)
+  -rn -rename                           String
+ -rnn -returnNewNodes                  
+ -rns -relativeNamespace                String
+ -rpl -renamingPrefixList              
+ -rpr -renamingPrefix                   String
+  -rr -removeReference                 
+ -rts -renameToSave                     on|off
+ -rvn -reserveNamespaces               
+   -s -save                            
+  -sa -selectAll                       
+ -sdc -saveDiskCache                    String
+ -seg -segment                          String
+  -sh -shader                           on|off
+ -shd -sharedNodes                      String (multi-use)
+ -shn -shortName                       
+  -sn -sceneName                       
+ -sns -swapNamespace                    String String (multi-use)
+  -sr -saveReference                   
+ -srf -sharedReferenceFile             
+ -sru -saveReferencesUnloaded          
+ -str -strict                           on|off
+ -stx -saveTextures                     String
+ -typ -type                             String
+  -uc -uiConfiguration                  on|off
+  -un -unresolvedName                  
+ -uns -usingNamespaces                 
+  -ur -unloadReference                  String
+   -w -writable                        
+ -wcn -withoutCopyNumber               
+
+
+Command Type: Command

@@ -1,0 +1,89 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: \\pantheon\MEL\cgcg\scripts\common\CgPlayBlaster/scripts/CGCG_Jobs.mel $
+//    $Revision: 8c78dded78c5 $
+//    $Author: indigo $
+//    $Date: 2014/02/11 10:55:03 $
+//
+///////////////////////////////////////////////////////////////////////////////
+// 	---------------------------------------------------------------------------
+//	Description:
+// 		Project depend pre/post script for playblast
+//
+// 	Program: 
+//		CGCG_Jobs.mel
+//
+// 	Comment: 
+//		Playblast Pre/post script for project
+//
+///////////////////////////////////////////////////////////////////////////////
+
+proc string getSourceDir(string $procName)
+{
+	string $buffer[] = stringToStringArray(`whatIs $procName`, " ");
+	return dirname($buffer[4]);
+}
+
+global proc int playblastInitProjectJobs()
+{
+    string $cProject = `getenv "CG_PROJECT"`;
+    if(`size $cProject`)
+	{
+		string $pyRoot = (`getSourceDir "CgPlayblast"`+"/python");
+		//print($pyRoot + "\n");
+		python("import sys");
+		python("import os");
+		python("fDir = r'"+$pyRoot+"'");
+		python("if fDir not in sys.path:sys.path.append(fDir)");
+		string $pyModule = ($pyRoot + "/projects/_" +$cProject + ".py");
+		print ("--> Init job script :: "+$pyModule+"\n");
+		if(`filetest -f $pyModule`)
+		{
+			python("import projects._"+$cProject+" as "+$cProject);
+			python("reload("+$cProject+")");
+			return 1;
+		}
+	}
+	return 0;
+}
+
+global proc playblastPreProjectJobs()
+{
+	
+	string $cProject = `getenv "CG_PROJECT"`;
+	if(`size $cProject`)
+	{
+		if(`playblastInitProjectJobs`)
+		{
+			python("p = "+$cProject+"."+$cProject+"()");
+			python("p.pre_command()");
+		}
+	}else{
+	    return;
+	}
+}
+
+global proc playblastPostProjectJobs()
+{
+	string $cProject = `getenv "CG_PROJECT"`;
+	if(`size $cProject`)
+	{
+		if(`playblastInitProjectJobs`)
+		{
+			python("p = "+$cProject+"."+$cProject+"()");
+			python("p.post_command()");
+		}
+	}else{
+		return;
+	}
+}
+

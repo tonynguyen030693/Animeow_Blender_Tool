@@ -1,0 +1,214 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: CGCG_Reticle.mel $
+//    $Revision: 0ce5627ec9f1 $
+//    $Author: indigo $
+//    $Date: 2017/01/19 07:34:32 $
+//
+///////////////////////////////////////////////////////////////////////////////
+
+proc string GetSourcePath(string $ProcName)
+{
+	if(`gmatch $ProcName "*.mel"`) $ProcName = `substitute ".mel" $ProcName ""`;
+	
+	string $Result;
+	string $WhereIsIt = whatIs($ProcName);
+	if($WhereIsIt == "Unknown")
+	{
+		error ("Path Error:"+$ProcName);
+	}
+	else
+	{
+		$Result = `substitute "Mel procedure found in: " $WhereIsIt ""`; 
+		$Result = dirname($Result);
+		if(!endsWith($Result, "/")) $Result += "/";
+	}
+	
+	return $Result;
+}
+
+proc string getModifyTime(string $filepath)
+{
+	python("import os");
+	string $result = python("os.path.getmtime(\""+$filepath+"\")");
+	return $result;
+}
+proc string getMayaVersion()
+{
+	return basename(dirname(`internalVar -userScriptDir`), "");
+}
+
+global proc int CGCG_Reticle_Check_Plugin()
+{
+	
+	//Install plugin for HUD
+	int $inst_res = 0;
+	string $mayaVer = `getMayaVersion`;
+	
+	string $pluginSrc = (GetSourcePath("CgPlayblast")+"plug-ins/x64/"+$mayaVer+"/CgSlate.mll");
+	string $userScriptDir = `internalVar -userScriptDir`;
+	string $dstDir = `substitute "/scripts/" $userScriptDir "/plug-ins/"`;
+	string $pluginDst = ($dstDir+"CgSlate.mll");
+	
+	if(!`filetest -d $dstDir`)
+		sysFile -makeDir $dstDir;
+	
+	if(`filetest -f $pluginSrc`)
+	{
+		int $src_time = `getModifyTime $pluginSrc`;
+		
+		int $needUpdate = 0;
+		
+		if(`filetest -f $pluginDst`)
+		{
+			int $dst_time = `getModifyTime $pluginDst`;
+			if($src_time-$dst_time > 0)
+			{
+				$needUpdate = 1;
+			}
+			
+		}else
+		{
+			$needUpdate = 1;
+		}
+		
+		if($needUpdate)
+		{
+			int $unloadStatus = 0;
+			if(`objExists "Slate"`)
+			{
+				delete "Slate";
+			}
+			flushUndo();
+			//Try to unload current plugin
+			if(catch(`unloadPlugin "CgSlate.mll"`)){
+				print "--> Unload plugin skip...(CgSlate.mll)\n";
+				$unloadStatus = 1;
+			}
+			
+			if($unloadStatus == 0)
+			{
+				if(!`sysFile -copy $pluginDst $pluginSrc`){
+				
+					print "--> Plugin update skip... Plugin may load by other maya or restart maya.\n";
+					
+				}else{
+					print "--> Update Plugin... (CgSlate.mll)\n";
+					$inst_res = 1;
+				}
+			}
+		}else
+		{
+			$inst_res = 1;
+		}
+	}
+	return $inst_res;
+}
+
+global proc CGCG_Reticle_Show(int $show, string $project)
+{
+	int $isInstalledPlugin = 0;
+	if($show == 1)
+	{
+		$isInstalledPlugin = CGCG_Reticle_Check_Plugin();
+	}
+
+	int $pluginLoaded = 0;
+	if(!`pluginInfo -q -l "CgSlate.mll"`)
+	{
+		if(catch(`loadPlugin "CgSlate.mll"`))
+		{
+			print "[CGCG_Playblast] :: Error load plugin for HUD.\n";
+		}else
+		{
+			$pluginLoaded = 1;
+		}
+	}else
+	{
+		$pluginLoaded = 1;
+	}
+	
+	if($pluginLoaded)
+	{
+		$scriptRoot = GetSourcePath("CgPlayblast")+"python";
+		//$scriptRoot = "//pantheon/MEL/cgcg/scripts";
+		python("import sys, os");
+		
+		//if(size($project))
+		//	python("os.environ['CG_PROJECT'] = r'"+$project+"'");
+			
+		python("scriptRoot = '"+$scriptRoot+"'");
+		python("if scriptRoot not in sys.path:sys.path.append(scriptRoot)");
+		python("import Reticle");
+		python("reload(Reticle)");
+		python("ret = Reticle.Reticle()");
+		if($show)
+		{
+			python("ret.createReticle('"+$project+"')");
+			python("ret.setDefault()");
+			
+		}else
+		{
+			python("ret.removeReticle()");
+		}
+	}
+	
+}
+
+global proc CGCG_Reticle_Pass_Show(int $show, string $passStr)
+{
+	
+	string $slateNode = "SlateShape";
+	if(`objExists $slateNode`)
+	{
+		if(`nodeType $slateNode` == "CgSlate")
+		{
+			int $idxList[] = `getAttr -mi ($slateNode+".text")`;
+			for($idx in $idxList)
+			{
+				int $textType = `getAttr ($slateNode+".text["+$idx+"].textType")`;
+				
+				if($textType == 32)
+				{
+					if($show)
+					{
+						setAttr ($slateNode+".text["+$idx+"].textStr") -type"string" $passStr;
+						
+					}else
+					{
+						removeMultiInstance ($slateNode+".text["+$idx+"]");
+						//print ($slateNode+".text["+$idx+"].textStr\n");
+					}
+				}
+			}
+		}
+	}
+}
+
+global proc CGCG_Aspect_Ratio_Show(int $show)
+{
+	string $slateNode = "SlateShape";
+	if(`objExists $slateNode`)
+	{
+		if(`nodeType $slateNode` == "CgSlate")
+		{
+			int $indexList[] = `getAttr -mi ($slateNode+".aspectRatios")`;
+			for($index in $indexList)
+			{
+				if(!$show)
+				{
+					setAttr ("SlateShape.aspectRatios["+$index+"].displayMode") 0; 
+				}
+			}
+		}
+	}
+}

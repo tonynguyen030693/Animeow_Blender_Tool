@@ -1,0 +1,22 @@
+proc string getCurrentDir()
+{
+	$str_whatIs = `whatIs "CGAdddRibbonTool_NJR"`;
+	string $buffer[] = stringToStringArray($str_whatIs, " ");
+	string $melDir = dirname($buffer[`size $buffer`-1]);
+	return $melDir;
+}
+
+
+global proc CGAdddRibbonTool_NJR()
+{
+	$currentDir = getCurrentDir();
+	python("import sys,os,importlib");
+	python("pyDir = os.path.normpath('"+$currentDir+"' + '/..')");
+    //python("sys.dont_write_bytecode = True");
+	python("if pyDir not in sys.path: sys.path.append(pyDir)");
+	python("print(pyDir)");
+	python("import CGAdddRibbonTool_NJR");
+    python("importlib.reload(CGAdddRibbonTool_NJR)");
+   	python("CGAdddRibbonTool_NJR.CGAdddRibbonTool_NJR()");
+
+}

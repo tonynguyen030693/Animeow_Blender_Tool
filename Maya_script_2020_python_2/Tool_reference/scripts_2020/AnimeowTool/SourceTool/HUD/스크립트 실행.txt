@@ -1,0 +1,5 @@
+import sys
+scr_path = r'P:/BF2023/07_script/Animation/HUD'
+sys.path.append(scr_path)
+import ANI_PreviewTool
+ANI_PreviewTool.run()

@@ -1,0 +1,119 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: \\pantheon\MEL\cgcg\scripts\common\CgPlayBlaster/scripts/CGCG_Window.mel $
+//    $Revision: 8c78dded78c5 $
+//    $Author: indigo $
+//    $Date: 2014/02/11 10:55:03 $
+//
+///////////////////////////////////////////////////////////////////////////////
+// 	---------------------------------------------------------------------------
+//	Description:
+// 		CGCG Window Show/Hide Script for Maya2011
+//
+// 	Program: 
+//		CGCG_Window.mel
+//
+// 	Comment: 
+//		Playblast Pre/post script for window hide/show
+//
+///////////////////////////////////////////////////////////////////////////////
+
+global int $channelBoxState;
+global int $attrEditorState;
+global string $winList[];
+global string $winXPosC[];
+
+proc moveAllWindows()
+{
+	global string $winList[];
+	global string $winXPosC[];
+	clear $winList;
+	clear $winXPosC;
+	//Move all window to left edge position 1200
+	$winList = `lsUI -windows`;
+	for($win in $winList)
+	{
+		if(catch(`window -q -le $win`))
+		{
+			print ("Warning :: UI "+$win+" was not found, remove it..\n");
+			deleteUI $win;
+		}
+	}
+	clear $winList;
+	$winList = `lsUI -windows`;
+	for ($i=0; $i<size($winList); $i++){
+		
+		int $winXPosTempA = `window -q -le $winList[$i]`;
+		string $winXPosTempB = $winXPosTempA;
+		string $winXPosTempC[] = stringToStringArray($winXPosTempB, "");
+		appendStringArray($winXPosC, $winXPosTempC, 1);
+	}
+		
+	for ($i=0; $i<size($winList); $i++){
+		////except Main Window
+		if (! ($winList[$i] == "MayaWindow")){
+			////except iconified window
+			if (! (`window -q -i $winList[$i]`)){
+				window -e -le 1200 $winList[$i];
+			}
+		}
+	}
+}
+proc restoreAllWindows()
+{
+	global string $winList[];
+	global string $winXPosC[];
+	for ($i=0; $i<size($winList); $i++){
+		///except Main Maya Window
+		if (! ($winList[$i] == "MayaWindow")){
+			///except iconified window
+			if (! (`window -q -i $winList[$i]`)){
+				///move to previous logged window position (x only)
+				window -e -le (int($winXPosC[$i])) $winList[$i];
+			}
+		}
+	}
+}
+proc hideAllEditors()
+{
+	global int $channelBoxState;
+	$channelBoxState = `isChannelBoxVisible`;
+	global int $attrEditorState;
+	$attrEditorState = `isAttributeEditorRaised`;
+	if(`isChannelBoxVisible`)
+		setChannelBoxVisible 0;
+		
+	if(`isAttributeEditorRaised`)
+		setAttributeEditorVisible 0;
+}
+
+proc restoreAllEditors()
+{
+	global int $channelBoxState;
+	global int $attrEditorState;
+	setChannelBoxVisible $channelBoxState;
+	setAttributeEditorVisible $attrEditorState;
+}
+
+global proc prePlayblast()
+{
+	moveAllWindows();
+	hideAllEditors();
+}
+global proc postPlayblast()
+{
+	restoreAllWindows();
+	restoreAllEditors();
+}
+//prePlayblast();
+//pause -seconds 3;
+//postPlayblast();

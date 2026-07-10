@@ -1,0 +1,2089 @@
+///////////////////////////////////////////////Run
+global proc waffle_GUI()
+{
+string $waffle_ToolsRoot = dirname(`pluginInfo -query -path "Croissants"`)+"/../scripts";
+if(`window -q -ex "waffle"`)deleteUI("waffle");
+window -le 1005 -mnb false -s false -t "Croffle" -mxb false -h 385 -vis true -w 406 -te 700 -rtf true -tlb true -tb true -mb true "waffle";
+formLayout -w 406 -h 406 "formLayout_waffle";
+rowLayout -w 300 -cal  1 "left" -cal  2 "left" -cal  3 "left" -cal  4 "left" -cal  5 "left" -en true -vis true -cw  1 25 -cw  4 25 -cw  3 25 -cw  2 219 -nc 4 -h 27 "rowLayout_Waffle_project";
+iconTextButton -i "bar_1.ico" -h 25 -st "iconOnly" -w 25 "waffle_winx";
+gridLayout -cw 215 -nc 1 -ch 25 -w 215 -h 25;
+optionMenu "waffle_PL";
+iconTextButton -p "rowLayout_Waffle_project" -i "Refresh_L.ico" -h 20 -st "iconOnly" -w 20 -al "center" "waffle_gPL";
+iconTextButton -p "rowLayout_Waffle_project" -i "bar_2.ico" -h 25 -w 25 -al "center" "waffle_winx_w";
+tabLayout -p "formLayout_waffle" -en true -h 375 -vis true -tv true -w 406 "tabLayout_Waffle_FileIO";
+columnLayout -w 406 -ann "All Files" -h 406;
+formLayout -w 406 -h 406 "formLayout_Waffle_ListFile";
+columnLayout -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 90 "columnLayout_Waffle_Op";
+formLayout -w 300 -h 90 "formLayout_Waffle_Op_sub";
+columnLayout -w 300 -cal "left" -rs 0 -cw 300 -adj true;
+formLayout "formLayout_Waffle_EP";
+columnLayout -w 250 -h 30 "columnLayout_Waffle_EP_sub";
+gridLayout -cw 250 -nc 1 -ch 27 -w 250 -h 27;
+optionMenu "waffle_EP";
+button -p "formLayout_Waffle_EP" -w 17 -en false -l "R" -h 27 "waffle_ReEP";
+iconTextButton -p "formLayout_Waffle_EP" -i "UP.ico" -h 15 -w 15 "waffle_scD_2";
+iconTextButton -p "formLayout_Waffle_EP" -i "DW.ico" -h 15 -w 15 "waffle_scU_2";
+columnLayout -p "formLayout_Waffle_Op_sub" -w 300 -h 32 "columnLayout_Waffle_CUT";
+formLayout -w 300 -h 35 "formLayout_Waffle_CUT";
+columnLayout -w 270 -h 30 "columnLayout_Waffle_CUT_sub";
+gridLayout -cw 270 -nc 1 -ch 27 -w 270 -h 27;
+optionMenu "waffle_CUT";
+iconTextButton -p "formLayout_Waffle_CUT" -i "UP.ico" -h 15 -w 15 "waffle_scD";
+iconTextButton -p "formLayout_Waffle_CUT" -i "DW.ico" -h 15 -w 15 "waffle_scU";
+columnLayout -p "formLayout_Waffle_ListFile" -w 300 -cal "left" -rs 0 -cw 295 -adj true -h 153 "columnLayout_Waffle_Ani";
+tabLayout -h 153 -tv true -w 295 "tabLayout_Waffle_Ani";
+columnLayout -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 153;
+scrollLayout -w 285 -cr true -mcw 1 -h 153;
+textScrollList -w 250 -ams true -h 125 "waffle_Ani_List";
+columnLayout -p "tabLayout_Waffle_Ani" -w 290 -cal "left" -rs 0 -vis true -cw 290 -adj true -h 153;
+scrollLayout -w 285 -vis true -cr true -mcw 1 -h 153;
+scrollField -tx "It is under development. wait for the next version" -ed true -h 125 -ww true -w 250 -bgc  0.0 0.0 0.0 "waffle_note_textEdit";
+columnLayout -p "tabLayout_Waffle_Ani" -w 290 -cal "left" -en true -rs 0 -vis true -cw 290 -adj true -h 153;
+scrollLayout -w 285 -vis true -cr true -mcw 1 -h 153;
+scrollField -tx "It is under development. wait for the next version" -ed true -h 125 -ww true -w 250 -bgc  0.0 0.0 0.0 "waffle_log_textEdit";
+columnLayout -p "tabLayout_Waffle_Ani" -cal "left" -rs 0 -w 300 -cw 295 -adj true -h 153;
+tabLayout -h 153 -tv true -w 295 "tabLayout_Waffle_BK";
+columnLayout -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 140;
+scrollLayout -w 285 -cr true -mcw 1 -h 140;
+textScrollList -w 250 -h 105 "waffle_Ani_List_2";
+columnLayout -p "tabLayout_Waffle_BK" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 140;
+scrollLayout -w 285 -cr true -mcw 1 -h 140;
+textScrollList -bgc  0.2 0.334004730297 0.500007629511 -w 250 -h 105 "waffle_Ani_List_3";
+columnLayout -p "tabLayout_Waffle_BK" -w 290 -cal "left" -rs 0 -cw 290 -adj true -h 140;
+scrollLayout -w 285 -cr true -mcw 1 -h 140;
+textScrollList -bgc  0.500007629511 0.2 0.334004730297 -w 250 -h 105 "waffle_Ani_List_4";
+columnLayout -p "formLayout_Waffle_ListFile" -w 300 -cal "left" -rs 0 -cw 300 -adj true -h 42 "columnLayout_Waffle_buttons_001";
+formLayout -w 300 -h 40 "formLayout_Waffle_buttones_01";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_ReRe";
+iconTextButton -en 1 -i "Collect.ico" -h 32 -ann "Publish All Ani File(only Use Supervisor)" -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_PUB_Super";
+iconTextButton -i "Print.ico" -h 32 -ann "Publish My File" -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_PUB";
+iconTextButton -i "Croissants_tokenizLoop_5.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_camRe";
+checkBox -h 32 -l "Date" "waffle_PBD";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_SAVE";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_SVAEPlus";
+separator -st "in" -w 300 -hr true -h 3 "separator_Waffle_button";
+columnLayout -p "formLayout_Waffle_ListFile" -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 100 "columnLayout_Waffle_prefix";
+formLayout -w 300 -h 100 "formLayout_Waffle_prefix";
+checkBox -h 16 -v true -l "EP" -w 35 "waffle_Episodic";
+intField -ed true -h 25 -v 101 -w 60 "waffle_A01_sf";
+button -w 40 -l "<       >" -ann "Set Duration" -h 25 "waffle_rangeAuto";
+intField -ed true -h 25 -v 130 -w 60 "waffle_A02_ef";
+button -bgc  0.0 0.0 0.0 -w 30 -l "=" -h 19 "waffle_rangeCopy";
+textField -tx "24-FPS" -ed true -h 25 -w 255 -bgc  0.0 0.0 0.0 "waffle_msg_2";
+iconTextButton -i "arrow_R.ico" -h 23 -w 40 "waffle_EXS";
+button -p "formLayout_Waffle_ListFile" -w 14 -l "" -h 14 "Waffle_checkNote_Btt";
+button -p "formLayout_Waffle_ListFile" -w 14 -l "" -h 14 "Waffle_checkLog_Btt";
+button -p "formLayout_Waffle_ListFile" -w 40 -l "LAY" -h 15 "waffle_B_2";
+button -p "formLayout_Waffle_ListFile" -w 40 -l "BLK" -h 15 "waffle_B_3";
+button -p "formLayout_Waffle_ListFile" -w 40 -l "DTL" -h 15 "waffle_B_4";
+columnLayout -p "formLayout_Waffle_ListFile" -cal "left" -rs 3 -w 100 -cw 100 -adj true -h 370 "columnLayout_Waffle_sideBar";
+frameLayout -en true -cl true -vis true -la "top" -cll true -w 105 -l "Array" -mw 1 -mh 1 -ec "waffle_FL_CLL_Func(0)" -ann "" waffle_FL_Array;
+formLayout -w 105 -h 200 "formLayout_Waffle_Side01";
+separator -st "in" -w 100 -hr true -h 3 "Waffle_separator__Side01";
+button -bgc  0.333202944991 0.53000686656 0.515098802167 -w 97 -l "AniFile Array" -h 18 "Waffle_Assets_Rule_BTT02";
+separator -st "in" -w 100 -hr true -h 3 "Waffle_separator__Side02";
+text -ww true -w 98 -al "center" -l "- List Filter -" -h 13 "Waffle_label_filter";
+textField -tx "*" -ed true -h 23 -w 98 "waffle_Filter";
+iconTextButton -i "Folder_root.ico" -h 24 -st "iconOnly" -w 24 -al "center" "waffle_Filter_EP";
+iconTextButton -i "Folder_sub.ico" -h 24 -w 24 "waffle_Filter_CUT";
+separator -w 100 -st "in" -hr true -h 3 "Waffle_separator__Side03";
+text -ww true -w 98 -l "- Make Folder -" -h 13 "Waffle_label_makeFolder";
+textField -ed true -h 23 -w 98 "waffle_MakeDir_FLD";
+iconTextButton -i "Folder_root.ico" -h 24 -ann "make Root" -w 24 "waffle_MakeDir_BTT_2";
+iconTextButton -i "Folder_sub.ico" -h 24 -ann "make Sub" -w 24 "waffle_MakeDir_BTT_1";
+separator -w 100 -st "in" -hr true -h 3 "Waffle_separator__Side04";
+button -bgc  0.333202944991 0.53000686656 0.515098802167 -w 98 -l "_ShotCam" -h 23 "waffle_Cam_ReName_Btt";
+frameLayout -p "columnLayout_Waffle_sideBar" -cl true -cll true -l "Tools" -lv true -ec "waffle_FL_CLL_Func(1)" waffle_FL_Tools;
+columnLayout -w 100 -cal "left" -rs 5 -cw 148 -adj true ;
+text -ww true -al "center" -l "+ Constrain +" "Waffle_Label_Constrain";
+button -w 100 -l ">>" -ann "select Parent Object and Click" -h 20 "waffle_PPTool_PIck";
+textField "waffle_PUtil_name";
+button -l "Run" -ann "select Child Object and Click(you can also select mutiple objects)" -h 23 "waffle_PPTool_Run";
+frameLayout -p "columnLayout_Waffle_sideBar" -cl true -l "VisCtrl" -cll true -lv true -ec "waffle_FL_CLL_Func(2)" waffle_FL_VisCtrl;
+columnLayout -rs 10 "columnLayout_visCtrl";
+separator -st "none";
+rowLayout -w 100 -cw  2 45 -cw  1 45 -nc 2 "rowLayout_visCtrl";
+columnLayout -w 45 -rs 10 -cw 45;
+button -w 45 -l "none" -h 20 "waffle_DP_none";
+button -w 45 -l "light" -h 20 "waffle_DP_lit";
+button -w 45 -l "camera" -h 20 "waffle_DP_cam";
+button -w 45 -l "joint" -h 20 "waffle_DP_joint";
+button -w 45 -l "TEX" -h 20 "waffle_TX";
+columnLayout -p "rowLayout_visCtrl" -w 45 -rs 10 -cw 45;
+button -w 45 -l "mesh" -h 20 "waffle_DP_mesh";
+button -w 45 -l "curve" -h 20 "waffle_DP_curve";
+button -w 45 -l "loc" -h 20 "waffle_DP_loc";
+button -w 45 -l "HIDE" -h 20 "waffle_DP_Hide";
+button -w 45 -l "SHD" -h 20 "waffle_SHD1";
+rowLayout -p "columnLayout_visCtrl" -nc 1;
+checkBox -l "Select Mode" "waffle_FilterMODE";
+separator -p "formLayout_Waffle_ListFile" -w 300 -st "in" -hr true -h 3 "separator_Waffle_button_Top";
+columnLayout -p "tabLayout_Waffle_FileIO" -w 406 -ann "Assets" -h 406;
+formLayout -w 406 -h 406 "formLayout_Assets_ListFile";
+columnLayout -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 130 "columnLayout_Waffle_Assets_Op";
+formLayout -w 300 -h 130 "formLayout_Waffle_Assets_Op_sub";
+columnLayout -w 300 -h 25;
+formLayout -w 300 -h 25 "formLayout_Waffle_Assets_Type";
+columnLayout -w 190 -cal "center" -rs 0 -cw 190 -adj true -h 25 "columnLayout_Waffle_Assets_Type_sub";
+gridLayout -cw 190 -nc 1 -ch 25 -w 190 -h 25;
+optionMenu "waffle_Assets";
+iconTextButton -p "formLayout_Waffle_Assets_Type" -i "Refresh_L.ico" -h 20 -w 20 "waffle_Asset_Get";
+checkBox -p "formLayout_Waffle_Assets_Type" -h 16 -v true -l "NS" -w 35 "waffle_ref_namerule";
+columnLayout -p "formLayout_Waffle_Assets_Op_sub" -w 300 -h 25 "columnLayout_Waffle_Assets_EP";
+formLayout -w 300 -h 25 "formLayout_Waffle_Assets_EP";
+columnLayout -cal "center" -rs 0 -w 270 -cw 270 -adj true -h 25 "columnLayout_Waffle_Assets_EP_sub";
+gridLayout -cw 270 -nc 1 -ch 25 -w 270 -h 25;
+optionMenu "waffle_Assets_2";
+columnLayout -p "formLayout_Waffle_Assets_Op_sub" -w 300 -h 25 "columnLayout_Waffle_Assets_Names";
+formLayout -w 300 -h 25 "formLayout_Waffle_Assets_Names";
+columnLayout -w 270 -cal "center" -rs 0 -cw 270 -adj true -h 25;
+gridLayout -cw 270 -nc 1 -ch 25 -w 270 -h 25;
+optionMenu "waffle_Assets_3";
+gridLayout -p "formLayout_Waffle_Assets_Names" -cw 13 -nc 1 -ch 13 -w 300 -h 25 "gridLayout_Waffle_AssUD";
+iconTextButton -en false -i "UP.ico" -h 12 -w 12 "waffle_AssUp";
+iconTextButton -en false -i "DW.ico" -h 12 -w 12 "waffle_AssDn";
+columnLayout -p "formLayout_Waffle_Assets_Op_sub" -w 300 -h 20 "columnLayout_Waffle_Assets_Filter";
+formLayout -w 300 -h 20 "formLayout_Assets_Filet";
+gridLayout -cw 240 -nc 1 -ch 20 -w 240 -h 20 "gridLayout__Assets_Filet";
+textField -tx "*" -ed true -h 20 -w 210 "waffle_Filter_Asset";
+button -p "formLayout_Assets_Filet" -vis true -w 20 -l "R" -h 20 "waffle_Filter_Assets_B";
+columnLayout -p "formLayout_Assets_ListFile" -w 300 -h 330 "columnLayout_Waffle_LDP";
+tabLayout -h 185 -tv true -w 300 "tabLayout_Waffle_LDP";
+columnLayout -w 300 -h 165;
+textScrollList -w 295 -ams false -h 160 "waffle_Assets_List_1";
+columnLayout -p "tabLayout_Waffle_LDP" -w 300 -h 165;
+tabLayout -h 165 -tv true -w 300 "tabLayout_Waffle_AssetsBackUp";
+columnLayout -w 300 -h 150;
+textScrollList -w 290 -ams true -h 150 "waffle_Assets_List_His";
+columnLayout -p "tabLayout_Waffle_AssetsBackUp" -w 300 -h 150;
+scrollField -tx "..." -ed true -h 150 -ww true -w 290;
+columnLayout -p "formLayout_Assets_ListFile" -cal "left" -rs 0 -w 300 -cw 300 -adj true -h 42 "columnLayout_Waffle_buttons_002";
+formLayout -w 300 -h 40 "formLayout_Waffle_buttones_02";
+iconTextButton -i "Refresh.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "waffle_Assets_Refresh";
+iconTextButton -i "arrow.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "waffle_Asset_Import";
+iconTextButton -i "Reference_Call.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_Asset_Call";
+iconTextButton -i "Trash.ico" -h 32 -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_Asset_XX";
+iconTextButton -i "save.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "waffle_Asset_Save";
+iconTextButton -i "plus.ico" -h 32 -w 32 -bgc  0.38 0.38 0.38 "waffle_Asset_SavePlus";
+iconTextButton -en false -i "Change_0.ico" -h 32 -ann "1. Select RefNOD 2. Select Asset of list 3. run" -w 32 -bgc  0.379995422293 0.379995422293 0.379995422293 "waffle_Assets_Change";
+columnLayout -p "formLayout_Assets_ListFile" -w 100 -cal "left" -rs 3 -cw 100 -adj true -h 406 "columnLayout_Waffle_Assets_sideBar";
+frameLayout -en true -cl false -w 105 -mw 1 -vis true -l "AlignTools" -mh 1 -cll true -ann "" -la "top";
+formLayout -w 105 -h 285 "formLayout_Waffle_Assets_Side01";
+rowLayout -w 100 -cw  1 15 -cw  3 15 -cw  2 43 -nc 3 "rowLayout_Waffle_1";
+columnLayout -w 25 -cal "left" -rs 4 -cw 25;
+text -w 25 -ww true -bgc  0.422507057298 0.0164034485389 0.0164034485389 -al "center" -l "X" -h 25 "label_X";
+text -w 25 -ww true -bgc  0.0431067368582 0.368795300221 0.0431067368582 -al "center" -l "Y" -h 25 "label_Y";
+text -w 25 -ww true -bgc  0.0 0.0697947661555 0.19549858854 -al "center" -l "Z" -h 25 "label_Z";
+columnLayout -p "rowLayout_Waffle_1" -w 40 -cal "left" -rs 4 -cw 40 -adj true;
+floatField -ed true -h 25 -w 70 "vtx";
+floatField -ed true -h 25 -w 70 "vty";
+floatField -ed true -h 25 -w 70 "vtz";
+columnLayout -p "rowLayout_Waffle_1" -w 25 -cal "left" -rs 4 -cw 90 -adj true;
+button -w 25 -l "Set" -h 25 "vtxc";
+button -w 25 -l "Set" -h 25 "vtyc";
+button -w 25 -l "Set" -h 25 "vtzc";
+rowLayout -p "formLayout_Waffle_Assets_Side01" -w 100 -cw  1 25 -cw  4 22 -cw  2 22 -cw  3 22 -nc 4 -h 20 "rowLayout_Waffle_2_UtilBtt";
+text -l "" "label_spacer";
+button -w 22 -l "Get" -h 25 "vtg";
+button -w 22 -l "CP" -h 25 "vtc";
+button -w 22 -l "RE" -h 25 "waffle_Util";
+columnLayout -p "tabLayout_Waffle_FileIO" -w 406 -h 406;
+tabLayout -tv true "tabLayout_Waffle_tokenHIDE";
+formLayout -w 406 -h 406 "formLayout_waffle_info";
+gridLayout -cw 150 -nc 1 -ch 20 -w 406 -h 406 "_infofield_waffle";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenA";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenB";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenC";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenD";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenE";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenF";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenG";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenH";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenI";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenJ";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenK";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenL";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenN";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenO";
+textField -en true -ed true -h 24 -vis true -w 150 "waffle_TokenP";
+textField -ed true -h 24 -w 150 "waffle_TokenQ";
+gridLayout -p "formLayout_waffle_info" -cw 150 -nc 1 -ch 20 -w 406 -h 406 "columnLayout_infolabel_waffle";
+text -ww true -w 100 -al "left" -l "Epsodic" -h 24 "label_Epsodic";
+text -w 100 -ww true -al "left" -l "Name Rule" -h 24 "label_Name_Rule";
+text -w 100 -ww true -al "left" -l "Title" -h 24 "label_Title";
+text -w 100 -ww true -al "left" -l "Scenes" -h 24 "label_Scenes";
+text -w 100 -ww true -al "left" -l "Lighting" -h 24 "label_Lighting";
+text -w 100 -ww true -al "left" -l "Animation" -h 24 "label_Animation";
+text -ww true -w 100 -al "left" -l "subA" -h 24 "label_subA";
+text -ww true -w 100 -al "left" -l "subB" -h 24 "label_subB";
+text -w 100 -ww true -al "left" -l "Assets" -h 24 "label_Assets";
+text -w 100 -ww true -al "left" -l "Modeling" -h 24 "label_Modeling";
+text -ww true -w 100 -al "left" -l "FX" -h 24 "label_FX";
+text -w 100 -ww true -al "left" -l "Comp" -h 24 "label_Comp";
+text -ww true -w 100 -al "left" -l "Images" -h 24 "label_Images";
+text -w 100 -ww true -al "left" -l "File Depth" -h 24 "label_File_Depth";
+text -ww true -w 100 -al "left" -l "V Type" -h 24 "label_V_Type";
+text -w 100 -ww true -al "left" -l "Shot Type" -h 24 "label_Shot_Type";
+formLayout -p "tabLayout_Waffle_tokenHIDE" -w 405 -h 4060 "formLayout_waffle_token";
+gridLayout -cw 100 -nc 3 -ch 15 -w 405 -h 15 "waffle_cmz_UI";
+checkBox -l "Hight Size q" "waffle_CMZ_S";
+checkBox -l "With Side q" "waffle_CMZ_W";
+checkBox -l "CMD Wire" "waffle_CMZ_P";
+columnLayout -p "formLayout_waffle_token" -w 300 -cal "left" -rs 10 -cw 300 -adj true -h 300 "waffle_Path_info";
+textField -ed true "waffle_textField_Rule_01";
+textField -ed true "waffle_textField_Rule_02";
+textField -ed true "waffle_textField_Rule_03";
+textField -ed true "waffle_textField_Rule_04";
+textField -ed true "waffle_textField_Rule_05";
+textField -ed true "waffle_textField_Rule_06";
+textField -ed true "waffle_textField_Rule_07";
+formLayout  -e -ap  tabLayout_Waffle_FileIO "top" 30 0 "formLayout_waffle";
+tabLayout  -e -tli  1 "File" -tli  2 "Assets" -tli  3 "Token" "tabLayout_Waffle_FileIO";
+formLayout  -e -ap  columnLayout_Waffle_Ani "left" 0 0 -ap  columnLayout_Waffle_Op "left" 0 0 -ap  columnLayout_Waffle_Op "top" 0 0 -ap  columnLayout_Waffle_Ani "top" 75 0 -ap  Waffle_checkNote_Btt "top" 78 0 -ap  Waffle_checkLog_Btt "top" 78 0 -ap  Waffle_checkNote_Btt "left" 250 0 -ap  Waffle_checkLog_Btt "left" 275 0 -ap  "waffle_B_3" "top" 230 0 -ap  "waffle_B_2" "top" 230 0 -ap  "waffle_B_4" "top" 230 0 -ap  columnLayout_Waffle_prefix "top" 300 0 -ap  columnLayout_Waffle_buttons_001 "top" 260 0 -ap  "waffle_B_4" "left" 255 0 -ap  "waffle_B_3" "left" 200 0 -ap  "waffle_B_2" "left" 145 0 -ap  separator_Waffle_button_Top "top" 255 0 -ap  columnLayout_Waffle_sideBar "left" 301 0 "formLayout_Waffle_ListFile";
+formLayout  -e -ap  columnLayout_Waffle_CUT "left" 0 0 -ap  columnLayout_Waffle_CUT "top" 35 0 "formLayout_Waffle_Op_sub";
+formLayout  -e -ap  waffle_scD_2 "left" 275 0 -ap  waffle_scU_2 "left" 275 0 -ap  columnLayout_Waffle_EP_sub "left" 0 0 -ap  waffle_ReEP "left" 253 0 -ap  waffle_ReEP "top" 3 0 -ap  columnLayout_Waffle_EP_sub "top" 3 0 -ap  waffle_scU_2 "top" 18 0 "formLayout_Waffle_EP";
+formLayout  -e -ap  waffle_scU "left" 275 0 -ap  waffle_scD "left" 275 0 -ap  columnLayout_Waffle_CUT_sub "top" 2 0 -ap  waffle_scU "top" 18 0 "formLayout_Waffle_CUT";
+tabLayout  -e -tli  2 "NOTE" -tli  3 "STATS" -tli  1 "Animation" -tli  4 "_His" "tabLayout_Waffle_Ani";
+tabLayout  -e -tli  1 "LAY" -tli  3 "DTL" -tli  2 "BLK" "tabLayout_Waffle_BK";
+formLayout  -e -ap  waffle_ReRe "left" 2 0 -ap  waffle_PUB_Super "left" 45 0 -ap  waffle_PUB "left" 88 0 -ap  waffle_camRe "left" 130 0 -ap  waffle_SVAEPlus "right" 0 0 -ap  waffle_SVAEPlus "left" 258 0 -ap  waffle_SAVE "left" 215 0 -ap  separator_Waffle_button "left" 2 0 -ap  separator_Waffle_button "top" 36 0 -ap  "waffle_PBD" "top" 0 0 -ap  "waffle_PBD" "left" 167 0 "formLayout_Waffle_buttones_01";
+formLayout  -e -ap  waffle_A01_sf "left" 100 0 -ap  waffle_A02_ef "left" 238 0 -ap  waffle_rangeCopy "top" 3 0 -ap  waffle_rangeCopy "left" 207 0 -ap  waffle_rangeAuto "left" 163 0 -ap  waffle_Episodic "top" 5 0 -ap  waffle_msg_2 "top" 29 0 -ap  waffle_EXS "left" 2 0 -ap  waffle_EXS "top" 29 0 -ap  waffle_msg_2 "left" 44 0 "formLayout_Waffle_prefix";
+formLayout  -e -ap  Waffle_separator__Side01 "top" 23 0 -ap  Waffle_label_filter "top" 26 0 -ap  waffle_MakeDir_BTT_1 "left" 60 0 -ap  waffle_MakeDir_BTT_2 "left" 10 0 -ap  "waffle_Filter_CUT" "top" 67 0 -ap  "waffle_Filter_EP" "top" 67 0 -ap  "waffle_Filter_CUT" "left" 60 0 -ap  "waffle_Filter_EP" "left" 10 0 -ap  "waffle_Filter" "top" 41 0 -ap  Waffle_Assets_Rule_BTT02 "left" 0 0 -ap  Waffle_Assets_Rule_BTT02 "top" 3 0 -ap  Waffle_separator__Side02 "top" 95 0 -ap  Waffle_label_makeFolder "top" 100 0 -ap  "waffle_MakeDir_FLD" "top" 115 0 -ap  waffle_MakeDir_BTT_1 "top" 140 0 -ap  waffle_MakeDir_BTT_2 "top" 140 0 -ap  Waffle_separator__Side03 "top" 170 0 -ap  "waffle_Cam_ReName_Btt" "top" 175 0 -ap  Waffle_separator__Side04 "top" 200 0 "formLayout_Waffle_Side01";
+formLayout  -e -ap  columnLayout_Waffle_LDP "left" 0 0 -ap  columnLayout_Waffle_Assets_Op "left" 0 0 -ap  columnLayout_Waffle_Assets_Op "top" 0 0 -ap  columnLayout_Waffle_Assets_sideBar "left" 298 0 -ap  columnLayout_Waffle_LDP "top" 110 0 -ap  columnLayout_Waffle_buttons_002 "top" 300 0 "formLayout_Assets_ListFile";
+formLayout  -e -ap  columnLayout_Waffle_Assets_EP "left" 0 0 -ap  columnLayout_Waffle_Assets_EP "top" 25 0 -ap  columnLayout_Waffle_Assets_Names "top" 52 0 -ap  columnLayout_Waffle_Assets_Filter "top" 80 0 "formLayout_Waffle_Assets_Op_sub";
+formLayout  -e -ap  columnLayout_Waffle_Assets_Type_sub "left" 0 0 -ap  columnLayout_Waffle_Assets_Type_sub "top" 3 0 -ap  "waffle_Asset_Get" "left" 200 0 -ap  waffle_ref_namerule "left" 235 0 -ap  waffle_ref_namerule "top" 6 0 -ap  "waffle_Asset_Get" "top" 4 0 "formLayout_Waffle_Assets_Type";
+formLayout  -e -ap  columnLayout_Waffle_Assets_EP_sub "top" 2 0 "formLayout_Waffle_Assets_EP";
+formLayout  -e -ap  gridLayout_Waffle_AssUD "left" 275 0 "formLayout_Waffle_Assets_Names";
+formLayout  -e -ap  "waffle_Filter_Assets_B" "left" 250 0 -ap  "gridLayout__Assets_Filet" "left" 1 0 "formLayout_Assets_Filet";
+tabLayout  -e -tli  1 "Final Assets" -tli  2 "_His" "tabLayout_Waffle_LDP";
+tabLayout  -e -tli  1 "BackUp" -tli  2 "__NOTE" "tabLayout_Waffle_AssetsBackUp";
+formLayout  -e -ap  waffle_Asset_Call "left" 88 0 -ap  waffle_Asset_XX "left" 130 0 -ap  waffle_Asset_Save "left" 172 0 -ap  waffle_Assets_Change "right" 0 0 -ap  waffle_Assets_Change "left" 258 0 -ap  waffle_Asset_SavePlus "left" 215 0 -ap  "waffle_Asset_Import" "left" 43 0 -ap  "waffle_Assets_Refresh" "left" 2 0 "formLayout_Waffle_buttones_02";
+formLayout  -e -ap  rowLayout_Waffle_1 "top" 5 0 -ap  rowLayout_Waffle_2_UtilBtt "top" 93 0 "formLayout_Waffle_Assets_Side01";
+tabLayout  -e -tli  1 "Rule" -tli  2 "Token" "tabLayout_Waffle_tokenHIDE";
+formLayout  -e -ap  columnLayout_infolabel_waffle "top" 10 0 -ap  columnLayout_infolabel_waffle "left" 10 0 -ap  _infofield_waffle "top" 10 0 -ap  _infofield_waffle "left" 100 0 "formLayout_waffle_info";
+formLayout  -e -ap  waffle_cmz_UI "left" 10 0 -ap  waffle_cmz_UI "top" 10 0 -ap  waffle_Path_info "top" 50 0 "formLayout_waffle_token";
+showWindow "waffle";
+
+
+
+
+  //Wire Buttons
+    checkBox -e -vis 1 waffle_Episodic;
+    checkBox -e -vis 1 waffle_ref_namerule;
+    
+    iconTextButton -e -c "SaveScene" waffle_SAVE;        
+    iconTextButton -e -c "IncrementAndSave;waffle_UI_ReFrash_CC(1);" waffle_SVAEPlus;        
+    button -e -c "FrameUTIL_CC(2)"  waffle_rangeAuto;
+  
+    optionMenu -e -changeCommand "waffle_OpenGetInfo(1)" waffle_EP;
+    optionMenu -e -changeCommand "waffle_OpenGetInfo(2)" waffle_CUT;
+    optionMenu -e -changeCommand "waffle_Set_PL()" waffle_PL;
+   
+    textField -e -ec  "croffle_Rule(3)"  waffle_msg_2;
+   
+    popupMenu -mm 1 -parent waffle_winx;
+                    menuItem -rp "S" -label "ReFresh" -c "waffle_reUI";
+  
+  
+  optionMenu -e -changeCommand "waffle_assets_OM(1);" waffle_Assets;
+  optionMenu -e -changeCommand "waffle_assets_OM(2);" waffle_Assets_2;
+  optionMenu -e -changeCommand "waffle_assets_OM(3);" waffle_Assets_3;
+  
+  iconTextButton -e -c "waffle_sort_PL" waffle_gPL;
+  iconTextButton -e -c "waffle_assets_OM(4)" waffle_Asset_Get;
+  
+  iconTextButton -e -c "OPEN_waffle_files(41);" waffle_Asset_Import;
+  iconTextButton -e -c "OPEN_waffle_files(4);" waffle_Asset_Call;
+  iconTextButton -e -c "SaveScene" waffle_Asset_Save;
+  iconTextButton -e -c "waffle_GCAL();" waffle_Assets_Refresh;
+  iconTextButton -e -c "IncrementAndSave;waffle_GCAL();" waffle_Asset_SavePlus;   //waffle_UI_ReFrash_CC(2);
+
+  iconTextButton -e -c "waffle_RemoveREF();" waffle_Asset_XX;
+
+  iconTextButton -e -c "waffle_Pageing(3);"   waffle_scD;
+  iconTextButton -e -c "waffle_Pageing(4);"   waffle_scU;
+  iconTextButton -e -c "waffle_Pageing(1);"   waffle_scD_2;
+  iconTextButton -e -c "waffle_Pageing(2);"   waffle_scU_2;
+  iconTextButton -e -c "Publishing_AniF(2);" waffle_PUB;
+  iconTextButton -e -c "Publishing_AniF(1);" waffle_PUB_Super;
+
+
+  iconTextButton -e -c "waffle_reUI" waffle_ReRe;
+
+
+  button -e -c "waffle_KeepFiles(1)" waffle_B_2;
+  button -e -c "waffle_KeepFiles(2)" waffle_B_3;
+  button -e -c "waffle_KeepFiles(3)" waffle_B_4;
+  
+  button -e -c "waffle_PlayBlastFrame(1);waffle_PlayBlastFrame(2);"  waffle_rangeAuto;
+  button -e -c "waffle_copyTime();" waffle_rangeCopy;
+  
+  iconTextButton -e -c "waffle_Playblast_check" waffle_camRe;
+  button -e -c "waffle_cam_rename" waffle_Cam_ReName_Btt;
+  
+  iconTextButton -e -c "waffle_toggle_WinX(0);"  waffle_winx;
+  iconTextButton -e -c "waffle_toggle_WinX(1);"  waffle_winx_w;
+
+  iconTextButton -e -c "waffle_MakeDir(2)" waffle_MakeDir_BTT_1;
+  iconTextButton -e -c "waffle_MakeDir(3)" waffle_MakeDir_BTT_2;
+  
+      popupMenu -mm 1 -parent waffle_MakeDir_FLD;        
+                    menuItem -label "EP101" -c "waffle_MakeDir_Preset(1)";                                                 
+                    menuItem -label "S001_001_0" -c "waffle_MakeDir_Preset(2)";
+                    //menuItem -label "(Range)" -c "waffle_MakeDir_Preset(3)";
+        
+      popupMenu -mm 1 -parent  waffle_Assets_List_1;
+                    menuItem-rp "N" -label "Delete Select File" -c "Get_waffle_AssetsList(5)";  
+                    menuItem-rp "S" -label "Remove Select Assets" -c "Get_waffle_AssetsList(6)";
+
+        popupMenu -mm 1 -parent  waffle_Ani_List;  
+                    menuItem-rp "N" -label "Delete Select File" -c "waffle_ByeByeFile(3)" -i "deleteActive.png";
+                    menuItem-rp "NW" -label "Import File" -c "waffle_ImportList(3)" ;
+                    
+                    menuItem-rp "E" -label "This to (Layout)"   -c "waffle_MakeAni(1)" -i "poseEditor.png";
+                    menuItem-rp "W" -label "This to (Final)"    -c "waffle_MakeAni(5)" -i "playblast.png";                                          
+                    menuItem-rp "NE" -label "Remove Directory" -c "waffle_ByeByeFile(33)" -i "deleteActive.png";
+                    
+                    menuItem -divider true ; 
+                    menuItem -divider true ;
+                                       
+                    //menuItem -label "This to (Layout) Batch" -c "waffle_MakeAni(6)" ;
+                    
+                    menuItem -divider true ; 
+               
+                    menuItem  -rp "SE" -label  "This to (Block)"    -c "waffle_MakeAni(2)" -i "ghostOff.png";
+                    menuItem -rp "S" -label "This to (Detail-1)" -c "waffle_MakeAni(3)" -i "ghost.png";
+                    
+                    menuItem-label  "Detail-2-More" -sm 1 -bld 1 -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-2)" -c "waffle_MakeAni(4)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-3)" -c "waffle_MakeAni(41)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-4)" -c "waffle_MakeAni(42)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-5)" -c "waffle_MakeAni(43)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-6)" -c "waffle_MakeAni(44)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-7)" -c "waffle_MakeAni(45)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-8)" -c "waffle_MakeAni(46)" -i "greasePencilPreGhostOff.png";
+                    menuItem-label  "This to (Detail-9)" -c "waffle_MakeAni(47)" -i "greasePencilPreGhostOff.png";
+					menuItem-label  "This to (Detail-10)" -c "waffle_MakeAni(48)" -i "greasePencilPreGhostOff.png";
+
+  
+  //Tools
+  button -e -c "waffle_TakeName(2);" waffle_PPTool_PIck;
+  button -e -c "waffle_ConstrainBatch" waffle_PPTool_Run;
+  
+  button -e -c "MatchTranslation; MatchRotation;" waffle_Util;  
+  button -e -c "getVP()" vtg;
+	button -e -c "setVP(1)" vtxc;
+	button -e -c "setVP(2)" vtyc;
+	button -e -c "setVP(3)" vtzc;
+	button -e -c "setVP(4)" vtc;
+
+
+  iconTextButton -e -c "waffle_Filter(1);" waffle_Filter_EP;                      
+  iconTextButton -e -c "waffle_Filter(2);" waffle_Filter_CUT;
+
+
+  button -e -c "waffle_Filtering(3);"   waffle_DP_curve;
+  button -e -c "waffle_Filtering(6);"   waffle_DP_joint;
+  button -e -c "waffle_Filtering(5);"   waffle_DP_loc;
+  button -e -c "waffle_Filtering(4);"   waffle_DP_cam;
+  button -e -c "waffle_Filtering(2);"   waffle_DP_lit;
+  button -e -c "waffle_Filtering(7);"   waffle_DP_none;
+  button -e -c "waffle_Filtering(1);"   waffle_DP_mesh;
+  button -e -c "waffle_Filtering(10);"   waffle_TX;
+  button -e -c "waffle_Filtering(8);"   waffle_SHD1;
+  button -e -c "waffle_Filtering(9);"   waffle_DP_Hide;
+  
+  //button -e -c "DirtyCam();" Cmmd_BTT_1;
+  //button -e -c "dgSaveDeleteUnknown();" Cmmd_BTT_2;
+  //button -e -c "dgdeleteUnusedNodes();" Cmmd_BTT_3;
+
+
+  //////////////////////////////////////////////////////////////////////////////end wire
+  
+  window -e -w 304 -h 406   waffle;
+  croffle_Rule(1)  ;
+  catchQuiet(waffle_reUI());
+  eval ( "source \"_zShotMask.mel\"" );
+  if (!(`pluginInfo -q -l zurbrigg_advanced_playblast`)) {catchQuiet(`loadPlugin zurbrigg_advanced_playblast`);}
+
+  }
+////////////////////////////////////////////
+//Command 
+global proc waffle_FL_CLL_Func(int $case)
+{
+
+  string $waffle_FL_List= "waffle_FL_Array,waffle_FL_Tools,waffle_FL_VisCtrl";
+  string $waffle_FL_tokenized[];
+  tokenize $waffle_FL_List "," $waffle_FL_tokenized;
+  
+
+              for ($i=0; $i<size($waffle_FL_tokenized); $i++)
+              {                     
+                int $waffle_FLCL=`frameLayout -q -cl $waffle_FL_tokenized[$i]`;
+                if($waffle_FLCL==0)
+                  {
+                    frameLayout -e -cl 1 $waffle_FL_tokenized[$i];    
+                  }
+              }
+
+                string $waffle_LFName=`frameLayout -q -l $waffle_FL_tokenized[$case]`;   
+                frameLayout -e -cl 0 ("waffle_FL_"+$waffle_LFName);
+           
+}     
+
+
+
+global proc waffle_cam_rename()
+{
+  $List =`ls -sl`;
+  rename $List "_ShotCam";
+}
+
+
+global proc waffle_GCAL()
+{
+    int $EpisodicG = `checkBox -q -v waffle_Episodic`;
+    if($EpisodicG == 0)
+    {
+    Get_waffle_AssetsList(3);
+    }
+    else
+    Get_waffle_AssetsList(31);
+}
+
+
+global proc croffle_Rule(int $case)
+{
+    switch($case)
+    {
+      case 1 :
+        string $xxx =`currentUnit -q -time`;
+        if($xxx == "ntsc")
+          {
+           textField -e -tx  "30-FPS"  waffle_msg_2;   
+          }
+          else if($xxx == "pal")
+          {
+           textField -e -tx  "25-FPS"  waffle_msg_2;   
+          }
+          else if($xxx == "ntscf")
+          {
+           textField -e -tx  "60-FPS"  waffle_msg_2;   
+          }
+          else if($xxx == "film")
+          {
+           textField -e -tx  "24-FPS"  waffle_msg_2;   
+          }
+          else
+          {
+           textField -e -tx  "Others-FPS"  waffle_msg_2;   
+          }   
+      break;
+
+      case 2 :
+          publish_SUPER;
+      break;
+      
+      case 3 :
+      string $rule_password = `textField -q -tx waffle_msg_2`; 
+      if($rule_password == "king")
+      {
+      croffle_Rule(2);      
+      }
+      else
+      {
+      croffle_Rule(1); 
+      }
+      break;
+
+    }
+}
+
+
+global proc waffle_reUI()
+{  
+    cycleCheck - e off;  
+    
+    eval ( "source \"waffle_Ani.mel\"" );
+    eval ( "source \"_Utility.mel\"" );
+    eval ( "source \"waffle_HUD.mel\"" );
+    catchQuiet(waffle_Epsodic());
+    catchQuiet(waffle_get_EPs(1));
+    catchQuiet(waffle_get_EPs(2));
+    catchQuiet(waffle_get_EPs(3));
+    catchQuiet(waffle_get_EPs(4));
+      
+    $cur=`optionMenu -q  -ni waffle_EP`;
+    int $choo = $cur;
+    if($choo == 0)
+    {
+      print ("Empty Trees :D\n");
+    }
+    else
+    {
+    optionMenu -e -sl $choo waffle_EP; 
+    }
+
+    catchQuiet(waffle_get_EPs(1));
+    catchQuiet(waffle_get_EPs(2));
+    catchQuiet(waffle_get_EPs(3));
+    catchQuiet(waffle_get_EPs(4));
+
+ 
+}    
+
+
+global proc waffle_UI_ReFrash_CC(int $case)
+{
+  switch($case)
+  {
+  case 1 :     
+   catchQuiet(waffle_get_EPs(3));
+   catchQuiet(waffle_get_EPs(4));
+
+  
+  break;
+  
+  case 2 :
+   catchQuiet(waffle_assets_OM(2));
+   catchQuiet(waffle_assets_OM(3));    
+  break;
+  
+
+  }
+}
+
+global proc waffle_Epsodic()
+{
+    string $now_project = `workspace -q -fn`;
+    $now_RootPath = stringToStringArray($now_project, "/");
+    $now_project_c = $now_RootPath[0] + "\\" + $now_RootPath[1]+ "\\" + $now_RootPath[2];
+
+    string $ProjectType[]= `getFileList -folder $now_project -filespec "*.ini"`;
+    string $ProjectNote = $now_project_c + $ProjectType[0];
+           $noteId = `fopen $ProjectNote "r"` ;  
+    string $note_info = `fread $noteId $note_info` ; 
+                         fclose $noteId;         
+
+    string $note_infos[];  
+           $note_infos = stringToStringArray($note_info, "/"); 
+    int $value = $note_infos[0];
+    checkBox -e -v $value waffle_Episodic; 
+           
+}
+
+
+
+global proc publish_SUPER()
+{
+iconTextButton -e -en 1 waffle_PUB_Super;
+}  
+
+global proc waffle_RemoveREF()
+{
+
+    string $objs[] = `ls -sl`;
+  for($i=0;$i < size($objs); $i++)
+  {
+          string $rNode = $objs[$i];
+    $referenceNode = `referenceQuery -rfn $rNode`;
+          file -removeReference -referenceNode $referenceNode;   
+  }
+}
+
+
+
+global proc FrameUTIL_CC(int $case)
+{
+    switch($case)
+    {
+    case 1 :
+    waffle_projectCamReN();
+    break;
+    
+    case 2 :
+    
+    waffle_PlayBlastFrame(1);
+    waffle_PlayBlastFrame(2);
+    break;
+    
+    }
+
+}
+
+global proc GET_waffle_TIME()
+{
+  int $waffle_pMin = `playbackOptions -q -min`;
+  int $waffle_pMax = `playbackOptions -q -max`;
+  intField -e -v $waffle_pMax  waffle_A02_ef; 
+  intField -e -v $waffle_pMin  waffle_A01_sf; 
+}
+
+global proc waffle_PlayBlastFrame(int $case)
+{
+
+    switch ($case)
+    {
+    
+    case 1 :
+    
+    $re_EndFrame = `intField  -q -v waffle_A02_ef`;
+    setAttr "defaultRenderGlobals.endFrame" $re_EndFrame;
+    playbackOptions -aet $re_EndFrame;
+    playbackOptions -min `getAttr "defaultRenderGlobals.startFrame"` -max $re_EndFrame;
+    
+    break;
+    
+    case 2 :
+    $re_StartFrame = `intField  -q -v waffle_A01_sf`;
+    setAttr "defaultRenderGlobals.startFrame" $re_StartFrame;
+    playbackOptions -ast $re_StartFrame;
+    playbackOptions -max `getAttr "defaultRenderGlobals.endFrame"` -min $re_StartFrame;
+    
+    break;
+
+    }
+}  
+
+
+global proc waffle_copyTime()
+{
+    int $ftime = `intField -q -v waffle_A01_sf`;
+     intField -e -v $ftime waffle_A02_ef;  
+}
+
+
+
+global proc waffle_projectCamReN()
+{
+string $gets[] =`ls -sl`;
+
+$Path = `workspace -q -fn`;
+string $init[]= `getFileList -folder $Path -filespec "*.ini"`;
+string $ini_gets = $init[0]; 
+string $G_I[] = stringToStringArray($ini_gets, ".");
+
+
+string $EP_N=`optionMenu -q -v waffle_EP`;
+string $Cut_N = `optionMenu -q -v waffle_CUT`;
+string $prEF =`intField -q -v waffle_A02_ef`; 
+string $prSF =`intField -q -v waffle_A01_sf`; 
+string $camName = $G_I[0] +"_" + $Cut_N + "_" + $prSF + "_" + $prEF +"_Cam";
+rename $gets[0] $camName;
+
+}   
+   
+
+global proc waffle_Pageing(int $num)
+{
+  switch($num)
+  {
+  //next
+  case 1:
+  $cur=`optionMenu -q  -sl waffle_EP`;
+  int $choo_1 = $cur + 1;
+  optionMenu -e  -sl $choo_1 waffle_EP; waffle_UI_ReFrash_CC(1);
+  waffle_get_EPs(2);
+  
+  break;
+
+  //back
+  case 2:
+  $cur=`optionMenu -q  -sl waffle_EP`;
+  int $choo_2 = $cur - 1;
+  optionMenu -e  -sl $choo_2 waffle_EP; waffle_UI_ReFrash_CC(1);
+  waffle_get_EPs(2);
+  
+  break;
+
+  //next
+  case 3:
+  $cur=`optionMenu -q  -sl waffle_CUT`;
+  int $choo_3 = $cur + 1;
+  $c_limited=`optionMenu -q -ni waffle_CUT`;
+  if($choo_3 > $c_limited)
+  {  
+  print "No more...";
+  }
+  else
+  {
+      optionMenu -e  -sl $choo_3 waffle_CUT;waffle_UI_ReFrash_CC(1);
+  }
+  break;
+
+  //back
+  case 4:
+  $cur=`optionMenu -q  -sl waffle_CUT`;
+  int $choo_4 = $cur - 1;
+  optionMenu -e  -sl $choo_4 waffle_CUT;waffle_UI_ReFrash_CC(1);
+  break;
+  }
+}
+  
+//global proc string ProductionPath()
+//{  
+//string $SFile = "02_Production";
+//}
+  
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////Get File List /////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+global proc waffle_OpenGetInfo(int $case)
+{
+    switch($case)
+    {
+        case 1 :
+        waffle_get_EPs(2);waffle_get_EPs(3);waffle_get_EPs(4);waffle_get_EPs(5);waffle_get_EPs(6);
+            
+        break;
+        
+        case 2 :
+        waffle_get_EPs(3);waffle_get_EPs(4);waffle_get_EPs(5);waffle_get_EPs(6);
+            
+        break;
+
+    }
+        
+}
+
+
+global proc waffle_Filter(int $case)
+{
+      string $N_Filter=`textField -q -tx waffle_Filter`;
+      
+      switch($case)
+      {
+      case 1 :
+        string $Filter_Conw1 = $N_Filter+"*";
+        textField -e -tx $Filter_Conw1 waffle_Filter;
+        waffle_get_EPs(1);        
+      break;
+
+      case 2 :
+        string $Filter_Conw2 = $N_Filter+"*";
+        textField -e -tx $Filter_Conw2 waffle_Filter;
+        waffle_get_EPs(2);
+      break;
+      }
+
+}      
+
+
+
+global proc waffle_get_EPs(int $case)
+{
+$Curr_project = `workspace -q -fn`;
+$RootPath = stringToStringArray($Curr_project, "/");
+$project = $RootPath[0] + "\\" + $RootPath[1] + "\\" + $RootPath[2];
+    string $Path = $project + "\\02_Scenes\\03_Animation\\";
+        string $EPs_3=`optionMenu -q -v waffle_EP`;
+        string $CUTs_3=`optionMenu -q -v waffle_CUT`;    
+
+
+string $wwFilter=`textField -q -tx waffle_Filter`; 
+    
+  switch($case)
+  {
+      case 1 :
+        string $Token_Ani =  $Path + "3_KEY" + "\\";    
+        $menuItems = `optionMenu -q -itemListLong waffle_EP`;
+        if(size($menuItems) != 0)
+        {deleteUI($menuItems);}
+        string $dir_list[] = `getFileList -folder $Token_Ani -filespec $wwFilter`;
+        string $dir_list_sort[];
+        $dir_list_sort=sort($dir_list);
+
+        for ($i = 0; $i < size($dir_list_sort); $i++)
+        {           
+        menuItem -l $dir_list_sort[$i] -p waffle_EP;
+        }
+      break;
+
+      case 2 :
+        string $EPs_2=`optionMenu -q -v waffle_EP`;
+        $menuItems = `optionMenu -q -itemListLong waffle_CUT`;
+        if(size($menuItems) != 0)
+        {deleteUI($menuItems);}
+        string $token = $Path + "3_KEY" + "\\" + $EPs_2 + "\\";
+        string $dir_list_sub[] = `getFileList -folder $token -filespec $wwFilter`;
+        string $subdirectories[];
+            string $dir_list_sort_sub[];
+            $dir_list_sort_sub=sort($dir_list_sub);
+        
+        for ($i = 0; $i < size($dir_list_sort_sub); $i++)
+        {           
+        menuItem -l $dir_list_sort_sub[$i] -p waffle_CUT;
+        }  
+      break;
+
+      case 3 :        
+        //Get Ani
+        string $tokenA = $Path + "3_KEY" + "\\" + $EPs_3 + "\\" + $CUTs_3 + "\\";
+        string $dir_list_subA[] = `getFileList -folder $tokenA -filespec "*.m*"`;        
+        
+        string $dir_list_sort_subA[];
+        $dir_list_sort_subA=sort($dir_list_subA);
+        
+        textScrollList -edit -removeAll waffle_Ani_List;
+        for ($i = 0; $i < size($dir_list_sort_subA); $i++)
+        {           
+        textScrollList   -ams 1 -sc "catchQuiet(waffle_UI_dc_CC(1));" -dcc "OPEN_waffle_files(1);" -e -a $dir_list_sort_subA[$i] waffle_Ani_List;
+        }  
+      break;  
+
+      case 4 :        
+        //Get Layout
+        string $tokenA_L = $Path + "3_KEY" + "\\" + $EPs_3 + "\\" + $CUTs_3 + "\\_ALY\\";
+        string $dir_list_subA_L[] = `getFileList -folder $tokenA_L -filespec "*.m*"`;        
+        
+        string $dir_list_sort_subA_L[];
+        $dir_list_sort_subA_L=sort($dir_list_subA_L);
+        
+        textScrollList -edit -removeAll waffle_Ani_List_2;
+        for ($i = 0; $i < size($dir_list_sort_subA_L); $i++)
+        {           
+        textScrollList   -ams 1 -sc "catchQuiet(waffle_UI_dc_CC(2));" -dcc "OPEN_waffle_files(12);" -e -a $dir_list_sort_subA_L[$i] waffle_Ani_List_2;
+        }  
+      break;
+
+      case 5 :        
+        //Get Layout
+        string $tokenA_B = $Path + "3_KEY" + "\\" + $EPs_3 + "\\" + $CUTs_3 + "\\_BLK\\";
+        string $dir_list_subA_B[] = `getFileList -folder $tokenA_B -filespec "*.m*"`;        
+        
+        string $dir_list_sort_subA_B[];
+        $dir_list_sort_subA_B=sort($dir_list_subA_B);
+        
+        textScrollList -edit -removeAll waffle_Ani_List_3;
+        for ($i = 0; $i < size($dir_list_sort_subA_B); $i++)
+        {           
+        textScrollList   -ams 1 -sc "catchQuiet(waffle_UI_dc_CC(3));" -dcc "OPEN_waffle_files(13);" -e -a $dir_list_sort_subA_B[$i] waffle_Ani_List_3;
+        }  
+      break;
+
+      case 6 :        
+        //Get Layout
+        string $tokenA_D = $Path + "3_KEY" + "\\" + $EPs_3 + "\\" + $CUTs_3 + "\\_DTL\\";
+        string $dir_list_subA_D[] = `getFileList -folder $tokenA_D -filespec "*.m*"`;        
+        
+        string $dir_list_sort_subA_D[];
+        $dir_list_sort_subA_D=sort($dir_list_subA_D);
+        
+        textScrollList -edit -removeAll waffle_Ani_List_4;
+        for ($i = 0; $i < size($dir_list_sort_subA_D); $i++)
+        {           
+        textScrollList   -ams 1 -sc "catchQuiet(waffle_UI_dc_CC(4));" -dcc "OPEN_waffle_files(14);" -e -a $dir_list_sort_subA_D[$i] waffle_Ani_List_4;
+        }  
+      break;
+      
+   }
+ }
+ 
+
+global proc waffle_UI_dc_CC(int $case)
+{
+  switch($case)
+      {
+        case 1 :
+        //textScrollList -e -da waffle_Ani_List;
+        textScrollList -e -da waffle_Ani_List_2;
+        textScrollList -e -da waffle_Ani_List_3;
+        textScrollList -e -da waffle_Ani_List_4;
+        break;
+
+        case 2 :
+        textScrollList -e -da waffle_Ani_List;
+        //textScrollList -e -da waffle_Ani_List_2;
+        textScrollList -e -da waffle_Ani_List_3;
+        textScrollList -e -da waffle_Ani_List_4;
+        break;
+
+        case 3 :
+        textScrollList -e -da waffle_Ani_List;
+        textScrollList -e -da waffle_Ani_List_2;
+        //textScrollList -e -da waffle_Ani_List_3;
+        textScrollList -e -da waffle_Ani_List_4;
+        break;
+                        
+        case 4 :
+        textScrollList -e -da waffle_Ani_List;
+        textScrollList -e -da waffle_Ani_List_2;
+        textScrollList -e -da waffle_Ani_List_3;
+        //textScrollList -e -da waffle_Ani_List_4;
+        break;                        
+      }
+
+}
+
+
+  global proc waffle_assets_OM(int $case)
+  {
+    int $note_infos_Assets = `checkBox -q -v waffle_Episodic`;  
+
+    switch($case)
+    {
+    case 1 :
+          if($note_infos_Assets == 0)
+          {
+           Get_waffle_AssetsList(2);Get_waffle_AssetsList(3);
+          }
+          else if ($note_infos_Assets == 1)
+          {
+          Get_waffle_AssetsList(2);Get_waffle_AssetsList(21);Get_waffle_AssetsList(31);
+          }    
+    break;
+
+    case 2 :
+          if($note_infos_Assets == 0)
+          {
+           Get_waffle_AssetsList(3);
+          }
+          else
+          {
+          Get_waffle_AssetsList(21);Get_waffle_AssetsList(31);
+          }       
+    break;
+    
+    case 3 :
+
+          Get_waffle_AssetsList(31);Get_waffle_AssetsList(33);
+      
+    break;  
+    case 4 :
+          if($note_infos_Assets == 0)
+          {
+           Get_waffle_AssetsList(1);Get_waffle_AssetsList(2);Get_waffle_AssetsList(3);
+          }
+          else
+          {
+          Get_waffle_AssetsList(1);Get_waffle_AssetsList(2);Get_waffle_AssetsList(21);Get_waffle_AssetsList(31);Get_waffle_AssetsList(33);
+          }       
+    break;      
+    
+    }
+  
+  }
+
+  global proc Get_waffle_AssetsList(int $case)
+  {
+    string $c_project_Assets = `workspace -q -fn`;
+    $RootPath_Assets = stringToStringArray($c_project_Assets, "/");
+    $project_Assets = $RootPath_Assets[0] + "\\" + $RootPath_Assets[1]+ "\\" + $RootPath_Assets[2];
+          
+    string $Path_Assets = $project_Assets + "\02_Scenes\\_Assets\\";
+      
+    string $omA_FB=`optionMenu -q -v waffle_Assets`;
+    string $omB_FB=`optionMenu -q -v waffle_Assets_2`;
+    string $omC_FB=`optionMenu -q -v waffle_Assets_3`;
+    string $AssetPath = $Path_Assets + $omA_FB + "\\" + $omB_FB + "\\";
+    string $AssetPath_His = $Path_Assets + $omA_FB + "\\" + $omB_FB + "\\_His";
+    string $AssetPath_son = $Path_Assets + $omA_FB + "\\" + $omB_FB + "\\"+ $omC_FB + "\\";
+    string $AssetPath_son_His = $Path_Assets + $omA_FB + "\\" + $omB_FB +"\\" +$omC_FB+"\\_His";  
+
+
+                    
+  switch($case)
+    {
+      case 1 :        
+              $menuItems = `optionMenu -q -itemListLong waffle_Assets`;
+              if(size($menuItems) != 0)
+              {deleteUI($menuItems);}
+                         
+              string $dir_list[] = `getFileList -folder $Path_Assets -filespec "*"`;
+                string $dir_list_sort[];
+                $dir_list_sort=sort($dir_list);
+
+                for ($i = 0; $i < size($dir_list_sort); $i++)
+                {           
+                menuItem -l $dir_list_sort[$i] -p waffle_Assets;
+                }              
+      break;
+
+      case 2 :
+                $menuItems_sub = `optionMenu -q -itemListLong waffle_Assets_2`;
+                if(size($menuItems_sub) != 0)
+                {deleteUI($menuItems_sub);} 
+
+                string $omA=`optionMenu -q -v waffle_Assets`;                              
+                //string $omB=`optionMenu -q -v waffle_Assets_2`;
+                string $case2Path = $Path_Assets + $omA + "\\" ; //+ $omB + "\\";
+                           
+                    string $dir_list_sub[] = `getFileList -folder $case2Path -filespec "*"`;
+                      if (size($dir_list_sub) == 0)
+                      {
+                        print "There are no assets.";
+                        textScrollList -edit -removeAll waffle_Assets_List_1;
+                      }
+                      else
+                      {
+                        string $dir_list_sort_sub[];
+                        $dir_list_sort_sub=sort($dir_list_sub);                        
+                        for ($i = 0; $i < size($dir_list_sort_sub); $i++)
+                        {           
+                        menuItem -l $dir_list_sort_sub[$i] -p waffle_Assets_2;
+                        }
+                      }               
+
+      break;
+
+      case 21 :  
+                $menuItems_son = `optionMenu -q -itemListLong waffle_Assets_3`;
+                if(size($menuItems_son) != 0)
+                {deleteUI($menuItems_son);} 
+                    string $omA_son=`optionMenu -q -v waffle_Assets`;
+                    string $omB_son=`optionMenu -q -v waffle_Assets_2`;
+                    string $case21Path = $Path_Assets + $omA_son + "\\" + $omB_son + "\\";
+                           
+                    string $dir_list_son[] = `getFileList -folder $case21Path -filespec "*"`;
+                    if (size($dir_list_son) == 0)
+                    {
+                      print "There are no assets.";
+                      textScrollList -edit -removeAll waffle_Assets_List_1;
+                    } 
+                    else
+                    {             
+                      string $dir_list_sort_son[];
+                      $dir_list_sort_son=sort($dir_list_son);
+                  
+                      for ($i = 0; $i < size($dir_list_sort_son); $i++)
+                      {           
+                      menuItem -l $dir_list_sort_son[$i] -p waffle_Assets_3;
+                      }
+                    }  
+       
+      break;     
+
+      case 3 :                       
+                string $dir_list_subA[] = `getFileList -folder $AssetPath -filespec "*.m*"`;        
+                
+                if(size($dir_list_subA) == 0)
+                {
+                  print "There are no assets.";
+                  textScrollList -edit -removeAll waffle_Assets_List_1;
+                }
+                else
+                {                
+                    string $dir_list_sort_subA[];
+                    $dir_list_sort_subA=sort($dir_list_subA);        
+                    textScrollList -edit -removeAll waffle_Assets_List_1;
+                    for ($i = 0; $i < size($dir_list_sort_subA); $i++)
+                    {           
+                    textScrollList   -ams 0 -sc "" -dcc "OPEN_waffle_files(3);" -e -a $dir_list_sort_subA[$i] waffle_Assets_List_1;
+                    }  
+        
+                    //remove .mayaSwatches Assets List
+                    int $checkCount =`textScrollList -q -ni waffle_Assets_List_1`;
+                    if ($checkCount == 0){print "no Items";}
+                    else
+                    {
+                    textScrollList -e -sii 1 waffle_Assets_List_1;
+                    string $mayaSwatchesX[] =`textScrollList -q -si waffle_Assets_List_1`;
+                        if ($mayaSwatchesX[0] != ".mayaSwatches")
+                        {
+                            print "noSwatche";
+                        }
+                        else
+                        textScrollList -e -rii 1  waffle_Assets_List_1; 
+                    }
+                    //Get History
+                    string $dir_list_Assets_subA[] = `getFileList -folder $AssetPath_His -filespec "*.m*"`;            
+                    string $dir_list_sort_Assets_subA[];
+                    $dir_list_sort_Assets_subA=sort($dir_list_Assets_subA);
+                    textScrollList -edit -removeAll waffle_Assets_List_His;
+                        for ($i = 0; $i < size($dir_list_sort_Assets_subA); $i++)
+                        {           
+                        textScrollList   -ams 0 -sc "" -dcc "OPEN_waffle_files(42);" -e -a $dir_list_sort_Assets_subA[$i] waffle_Assets_List_His;
+                        }                      
+                }    
+
+        break;                    
+      case 31 :
+                string $dir_list_subA_son[] = `getFileList -folder $AssetPath_son -filespec "*.m*"`;        
+
+                if(size($dir_list_subA_son) == 0)
+                {
+                    print "There are no assets.";
+                    textScrollList -edit -removeAll waffle_Assets_List_1;
+                }
+                else
+                {
+                    string $dir_list_sort_subA_son[];
+                    $dir_list_sort_subA_son=sort($dir_list_subA_son);        
+                    textScrollList -edit -removeAll waffle_Assets_List_1;
+                    for ($i = 0; $i < size($dir_list_sort_subA_son); $i++)
+                    {           
+                    textScrollList   -ams 0 -sc "" -dcc "OPEN_waffle_files(3);" -e -a $dir_list_sort_subA_son[$i] waffle_Assets_List_1;
+                    }  
+        
+                    //remove .mayaSwatches Assets List
+                    int $checkCount31 =`textScrollList -q -ni waffle_Assets_List_1`;
+                    if ($checkCount31 == 0){print "no Items";}
+                    else
+                    {
+                    textScrollList -e -sii 1 waffle_Assets_List_1;
+                    string $mayaSwatchesX[] =`textScrollList -q -si waffle_Assets_List_1`;
+                        if ($mayaSwatchesX[0] != ".mayaSwatches")
+                        {
+                            print "noSwatche";
+                        }
+                        else
+                        textScrollList -e -rii 1  waffle_Assets_List_1; 
+                    }    
+                        
+
+                 }              
+        break;  
+  
+
+
+        
+        //make Assets History  
+        case 4 :
+        
+            string $omA_H=`optionMenu -q -v waffle_Assets`;
+            string $omB_H=`optionMenu -q -v waffle_Assets_2`;
+            string $case4Path = $Path_Assets + $omA_H + "\\" + $omB_H + "\\";
+            string $case4Path_His = $Path_Assets + $omA_H + "\\" + $omB_H + "\\_His";
+            
+            string $waffle_Assets_His[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+            for ($i=0; $i<size($waffle_Assets_His); $i++)
+            {
+            string $Assets_filename = $case4Path + $waffle_Assets_His[$i];
+            string $Assets_filename_His = $case4Path_His +"\\"+"_"+ $waffle_Assets_His[$i];            
+            sysFile -makeDir $case4Path_His;
+            string $syscmd_Assets ="copy "+$Assets_filename+ " " + $Assets_filename_His +" /y";
+            system( $syscmd_Assets );
+            }
+
+            Get_waffle_AssetsList(3);                    
+       break;
+
+        case 41 :
+        
+            string $omA_HB=`optionMenu -q -v waffle_Assets`;
+            string $omB_HB=`optionMenu -q -v waffle_Assets_2`;
+            string $omC_HB=`optionMenu -q -v waffle_Assets_3`;
+            string $case41Path = $Path_Assets + $omA_HB + "\\" + $omB_HB + "\\"+ $omC_HB + "\\";
+            string $case41Path_His = $Path_Assets + $omA_HB + "\\" + $omB_HB +"\\"+ $omC_HB +"\\_His";
+            
+            string $waffle_Assets_His_B[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+            for ($i=0; $i<size($waffle_Assets_His_B); $i++)
+            {
+            string $Assets_filename_His = $case4Path + $waffle_Assets_His_B[$i];
+            sysFile -makeDir $case41Path_His;
+            string $syscmd_Assets ="move "+$Assets_filename_His+ " " + $case41Path_His;
+            system( $syscmd_Assets );
+            }
+
+            Get_waffle_AssetsList(31);                    
+       break;
+   
+        case 5 :     
+          $response = `confirmDialog -title "Confirm" 
+                          -message "이 에셋을 진짜로 파일을 지울건가요?"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+              string $waffle_Del_Assets[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+            string $omA_5=`optionMenu -q -v waffle_Assets`;
+            string $omB_5=`optionMenu -q -v waffle_Assets_2`;
+            string $omC_5=`optionMenu -q -v waffle_Assets_3`;
+
+            int $EpisodicA = `checkBox -q -v waffle_Episodic`; 
+            
+              if($EpisodicA == 0)
+              {
+                string $case5Path = $Path_Assets + $omA_5 + "\\" + $omB_5 + "\\";
+                    for ($i=0; $i<size($waffle_Del_Assets); $i++)
+                    {
+                    string $waffle_Del_Assets_filename = $case5Path + $waffle_Del_Assets[$i];
+                    sysFile -delete $waffle_Del_Assets_filename;    
+
+                    }
+                    Get_waffle_AssetsList(3);
+              }      
+              else
+              {
+                string $case5Path = $Path_Assets + $omA_5 + "\\" + $omB_5 + "\\" + $omC_5 + "\\";
+                    for ($i=0; $i<size($waffle_Del_Assets); $i++)
+                    {
+                    string $waffle_Del_Assets_filename = $case5Path + $waffle_Del_Assets[$i];
+                    sysFile -delete $waffle_Del_Assets_filename;    
+                    }
+                    Get_waffle_AssetsList(31);
+              }                
+              
+              print("선택한 파일을 지웠습니다.\n"); 
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+        break;
+
+        case 6 :     
+          $response = `confirmDialog -title "Confirm" 
+                          -message "이 에셋은 완전히 지워집니다."
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+
+            string $omA_6=`optionMenu -q -v waffle_Assets`;
+            string $omB_6=`optionMenu -q -v waffle_Assets_2`;
+            string $case6Path = $Path_Assets + $omA_6 + "\\" + $omB_6 + "\\";
+          
+              string $cmd = "RD "+$case6Path + " /s /q";
+              system ($cmd);  
+              
+              Get_waffle_AssetsList(2);
+              Get_waffle_AssetsList(3);
+              print("선택한 파일을 지웠습니다.\n"); 
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+        break;
+    }
+ }
+
+ 
+///////////////////////////////////////////////////////////
+//File Opne Scripts
+//////////////////////////////////////////////////////////
+
+global proc OPEN_waffle_files(int $case)
+{
+  $Curr_project = `workspace -q -fn`;
+  $RootPath = stringToStringArray($Curr_project, "/");
+  $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];  
+ 
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //Ani&Light
+  string $EPs_op_1=`optionMenu -q -v waffle_EP`;
+  string $CUTs_OP_1=`optionMenu -q -v waffle_CUT`;
+  string $Ani_Path = $project + "\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\" + $EPs_op_1 + "\\" + $CUTs_OP_1 + "\\";
+  string $Ani_Path_2 = $project + "\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\" + $EPs_op_1 + "\\" + $CUTs_OP_1 + "\\_ALY\\";
+  string $Ani_Path_3 = $project + "\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\" + $EPs_op_1 + "\\" + $CUTs_OP_1 + "\\_BLK\\";
+  string $Ani_Path_4 = $project + "\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\" + $EPs_op_1 + "\\" + $CUTs_OP_1 + "\\_DTL\\";
+
+
+  
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //Assets
+  string $BigFolder_OP_3=`optionMenu -q -v waffle_Assets`;
+  string $SubFolder=`optionMenu -q -v waffle_Assets_2`;
+  string $SonFolder=`optionMenu -q -v waffle_Assets_3`;
+  
+  string $AssetsFile_C3 = $project + "\\02_Scenes\\_Assets\\" + $BigFolder_OP_3 + "\\" + $SubFolder + "\\";
+  string $AssetsFile_C4 = $AssetsFile_C3 + "_His\\";
+  string $AssetsFile_C4_pub = $AssetsFile_C3 + "pub\\";
+
+  string $AssetsFile_C3_son = $project + "\\02_Scenes\\_Assets\\" + $BigFolder_OP_3 + "\\" + $SubFolder + "\\" + $SonFolder + "\\";
+  string $AssetsFile_C4_son = $AssetsFile_C3_son + "_His\\";
+  string $AssetsFile_C4_son_pub = $AssetsFile_C3_son + "pub\\";
+
+  
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  
+  
+  int $valueRefname =`checkBox -q -v waffle_ref_namerule`; 
+  int $note_infos_Assets = `checkBox -q -v waffle_Episodic`;
+  
+  switch($case)
+  {
+      case 1 :
+
+              string $waffle_Ani[] = `textScrollList -q -si waffle_Ani_List`;
+
+                  for ($i=0; $i<size($waffle_Ani); $i++)
+                  {
+                  string $Ani_filename = $Ani_Path+$waffle_Ani[$i];
+                  file -f  -ignoreVersion  -o $Ani_filename; //-typ "mayaAscii" 
+                  GET_waffle_TIME();
+                  }
+                    croffle_Rule(1);
+                    //textField -e -tx  "The Ani file has been opened."  waffle_msg_2;
+          
+      break;                  
+   
+
+      case 12 :
+
+              string $waffle_Ani_2[] = `textScrollList -q -si waffle_Ani_List_2`;
+
+                  for ($i=0; $i<size($waffle_Ani_2); $i++)
+                  {
+                  string $Ani_filename_2 = $Ani_Path_2+$waffle_Ani_2[$i];
+                  file -f  -ignoreVersion  -o $Ani_filename_2;
+                  GET_waffle_TIME();
+                  }
+                    croffle_Rule(1);
+                    textField -e -tx  "The Layout file has been opened."  waffle_msg_2;
+          
+      break;   
+
+
+      case 13 :
+
+              string $waffle_Ani_3[] = `textScrollList -q -si waffle_Ani_List_3`;
+
+                  for ($i=0; $i<size($waffle_Ani_3); $i++)
+                  {
+                  string $Ani_filename_3 = $Ani_Path_3+$waffle_Ani_3[$i];
+                  file -f  -ignoreVersion  -o $Ani_filename_3;
+                  GET_waffle_TIME();
+                  }
+                    croffle_Rule(1);
+                    textField -e -tx  "The Block file has been opened."  waffle_msg_2;
+          
+      break;   
+
+
+      case 14 :
+
+              string $waffle_Ani_4[] = `textScrollList -q -si waffle_Ani_List_4`;
+
+                  for ($i=0; $i<size($waffle_Ani_4); $i++)
+                  {
+                  string $Ani_filename_4 = $Ani_Path_4+$waffle_Ani_4[$i];
+                  file -f  -ignoreVersion  -o $Ani_filename_4;
+                  GET_waffle_TIME();
+                  }
+                    croffle_Rule(1);
+                    textField -e -tx  "The Detail file has been opened."  waffle_msg_2;
+          
+      break;   
+
+      case 3 :
+              //Open          
+              string $waffle_List[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+                  for ($i=0; $i<size($waffle_List); $i++)
+                  {
+                      if($note_infos_Assets == 0)
+                      {
+                      string $Lit_filename = $AssetsFile_C3+$waffle_List[$i];
+                      file -f  -ignoreVersion   -o $Lit_filename; //-typ "mayaAscii"  
+                      }
+                      else
+                      {
+                      string $Lit_filename = $AssetsFile_C3_son+$waffle_List[$i];
+                      file -f  -ignoreVersion   -o $Lit_filename;                      
+                      }
+                  croffle_Rule(1);
+                  textField -e -tx  "The Assets has been opened."  waffle_msg_2;
+                  }     
+      break;   
+  
+      case 4 : 
+               //Reference     
+              string $waffle_List_Case4[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+              
+                  for ($i=0; $i<size($waffle_List_Case4); $i++)
+                  {
+                      if($note_infos_Assets == 0)       
+                      {                  
+                      string $Lit_filename = $AssetsFile_C3+$waffle_List_Case4[$i];
+                      $getName = stringToStringArray($waffle_List_Case4[$i], ".");
+                      $AssetName = $SubFolder;                                           
+                        if ($valueRefname == 1)
+                        {
+                        file -r -ignoreVersion -gl -mergeNamespacesOnClash false  -loadReferenceDepth "all" -namespace $AssetName -options "v=0" $Lit_filename; 
+                        }
+                        else
+                        file -r -ignoreVersion -gl -mergeNamespacesOnClash false  -loadReferenceDepth "all" -namespace ":" -options "v=0" $Lit_filename; 
+                      }
+                      else
+                      {
+                      string $Lit_filename = $AssetsFile_C3_son+$waffle_List_Case4[$i];
+                      $getName = stringToStringArray($waffle_List_Case4[$i], ".");
+                      $AssetName = $SonFolder; 
+                        if ($valueRefname == 1)
+                        {                      
+                        file -r -ignoreVersion -gl -mergeNamespacesOnClash false  -loadReferenceDepth "all" -namespace $AssetName -options "v=0" $Lit_filename; 
+                        }
+                        else
+                        file -r -ignoreVersion -gl -mergeNamespacesOnClash false  -loadReferenceDepth "all" -namespace ":" -options "v=0" $Lit_filename; 
+                      } 
+                  }                         
+                  croffle_Rule(1);
+                    
+      break;  
+                    
+ 
+
+      case 41 :              
+              //Import
+              string $waffle_List_Case41[] = `textScrollList -q -si waffle_Assets_List_1`;
+
+                  for ($i=0; $i<size($waffle_List_Case41); $i++)
+                  {
+                      if($note_infos_Assets == 0)
+                      {                  
+                      string $Assets_filename41 = $AssetsFile_C3 + $waffle_List_Case41[$i];                
+                      file -import  -ignoreVersion  -mergeNamespacesOnClash false -options "v=0;"  -pr $Assets_filename41; //-typ "mayaAscii"
+                      }
+                      else
+                      {
+                      string $Assets_filename41 = $AssetsFile_C3_son + $waffle_List_Case41[$i];                
+                      file -import  -ignoreVersion  -mergeNamespacesOnClash false -options "v=0;"  -pr $Assets_filename41; //-typ "mayaAscii"                      
+                      }
+                  }
+                  croffle_Rule(1);
+                    
+      break;  
+
+
+  }
+
+}
+
+
+
+//Make Folder
+
+global proc waffle_MakeDir(int $case)
+{
+  $Curr_project = `workspace -q -fn`;
+  $RootPath = stringToStringArray($Curr_project, "/");
+  $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];
+      string $EPs_MakeDir=`optionMenu -q -v waffle_EP`;
+      string $Path = $project+"\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\" + $EPs_MakeDir + "\\";  
+      string $Path_EP = $project+"\\02_Scenes\\03_Animation\\"  + "3_KEY" + "\\";  
+      
+      string $waffle_folderName =`textField -q -tx waffle_MakeDir_FLD`;
+  switch($case)
+  {
+    //Animation Folder
+    case 1 :    
+      string $dir_list[] = `getFileList -folder $Path -filespec "*.*"`;
+      string $dir_list_sort[];
+       $dir_list_sort=sort($dir_list);
+
+        for ($i = 0; $i < size($dir_list_sort); $i++)
+        {           
+
+          string $AFile = $Path + $dir_list_sort[$i];
+          $array_names = stringToStringArray($dir_list_sort[$i], "_");
+          string $Tk1=$array_names[2];
+          string $PathA = $Path + $Tk1;
+
+          sysFile -makeDir $PathA;
+          string $syscmd ="move "+$AFile+ " " + $PathA;
+          system( $syscmd );
+        }
+        textField -e -tx  ""  waffle_msg_2;
+    break;
+
+    case 2 :    
+
+          
+          string $yo_PathB = $Path + $waffle_folderName;
+          sysFile -makeDir $yo_PathB;
+          catchQuiet(waffle_get_EPs(2));
+          textField -e -tx  "Make Folder Completed."  waffle_msg_2;
+          optionMenu -e -v $waffle_folderName waffle_CUT;
+          catchQuiet(waffle_get_EPs(3));
+     
+    break;
+
+    case 3 :    
+          string $yo_PathC = $Path_EP + $waffle_folderName;
+          sysFile -makeDir $yo_PathC;
+          catchQuiet(waffle_get_EPs(1));
+          optionMenu -e -v $waffle_folderName waffle_EP;
+          catchQuiet(waffle_get_EPs(2));
+     
+    break;
+
+        
+  }
+}
+
+
+global proc waffle_MakeDir_Preset(int $case)
+{
+  switch($case)
+  {
+
+    case 1 :
+    textField -e -tx "EP101" waffle_MakeDir_FLD;
+    break;
+    
+    case 2 :
+    textField -e -tx "S001_001_0" waffle_MakeDir_FLD;
+    break;
+
+    case 3 :
+    textField -e -tx "002-010" waffle_MakeDir_FLD;
+    break;
+   
+    }
+}
+
+
+ 
+global proc waffle_ImportList(int $case)
+{
+  $Curr_project = `workspace -q -fn`;
+  $RootPath = stringToStringArray($Curr_project, "/");
+  $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];  
+
+  string $EPs_ImLi=`optionMenu -q -v waffle_EP`;
+  string $CUTs_Import=`optionMenu -q -v waffle_CUT`;
+
+
+  string $A_Path = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_ImLi + "\\" + $CUTs_Import + "\\";
+  string $waffle_Ani[] = `textScrollList -q -si waffle_Ani_List`;
+
+  switch($case)
+  {  
+
+
+      case 3 :  
+        for ($i=0; $i<size($waffle_Ani); $i++)
+        {
+          string $waffle_Ani_filename = $A_Path+$waffle_Ani[$i];  
+          file -import  -ignoreVersion  -mergeNamespacesOnClash false -options "v=0;"  -pr  $waffle_Ani_filename;
+        }
+        textField -e -tx  "Import Completed."  waffle_msg_2;      
+      break;
+
+      case 31 : 
+        for ($i=0; $i<size($waffle_Ani); $i++)
+        {
+          string $waffle_Ani_filename_R = $A_Path+$waffle_Ani[$i]; 
+          file -r  -ignoreVersion -gl -mergeNamespacesOnClash false  -loadReferenceDepth "all" -namespace ":" -options "v=0" $waffle_Ani_filename_R; 
+        }
+        textField -e -tx  "Calling Completed."  waffle_msg_2; 
+      break;
+
+
+      
+  }
+
+}
+
+
+
+
+global proc waffle_Filtering(int $mask)
+{
+
+	switch ( $mask)
+	{
+
+        case 1 :
+              string $getck =`checkBox -q -v waffle_FilterMODE`; 
+              if( $getck == 1)
+              {
+                string $Sel[] = `ls -sl -l -fl`;
+                string $filter[] = `filterExpand -sm 12 $Sel`;
+                select -r $filter;
+              }
+              else if( $getck == 0)
+              {
+                  $currentPanel = `getPanel -withFocus`; 
+                          string $panelType = `getPanel -to $currentPanel`; if ($panelType == "modelPanel") 
+                          { 
+                          modelEditor -e -polymeshes ( !`modelEditor -q -polymeshes $currentPanel` ) $currentPanel; 
+                          //modelEditor -e -nurbsSurfaces ( !`modelEditor -q -nurbsSurfaces $currentPanel` ) $currentPanel; 
+                          };
+              }
+              break;
+      
+
+        case 2 :
+            string $getck_C2 =`checkBox -q -v waffle_FilterMODE`; 
+            if( $getck_C2 == 1)
+            {
+              string $Sel[] = `ls -sl -l -fl`;
+              string $filter[] = `filterExpand -sm 10 $Sel`;		
+              select -r $filter;
+
+            }
+            else if( $getck_C2 == 0)
+            {
+              $currentPanel = `getPanel -withFocus`; 
+              string $panelType = `getPanel -to $currentPanel`; if ($panelType == "modelPanel") { 
+                          modelEditor -e -lights ( !`modelEditor -q -lights $currentPanel` ) $currentPanel; };
+            }
+            break;
+      
+
+        case 3 :
+        string $getck_C23 =`checkBox -q -v waffle_FilterMODE`; 
+        if( $getck_C23 == 1)
+        {
+          string $Sel[] = `ls -sl -l -fl`;
+          string $filter[] = `filterExpand -sm 9 $Sel`;
+          select -r $filter;
+
+        }
+        else if( $getck_C23 == 0)
+        {
+          $currentPanel = `getPanel -withFocus`; 
+                      string $panelType = `getPanel -to $currentPanel`; if ($panelType == "modelPanel") { 
+                      modelEditor -e -nurbsCurves  ( !`modelEditor -q -nurbsCurves  $currentPanel` ) $currentPanel; };
+        }
+        break;
+
+
+        case 4 :
+
+          $currentPanel = `getPanel -withFocus`; 
+                      string $panelType = `getPanel -to $currentPanel`; if ($panelType == "modelPanel") { 
+                      modelEditor -e -cameras ( !`modelEditor -q -cameras $currentPanel` ) $currentPanel; };		
+        break;
+
+
+        case 5 :
+        string $getck_C5 =`checkBox -q -v waffle_FilterMODE`; 
+        if( $getck_C5 == 1)
+        {
+          string $Sel[] = `ls -sl -l -fl`;
+          string $filter[] = `filterExpand -sm 22 $Sel`;
+          select -r $filter;
+
+        }
+        else if( $getck_C5 == 0)
+        {
+          $currentPanel = `getPanel -withFocus`; 
+                      string $panelType = `getPanel -to $currentPanel`; if ($panelType == "modelPanel") { 
+                      modelEditor -e -locators ( !`modelEditor -q -locators $currentPanel` ) $currentPanel; };	
+        }
+        break;
+
+
+        case 6 :
+          $currentPanel = `getPanel -withFocus`; 
+                      string $panelType_C6 = `getPanel -to $currentPanel`; if ($panelType_C6 == "modelPanel") { 
+                      modelEditor -e -joints ( !`modelEditor -q -joints $currentPanel` ) $currentPanel; };	
+          break;
+
+
+        case 7 :
+        {
+                string $currentPanel = `getPanel -underPointer`;
+        if ("" == $currentPanel) {
+            $currentPanel = `getPanel -withFocus`;
+        }
+        if ("" != $currentPanel) {
+            string $panelType_C7 = `getPanel -typeOf $currentPanel`;
+            if ($panelType_C7 ==  "modelPanel") {
+                modelEditor -edit -displayAppearance "smoothShaded" -displayTextures off 
+                    -displayLights "default" $currentPanel;
+            } else if (`isTrue "MayaCreatorExists"` && `scriptedPanel -exists $currentPanel` 
+                && `scriptedPanel -query -type $currentPanel` == "dynPaintScriptedPanelType") {
+                dynPaintEditor -edit -displayTextures 0 -displayAppearance "smoothShaded"
+                    -displayLights "default" ;
+            } else if ($panelType_C7 ==  "scriptedPanel") {
+            string $cmd_case7 = "modelEditor -edit -displayAppearance \"smoothShaded\" -displayTextures off -displayLights \"default\" "; 
+            scriptedPanelRunTimeCmd( $cmd_case7, $currentPanel ); 
+            }
+        }
+
+
+        $currentPanel = `getPanel -withFocus`; 
+                    string $panelType_C7 = `getPanel -to $currentPanel`; if ($panelType_C7 == "modelPanel") { 
+                    modelEditor -e -allObjects ( !`modelEditor -q -polymeshes $currentPanel` ) $currentPanel; };
+      }
+
+      break;
+      
+      case 8 :
+                  $currentPanel = `getPanel -withFocus`; 
+                  string $panelType_C8 = `getPanel -to $currentPanel`; if ($panelType_C8 == "modelPanel") 
+                  { 
+                  modelEditor -edit -displayAppearance "smoothShaded" -displayTextures off -displayLights "default" $currentPanel; 
+                  };	
+
+          break;
+      case 9 :
+                $rememberSelection=`ls -sl`;
+                string $obj;
+                int $hidden=1;		
+                // assume all object are hidden
+                for ( $obj in $rememberSelection ) 
+                {
+                // loops through all selected objects, if one is visible, break out
+                   string $myattrib=$obj+".visibility";
+                   int $objvis=`getAttr $myattrib`;
+                   if ($objvis==1) 
+                   {
+                    $hidden=0;
+                    break;
+                    }
+                 }
+                if ($hidden==0) 
+                {
+                  hide $rememberSelection;
+                }
+                else 
+                {
+                  showHidden $rememberSelection;
+                }
+                 select $rememberSelection;   
+
+      case 10 :
+              $currentPanel = `getPanel -withFocus`; 
+              string $panelType_C9 = `getPanel -to $currentPanel`; 
+              if ($panelType_C9 == "modelPanel") 
+              { 
+              modelEditor -e -displayAppearance "smoothShaded" -displayTextures on -displayLights "default" -pluginShapes 1 -strokes 1 $currentPanel; 
+              };	
+
+       break;		
+
+  }
+
+}
+
+
+global proc waffle_toggle_WinX(int $case)
+{
+  $Wherewaffle =`window -q -tlc  waffle`; 
+  switch($case)
+  {
+    case 0 :
+      string $ww_val=`checkBox -q -v waffle_CMZ_S`; 
+      if ($ww_val==0) 
+      { 
+          window -e -w 304 -h 30   waffle;
+          checkBox -e -v 1 waffle_CMZ_S;
+      } 
+      else 
+      {
+          window -e -w 304 -h 406   waffle;
+          checkBox -e -v 0 waffle_CMZ_S;
+      }
+                //window -e -tlc $Wherewaffle[0] $Wherewaffle[1]  waffle;           
+    break;
+    
+    case 1 :
+  
+      string $ww_val_C1=`checkBox -q -v waffle_CMZ_W`; 
+      if ($ww_val_C1==0) 
+      { 
+          window -e -w 406 -h 406  waffle;            
+          
+          checkBox -e -v 1 waffle_CMZ_W;                                      
+      } 
+      else 
+      {
+          if ($ww_val_C1==1)
+          {
+          window -e -w 304 -h 406   waffle;           
+                
+          checkBox -e -v 0 waffle_CMZ_W;
+          }
+   
+      }      
+ 
+  }    
+}    
+
+global proc waffle_ConstrainBatch()
+{
+    string $target =`textField -q -tx waffle_PUtil_name`;
+    string $sel[] = `ls -sl`;	
+    for ($i = 0; $i < size($sel); $i++)
+    {
+      select -r $target $sel[$i]; 
+      doCreateParentConstraintArgList 1 { "1","0","0","0","0","0","0","0","1","","1" };
+      doCreateScaleConstraintArgList 1 { "1","1","1","1","0","0","0","1","","1" };		
+      select -cl;
+    }	
+    select $sel;
+}
+	
+  global proc waffle_TakeName(int $case)
+  {
+    string $selObjects[] = `ls -sl`;
+    string $getObjectN = $selObjects[0];  
+    switch($case)
+    {
+      case 1 :
+       
+      break;
+
+      case 2 :
+        textField -e -tx $getObjectN waffle_PUtil_name;
+      break;
+      
+    }
+  }  
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc waffle_sort_PL()
+{
+waffle_get_PL(1);
+}
+
+global proc waffle_Set_PL()
+{
+    waffle_get_PL(2);waffle_reUI();
+}
+
+global proc waffle_get_PL(int $case)
+{
+    string $waffle_ProjectList = dirname(`pluginInfo -query -path "Croissants"`)+"/../scripts/_Project_List.ini";
+    $yp_fileId = `fopen $waffle_ProjectList "r"` ;  
+    string $yp_data = `fread $yp_fileId $yp_data` ; 
+
+    //get all data
+    string $yp_dataArray[] ;  
+    $yp_dataArray = stringToStringArray($yp_data, ","); 
+
+
+  switch($case)
+  {
+  
+  case 1 :
+    $menuItems_pr = `optionMenu -q -itemListLong waffle_PL`;
+    if(size($menuItems_pr) != 0)
+    {deleteUI($menuItems_pr);}
+    
+    string $pr_list_sort[];
+    $pr_list_sort=sort($yp_dataArray);
+
+    for ($i = 1; $i < size($pr_list_sort); $i++)
+    {           
+    menuItem -l $pr_list_sort[$i] -p waffle_PL;
+    }
+  break;
+  
+  case 2 :      
+    string $ProjectName=`optionMenu -q -v waffle_PL`;  
+    setProject $ProjectName;
+  break; 
+  
+  }
+}  
+
+
+global proc waffle_Playblast_check()
+{
+    string $_animator_[] = `getFileList -folder "C:/_pipeline_" -filespec "user.info"`;
+    if (size($_animator_) != 0)
+    {
+        _zShotMask_cmd(0);          
+        waffle_Playblast;
+    } 
+    else 
+    {
+        wis_yourname();   
+        print "Please One More Click Playblast...\n";
+
+    } 
+}
+
+
+global proc waffle_Playblast()
+{
+  select -cl;
+  //RS_HUD;
+  _zShotMask_cmd(1);  
+  string $wip_project = `workspace -q -fn`;
+  string $wip_file_name =`file -q -sn -shn`;
+
+  string $init[] = stringToStringArray($wip_file_name, ".");
+  string $preEP[]= stringToStringArray($init[0], "_");
+
+  int $eF =`intField -q -v waffle_A02_ef`; 
+  int $sF =`intField -q -v waffle_A01_sf`; 
+
+	string $dateDir = `date -shortDate`;
+	string $arrayDir[];
+	$arrayDir = stringToStringArray($dateDir, "/");
+	string $arrayDirSort = $arrayDir[0]+$arrayDir[1];
+  string $audio[] = `ls -type "audio"`;
+  int $wiS = 1280;
+  int $heS = 720;
+  int $ckDate = `checkBox -q -v waffle_PBD`;   
+  if($ckDate != 1)   
+  {
+    string $playblastPath = "04_Renderimages/_Previz/"+$preEP[1] ;
+
+    int $checkFolder =`file -q -exists $playblastPath`;
+    if($checkFolder != 0)
+    {
+
+    }
+    else
+    {
+    sysFile -makeDir $playblastPath;
+    }
+    string $playblastFile_n = $init[0] + "." + $init[1] + ".mov";
+    string $playblastFile = $playblastPath + "/" + $playblastFile_n;
+
+    playblast  -format qt -sound $audio[0] -filename $playblastFile -forceOverwrite  -sequenceTime 0 -clearCache 1 -viewer 1 -showOrnaments 1 -fp 4 -percent 100 -compression "H.264" -quality 100 -widthHeight $wiS $heS;
+    textField -e -tx  "complete."  waffle_msg_2;
+  }
+  else
+  {
+    string $playblastPath_D = "04_Renderimages/_Previz/"+$preEP[1] +"/"+ $arrayDirSort ;
+
+    int $checkFolder =`file -q -exists $playblastPath_D`;
+    if($checkFolder != 0)
+    {
+
+    }
+    else
+    {
+    sysFile -makeDir $playblastPath_D;
+    }
+    string $playblastFile_n = $init[0] + "." + $init[1] + ".mov";
+    string $playblastFile = $playblastPath_D + "/" + $playblastFile_n;
+
+    playblast  -format qt -sound $audio[0] -filename $playblastFile -forceOverwrite  -sequenceTime 0 -clearCache 1 -viewer 1 -showOrnaments 1 -fp 4 -percent 100 -compression "H.264" -quality 100 -widthHeight $wiS $heS;
+    textField -e -tx  "complete."  waffle_msg_2;  
+  }
+  //RS_HUD;
+  select -cl;
+  select -r _Shotmask ;
+  doDelete;
+}
+
+
+
+global proc Publishing_AniF(int $case)
+{  
+	string $publish_dateDir = `date -shortDate`;
+	string $publish_arrayDir[];
+	$publish_arrayDir = stringToStringArray($publish_dateDir, "/");
+	string $publish_arrayDirSort = $publish_arrayDir[0]+$publish_arrayDir[1];
+
+  string $publish_UI ="waffle_Ani_List";
+  string $publish_UI2 ="waffle_CUT";
+  string $publish_project = `workspace -q -fn`;
+  string $publish_EP=`optionMenu -q -v waffle_EP`;
+  string $publish_CUT=`optionMenu -q -v waffle_CUT`;
+  string $AniFile_Path = $publish_project + "/02_Scenes/03_Animation/"  + "3_KEY" + "/" + $publish_EP + "/" + $publish_CUT + "/";
+  string $publish_Path = $publish_project + "/_publish/" + $publish_arrayDirSort + "/";
+
+
+      switch($case)
+      {
+      case 1 :
+      
+         $response_publish = `confirmDialog -title "Confirm" 
+                          -message "Collect Final Files?"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response_publish	  
+          if( $response_publish == "Yes" ) 
+          {
+              int $pcount =`optionMenu -q -ni $publish_UI2`;
+              optionMenu -e -sl 1 $publish_UI2;
+              string $checkC000 = `optionMenu -q -v $publish_UI2`;
+              if($checkC000 == "C000")
+              {
+                waffle_Pageing(3);
+                global string $gMainProgressBar; 
+                
+                  for ($i = 0; $i < $pcount; $i++)
+                  {                           
+                    
+                    Publishing_AniF(2);
+                    
+                    progressBar -edit -beginProgress -isInterruptable true -status "Copy Ani Files ..." -maxValue $pcount $gMainProgressBar;
+                    if(`progressBar -query -isCancelled $gMainProgressBar`)
+                    break;                                                        
+                    progressBar -edit -step 1 $gMainProgressBar;
+                    waffle_Pageing(3);
+                  }  
+                  progressBar -edit -endProgress $gMainProgressBar; 
+              }
+              else
+              {
+              global string $gMainProgressBar; 
+              
+                for ($i = 0; $i < $pcount; $i++)
+                {                           
+                  
+                  Publishing_AniF(2);
+                  
+                  progressBar -edit -beginProgress -isInterruptable true -status "Copy Ani Files ..." -maxValue $pcount $gMainProgressBar;
+                  if(`progressBar -query -isCancelled $gMainProgressBar`)
+                  break;                                                    
+                  progressBar -edit -step 1 $gMainProgressBar;
+                  waffle_Pageing(3);
+                }  
+              progressBar -edit -endProgress $gMainProgressBar;  
+              }          
+          }
+          
+          else if( $response_publish == "No" ) 
+          {
+            print("Cancel");
+          }      
+          textField -e -tx  "Collect Complete."  waffle_msg_2;
+      break;
+      
+      case 2 :
+              int $checkFolder =`file -q -exists $publish_Path`;
+              if($checkFolder != 0)
+              {
+              }
+              else
+              {
+                sysFile -makeDir $publish_Path;
+              }
+
+              int $waffle_aniList = `textScrollList -q -ni $publish_UI`;
+                if($waffle_aniList == 0)
+                {
+                }
+                else
+                {
+                    textScrollList -e -sii $waffle_aniList $publish_UI;
+                    string $waffle_PSource[] = `textScrollList -q -si $publish_UI`;
+
+                    for ($i=0; $i<size($waffle_PSource); $i++)
+                    {
+                    string $Publish_s = $AniFile_Path+$waffle_PSource[$i];
+                    string $Publish_s_filename = substituteAllString($Publish_s, "/", "\\\\");
+                    string $Publish_t = $publish_Path+$waffle_PSource[$i];
+                    string $Publish_t_filename = substituteAllString($Publish_t, "/", "\\\\");
+                    string $Publish_copy ="copy "+$Publish_s_filename+ " " + $Publish_t_filename +" /y";
+                    system( $Publish_copy );
+                    }
+                }
+            textField -e -tx  "Publish Complete.(project_Root\_publish)"  waffle_msg_2;
+      break; 
+
+      }       
+}
+
