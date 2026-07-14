@@ -1786,6 +1786,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     wb_group.hide()
                     ns_group.hide()
                     tp_group.hide()
+                    so_group.hide()
                 except Exception:
                     pass
             elif self.standalone_tab == "world_bake":
