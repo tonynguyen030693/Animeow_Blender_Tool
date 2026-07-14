@@ -2086,9 +2086,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         # Round Tool Settings
         if cmds.optionVar(exists=self.OP_RT_PRECISION):
-            self.round_precision_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_PRECISION))
+            val = cmds.optionVar(query=self.OP_RT_PRECISION)
+            if hasattr(self, 'round_precision_combo'):
+                self.round_precision_combo.setCurrentIndex(val)
+            if hasattr(self, 'fav_round_precision_combo'):
+                self.fav_round_precision_combo.setCurrentIndex(val)
         if cmds.optionVar(exists=self.OP_RT_TARGET):
-            self.round_target_combo.setCurrentIndex(cmds.optionVar(query=self.OP_RT_TARGET))
+            val = cmds.optionVar(query=self.OP_RT_TARGET)
+            if hasattr(self, 'round_target_combo'):
+                self.round_target_combo.setCurrentIndex(val)
+            if hasattr(self, 'fav_round_target_combo'):
+                self.fav_round_target_combo.setCurrentIndex(val)
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -2125,8 +2133,15 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
         
         # Round Tool Settings
-        cmds.optionVar(intValue=(self.OP_RT_PRECISION, self.round_precision_combo.currentIndex()))
-        cmds.optionVar(intValue=(self.OP_RT_TARGET, self.round_target_combo.currentIndex()))
+        if hasattr(self, 'round_precision_combo'):
+            cmds.optionVar(intValue=(self.OP_RT_PRECISION, self.round_precision_combo.currentIndex()))
+        elif hasattr(self, 'fav_round_precision_combo'):
+            cmds.optionVar(intValue=(self.OP_RT_PRECISION, self.fav_round_precision_combo.currentIndex()))
+            
+        if hasattr(self, 'round_target_combo'):
+            cmds.optionVar(intValue=(self.OP_RT_TARGET, self.round_target_combo.currentIndex()))
+        elif hasattr(self, 'fav_round_target_combo'):
+            cmds.optionVar(intValue=(self.OP_RT_TARGET, self.fav_round_target_combo.currentIndex()))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
