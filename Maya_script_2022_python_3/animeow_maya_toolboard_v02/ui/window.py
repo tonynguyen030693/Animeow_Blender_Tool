@@ -2096,24 +2096,27 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.fav_tween_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
                 self.fav_tween_slider.setRange(0, 100)
                 self.fav_tween_slider.setValue(50)
+                self.fav_tween_slider.setFixedHeight(24)
                 self.fav_tween_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
                 self.fav_tween_slider.setTickInterval(25)
                 self.fav_tween_slider.setStyleSheet("""
                     QSlider::groove:horizontal {
-                        background: #3A3A3A;
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                            stop:0 #FF6B35, stop:0.5 #00BCD4, stop:1 #4CAF50);
                         height: 6px;
                         border-radius: 3px;
                     }
                     QSlider::handle:horizontal {
-                        background: #00BCD4;
-                        width: 14px;
-                        height: 14px;
-                        margin: -4px 0;
-                        border-radius: 7px;
-                    }
-                    QSlider::handle:horizontal:hover {
                         background: #FFFFFF;
                         border: 2px solid #00BCD4;
+                        width: 14px;
+                        height: 14px;
+                        margin: -5px 0;
+                        border-radius: 8px;
+                    }
+                    QSlider::handle:horizontal:hover {
+                        background: #00BCD4;
+                        border: 2px solid #FFFFFF;
                     }
                 """)
                 fav_tween_row.addWidget(self.fav_tween_slider)
@@ -2238,6 +2241,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 round_sub_layout.addLayout(reset_row, 3, 0, 1, 2)
                 rnd_lay.addLayout(round_sub_layout)
                 fav_layout.addWidget(rnd_group)
+                fav_layout.addStretch()
                 
                 self.tab_widget.addTab(fav_widget, "Favorites")
                 self.setMinimumWidth(250)
