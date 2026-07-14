@@ -136,6 +136,12 @@ def tween(tween_percent=0.5, objects=None):
             # Tính giá trị nội suy LERP
             tweened_val = prev_val + (next_val - prev_val) * tween_percent
             
+            # Gán trực tiếp vào thuộc tính để cập nhật viewport lập tức
+            try:
+                cmds.setAttr(full_attr, tweened_val)
+            except Exception:
+                pass
+                
             # Đặt keyframe mới tại frame hiện tại
             cmds.setKeyframe(full_attr, time=current_time, value=tweened_val)
             total_keyed += 1

@@ -4136,6 +4136,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 # Tính giá trị LERP từ mốc ban đầu cố định
                 tweened_val = prev_val + (next_val - prev_val) * pct
                 
+                # Gán trực tiếp vào thuộc tính để viewport làm tươi tức thì
+                try:
+                    cmds.setAttr(full_attr, tweened_val)
+                except Exception:
+                    pass
+                
                 # Cập nhật keyframe
                 cmds.setKeyframe(full_attr, time=current_time, value=tweened_val)
                 
