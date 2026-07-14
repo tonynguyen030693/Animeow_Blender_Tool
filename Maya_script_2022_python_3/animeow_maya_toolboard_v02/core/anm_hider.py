@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-FCM Hider v2.2 - Character part visibility manager for Maya.
+ANM Hider v2.2 - Character part visibility manager for Maya.
 Converted and integrated into Animeow Toolboard v02.
 Original tool by Francisco Cerchiara Montero.
 """
@@ -12,7 +12,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 # Version
-versionHider = 'FCM_Hider Beta 2.2'
+versionHider = 'ANM_Hider Beta 2.2'
 
 # Global variables
 namespaceHider = ''
@@ -27,7 +27,7 @@ Leg_L_Hider = ''
 Extra_One_Hider = ''
 Extra_Two_Hider = ''
 Extra_Three_Hider = ''
-FCM_Hider_Settings = ''
+ANM_Hider_Settings = ''
 
 allSet = []
 polys = []
@@ -77,7 +77,7 @@ allVisMeshSelectable = 'All visible meshes are selectable, and all layerDisplay 
 allBodySetsRemoved = 'All Body sets removed' 
 allExtraSetsRemoved = 'All Extra sets removed'
 keepYourSecrets = 'Alright then, keep your secrets' 
-allRemoved = 'everything related to FCM_Hider Removed'
+allRemoved = 'everything related to ANM_Hider Removed'
 selRemoved = 'Selection removed'
 
 # Warnings
@@ -111,7 +111,7 @@ def setup_icons_path():
         os.environ["XBMLANGPATH"] = package_icons_dir + ";" + xbm_path
 
 def declaringSets():
-    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, FCM_Hider_Settings
+    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, ANM_Hider_Settings
     All_Sets_Hider = ( namespaceHider + 'All_Sets_Hider' )
     Head_Hider = ( namespaceHider + 'Head_Hider' )
     Torso_Hider = ( namespaceHider + 'Torso_Hider' )
@@ -122,10 +122,10 @@ def declaringSets():
     Extra_One_Hider = ( namespaceHider + 'Extra_One_Hider' )
     Extra_Two_Hider = ( namespaceHider + 'Extra_Two_Hider' )
     Extra_Three_Hider = ( namespaceHider + 'Extra_Three_Hider' )
-    FCM_Hider_Settings = ( namespaceHider + 'FCM_Hider_Settings' )
+    ANM_Hider_Settings = ( namespaceHider + 'ANM_Hider_Settings' )
 
 def createAllSets():
-    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, FCM_Hider_Settings
+    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, ANM_Hider_Settings
     if cmds.objExists('All_Sets_Hider') == 0: cmds.sets(n='All_Sets_Hider', em=True)
     if cmds.objExists(Head_Hider) == 0: cmds.sets(n=Head_Hider, em=True)
     if cmds.objExists(Torso_Hider) == 0: cmds.sets(n=Torso_Hider, em=True)
@@ -141,9 +141,9 @@ def createAllSets():
     Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, edit=True, fe='All_Sets_Hider' )
 
 def createSettingsHider():
-    if cmds.objExists ('FCM_Hider_Settings') == 0:
+    if cmds.objExists ('ANM_Hider_Settings') == 0:
         selCurrent = cmds.ls (sl=True)
-        cmds.group (em=True, n= 'FCM_Hider_Settings')
+        cmds.group (em=True, n= 'ANM_Hider_Settings')
         cmds.setAttr (".tx", lock=True, keyable=False, channelBox=False )
         cmds.setAttr (".ty", lock=True, keyable=False, channelBox=False )
         cmds.setAttr (".tz", lock=True, keyable=False, channelBox=False )
@@ -155,18 +155,18 @@ def createSettingsHider():
         cmds.setAttr (".sz", lock=True, keyable=False, channelBox=False )
         cmds.setAttr (".v", lock=True, keyable=False, channelBox=False )
         # Create Attr States
-        cmds.addAttr ('FCM_Hider_Settings', ln='All_Sets_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Head_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Torso_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Arm_R_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Arm_L_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Leg_L_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Leg_R_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Extra_One_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Extra_Two_Hider_State',at='bool', dv=True, keyable=True)
-        cmds.addAttr ('FCM_Hider_Settings', ln='Extra_Three_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='All_Sets_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Head_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Torso_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Arm_R_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Arm_L_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Leg_L_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Leg_R_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_One_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_Two_Hider_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_Three_Hider_State',at='bool', dv=True, keyable=True)
         # Create Attr Edit Mode
-        cmds.addAttr ('FCM_Hider_Settings', ln='Edit_Mode_State',at='bool', dv=True, keyable=True)
+        cmds.addAttr ('ANM_Hider_Settings', ln='Edit_Mode_State',at='bool', dv=True, keyable=True)
         cmds.select(selCurrent)
 
 def createHiderInTheScene():
@@ -180,10 +180,10 @@ def createHiderInTheScene():
 def declaringNameSpaces():
     global namespaceHider, namespaceHiderForWindow
     currentSel = cmds.ls(sl=True)
-    if cmds.objExists('*:FCM_Hider_Settings'):
-        cmds.select('*:FCM_Hider_Settings')
+    if cmds.objExists('*:ANM_Hider_Settings'):
+        cmds.select('*:ANM_Hider_Settings')
         try:
-            cmds.select('FCM_Hider_Settings',tgl=True)
+            cmds.select('ANM_Hider_Settings',tgl=True)
         except:
             pass    
         settings = cmds.ls(sl=True)
@@ -283,7 +283,7 @@ def showPolys():
     global setHider
     try:
         removeNameSpace()
-        if cmds.getAttr(FCM_Hider_Settings + '.' + setHider + '_State') == 0:
+        if cmds.getAttr(ANM_Hider_Settings + '.' + setHider + '_State') == 0:
             addNameSpace() 
             try:
                 cmds.showHidden(polys)
@@ -331,7 +331,7 @@ def hideSet():
         cmds.warning("set doesn't exists")
     
     removeNameSpace()
-    cmds.setAttr( FCM_Hider_Settings + '.' + (setHider + '_State'), 0)
+    cmds.setAttr( ANM_Hider_Settings + '.' + (setHider + '_State'), 0)
     checkStateIcon()
 
 def showSet():
@@ -354,7 +354,7 @@ def showSet():
     else:
         cmds.warning(setDoesntExists)
     removeNameSpace()
-    cmds.setAttr( FCM_Hider_Settings + '.' + (setHider + '_State'), 1)
+    cmds.setAttr( ANM_Hider_Settings + '.' + (setHider + '_State'), 1)
     checkStateIcon()
 
 def showOrHideButton():
@@ -365,7 +365,7 @@ def showOrHideButton():
             cmds.warning('Set empty')
         else:
             removeNameSpace()
-            if cmds.getAttr( FCM_Hider_Settings + '.' + (setHider + '_State') ):
+            if cmds.getAttr( ANM_Hider_Settings + '.' + (setHider + '_State') ):
                 addNameSpace()
                 hideSet()
             else:
@@ -378,7 +378,7 @@ def showOrHideButton():
 
 def ShowOrHideAllSetsButton():   
     global choise    
-    if cmds.getAttr(FCM_Hider_Settings + '.All_Sets_Hider_State'):
+    if cmds.getAttr(ANM_Hider_Settings + '.All_Sets_Hider_State'):
         choise = 'hide'; ShowOrHideAllSets()
     else:
         choise = 'show'; ShowOrHideAllSets()
@@ -393,7 +393,7 @@ def checkStateIcon():
             cmds.iconTextButton ( (setHider + "button"), e=True, image=("Icons_Hider/" + setHider + "_Empty" + ".png") )
         else:
             removeNameSpace()
-            if cmds.getAttr( FCM_Hider_Settings + '.' + (setHider + '_State') ):
+            if cmds.getAttr( ANM_Hider_Settings + '.' + (setHider + '_State') ):
                 cmds.iconTextButton ( (setHider + "button"), e=True, image=("Icons_Hider/" + setHider + ".png") )
             else:
                 cmds.iconTextButton ( (setHider + "button"), e=True, image=("Icons_Hider/" + setHider + "_Off" + ".png") )
@@ -426,10 +426,10 @@ def ShowOrHideAllSets():
             setHider = s_name
             if choise == 'show':
                 showSet()
-                cmds.setAttr( FCM_Hider_Settings + '.All_Sets_Hider_State', 1)
+                cmds.setAttr( ANM_Hider_Settings + '.All_Sets_Hider_State', 1)
             if choise == 'hide':
                 hideSet()
-                cmds.setAttr( FCM_Hider_Settings + '.All_Sets_Hider_State', 0)
+                cmds.setAttr( ANM_Hider_Settings + '.All_Sets_Hider_State', 0)
         checkStateIcon()
 
 def selectSet():
@@ -527,7 +527,7 @@ def removeAllExtraSets():
 def removeAllHider():
     removeAllBodySets()
     removeAllExtraSets()
-    if cmds.objExists(FCM_Hider_Settings): cmds.delete(FCM_Hider_Settings)
+    if cmds.objExists(ANM_Hider_Settings): cmds.delete(ANM_Hider_Settings)
     if cmds.objExists('All_Sets_Hider'): cmds.delete('All_Sets_Hider')
     if cmds.window ("windowHider", exists=True):
         cmds.deleteUI ("windowHider")
@@ -617,8 +617,8 @@ def saveSetsHider():
         if SourceFile:
             SourceFile = ''.join([str(elem) for elem in SourceFile]) 
             fileHandle = open((SourceFile), 'w')
-            fileHandle.write("## Remove existent sets\n" + "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.removeAllBodySets()\nfh.removeAllExtraSets()\n")
-            fileHandle.write("## Create all sets\nimport animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.createAllSets()\n## Select each set content and create set\n")
+            fileHandle.write("## Remove existent sets\n" + "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.removeAllBodySets()\nfh.removeAllExtraSets()\n")
+            fileHandle.write("## Create all sets\nimport animeow_maya_toolboard_v02.core.anm_hider as fh; fh.createAllSets()\n## Select each set content and create set\n")
             for s_name in allSets:       
                 setContent = cmds.sets(s_name, q=True)
                 if str(setContent) == 'None' or not setContent:
@@ -630,11 +630,11 @@ def saveSetsHider():
                     fileHandle.write(')'+'\n')
                     fileHandle.write('cmds.sets( edit=True, fe=fh.' + s_name + ')\n')
             fileHandle.write("## Select clear\n" + "cmds.select(cl=True)\n")
-            fileHandle.write("## Check all icons\nimport animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.checkAllIconSets()")
+            fileHandle.write("## Check all icons\nimport animeow_maya_toolboard_v02.core.anm_hider as fh; fh.checkAllIconSets()")
             fileHandle.close()
             print(setsExportSucces), 
     else:
-        cmds.confirmDialog( title='FCM Hider Warning', message=errorExportSets, button='Ok')
+        cmds.confirmDialog( title='ANM Hider Warning', message=errorExportSets, button='Ok')
 
 def LoadSetsHider():
     try:
@@ -656,14 +656,14 @@ def toggleEditMode():
     if cmds.window ('windowHider',q=True, h=True) == (36 + highWindow) :
         cmds.iconTextButton ('Edit_Modebutton', e=True, image1="Icons_Hider/Contract_Hider.png")
         cmds.window ('windowHider', edit=True, w=widthWindow, h=(74 + highWindow))
-        cmds.setAttr (FCM_Hider_Settings +'.Edit_Mode_State', 1)
+        cmds.setAttr (ANM_Hider_Settings +'.Edit_Mode_State', 1)
     else:
         cmds.iconTextButton ('Edit_Modebutton', e=True, image1="Icons_Hider/Expand_Hider.png")
         cmds.window ('windowHider', edit=True, w=widthWindow, h=(36 + highWindow))
-        cmds.setAttr (FCM_Hider_Settings+'.Edit_Mode_State', 0)
+        cmds.setAttr (ANM_Hider_Settings+'.Edit_Mode_State', 0)
 
 def checkEditMode():
-    if cmds.getAttr( FCM_Hider_Settings + '.Edit_Mode_State' ):
+    if cmds.getAttr( ANM_Hider_Settings + '.Edit_Mode_State' ):
         cmds.iconTextButton ('Edit_Modebutton', e=True, image1="Icons_Hider/Contract_Hider.png")
         cmds.window ('windowHider', edit=True, w=widthWindow, h=(74 + highWindow) )
     else:
@@ -713,11 +713,11 @@ def SelectTemplateLineWindow():
     cmds.columnLayout(adjustableColumn=True)
     cmds.text(l='Usage: First select pole vector Ctrl\nThen grow selection, Filter and add it to a Set', h=30, fn='boldLabelFont')
     cmds.separator()
-    cmds.button(l='1- Grow selection', c='import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.growSelection()')
+    cmds.button(l='1- Grow selection', c='import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.growSelection()')
     cmds.separator()
-    cmds.button(l='2- Filter Only Curves', c='import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.filterOnlyCurves()')
+    cmds.button(l='2- Filter Only Curves', c='import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.filterOnlyCurves()')
     cmds.separator()
-    cmds.button(l='3- Print number selected', c='import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.printSelected()')
+    cmds.button(l='3- Print number selected', c='import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.printSelected()')
     cmds.showWindow( selectTemplateLine )
     cmds.window('Select_Template_Line', edit=True, w=300, h=110)
     print('Select Template Line Window'),
@@ -886,7 +886,7 @@ def helpWindow():
 
     cmds.image(i="Icons_Hider/Help_1_Hider.png")
     form = cmds.formLayout()
-    object = cmds.button (l="", w=200, h=28, c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.toggleImageHelpWindow()", backgroundColor=[0.72,0.15,0.16])
+    object = cmds.button (l="", w=200, h=28, c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.toggleImageHelpWindow()", backgroundColor=[0.72,0.15,0.16])
     cmds.formLayout (form, edit=True, attachForm= [[object, "top", 5], [object, "left", 215]])
     object = cmds.text(l='Press here repeatedly to see ', font='boldLabelFont')
     cmds.formLayout (form, edit=True, attachForm= [[object, "top", 12], [object, "left", 240]])
@@ -897,16 +897,16 @@ def helpWindow():
     form = cmds.formLayout()
     object = cmds.text (l="By Francisco Cerchiara Montero", font='boldLabelFont')
     cmds.formLayout (form, edit=True, attachForm= [[object, "top", 5], [object, "left", 470]])
-    object = cmds.button (l="Link to online tutorial", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.launchtutorial()", backgroundColor=[0.72,0.15,0.16])
+    object = cmds.button (l="Link to online tutorial", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.launchtutorial()", backgroundColor=[0.72,0.15,0.16])
     cmds.formLayout (form, edit=True, attachForm= [[object, "top", 0], [object, "left", 10]])
     
     cmds.setParent('..')
     cmds.showWindow (helpWindowHider)
 
 def contactWindow():
-    if cmds.window ("FCM_Contact", exists=True ):
-        cmds.deleteUI ("FCM_Contact")
-    FCMContact = cmds.window ("FCM_Contact", title="Contact", s=False)
+    if cmds.window ("ANM_Contact", exists=True ):
+        cmds.deleteUI ("ANM_Contact")
+    ANMContact = cmds.window ("ANM_Contact", title="Contact", s=False)
     
     cmds.rowColumnLayout( numberOfColumns=2, columnAttach=(1, 'right', 0), columnWidth=[(1, 100), (2, 250)] )
     cmds.text( label='Name:  ' )
@@ -923,7 +923,7 @@ def contactWindow():
     cmds.textField( phoneNumber, edit=True, enterCommand=('cmds.setFocus(\"' + email + '\")') )
     cmds.textField( email, edit=True, enterCommand=('cmds.setFocus(\"' + name + '\")') )
     
-    cmds.showWindow( FCMContact )
+    cmds.showWindow( ANMContact )
 
 def buttonWindowHider():
     global shapeMode
@@ -932,12 +932,12 @@ def buttonWindowHider():
     ann=blueButtons_Ann, commandRepeatable=True, i=("Icons_Hider/" + setHider + ".png"),
     c=commandButton ) 
     cmds.popupMenu(postMenuCommand = popUpButton)
-    cmds.menuItem (i="Icons_Hider/PopUp_Add_Hider.png", l="Add Selection", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.shapeMode = 'Off'; fh.addSelectionToSet()")
-    cmds.menuItem (i="Icons_Hider/PopUp_Add_Hider.png", l="Add Selection Shape", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.shapeMode = 'On'; fh.addSelectionToSet()")
+    cmds.menuItem (i="Icons_Hider/PopUp_Add_Hider.png", l="Add Selection", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.shapeMode = 'Off'; fh.addSelectionToSet()")
+    cmds.menuItem (i="Icons_Hider/PopUp_Add_Hider.png", l="Add Selection Shape", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.shapeMode = 'On'; fh.addSelectionToSet()")
     cmds.menuItem (divider=True)
-    cmds.menuItem (i="Icons_Hider/PopUp_Remove_Hider.png", l="Remove Selection", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.removeSelection()")
-    cmds.menuItem (i="Icons_Hider/PopUp_SelectSet_Hider.png", l="Select Set", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.selectSet()")
-    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Remove Set", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.removeSet()")
+    cmds.menuItem (i="Icons_Hider/PopUp_Remove_Hider.png", l="Remove Selection", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.removeSelection()")
+    cmds.menuItem (i="Icons_Hider/PopUp_SelectSet_Hider.png", l="Select Set", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.selectSet()")
+    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Remove Set", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.removeSet()")
 
 def HiderUI():    
     global blueButtons_Ann, commandButton, popUpButton, setHider
@@ -947,84 +947,84 @@ def HiderUI():
 
     if cmds.window ('windowHider', exists=True):
         cmds.deleteUI ("windowHider")
-    windowHider = cmds.window ("windowHider", s=False, title= ("FCM_Hider: " + namespaceHiderForWindow), menuBar=True)
+    windowHider = cmds.window ("windowHider", s=False, title= ("ANM_Hider: " + namespaceHiderForWindow), menuBar=True)
     
     cmds.menu('FileMenu', label='File')
-    cmds.menuItem(l="Save Sets", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.saveSetsHider()")
-    cmds.menuItem(l="Load Sets", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.LoadSetsHider()")    
+    cmds.menuItem(l="Save Sets", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.saveSetsHider()")
+    cmds.menuItem(l="Load Sets", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.LoadSetsHider()")    
     cmds.menu('HelpMenu', label='Help' )
-    cmds.menuItem( l='Video Tutorial', c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.launchtutorial()")
-    cmds.menuItem( l='Contact', c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.contactWindow()")
-    cmds.menuItem( l='About version', c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; print(fh.versionHider),")
+    cmds.menuItem( l='Video Tutorial', c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.launchtutorial()")
+    cmds.menuItem( l='Contact', c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.contactWindow()")
+    cmds.menuItem( l='About version', c="import animeow_maya_toolboard_v02.core.anm_hider as fh; print(fh.versionHider),")
 
     cmds.rowColumnLayout (numberOfColumns = 11)
     
-    cmds.iconTextButton ('Edit_Modebutton', i="Icons_Hider/Contract_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.toggleEditMode()", ann=editMode_Ann)
+    cmds.iconTextButton ('Edit_Modebutton', i="Icons_Hider/Contract_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.toggleEditMode()", ann=editMode_Ann)
     
     setHider = All_Sets_Hider
     removeNameSpace()
     cmds.iconTextButton ( (setHider + "button"),
     ann=allSets_Ann, commandRepeatable=True, i=("Icons_Hider/" + setHider + ".png"),
-    c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.ShowOrHideAllSetsButton()") 
-    cmds.popupMenu(postMenuCommand = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.All_Sets_Hider")
-    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Empty Sets Body", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.removeAllBodySets()")
-    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Empty Sets Extras", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.removeAllExtraSets()")
-    cmds.menuItem (i="Icons_Hider/PopUp_SelectSet_Hider.png", l="Select All Sets", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; cmds.select(fh.All_Sets_Hider)")
+    c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.ShowOrHideAllSetsButton()") 
+    cmds.popupMenu(postMenuCommand = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.All_Sets_Hider")
+    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Empty Sets Body", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.removeAllBodySets()")
+    cmds.menuItem (i="Icons_Hider/PopUp_RemoveSet_Hider.png", l="Empty Sets Extras", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.removeAllExtraSets()")
+    cmds.menuItem (i="Icons_Hider/PopUp_SelectSet_Hider.png", l="Select All Sets", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; cmds.select(fh.All_Sets_Hider)")
     
     setHider = Head_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Head_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Head_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Head_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Head_Hider"
     buttonWindowHider()
     
     setHider = Torso_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Torso_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Torso_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Torso_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Torso_Hider"
     buttonWindowHider()
     
     setHider = Arm_R_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Arm_R_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Arm_R_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Arm_R_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Arm_R_Hider"
     buttonWindowHider()
     
     setHider = Arm_L_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Arm_L_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Arm_L_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Arm_L_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Arm_L_Hider"
     buttonWindowHider()
     
     setHider = Leg_R_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Leg_R_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Leg_R_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Leg_R_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Leg_R_Hider"
     buttonWindowHider()
     
     setHider = Leg_L_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Leg_L_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Leg_L_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Leg_L_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Leg_L_Hider"
     buttonWindowHider()
     
     setHider = Extra_One_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_One_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_One_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_One_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_One_Hider"
     buttonWindowHider()
        
     setHider = Extra_Two_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_Two_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_Two_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_Two_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_Two_Hider"
     buttonWindowHider()
     
     setHider = Extra_Three_Hider
-    commandButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_Three_Hider; fh.showOrHideButton()"
-    popUpButton = "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.setHider = fh.Extra_Three_Hider"
+    commandButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_Three_Hider; fh.showOrHideButton()"
+    popUpButton = "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.setHider = fh.Extra_Three_Hider"
     buttonWindowHider()
     
     # Utilities
-    cmds.iconTextButton (i="Icons_Hider/Unlock_Hider.png", c='import animeow_maya_toolboard_v02.core.fcm_hider as fh; cmds.warning(fh.rightClickToSeeButtons_Ann),', ann=rightClickToSeeButtons_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Unlock_Hider.png", c='import animeow_maya_toolboard_v02.core.anm_hider as fh; cmds.warning(fh.rightClickToSeeButtons_Ann),', ann=rightClickToSeeButtons_Ann)
     cmds.popupMenu()
-    cmds.menuItem(i="Icons_Hider/Unlock_Hider.png", l="Unlock All Visible", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.unlockAllVisible()", ann=unlockAllVis_Ann)
-    cmds.menuItem(i="Icons_Hider/Unlock_Hider.png", l="Unlock All Visible Meshes", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.unlockAllVismeshes()", ann=unlockAllVisMeshes_Ann)
-    cmds.menuItem(i="Icons_Hider/Lock_Hider.png", l="Lock Selection", c= "import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.lockSelection()", ann=lockSelection_Ann)
+    cmds.menuItem(i="Icons_Hider/Unlock_Hider.png", l="Unlock All Visible", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.unlockAllVisible()", ann=unlockAllVis_Ann)
+    cmds.menuItem(i="Icons_Hider/Unlock_Hider.png", l="Unlock All Visible Meshes", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.unlockAllVismeshes()", ann=unlockAllVisMeshes_Ann)
+    cmds.menuItem(i="Icons_Hider/Lock_Hider.png", l="Lock Selection", c= "import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.lockSelection()", ann=lockSelection_Ann)
 
-    cmds.iconTextButton (i="Icons_Hider/ObjectMode_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.objectModeHider()", ann=objectMode_Ann)
-    cmds.iconTextButton ('toggleFacesNurbsCurve', i="Icons_Hider/Only_Faces_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.switchPolyOrNurbsSel()",ann=switchPolyOrNurbsCurves_Ann)
+    cmds.iconTextButton (i="Icons_Hider/ObjectMode_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.objectModeHider()", ann=objectMode_Ann)
+    cmds.iconTextButton ('toggleFacesNurbsCurve', i="Icons_Hider/Only_Faces_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.switchPolyOrNurbsSel()",ann=switchPolyOrNurbsCurves_Ann)
     cmds.popupMenu()
     cmds.menuItem(i="Icons_Hider/PolyColorSel_Red_Hider.png",l="Poly color selection Red", c= "cmds.displayColor ('polyFace', 13, active= True)")
     cmds.menuItem(i="Icons_Hider/PolyColorSel_Green_Hider.png", l="Poly color selection Green", c="cmds.displayColor ('polyFace', 14, active= True)")
@@ -1032,18 +1032,18 @@ def HiderUI():
     
     cmds.iconTextButton (i="Icons_Hider/Grow_Hider.png", c="cmds.polySelectConstraint (pp=1)", commandRepeatable=True, ann=grow_Ann)
     cmds.iconTextButton (i="Icons_Hider/Shrink_Hider.png", c="cmds.polySelectConstraint (pp=2)", commandRepeatable=True, ann=shrink_Ann)
-    cmds.iconTextButton (i="Icons_Hider/Template_Line_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.SelectTemplateLineWindow()", ann=templateLine_Ann)
-    cmds.iconTextButton (i="Icons_Hider/Mirror_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.mirrorHider()", ann=mirrorButtons_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Template_Line_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.SelectTemplateLineWindow()", ann=templateLine_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Mirror_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.mirrorHider()", ann=mirrorButtons_Ann)
     
-    cmds.iconTextButton (i="Icons_Hider/Show_All_Hidden_Faces_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.checkAllSets()", ann=checkAllSets_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Show_All_Hidden_Faces_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.checkAllSets()", ann=checkAllSets_Ann)
     cmds.popupMenu()
-    cmds.menuItem(l="Isolate mode", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.checkAllSetsIsolate()", ann= ( checkAllSets_Ann + ' but isolating every set') )
+    cmds.menuItem(l="Isolate mode", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.checkAllSetsIsolate()", ann= ( checkAllSets_Ann + ' but isolating every set') )
     
-    cmds.iconTextButton (i="Icons_Hider/Extra_Functions_Hider.png",  c='import animeow_maya_toolboard_v02.core.fcm_hider as fh; cmds.warning(fh.rightClickToSeeButtons_Ann),', ann=rightClickToSeeButtons_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Extra_Functions_Hider.png",  c='import animeow_maya_toolboard_v02.core.anm_hider as fh; cmds.warning(fh.rightClickToSeeButtons_Ann),', ann=rightClickToSeeButtons_Ann)
     cmds.popupMenu('extraFunctions')
-    cmds.menuItem(l="Show all hidden faces in the scene", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.showAllHiddenFaces()")
+    cmds.menuItem(l="Show all hidden faces in the scene", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.showAllHiddenFaces()")
     
-    cmds.iconTextButton (i="Icons_Hider/Remove_All_Hider.png", c="import animeow_maya_toolboard_v02.core.fcm_hider as fh; fh.confirmRemoveAllHider()",ann=deleteAll_Ann)
+    cmds.iconTextButton (i="Icons_Hider/Remove_All_Hider.png", c="import animeow_maya_toolboard_v02.core.anm_hider as fh; fh.confirmRemoveAllHider()",ann=deleteAll_Ann)
 
     cmds.setParent('..')
     cmds.showWindow( windowHider )    
