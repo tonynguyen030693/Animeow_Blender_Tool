@@ -145,6 +145,10 @@ class SmartLinkManager(object):
 
     def apply_constraint_to_target(self):
         """Gán parentConstraint & scaleConstraint từ target (vật dẫn) tới loc_parent"""
+        if self.target.lower() == "world":
+            print(u"[SmartLink] Đang liên kết %s vào Không gian thế giới (World Space)." % self.owner)
+            return
+            
         cmds.parentConstraint(self.target, self.loc_parent, maintainOffset=True)
         try:
             cmds.scaleConstraint(self.target, self.loc_parent, maintainOffset=True)

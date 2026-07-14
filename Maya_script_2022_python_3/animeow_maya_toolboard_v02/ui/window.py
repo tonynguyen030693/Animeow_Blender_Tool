@@ -2130,7 +2130,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             owners = [o.strip() for o in owner_raw.split(",") if o.strip()]
 
-        if not cmds.objExists(target):
+        # HỖ TRỢ LINK TO WORLD
+        is_world_link = False
+        if not target or target.lower() == "world":
+            if not target:
+                res = QtWidgets.QMessageBox.question(
+                    self, "Liên kết vào thế giới (Link to World)",
+                    "Bạn chưa gán đối tượng Target. Bạn có muốn liên kết (Link) các đối tượng Owner vào Không gian thế giới (World Space) không?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+                )
+                if res == QtWidgets.QMessageBox.No:
+                    return
+            target = "world"
+            is_world_link = True
+
+        if not is_world_link and not cmds.objExists(target):
             QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Target: %s không tồn tại trong scene!" % target)
             return
 
@@ -2139,7 +2153,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if not cmds.objExists(owner):
                 QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Owner: %s không tồn tại trong scene!" % owner)
                 return
-            if target == owner:
+            if not is_world_link and target == owner:
                 QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết đối tượng %s với chính nó!" % owner)
                 continue
             valid_owners.append(owner)
