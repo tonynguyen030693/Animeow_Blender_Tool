@@ -2045,7 +2045,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 # Cụm Smooth Keys & Slider trong Favorites
                 fav_smooth_row = QtWidgets.QHBoxLayout()
                 self.fav_smooth_btn = QtWidgets.QPushButton("Smooth Keys")
-                self.fav_smooth_btn.setIcon(AnimeowIcons.icon_smooth())
+                self.fav_smooth_btn.setIcon(AnimeowIcons.icon_clean())
                 self.fav_smooth_btn.setFixedHeight(24)
                 self.fav_smooth_btn.setToolTip("Làm mịn 100% các keyframe được chọn trong Graph Editor")
                 self.fav_smooth_btn.clicked.connect(self.on_smooth_btn_clicked)
