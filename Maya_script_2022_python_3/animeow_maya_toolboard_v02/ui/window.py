@@ -4064,6 +4064,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if getattr(self, '_is_tweening_drag', False):
             pct = val / 100.0
             tween_machine.tween(pct)
+            # Ép Maya refresh viewport ngay lập tức để cập nhật tư thế trực quan
+            cmds.refresh(force=True)
 
     def on_tween_slider_released(self):
         """Đóng Undo chunk khi animator thả chuột ra"""
@@ -4083,6 +4085,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         success, msg = tween_machine.tween_interactive(pct / 100.0)
         if success:
+            cmds.refresh(force=True) # Ép refresh viewport
             cmds.inViewMessage(
                 amg='<span style="color:#00BCD4;">%s</span>' % msg,
                 pos='botCenter', fade=True
