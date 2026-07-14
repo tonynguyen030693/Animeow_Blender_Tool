@@ -3890,7 +3890,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.undoInfo(closeChunk=True)
 
     def on_clean_subframe_keys(self):
-        """Xóa sạch các keyframe có thời gian lẻ (sub-frame decimal keys) khỏi các đối tượng được chọn"""
+        """Xóa sạch các keyframe lẻ bằng chỉ số index để tránh sai số float và đảm bảo dọn dẹp triệt để"""
         sel = cmds.ls(sl=True) or []
         if not sel:
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trên viewport!")
@@ -3907,17 +3907,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             for curve in curves:
                 times = cmds.keyframe(curve, query=True, timeChange=True) or []
-                # Quét các keyframe lẻ (lệch khỏi số nguyên hơn 0.001)
-                subframe_times = [t for t in times if abs(t - round(t)) > 0.001]
-                for t in subframe_times:
-                    # Xóa chính xác keyframe lẻ tại vị trí thời gian t
-                    cmds.cutKey(curve, time=(t, t))
-                    deleted_count += 1
+                
+                # Duyệt ngược từ cuối về đầu để khi xóa bằng index, chỉ số các key phía trước không bị thay đổi
+                for i in range(len(times) - 1, -1, -1):
+                    t = times[i]
+                    # Nâng độ nhạy lên 1e-5 để bắt trọn mọi keyframe lệch cực nhỏ tạo ra hoa thị * trên timeline
+                    if abs(t - round(t)) > 1e-5:
+                        cmds.cutKey(curve, index=(i, i))
+                        deleted_count += 1
             
             if deleted_count > 0:
                 cmds.refresh(force=True)
-                print(u"[AnimeowTool] Đã dọn sạch %d keyframe lẻ (sub-frame keys)." % deleted_count)
-                cmds.warning("Đã dọn sạch %d keyframe lẻ (sub-frame keys)." % deleted_count)
+                print(u"[AnimeowTool] Đã dọn sạch %d keyframe lẻ (sub-frame keys) bằng chỉ số index." % deleted_count)
+                cmds.warning("Đã dọn sạch %d keyframe lẻ (sub-frame keys) bằng chỉ số index." % deleted_count)
             else:
                 cmds.warning("Không tìm thấy keyframe lẻ nào để dọn dẹp.")
         except Exception as e:
