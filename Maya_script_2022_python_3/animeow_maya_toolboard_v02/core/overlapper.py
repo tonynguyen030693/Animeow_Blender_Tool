@@ -43,7 +43,15 @@ def get_control_chains(selected_roots):
     """
     Trích xuất các chuỗi control liên kết trực tiếp trong phân cấp từ các roots được chọn.
     """
-    all_nurbs = set(cmds.listTransforms(type="nurbsCurve") or [])
+    # Lấy các shape là nurbsCurve
+    shapes = cmds.ls(type="nurbsCurve") or []
+    all_nurbs = set()
+    for s in shapes:
+        parents = cmds.listRelatives(s, parent=True, fullPath=True)
+        if parents:
+            all_nurbs.add(parents[0])
+            all_nurbs.add(cmds.ls(parents[0])[0])
+            
     chains = []
     
     for root in selected_roots:
@@ -51,14 +59,15 @@ def get_control_chains(selected_roots):
         current_node = root
         
         while True:
-            children = cmds.listRelatives(current_node, children=True, type="transform") or []
-            nurbs_children = [c for c in children if c in all_nurbs]
+            # Lấy các con trực tiếp
+            children = cmds.listRelatives(current_node, children=True, type="transform", fullPath=True) or []
+            nurbs_children = [c for c in children if c in all_nurbs or cmds.ls(c)[0] in all_nurbs]
             if not nurbs_children:
                 break
-            # Đi theo nhánh đầu tiên (pickWalk down)
-            next_node = nurbs_children[0]
+            # Đi theo nhánh đầu tiên
+            next_node = cmds.ls(nurbs_children[0])[0]
             current_chain.append(next_node)
-            current_node = next_node
+            current_node = nurbs_children[0]
             
         chains.append(current_chain)
             
