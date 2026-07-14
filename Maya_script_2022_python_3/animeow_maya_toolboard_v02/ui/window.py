@@ -1737,6 +1737,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.launch_animo_btn.clicked.connect(self.on_launch_animo)
         launch_layout.addWidget(self.launch_animo_btn)
         
+        self.launch_fcm_hider_btn = QtWidgets.QPushButton("Khởi động FCM Hider (Ẩn/Hiện bộ phận)")
+        self.launch_fcm_hider_btn.setIcon(AnimeowIcons.icon_clean())
+        self.launch_fcm_hider_btn.setFixedHeight(30)
+        self.launch_fcm_hider_btn.clicked.connect(self.on_launch_fcm_hider)
+        launch_layout.addWidget(self.launch_fcm_hider_btn)
+        
         tab5_layout.addWidget(launch_group)
         
         shelf_group = QtWidgets.QGroupBox("Thanh công cụ nhanh (Shelf)")
@@ -2748,6 +2754,24 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print("[Animo] Đã khởi chạy Animo thành công.")
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
+
+    def on_launch_fcm_hider(self):
+        try:
+            import sys
+            import importlib
+            if "animeow_maya_toolboard_v02.core.fcm_hider" in sys.modules:
+                importlib.reload(sys.modules["animeow_maya_toolboard_v02.core.fcm_hider"])
+            else:
+                import animeow_maya_toolboard_v02.core.fcm_hider as fcm_hider
+            
+            from animeow_maya_toolboard_v02.core import fcm_hider
+            fcm_hider.show_hider()
+            print("[Animeow] Đã khởi chạy FCM Hider.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Không thể chạy FCM Hider. Vui lòng đảm bảo bạn đã cài đặt fcm_hider trong core:\n%s" % str(e)
+            )
 
     def on_toggle_multi_cam(self, state):
         is_multi = (state == QtCore.Qt.Checked)
