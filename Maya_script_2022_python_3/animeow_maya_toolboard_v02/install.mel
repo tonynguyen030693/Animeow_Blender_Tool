@@ -25,21 +25,21 @@ global proc animeow_tb_install() {
     // Lấy thư mục cha của installer (ví dụ: E:/AI_Work/Blender_Maya_Script/Maya_script_2022_python_3/animeow_maya_toolboard/)
     string $installDir = `match "^.*/" $filePath`;
     
-    // Thư mục chứa gói python (thư mục cha của animeow_maya_toolboard, tức là E:/AI_Work/Blender_Maya_Script/Maya_script_2022_python_3/)
-    // Ta cắt bỏ "animeow_maya_toolboard/" ở cuối
-    string $parentDir = `substitute "animeow_maya_toolboard/" $installDir ""`;
+    // Thư mục chứa gói python (thư mục cha của animeow_maya_toolboard_v02, tức là E:/AI_Work/Blender_Maya_Script/Maya_script_2022_python_3/)
+    // Ta cắt bỏ "animeow_maya_toolboard_v02/" ở cuối
+    string $parentDir = `substitute "animeow_maya_toolboard_v02/" $installDir ""`;
     
     // Tạo script Python để khởi chạy
     string $pyCmd = "import sys\n";
     $pyCmd += "path = '" + $parentDir + "'\n";
     $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
     $pyCmd += "for m in list(sys.modules.keys()):\n";
-    $pyCmd += "    if m.startswith('animeow_maya_toolboard'):\n";
+    $pyCmd += "    if m.startswith('animeow_maya_toolboard_v02'):\n";
     $pyCmd += "        del sys.modules[m]\n";
-    $pyCmd += "import animeow_maya_toolboard\n";
-    $pyCmd += "import animeow_maya_toolboard.menu as menu\n";
+    $pyCmd += "import animeow_maya_toolboard_v02\n";
+    $pyCmd += "import animeow_maya_toolboard_v02.menu as menu\n";
     $pyCmd += "menu.create_menu()\n";
-    $pyCmd += "animeow_maya_toolboard.show()\n";
+    $pyCmd += "animeow_maya_toolboard_v02.show()\n";
     
     // Tìm Shelf hiện tại để thêm nút
     global string $gShelfTopLevel;

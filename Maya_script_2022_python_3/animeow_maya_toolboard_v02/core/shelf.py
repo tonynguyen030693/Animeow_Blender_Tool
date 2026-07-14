@@ -557,6 +557,7 @@ def create_shelf():
     # 3. Tìm thư mục icons và hàm nạp icon tuyệt đối
     core_dir = os.path.dirname(os.path.abspath(__file__))
     package_dir = os.path.dirname(core_dir)
+    parent_dir = os.path.dirname(package_dir).replace("\\", "/")
     icons_dir = os.path.join(package_dir, "icons")
     
     def get_icon(icon_name, fallback):
@@ -565,139 +566,142 @@ def create_shelf():
             return full_path
         return fallback
 
+    # Thêm code định nghĩa path chung cho mọi nút
+    common_path_init = "import sys\npath = '%s'\nif path not in sys.path: sys.path.insert(0, path)\n" % parent_dir
+
     # 4. Định nghĩa danh sách các nút bấm
     tools = [
         {
             "label": "ATB",
             "annotation": "Mở Animeow Toolboard đầy đủ",
             "image": get_icon("atb_icon.png", "fileOpen.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show()"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show()"
         },
         {
             "label": "Link",
             "annotation": "Mở cửa sổ Constraint & Smart Link độc lập",
             "image": get_icon("link_icon.png", "parentConstraint.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='smart_link')"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='smart_link')"
         },
         {
             "label": "Bake",
             "annotation": "Mở cửa sổ Smart World Bake & Pivot độc lập",
             "image": get_icon("bake_icon.png", "save.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='world_bake')"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='world_bake')"
         },
         {
             "label": "Curve",
             "annotation": "Mở cửa sổ Curve & Motion độc lập",
             "image": get_icon("curve_icon.png", "menuIconWindow.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=1)"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab=1)"
         },
         {
             "label": "Fav",
             "annotation": "Mở cửa sổ công cụ yêu thích (Favorite Tools: Làm tròn số & Dọn Key)",
             "image": get_icon("fav_icon.png", "menuIconWindow.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='fav_tools')"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='fav_tools')"
         },
         {
             "label": "Rig",
             "annotation": "Mở cửa sổ Rig & Mirror độc lập",
             "image": get_icon("rig_icon.png", "polyMesh.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=2)"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab=2)"
         },
         {
             "label": "Play",
             "annotation": "Mở cửa sổ Output & Scene (Playblast) độc lập",
             "image": get_icon("play_icon.png", "playblast.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab=3)"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab=3)"
         },
         {
             "label": "Arc",
             "annotation": "Mở cửa sổ cấu hình vẽ Arc Tracker độc lập",
             "image": get_icon("arc_icon.png", "motionTrail.png"),
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='arc_tracker')"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='arc_tracker')"
         },
         {
             "label": "Graph",
             "annotation": "Bật/Tắt Graph Editor",
             "image": "menuIconWindow.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_graph_editor()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.toggle_graph_editor()"
         },
         {
             "label": "Ref",
             "annotation": "Bật/Tắt Reference Editor",
             "image": "fileOpen.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_reference_editor()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.toggle_reference_editor()"
         },
         {
             "label": "Out",
             "annotation": "Bật/Tắt Outliner Window",
             "image": "menuIconWindow.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.toggle_outliner()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.toggle_outliner()"
         },
         {
             "label": "Const",
             "annotation": "Mở hộp công cụ Quick Constraint độc lập",
             "image": "parentConstraint.png",
-            "command": "import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard'):\n        del sys.modules[m]\nimport animeow_maya_toolboard\nanimeow_maya_toolboard.show(standalone_tab='quick_const')"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='quick_const')"
         },
         {
             "label": "S.Inc",
             "annotation": "Lưu Increment phiên bản phụ",
             "image": "save.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.save_increment()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.save_increment()"
         },
         {
             "label": "S.Up",
             "annotation": "Lưu nâng Version chính",
             "image": "save.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.save_up_version()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.save_up_version()"
         },
         {
             "label": "FixSh",
             "annotation": "Sửa lỗi xanh lưới (Fix Lost Shader)",
             "image": "polyMesh.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.fix_lost_shader()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.fix_lost_shader()"
         },
         {
             "label": "Clean",
             "annotation": "Dọn dẹp scenes cũ vào thư mục Old",
             "image": "delete.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.clean_folder()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.clean_folder()"
         },
         {
             "label": "AntiV",
             "annotation": "Quét và diệt Virus trong Scene (vaccine, gene, fuckvirus...)",
             "image": "delete.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.run_anti_virus()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.run_anti_virus()"
         },
         {
             "label": "Studio",
             "annotation": "Khởi chạy Studio Library",
             "image": "fileOpen.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.launch_studiolibrary()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.launch_studiolibrary()"
         },
         {
             "label": "DWP",
             "annotation": "Khởi chạy DWPicker",
             "image": "menuIconWindow.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.launch_dwpicker()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.launch_dwpicker()"
         },
         {
             "label": "Tween",
             "annotation": "Khởi chạy Tween Machine",
             "image": "commandButton.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.launch_tweenmachine()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.launch_tweenmachine()"
         },
         {
             "label": "aTools",
             "annotation": "Khởi chạy aTools Anim School",
             "image": "commandButton.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.launch_atools()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.launch_atools()"
         },
         {
             "label": "Animo",
             "annotation": "Khởi chạy Animo Toolset",
             "image": "commandButton.png",
-            "command": "import animeow_maya_toolboard.core.shelf as shelf; shelf.launch_animo()"
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.launch_animo()"
         }
     ]
     

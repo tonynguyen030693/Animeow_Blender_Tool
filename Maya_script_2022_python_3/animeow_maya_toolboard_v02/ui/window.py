@@ -889,8 +889,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab1 = QtWidgets.QWidget(self)
         tab1.hide()
         tab1_layout = QtWidgets.QVBoxLayout(tab1)
-        tab1_layout.setContentsMargins(6, 10, 6, 6)
-        tab1_layout.setSpacing(10)
+        tab1_layout.setContentsMargins(6, 8, 6, 6)
+        tab1_layout.setSpacing(8)
         
         t1_title = QtWidgets.QLabel("CONSTRAINT, SPACE & BAKE MANAGER")
         t1_title.setAlignment(QtCore.Qt.AlignCenter)
@@ -1011,17 +1011,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         link_ops_row = QtWidgets.QHBoxLayout()
         self.link_btn = QtWidgets.QPushButton("Tạo Smart Link")
+        self.link_btn.setIcon(AnimeowIcons.icon_link())
         self.link_btn.setObjectName("accent_btn")
         self.link_btn.setFixedHeight(28)
         self.link_btn.clicked.connect(self.on_link)
         link_ops_row.addWidget(self.link_btn)
         
         self.switch_target_btn = QtWidgets.QPushButton("Đổi Target (Switch)")
+        self.switch_target_btn.setIcon(AnimeowIcons.icon_retarget())
         self.switch_target_btn.setFixedHeight(28)
         self.switch_target_btn.clicked.connect(self.on_switch_target)
         link_ops_row.addWidget(self.switch_target_btn)
         
         self.bake_clean_btn = QtWidgets.QPushButton("Bake & Clean Link")
+        self.bake_clean_btn.setIcon(AnimeowIcons.icon_bake())
         self.bake_clean_btn.setFixedHeight(28)
         self.bake_clean_btn.clicked.connect(self.on_bake_clean)
         link_ops_row.addWidget(self.bake_clean_btn)
@@ -1082,11 +1085,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         wb_layout.addWidget(QtWidgets.QLabel("Bake Action:"), 3, 0)
         self.wb_bake_btn = QtWidgets.QPushButton("Bake sang Locator thế giới (Record)")
+        self.wb_bake_btn.setIcon(AnimeowIcons.icon_world())
         self.wb_bake_btn.setFixedHeight(26)
         self.wb_bake_btn.clicked.connect(self.on_world_bake_to_locator)
         wb_layout.addWidget(self.wb_bake_btn, 3, 1, 1, 3)
         
         self.wb_restore_btn = QtWidgets.QPushButton("Bake ngược về Vật thể nguồn (Restore)")
+        self.wb_restore_btn.setIcon(AnimeowIcons.icon_reset())
         self.wb_restore_btn.setFixedHeight(26)
         self.wb_restore_btn.clicked.connect(self.on_world_bake_from_locator)
         wb_layout.addWidget(self.wb_restore_btn, 4, 1, 1, 3)
@@ -1115,6 +1120,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ns_layout.addWidget(self.ns_remove_constraints_cb, 0, 2)
         
         self.ns_bake_btn = QtWidgets.QPushButton("Bake đối tượng chọn")
+        self.ns_bake_btn.setIcon(AnimeowIcons.icon_bake())
         self.ns_bake_btn.setObjectName("accent_btn")
         self.ns_bake_btn.setFixedHeight(26)
         self.ns_bake_btn.clicked.connect(self.on_bake_selected_ns)
@@ -1129,16 +1135,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tp_layout.setSpacing(8)
         
         self.tp_create_btn = QtWidgets.QPushButton("1. Tạo Temp Locator")
+        self.tp_create_btn.setIcon(AnimeowIcons.icon_pivot())
         self.tp_create_btn.setFixedHeight(28)
         self.tp_create_btn.clicked.connect(self.on_tp_create)
         tp_layout.addWidget(self.tp_create_btn)
         
         self.tp_active_btn = QtWidgets.QPushButton("2. Kích hoạt Pivot")
+        self.tp_active_btn.setIcon(AnimeowIcons.icon_pivot())
         self.tp_active_btn.setFixedHeight(28)
         self.tp_active_btn.clicked.connect(self.on_tp_active)
         tp_layout.addWidget(self.tp_active_btn)
         
         self.tp_release_btn = QtWidgets.QPushButton("3. Bake & Giải phóng")
+        self.tp_release_btn.setIcon(AnimeowIcons.icon_bake())
         self.tp_release_btn.setFixedHeight(28)
         self.tp_release_btn.clicked.connect(self.on_tp_release)
         tp_layout.addWidget(self.tp_release_btn)
@@ -1158,6 +1167,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         order_row.addWidget(self.so_order_combo)
         
         self.so_apply_order_btn = QtWidgets.QPushButton("Đổi Order && Giữ dáng")
+        self.so_apply_order_btn.setIcon(AnimeowIcons.icon_space_order())
         self.so_apply_order_btn.setFixedHeight(26)
         self.so_apply_order_btn.clicked.connect(self.on_change_rotate_order)
         order_row.addWidget(self.so_apply_order_btn)
@@ -1184,8 +1194,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab2 = QtWidgets.QWidget(self)
         tab2.hide()
         tab2_layout = QtWidgets.QVBoxLayout(tab2)
-        tab2_layout.setContentsMargins(6, 10, 6, 6)
-        tab2_layout.setSpacing(10)
+        tab2_layout.setContentsMargins(6, 8, 6, 6)
+        tab2_layout.setSpacing(8)
         
         self.t2_title = QtWidgets.QLabel("CURVE EDITING & MOTION ANALYSIS")
         self.t2_title.setAlignment(QtCore.Qt.AlignCenter)
@@ -1219,6 +1229,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         at_btn_row = QtWidgets.QGridLayout()
         self.at_create_btn = QtWidgets.QPushButton("Vẽ Arc Trail")
+        self.at_create_btn.setIcon(AnimeowIcons.icon_arc())
         self.at_create_btn.setObjectName("accent_btn")
         self.at_create_btn.setFixedHeight(28)
         self.at_create_btn.clicked.connect(self.on_create_arc_trail)
@@ -1293,6 +1304,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Nút bấm áp dụng Tween
         self.tween_apply_btn = QtWidgets.QPushButton("Tween!")
+        self.tween_apply_btn.setIcon(AnimeowIcons.icon_tween())
         self.tween_apply_btn.setObjectName("accent_btn")
         self.tween_apply_btn.setFixedHeight(28)
         self.tween_apply_btn.clicked.connect(self.on_tween_apply)
@@ -1331,11 +1343,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         curve_layout.setSpacing(8)
         
         self.euler_filter_btn = QtWidgets.QPushButton("Euler Filter (Lọc xoay / Gimbal flips)")
+        self.euler_filter_btn.setIcon(AnimeowIcons.icon_euler())
         self.euler_filter_btn.setFixedHeight(28)
         self.euler_filter_btn.clicked.connect(self.on_euler_filter)
         curve_layout.addWidget(self.euler_filter_btn)
         
         self.clean_key_btn = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Consecutive Keys)")
+        self.clean_key_btn.setIcon(AnimeowIcons.icon_clean())
         self.clean_key_btn.setFixedHeight(28)
         self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
         curve_layout.addWidget(self.clean_key_btn)
@@ -1362,6 +1376,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         round_sub_layout.addWidget(self.round_target_combo, 1, 1)
         
         self.round_btn = QtWidgets.QPushButton("Làm tròn số")
+        self.round_btn.setIcon(AnimeowIcons.icon_round())
         self.round_btn.setObjectName("accent_btn")
         self.round_btn.setFixedHeight(28)
         self.round_btn.clicked.connect(self.on_round_values)
@@ -1370,11 +1385,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Reset row
         reset_row = QtWidgets.QHBoxLayout()
         self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
+        self.reset_t_btn.setIcon(AnimeowIcons.icon_reset())
         self.reset_t_btn.setFixedHeight(24)
         self.reset_t_btn.clicked.connect(self.on_reset_translate)
         reset_row.addWidget(self.reset_t_btn)
         
         self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
+        self.reset_r_btn.setIcon(AnimeowIcons.icon_reset())
         self.reset_r_btn.setFixedHeight(24)
         self.reset_r_btn.clicked.connect(self.on_reset_rotate)
         reset_row.addWidget(self.reset_r_btn)
@@ -1391,8 +1408,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab3 = QtWidgets.QWidget(self)
         tab3.hide()
         tab3_layout = QtWidgets.QVBoxLayout(tab3)
-        tab3_layout.setContentsMargins(6, 10, 6, 6)
-        tab3_layout.setSpacing(10)
+        tab3_layout.setContentsMargins(6, 8, 6, 6)
+        tab3_layout.setSpacing(8)
         
         t3_title = QtWidgets.QLabel("RIG MAPPING & ANIMATION MIRRORING")
         t3_title.setAlignment(QtCore.Qt.AlignCenter)
@@ -1477,6 +1494,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         rt_layout.addLayout(rt_opts)
         
         self.rt_execute_btn = QtWidgets.QPushButton("Thực hiện Retarget Animation (Bake)")
+        self.rt_execute_btn.setIcon(AnimeowIcons.icon_retarget())
         self.rt_execute_btn.setObjectName("accent_btn")
         self.rt_execute_btn.setFixedHeight(30)
         self.rt_execute_btn.clicked.connect(self.on_rt_execute)
@@ -1540,6 +1558,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mir_custom_right_txt.hide()
 
         self.mir_execute_btn = QtWidgets.QPushButton("Thực hiện Mirror Animation (Bake)")
+        self.mir_execute_btn.setIcon(AnimeowIcons.icon_mirror())
         self.mir_execute_btn.setObjectName("accent_btn")
         self.mir_execute_btn.setFixedHeight(30)
         self.mir_execute_btn.clicked.connect(self.on_mir_execute)
@@ -1554,8 +1573,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab4 = QtWidgets.QWidget(self)
         tab4.hide()
         tab4_layout = QtWidgets.QVBoxLayout(tab4)
-        tab4_layout.setContentsMargins(6, 10, 6, 6)
-        tab4_layout.setSpacing(10)
+        tab4_layout.setContentsMargins(6, 8, 6, 6)
+        tab4_layout.setSpacing(8)
         
         t4_title = QtWidgets.QLabel("PLAYBLAST EXPORT & SCENE OPTIMIZATION")
         t4_title.setAlignment(QtCore.Qt.AlignCenter)
@@ -1624,6 +1643,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         pb_layout.addWidget(self.refresh_cam_btn, 5, 0, 1, 4)
         
         self.pb_execute_btn = QtWidgets.QPushButton("Thực hiện Playblast")
+        self.pb_execute_btn.setIcon(AnimeowIcons.icon_play())
         self.pb_execute_btn.setObjectName("accent_btn")
         self.pb_execute_btn.setFixedHeight(30)
         self.pb_execute_btn.clicked.connect(self.on_run_playblast)
@@ -1638,41 +1658,49 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         scene_layout.setSpacing(8)
         
         self.toggle_graph_btn = QtWidgets.QPushButton("Graph Editor (Bật/Tắt)")
+        self.toggle_graph_btn.setIcon(AnimeowIcons.icon_graph())
         self.toggle_graph_btn.setFixedHeight(28)
         self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
         scene_layout.addWidget(self.toggle_graph_btn, 0, 0)
         
         self.toggle_ref_btn = QtWidgets.QPushButton("Reference Editor (Bật/Tắt)")
+        self.toggle_ref_btn.setIcon(AnimeowIcons.icon_folder())
         self.toggle_ref_btn.setFixedHeight(28)
         self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
         scene_layout.addWidget(self.toggle_ref_btn, 0, 1)
         
         self.save_inc_btn = QtWidgets.QPushButton("Save Increment")
+        self.save_inc_btn.setIcon(AnimeowIcons.icon_save())
         self.save_inc_btn.setFixedHeight(28)
         self.save_inc_btn.clicked.connect(self.on_save_increment)
         scene_layout.addWidget(self.save_inc_btn, 1, 0)
         
         self.save_up_ver_btn = QtWidgets.QPushButton("Save Up Version")
+        self.save_up_ver_btn.setIcon(AnimeowIcons.icon_save())
         self.save_up_ver_btn.setFixedHeight(28)
         self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
         scene_layout.addWidget(self.save_up_ver_btn, 1, 1)
 
         self.fix_shader_btn = QtWidgets.QPushButton("Fix Lost Shader (Xanh lưới)")
+        self.fix_shader_btn.setIcon(AnimeowIcons.icon_reset())
         self.fix_shader_btn.setFixedHeight(28)
         self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
         scene_layout.addWidget(self.fix_shader_btn, 2, 0)
         
         self.clean_folder_btn = QtWidgets.QPushButton("Clean Folder (Dọn dẹp scenes)")
+        self.clean_folder_btn.setIcon(AnimeowIcons.icon_clean())
         self.clean_folder_btn.setFixedHeight(28)
         self.clean_folder_btn.clicked.connect(self.on_clean_folder)
         scene_layout.addWidget(self.clean_folder_btn, 2, 1)
         
         self.toggle_outliner_btn = QtWidgets.QPushButton("Outliner (Bật/Tắt)")
+        self.toggle_outliner_btn.setIcon(AnimeowIcons.icon_outliner())
         self.toggle_outliner_btn.setFixedHeight(28)
         self.toggle_outliner_btn.clicked.connect(self.on_toggle_outliner)
         scene_layout.addWidget(self.toggle_outliner_btn, 3, 0)
         
         self.run_antivirus_btn = QtWidgets.QPushButton("Diệt Virus (Quét & Clean)")
+        self.run_antivirus_btn.setIcon(AnimeowIcons.icon_shield())
         self.run_antivirus_btn.setFixedHeight(28)
         self.run_antivirus_btn.clicked.connect(self.on_run_antivirus)
         scene_layout.addWidget(self.run_antivirus_btn, 3, 1)
@@ -1686,8 +1714,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab5 = QtWidgets.QWidget(self)
         tab5.hide()
         tab5_layout = QtWidgets.QVBoxLayout(tab5)
-        tab5_layout.setContentsMargins(6, 10, 6, 6)
-        tab5_layout.setSpacing(10)
+        tab5_layout.setContentsMargins(6, 8, 6, 6)
+        tab5_layout.setSpacing(8)
         
         t5_title = QtWidgets.QLabel("QUICK START THIRD-PARTY PLUGINS")
         t5_title.setAlignment(QtCore.Qt.AlignCenter)
@@ -1700,26 +1728,31 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         launch_layout.setSpacing(10)
         
         self.launch_studiolibrary_btn = QtWidgets.QPushButton("Khởi động Studio Library")
+        self.launch_studiolibrary_btn.setIcon(AnimeowIcons.icon_folder())
         self.launch_studiolibrary_btn.setFixedHeight(30)
         self.launch_studiolibrary_btn.clicked.connect(self.on_launch_studiolibrary)
         launch_layout.addWidget(self.launch_studiolibrary_btn)
         
         self.launch_dwpicker_btn = QtWidgets.QPushButton("Khởi động DWPicker")
+        self.launch_dwpicker_btn.setIcon(AnimeowIcons.icon_key())
         self.launch_dwpicker_btn.setFixedHeight(30)
         self.launch_dwpicker_btn.clicked.connect(self.on_launch_dwpicker)
         launch_layout.addWidget(self.launch_dwpicker_btn)
         
         self.launch_tweenmachine_btn = QtWidgets.QPushButton("Khởi động Tween Machine")
+        self.launch_tweenmachine_btn.setIcon(AnimeowIcons.icon_tween())
         self.launch_tweenmachine_btn.setFixedHeight(30)
         self.launch_tweenmachine_btn.clicked.connect(self.on_launch_tweenmachine)
         launch_layout.addWidget(self.launch_tweenmachine_btn)
         
         self.launch_atools_btn = QtWidgets.QPushButton("Khởi động aTools Anim School")
+        self.launch_atools_btn.setIcon(AnimeowIcons.icon_launch())
         self.launch_atools_btn.setFixedHeight(30)
         self.launch_atools_btn.clicked.connect(self.on_launch_atools)
         launch_layout.addWidget(self.launch_atools_btn)
         
         self.launch_animo_btn = QtWidgets.QPushButton("Khởi động Animo (Cụm Công cụ Anim)")
+        self.launch_animo_btn.setIcon(AnimeowIcons.icon_launch())
         self.launch_animo_btn.setFixedHeight(30)
         self.launch_animo_btn.clicked.connect(self.on_launch_animo)
         launch_layout.addWidget(self.launch_animo_btn)
@@ -1732,6 +1765,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         shelf_layout.setSpacing(10)
         
         self.create_shelf_btn = QtWidgets.QPushButton("✨ Tạo / Cập nhật Shelf Animeow")
+        self.create_shelf_btn.setIcon(AnimeowIcons.icon_star())
         self.create_shelf_btn.setObjectName("accent_btn")
         self.create_shelf_btn.setFixedHeight(30)
         self.create_shelf_btn.clicked.connect(self.on_create_custom_shelf)
@@ -1872,11 +1906,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 ck_lay.setSpacing(6)
                 
                 btn_clean = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Key)")
+                btn_clean.setIcon(AnimeowIcons.icon_clean())
                 btn_clean.setFixedHeight(28)
                 btn_clean.clicked.connect(self.on_clean_redundant_keys)
                 ck_lay.addWidget(btn_clean)
                 
                 btn_euler = QtWidgets.QPushButton("Euler Filter (Lọc xoay)")
+                btn_euler.setIcon(AnimeowIcons.icon_euler())
                 btn_euler.setFixedHeight(28)
                 btn_euler.clicked.connect(self.on_euler_filter)
                 ck_lay.addWidget(btn_euler)
@@ -1911,6 +1947,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 round_sub_layout.addWidget(self.round_target_combo, 1, 1)
                 
                 self.round_btn = QtWidgets.QPushButton("Làm tròn số")
+                self.round_btn.setIcon(AnimeowIcons.icon_round())
                 self.round_btn.setObjectName("accent_btn")
                 self.round_btn.setFixedHeight(28)
                 self.round_btn.clicked.connect(self.on_round_values)
@@ -1919,11 +1956,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 # Reset row
                 reset_row = QtWidgets.QHBoxLayout()
                 self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
+                self.reset_t_btn.setIcon(AnimeowIcons.icon_reset())
                 self.reset_t_btn.setFixedHeight(24)
                 self.reset_t_btn.clicked.connect(self.on_reset_translate)
                 reset_row.addWidget(self.reset_t_btn)
                 
                 self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
+                self.reset_r_btn.setIcon(AnimeowIcons.icon_reset())
                 self.reset_r_btn.setFixedHeight(24)
                 self.reset_r_btn.clicked.connect(self.on_reset_rotate)
                 reset_row.addWidget(self.reset_r_btn)
@@ -3894,6 +3933,25 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_qc_delete(self):
         from ..core import shelf
         shelf.delete_obj_constraints()
+
+    # ── Tween Machine ──
+
+    def on_tween_apply(self):
+        """Áp dụng nội suy tại frame hiện tại theo giá trị slider."""
+        pct = self.tween_slider.value() / 100.0
+        success, msg = tween_machine.tween_interactive(pct)
+        if success:
+            cmds.inViewMessage(
+                amg='<span style="color:#00BCD4;">%s</span>' % msg,
+                pos='botCenter', fade=True
+            )
+        else:
+            cmds.warning(msg)
+
+    def on_tween_preset(self, pct):
+        """Đặt slider về giá trị preset rồi áp dụng tween."""
+        self.tween_slider.setValue(pct)
+        self.on_tween_apply()
 
 
 def is_ui_alive(ui_obj):

@@ -64,16 +64,35 @@ class SmartLinkManager(object):
         return bool(anim_curves)
 
     def record_world_animation(self, start_frame, end_frame):
-        """Ghi hình chuyển động thế giới của owner sang một locator tạm thời"""
+        """Ghi hình chuyển động thế giới của owner sang một locator tạm thời bằng Constraint & Bake"""
         # Tạo locator tạm
         loc_temp = cmds.spaceLocator(name="loc_temp_" + self.owner)[0]
         
-        # Đi theo từng frame để ghi vị trí thế giới
-        for frame in range(int(start_frame), int(end_frame) + 1):
-            cmds.currentTime(frame, edit=True)
-            cmds.matchTransform(loc_temp, self.owner, pos=True, rot=True)
-            cmds.setKeyframe(loc_temp, attribute=['translateX', 'translateY', 'translateZ', 
-                                                  'rotateX', 'rotateY', 'rotateZ'], time=frame)
+        # Tạo parentConstraint tạm thời từ owner sang loc_temp
+        const = cmds.parentConstraint(self.owner, loc_temp, maintainOffset=False)[0]
+        scale_const = None
+        try:
+            scale_const = cmds.scaleConstraint(self.owner, loc_temp, maintainOffset=False)[0]
+        except Exception:
+            pass
+            
+        # Bake kết quả bằng engine cực nhanh của Maya
+        cmds.bakeResults(
+            loc_temp,
+            time=(start_frame, end_frame),
+            sampleBy=1,
+            simulation=True,
+            disableImplicitControl=True,
+            preserveOutsideKeys=True,
+            sparseAnimCurveBake=False,
+            at=['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
+        )
+        
+        # Xóa constraint tạm thời
+        cmds.delete(const)
+        if scale_const and cmds.objExists(scale_const):
+            cmds.delete(scale_const)
+            
         return loc_temp
 
     def clear_owner_keyframes(self):
@@ -117,12 +136,31 @@ class SmartLinkManager(object):
             pass
 
     def match_animation_to_child(self, loc_temp, start_frame, end_frame):
-        """Khớp chuyển động từ loc_temp sang loc_child theo từng frame"""
-        for frame in range(int(start_frame), int(end_frame) + 1):
-            cmds.currentTime(frame, edit=True)
-            cmds.matchTransform(self.loc_child, loc_temp, pos=True, rot=True)
-            cmds.setKeyframe(self.loc_child, attribute=['translateX', 'translateY', 'translateZ', 
-                                                       'rotateX', 'rotateY', 'rotateZ'], time=frame)
+        """Khớp chuyển động từ loc_temp sang loc_child bằng parentConstraint và bakeResults"""
+        # Tạo constraint tạm thời từ loc_temp sang loc_child
+        const = cmds.parentConstraint(loc_temp, self.loc_child, maintainOffset=False)[0]
+        scale_const = None
+        try:
+            scale_const = cmds.scaleConstraint(loc_temp, self.loc_child, maintainOffset=False)[0]
+        except Exception:
+            pass
+            
+        # Bake kết quả trực tiếp sang loc_child (Maya tự động tính toán toạ độ cục bộ dưới loc_parent)
+        cmds.bakeResults(
+            self.loc_child,
+            time=(start_frame, end_frame),
+            sampleBy=1,
+            simulation=True,
+            disableImplicitControl=True,
+            preserveOutsideKeys=True,
+            sparseAnimCurveBake=False,
+            at=['translateX', 'translateY', 'translateZ', 'rotateX', 'rotateY', 'rotateZ']
+        )
+        
+        # Xóa constraint tạm thời
+        cmds.delete(const)
+        if scale_const and cmds.objExists(scale_const):
+            cmds.delete(scale_const)
 
     def reset_owner_transforms(self):
         """Đưa toạ độ cục bộ của owner về mặc định (0 cho dịch chuyển/xoay, 1 cho scale)"""
@@ -258,11 +296,13 @@ class AnimationBaker(object):
             # Lọc bỏ các keyframe thô không nằm trong danh sách keep_frames
             all_keys = cmds.keyframe(self.owner, q=True, timeChange=True) or []
             all_keys = sorted(list(set([int(round(k)) for k in all_keys])))
-            for k in all_keys:
-                if k < start_frame or k > end_frame:
-                    continue
-                if k not in keep_frames:
-                    cmds.cutKey(self.owner, time=(k, k), option="keys", clear=True)
+            delete_frames = [k for k in all_keys if start_frame <= k <= end_frame and k not in keep_frames]
+            
+            if delete_frames:
+                cmds.selectKey(self.owner, clear=True)
+                for k in delete_frames:
+                    cmds.selectKey(self.owner, add=True, time=(k, k))
+                cmds.cutKey(animation="keysOrObjects", clear=True)
             
             print(u"[SmartLink] Đã bake tối ưu giữ Grid (bước %d) và giữ nguyên các key cực trị nguồn." % step)
             
