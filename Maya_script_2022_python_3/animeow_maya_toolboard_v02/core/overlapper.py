@@ -42,32 +42,44 @@ def clean_up():
 def get_control_chains(selected_roots):
     """
     Trích xuất các chuỗi control liên kết trực tiếp trong phân cấp từ các roots được chọn.
+    Hỗ trợ tự động nhận diện Joint, Nurbs Curve Control hoặc các Transform bất kỳ.
     """
-    # Lấy các shape là nurbsCurve
-    shapes = cmds.ls(type="nurbsCurve") or []
-    all_nurbs = set()
-    for s in shapes:
-        parents = cmds.listRelatives(s, parent=True, fullPath=True)
-        if parents:
-            all_nurbs.add(parents[0])
-            all_nurbs.add(cmds.ls(parents[0])[0])
-            
     chains = []
     
     for root in selected_roots:
         current_chain = [root]
         current_node = root
+        root_type = cmds.nodeType(root)
+        
+        # Kiểm tra shape của root
+        root_shapes = cmds.listRelatives(root, shapes=True) or []
+        root_shape_type = cmds.nodeType(root_shapes[0]) if root_shapes else None
         
         while True:
-            # Lấy các con trực tiếp
-            children = cmds.listRelatives(current_node, children=True, type="transform", fullPath=True) or []
-            nurbs_children = [c for c in children if c in all_nurbs or cmds.ls(c)[0] in all_nurbs]
-            if not nurbs_children:
+            # Lấy tất cả các con trực tiếp
+            children = cmds.listRelatives(current_node, children=True, fullPath=True) or []
+            
+            # Lọc các con phù hợp loại (Joint đi với Joint, Curve đi với Curve, Transform đi với Transform)
+            valid_children = []
+            for child in children:
+                c_type = cmds.nodeType(child)
+                if root_type == "joint" and c_type == "joint":
+                    valid_children.append(child)
+                elif root_shape_type:
+                    c_shapes = cmds.listRelatives(child, shapes=True) or []
+                    if c_shapes and cmds.nodeType(c_shapes[0]) == root_shape_type:
+                        valid_children.append(child)
+                elif c_type == "transform":
+                    valid_children.append(child)
+                    
+            if not valid_children:
                 break
-            # Đi theo nhánh đầu tiên
-            next_node = cmds.ls(nurbs_children[0])[0]
-            current_chain.append(next_node)
-            current_node = nurbs_children[0]
+                
+            # Đi theo nhánh con đầu tiên
+            next_node_full = valid_children[0]
+            next_node_short = cmds.ls(next_node_full)[0]
+            current_chain.append(next_node_short)
+            current_node = next_node_full
             
         chains.append(current_chain)
             
