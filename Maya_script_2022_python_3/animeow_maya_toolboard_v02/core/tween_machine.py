@@ -84,17 +84,21 @@ def tween(tween_percent=0.5, objects=None):
     total_skipped = 0
     
     for obj in objects:
-        # Lấy tất cả các thuộc tính có keyframe trên đối tượng
-        keyed_attrs = cmds.listAttr(obj, keyable=True) or []
+        # Lấy trực tiếp toàn bộ animCurves của đối tượng này
+        anim_curves = cmds.keyframe(obj, query=True, name=True) or []
         
-        for attr in keyed_attrs:
-            full_attr = '%s.%s' % (obj, attr)
-            
-            # Kiểm tra xem thuộc tính có animation curve không
-            anim_curves = cmds.listConnections(full_attr, type='animCurve')
-            if not anim_curves:
-                continue
-            
+        # Tìm các thuộc tính (plugs) được kết nối từ các animCurves này
+        attrs_to_tween = []
+        for curve in anim_curves:
+            plugs = cmds.listConnections(curve + '.output', plugs=True, destination=True) or []
+            for plug in plugs:
+                if plug.startswith(obj + '.'):
+                    attrs_to_tween.append(plug)
+                    
+        # Loại bỏ trùng lặp
+        attrs_to_tween = list(set(attrs_to_tween))
+        
+        for full_attr in attrs_to_tween:
             # Tìm keyframe trước và sau frame hiện tại
             prev_time = cmds.findKeyframe(
                 full_attr, 
