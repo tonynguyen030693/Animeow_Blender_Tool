@@ -1254,251 +1254,17 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addWidget(self.at_group)
         
-        # GroupBox 2: Tween Machine nội bộ
-        self.tween_group = QtWidgets.QGroupBox("Tween Machine (Nội suy Keyframe)")
-        tween_layout = QtWidgets.QVBoxLayout(self.tween_group)
-        tween_layout.setContentsMargins(8, 12, 8, 8)
-        tween_layout.setSpacing(6)
-        
-        # Slider chính (0% -> 100%)
-        slider_row = QtWidgets.QHBoxLayout()
-        slider_row.addWidget(QtWidgets.QLabel("Prev"))
-        self.tween_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.tween_slider.setRange(0, 100)
-        self.tween_slider.setValue(50)
-        self.tween_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
-        self.tween_slider.setTickInterval(25)
-        self.tween_slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #FF6B35, stop:0.5 #00BCD4, stop:1 #4CAF50);
-                height: 6px;
-                border-radius: 3px;
-            }
-            QSlider::handle:horizontal {
-                background: #FFFFFF;
-                border: 2px solid #00BCD4;
-                width: 14px;
-                height: 14px;
-                margin: -5px 0;
-                border-radius: 8px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #00BCD4;
-                border: 2px solid #FFFFFF;
-            }
-        """)
-        slider_row.addWidget(self.tween_slider)
-        slider_row.addWidget(QtWidgets.QLabel("Next"))
-        
-        self.tween_pct_label = QtWidgets.QLabel("50%")
-        self.tween_pct_label.setFixedWidth(36)
-        self.tween_pct_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.tween_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4;")
-        slider_row.addWidget(self.tween_pct_label)
-        tween_layout.addLayout(slider_row)
-        
-        # Kết nối Live Slider tự động cập nhật
-        self.tween_slider.sliderPressed.connect(self.on_tween_slider_pressed)
-        self.tween_slider.valueChanged.connect(self.on_tween_slider_changed)
-        self.tween_slider.sliderReleased.connect(self.on_tween_slider_released)
-        
-        # Hàng nút Preset nhanh
-        preset_row = QtWidgets.QHBoxLayout()
-        from functools import partial
-        for pct in [0, 25, 50, 75, 100]:
-            btn = QtWidgets.QPushButton("%d%%" % pct)
-            btn.setFixedHeight(22)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: #3A3A3A;
-                    border: 1px solid #555;
-                    border-radius: 4px;
-                    padding: 2px 6px;
-                    color: #E0E0E0;
-                    font-size: 11px;
-                }
-                QPushButton:hover {
-                    background: #00BCD4;
-                    color: #FFFFFF;
-                    border-color: #00BCD4;
-                }
-            """)
-            btn.clicked.connect(partial(self.on_tween_preset, pct))
-            preset_row.addWidget(btn)
-        tween_layout.addLayout(preset_row)
-        
-        tab2_layout.addWidget(self.tween_group)
-        
-        # GroupBox: Timing & Inbetweens
-        self.time_group = QtWidgets.QGroupBox("Timing & Inbetweens (Timing & Diễn hoạt)")
-        time_layout = QtWidgets.QVBoxLayout(self.time_group)
-        time_layout.setContentsMargins(8, 12, 8, 8)
-        time_layout.setSpacing(6)
-        
-        ib_count_row = QtWidgets.QHBoxLayout()
-        ib_count_row.addWidget(QtWidgets.QLabel("Số lượng (Frames):"))
-        self.ib_count_spin = QtWidgets.QSpinBox()
-        self.ib_count_spin.setRange(1, 500)
-        self.ib_count_spin.setValue(1)
-        self.ib_count_spin.setFixedHeight(22)
-        ib_count_row.addWidget(self.ib_count_spin)
-        time_layout.addLayout(ib_count_row)
-        
-        ib_btn_row = QtWidgets.QHBoxLayout()
-        self.add_ib_btn = QtWidgets.QPushButton("Add Inbetween (+)")
-        self.add_ib_btn.setIcon(AnimeowIcons.icon_reset())
-        self.add_ib_btn.setFixedHeight(26)
-        self.add_ib_btn.clicked.connect(self.on_add_inbetween)
-        ib_btn_row.addWidget(self.add_ib_btn)
-        
-        self.remove_ib_btn = QtWidgets.QPushButton("Remove Inbetween (-)")
-        self.remove_ib_btn.setIcon(AnimeowIcons.icon_clean())
-        self.remove_ib_btn.setFixedHeight(26)
-        self.remove_ib_btn.clicked.connect(self.on_remove_inbetween)
-        ib_btn_row.addWidget(self.remove_ib_btn)
-        time_layout.addLayout(ib_btn_row)
-        
-        tab2_layout.addWidget(self.time_group)
-        
         # GroupBox 3: Curve Editor Utilities
         self.curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
         curve_layout = QtWidgets.QVBoxLayout(self.curve_group)
         curve_layout.setContentsMargins(8, 12, 8, 8)
         curve_layout.setSpacing(8)
         
-        self.euler_filter_btn = QtWidgets.QPushButton("Euler Filter (Lọc xoay / Gimbal flips)")
-        self.euler_filter_btn.setIcon(AnimeowIcons.icon_euler())
-        self.euler_filter_btn.setFixedHeight(28)
-        self.euler_filter_btn.clicked.connect(self.on_euler_filter)
-        curve_layout.addWidget(self.euler_filter_btn)
-        
-        self.clean_key_btn = QtWidgets.QPushButton("Dọn Key Bằng Nhau (Clean Consecutive Keys)")
-        self.clean_key_btn.setIcon(AnimeowIcons.icon_clean())
-        self.clean_key_btn.setFixedHeight(28)
-        self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
-        curve_layout.addWidget(self.clean_key_btn)
-        
-        # Hàng ngang Clean Neighborhood dọn key lân cận
-        neighborhood_row = QtWidgets.QHBoxLayout()
-        neighborhood_row.addWidget(QtWidgets.QLabel("Dọn lân cận (Bán kính):"))
-        self.clean_radius_spin = QtWidgets.QSpinBox()
-        self.clean_radius_spin.setRange(1, 500)
-        self.clean_radius_spin.setValue(3)
-        self.clean_radius_spin.setFixedHeight(22)
-        neighborhood_row.addWidget(self.clean_radius_spin)
-        
-        self.clean_neighbor_btn = QtWidgets.QPushButton("Clean Neighborhood")
-        self.clean_neighbor_btn.setIcon(AnimeowIcons.icon_clean())
-        self.clean_neighbor_btn.setFixedHeight(24)
-        self.clean_neighbor_btn.clicked.connect(self.on_clean_neighborhood)
-        neighborhood_row.addWidget(self.clean_neighbor_btn)
-        curve_layout.addLayout(neighborhood_row)
-        
-        self.clean_subframe_btn = QtWidgets.QPushButton("Dọn Key Lẻ (Clean Sub-frame Keys)")
-        self.clean_subframe_btn.setIcon(AnimeowIcons.icon_clean())
-        self.clean_subframe_btn.setFixedHeight(28)
-        self.clean_subframe_btn.clicked.connect(self.on_clean_subframe_keys)
-        curve_layout.addWidget(self.clean_subframe_btn)
-        
         self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
         self.local_scale_btn.setIcon(AnimeowIcons.icon_tween())
         self.local_scale_btn.setFixedHeight(28)
         self.local_scale_btn.clicked.connect(self.on_local_scale_tool)
         curve_layout.addWidget(self.local_scale_btn)
-        
-        # Cụm Smooth Slider và Nút bấm làm mượt key
-        smooth_row = QtWidgets.QHBoxLayout()
-        
-        self.smooth_btn = QtWidgets.QPushButton("Smooth Keys")
-        self.smooth_btn.setIcon(AnimeowIcons.icon_clean())
-        self.smooth_btn.setFixedHeight(24)
-        self.smooth_btn.setToolTip("Click để làm mượt nhanh 100% keyframe được chọn")
-        self.smooth_btn.clicked.connect(self.on_smooth_btn_clicked)
-        smooth_row.addWidget(self.smooth_btn)
-        
-        self.smooth_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.smooth_slider.setRange(0, 100)
-        self.smooth_slider.setValue(0)
-        self.smooth_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
-        self.smooth_slider.setTickInterval(25)
-        self.smooth_slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                background: #3A3A3A;
-                height: 4px;
-                border-radius: 2px;
-            }
-            QSlider::handle:horizontal {
-                background: #FFFFFF;
-                border: 2px solid #00BCD4;
-                width: 12px;
-                height: 12px;
-                margin: -4px 0;
-                border-radius: 6px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #00BCD4;
-                border: 2px solid #FFFFFF;
-            }
-        """)
-        smooth_row.addWidget(self.smooth_slider)
-        
-        self.smooth_pct_label = QtWidgets.QLabel("0%")
-        self.smooth_pct_label.setFixedWidth(32)
-        self.smooth_pct_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.smooth_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4;")
-        smooth_row.addWidget(self.smooth_pct_label)
-        curve_layout.addLayout(smooth_row)
-        
-        # Kết nối sự kiện của Smooth Slider
-        self.smooth_slider.sliderPressed.connect(self.on_smooth_slider_pressed)
-        self.smooth_slider.valueChanged.connect(self.on_smooth_slider_changed)
-        self.smooth_slider.sliderReleased.connect(self.on_smooth_slider_released)
-        
-        round_sub_layout = QtWidgets.QGridLayout()
-        round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
-        self.round_precision_combo = QtWidgets.QComboBox()
-        self.round_precision_combo.addItems([
-            "Số nguyên (ví dụ: 1)", 
-            "1 chữ số thập phân (ví dụ: 1.1)", 
-            "2 chữ số thập phân (ví dụ: 1.23)",
-            "Đặt giá trị về 0 (Reset)"
-        ])
-        round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
-        
-        round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
-        self.round_target_combo = QtWidgets.QComboBox()
-        self.round_target_combo.addItems([
-            "Channel Box (Thuộc tính chọn)", 
-            "Graph Editor (Keyframe chọn)",
-            "Keyframe tại frame hiện tại",
-            "Toàn bộ keyframe (Timeline)"
-        ])
-        round_sub_layout.addWidget(self.round_target_combo, 1, 1)
-        
-        self.round_btn = QtWidgets.QPushButton("Làm tròn số")
-        self.round_btn.setIcon(AnimeowIcons.icon_round())
-        self.round_btn.setObjectName("accent_btn")
-        self.round_btn.setFixedHeight(28)
-        self.round_btn.clicked.connect(self.on_round_values)
-        round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
-        
-        # Reset row
-        reset_row = QtWidgets.QHBoxLayout()
-        self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
-        self.reset_t_btn.setIcon(AnimeowIcons.icon_reset())
-        self.reset_t_btn.setFixedHeight(24)
-        self.reset_t_btn.clicked.connect(self.on_reset_translate)
-        reset_row.addWidget(self.reset_t_btn)
-        
-        self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
-        self.reset_r_btn.setIcon(AnimeowIcons.icon_reset())
-        self.reset_r_btn.setFixedHeight(24)
-        self.reset_r_btn.clicked.connect(self.on_reset_rotate)
-        reset_row.addWidget(self.reset_r_btn)
-        
-        round_sub_layout.addLayout(reset_row, 3, 0, 1, 2)
-        curve_layout.addLayout(round_sub_layout)
         
         tab2_layout.addWidget(self.curve_group)
         tab2_layout.addStretch()
@@ -3241,8 +3007,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             precision_idx = self.fav_round_precision_combo.currentIndex()
             target_idx = self.fav_round_target_combo.currentIndex()
         else:
-            precision_idx = self.round_precision_combo.currentIndex()
-            target_idx = self.round_target_combo.currentIndex()
+            if hasattr(self, 'round_precision_combo') and hasattr(self, 'round_target_combo'):
+                precision_idx = self.round_precision_combo.currentIndex()
+                target_idx = self.round_target_combo.currentIndex()
+            else:
+                precision_idx = 0
+                target_idx = 0
             
         precision = -1 if precision_idx == 3 else precision_idx
         
@@ -4045,7 +3815,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if sender == getattr(self, 'fav_clean_neighbor_btn', None):
             r = self.fav_clean_radius_spin.value()
         else:
-            r = self.clean_radius_spin.value()
+            if hasattr(self, 'clean_radius_spin'):
+                r = self.clean_radius_spin.value()
+            else:
+                r = 3
         
         # Bọc trong undo chunk để hoàn tác dễ dàng
         cmds.undoInfo(openChunk=True, chunkName="AnimeowCleanNeighborhood")
@@ -4255,9 +4028,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if sender == getattr(self, 'fav_smooth_slider', None):
             lbl = self.fav_smooth_pct_label
         else:
-            lbl = self.smooth_pct_label
+            lbl = getattr(self, 'smooth_pct_label', None)
             
-        lbl.setText("%d%%" % val)
+        if lbl:
+            lbl.setText("%d%%" % val)
         if getattr(self, '_is_smoothing_drag', False) and hasattr(self, '_smooth_cache'):
             pct = val / 100.0
             for item in self._smooth_cache:
@@ -4292,14 +4066,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             sld = self.fav_smooth_slider
             lbl = self.fav_smooth_pct_label
         else:
-            sld = self.smooth_slider
-            lbl = self.smooth_pct_label
+            sld = getattr(self, 'smooth_slider', None)
+            lbl = getattr(self, 'smooth_pct_label', None)
             
         # Block signals để set slider về 0% mà không kích hoạt lại thay đổi keyframe
-        sld.blockSignals(True)
-        sld.setValue(0)
-        lbl.setText("0%")
-        sld.blockSignals(False)
+        if sld:
+            sld.blockSignals(True)
+            sld.setValue(0)
+            if lbl:
+                lbl.setText("0%")
+            sld.blockSignals(False)
         
         # In thông báo trạng thái
         if hasattr(self, '_smooth_cache') and self._smooth_cache:
@@ -4625,9 +4401,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if sender == getattr(self, 'fav_tween_slider', None):
             lbl = self.fav_tween_pct_label
         else:
-            lbl = self.tween_pct_label
+            lbl = getattr(self, 'tween_pct_label', None)
             
-        lbl.setText("%d%%" % val)
+        if lbl:
+            lbl.setText("%d%%" % val)
         if getattr(self, '_is_tweening_drag', False) and hasattr(self, '_tween_cache'):
             pct = val / 100.0
             for item in self._tween_cache:
@@ -4662,18 +4439,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             sld = self.fav_tween_slider
             lbl = self.fav_tween_pct_label
         else:
-            sld = self.tween_slider
-            lbl = self.tween_pct_label
+            sld = getattr(self, 'tween_slider', None)
+            lbl = getattr(self, 'tween_pct_label', None)
             
         # Reset slider về lại 50%
-        sld.blockSignals(True)
-        sld.setValue(50)
-        lbl.setText("50%")
-        sld.blockSignals(False)
-        
-        val = sld.value()
-        curr_time = cmds.currentTime(query=True)
-        print(u"[TweenMachine] Đã áp dụng Tween %.0f%% tại frame %d." % (val, int(curr_time)))
+        if sld:
+            sld.blockSignals(True)
+            sld.setValue(50)
+            if lbl:
+                lbl.setText("50%")
+            sld.blockSignals(False)
+            
+            val = sld.value()
+            curr_time = cmds.currentTime(query=True)
+            print(u"[TweenMachine] Đã áp dụng Tween %.0f%% tại frame %d." % (val, int(curr_time)))
 
     def on_tween_preset(self, pct):
         """Đặt slider về preset % và tự động áp dụng trực tiếp"""
