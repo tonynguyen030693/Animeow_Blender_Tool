@@ -44,6 +44,9 @@ def get_extreme_frames(curve, tolerance=0.001):
             if abs(diff1) > tolerance or abs(diff2) > tolerance:
                 extreme_frames.append(int(round(keys[i])))
                 
+    return list(set(extreme_frames))
+
+
 def parent_to_animeow_group(node_name):
     """Đảm bảo node_name được đưa vào group Animeow_locator"""
     grp = "Animeow_locator"
