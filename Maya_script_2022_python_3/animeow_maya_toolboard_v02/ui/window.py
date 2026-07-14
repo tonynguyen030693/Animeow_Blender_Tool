@@ -1379,6 +1379,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
         curve_layout.addWidget(self.clean_key_btn)
         
+        # Hàng ngang Clean Neighborhood dọn key lân cận
+        neighborhood_row = QtWidgets.QHBoxLayout()
+        neighborhood_row.addWidget(QtWidgets.QLabel("Dọn lân cận (Bán kính):"))
+        self.clean_radius_spin = QtWidgets.QSpinBox()
+        self.clean_radius_spin.setRange(1, 500)
+        self.clean_radius_spin.setValue(3)
+        self.clean_radius_spin.setFixedHeight(22)
+        neighborhood_row.addWidget(self.clean_radius_spin)
+        
+        self.clean_neighbor_btn = QtWidgets.QPushButton("Clean Neighborhood")
+        self.clean_neighbor_btn.setIcon(AnimeowIcons.icon_clean())
+        self.clean_neighbor_btn.setFixedHeight(24)
+        self.clean_neighbor_btn.clicked.connect(self.on_clean_neighborhood)
+        neighborhood_row.addWidget(self.clean_neighbor_btn)
+        curve_layout.addLayout(neighborhood_row)
+        
         self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
         self.local_scale_btn.setIcon(AnimeowIcons.icon_tween())
         self.local_scale_btn.setFixedHeight(28)
@@ -3833,6 +3849,39 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi", 
                 "Lỗi xảy ra khi dọn dẹp keyframe: %s" % str(e)
             )
+
+    def on_clean_neighborhood(self):
+        """Xóa toàn bộ keyframe trong bán kính R xung quanh frame hiện tại (loại trừ frame hiện tại)"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trên viewport!")
+            return
+            
+        current_time = cmds.currentTime(q=True)
+        r = self.clean_radius_spin.value()
+        
+        # Bọc trong undo chunk để hoàn tác dễ dàng
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowCleanNeighborhood")
+        try:
+            # Vùng trước: [current_time - r, current_time - 0.001]
+            # Vùng sau: [current_time + 0.001, current_time + r]
+            for obj in sel:
+                # Xóa keyframe phía trước
+                cmds.cutKey(obj, time=(current_time - r, current_time - 0.001))
+                # Xóa keyframe phía sau
+                cmds.cutKey(obj, time=(current_time + 0.001, current_time + r))
+                
+            # Ép refresh viewport
+            cmds.refresh(force=True)
+            print(u"[AnimeowTool] Đã dọn sạch keyframe lân cận bán kính %d tại frame %d." % (r, int(current_time)))
+            cmds.warning("Đã dọn sạch keyframe lân cận bán kính %d tại frame %d." % (r, int(current_time)))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi", 
+                "Lỗi xảy ra khi dọn dẹp keyframe lân cận: %s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
 
     def on_euler_filter(self):
         """Áp dụng Euler Filter cho các đường cong xoay được chọn hoặc các vật thể được chọn"""
