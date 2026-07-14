@@ -1395,6 +1395,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         neighborhood_row.addWidget(self.clean_neighbor_btn)
         curve_layout.addLayout(neighborhood_row)
         
+        self.clean_subframe_btn = QtWidgets.QPushButton("Dọn Key Lẻ (Clean Sub-frame Keys)")
+        self.clean_subframe_btn.setIcon(AnimeowIcons.icon_clean())
+        self.clean_subframe_btn.setFixedHeight(28)
+        self.clean_subframe_btn.clicked.connect(self.on_clean_subframe_keys)
+        curve_layout.addWidget(self.clean_subframe_btn)
+        
         self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
         self.local_scale_btn.setIcon(AnimeowIcons.icon_tween())
         self.local_scale_btn.setFixedHeight(28)
@@ -3879,6 +3885,45 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi", 
                 "Lỗi xảy ra khi dọn dẹp keyframe lân cận: %s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_clean_subframe_keys(self):
+        """Xóa sạch các keyframe có thời gian lẻ (sub-frame decimal keys) khỏi các đối tượng được chọn"""
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trên viewport!")
+            return
+            
+        # Quét lấy tất cả animCurves của đối tượng chọn
+        curves = cmds.keyframe(sel, query=True, name=True) or []
+        if not curves:
+            cmds.warning("Không tìm thấy đường cong diễn hoạt nào trên các đối tượng được chọn.")
+            return
+            
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowCleanSubframeKeys")
+        deleted_count = 0
+        try:
+            for curve in curves:
+                times = cmds.keyframe(curve, query=True, timeChange=True) or []
+                # Quét các keyframe lẻ (lệch khỏi số nguyên hơn 0.001)
+                subframe_times = [t for t in times if abs(t - round(t)) > 0.001]
+                for t in subframe_times:
+                    # Xóa chính xác keyframe lẻ tại vị trí thời gian t
+                    cmds.cutKey(curve, time=(t, t))
+                    deleted_count += 1
+            
+            if deleted_count > 0:
+                cmds.refresh(force=True)
+                print(u"[AnimeowTool] Đã dọn sạch %d keyframe lẻ (sub-frame keys)." % deleted_count)
+                cmds.warning("Đã dọn sạch %d keyframe lẻ (sub-frame keys)." % deleted_count)
+            else:
+                cmds.warning("Không tìm thấy keyframe lẻ nào để dọn dẹp.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi dọn key lẻ", 
+                "Lỗi xảy ra khi dọn dẹp keyframe lẻ:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
