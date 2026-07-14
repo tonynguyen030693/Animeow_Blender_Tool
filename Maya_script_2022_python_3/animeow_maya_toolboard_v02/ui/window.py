@@ -1348,20 +1348,52 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
         curve_layout.addWidget(self.clean_key_btn)
         
-        # Thêm 2 nút tích hợp mới song song
-        util_btn_row = QtWidgets.QHBoxLayout()
-        self.smooth_keys_btn = QtWidgets.QPushButton("Smooth Keys (Làm mượt key)")
-        self.smooth_keys_btn.setIcon(AnimeowIcons.icon_clean())
-        self.smooth_keys_btn.setFixedHeight(26)
-        self.smooth_keys_btn.clicked.connect(self.on_smooth_keys)
-        util_btn_row.addWidget(self.smooth_keys_btn)
-        
-        self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Scale key)")
+        self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
         self.local_scale_btn.setIcon(AnimeowIcons.icon_tween())
-        self.local_scale_btn.setFixedHeight(26)
+        self.local_scale_btn.setFixedHeight(28)
         self.local_scale_btn.clicked.connect(self.on_local_scale_tool)
-        util_btn_row.addWidget(self.local_scale_btn)
-        curve_layout.addLayout(util_btn_row)
+        curve_layout.addWidget(self.local_scale_btn)
+        
+        # Cụm Smooth Slider điều chỉnh cường độ làm mượt key
+        smooth_row = QtWidgets.QHBoxLayout()
+        smooth_row.addWidget(QtWidgets.QLabel("Smooth:"))
+        self.smooth_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.smooth_slider.setRange(0, 100)
+        self.smooth_slider.setValue(0)
+        self.smooth_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.smooth_slider.setTickInterval(25)
+        self.smooth_slider.setStyleSheet("""
+            QSlider::groove:horizontal {
+                background: #3A3A3A;
+                height: 4px;
+                border-radius: 2px;
+            }
+            QSlider::handle:horizontal {
+                background: #FFFFFF;
+                border: 2px solid #00BCD4;
+                width: 12px;
+                height: 12px;
+                margin: -4px 0;
+                border-radius: 6px;
+            }
+            QSlider::handle:horizontal:hover {
+                background: #00BCD4;
+                border: 2px solid #FFFFFF;
+            }
+        """)
+        smooth_row.addWidget(self.smooth_slider)
+        
+        self.smooth_pct_label = QtWidgets.QLabel("0%")
+        self.smooth_pct_label.setFixedWidth(32)
+        self.smooth_pct_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.smooth_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4;")
+        smooth_row.addWidget(self.smooth_pct_label)
+        curve_layout.addLayout(smooth_row)
+        
+        # Kết nối sự kiện của Smooth Slider
+        self.smooth_slider.sliderPressed.connect(self.on_smooth_slider_pressed)
+        self.smooth_slider.valueChanged.connect(self.on_smooth_slider_changed)
+        self.smooth_slider.sliderReleased.connect(self.on_smooth_slider_released)
         
         round_sub_layout = QtWidgets.QGridLayout()
         round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
@@ -3801,60 +3833,85 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         finally:
             cmds.undoInfo(closeChunk=True)
 
-    def on_smooth_keys(self):
-        """Làm mượt các keyframe được chọn bằng thuật toán Moving Average (bản Python tối ưu)"""
+    def on_smooth_slider_pressed(self):
+        """Khởi tạo cache giá trị gốc (0%) và giá trị mượt tối đa (100%) khi bắt đầu click slider"""
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowSmoothDrag")
+        self._is_smoothing_drag = True
+        self._smooth_cache = []
+        
+        # Quét các curves có keyframe được chọn trong Graph Editor
         curves = cmds.keyframe(q=True, name=True) or []
         if not curves:
-            QtWidgets.QMessageBox.warning(
-                self, "Cảnh báo",
-                "Vui lòng chọn ít nhất 3 keyframe trong Graph Editor!"
-            )
             return
             
-        cmds.undoInfo(openChunk=True, chunkName="AnimeowSmoothKeys")
-        try:
-            total_smoothed = 0
-            for curve in curves:
-                # Lấy các keyframe đang được chọn trên curve này
-                keys_time = cmds.keyframe(curve, q=True, selected=True, timeChange=True) or []
-                keys_value = cmds.keyframe(curve, q=True, selected=True, valueChange=True) or []
+        for curve in curves:
+            # Lấy các keyframe đang được chọn trên curve này
+            keys_time = cmds.keyframe(curve, q=True, selected=True, timeChange=True) or []
+            keys_value = cmds.keyframe(curve, q=True, selected=True, valueChange=True) or []
+            
+            size = len(keys_time)
+            if size < 3:
+                continue
                 
-                size = len(keys_time)
-                if size < 3:
-                    continue
-                    
-                # Tạo list chứa các giá trị mới
-                new_values = list(keys_value)
+            # Tính toán trước giá trị mượt tối đa 100% bằng thuật toán Moving Average
+            # Bỏ qua key đầu và key cuối để bảo toàn biên độ của chuyển động ở 2 đầu
+            for i in range(1, size - 1):
+                val_goc = keys_value[i]
+                val_smooth = (keys_value[i-1] + keys_value[i] + keys_value[i+1]) / 3.0
                 
-                # Tính moving average cho các key ở giữa (bỏ qua key đầu và key cuối)
-                for i in range(1, size - 1):
-                    new_values[i] = (keys_value[i-1] + keys_value[i] + keys_value[i+1]) / 3.0
-                    
-                # Áp dụng các giá trị mới lên các keyframe tương ứng
-                for i in range(1, size - 1):
-                    cmds.keyframe(
-                        curve,
-                        time=(keys_time[i], keys_time[i]),
-                        absolute=True,
-                        valueChange=new_values[i]
-                    )
-                total_smoothed += 1
+                # Tìm thuộc tính đối tượng được kết nối để gán setAttr trực tiếp (nếu có)
+                connected_plugs = cmds.listConnections(curve + '.output', plugs=True, destination=True) or []
                 
-            if total_smoothed > 0:
-                print(u"[AnimeowTool] Đã làm mượt thành công các keyframe được chọn.")
-                cmds.warning("Đã làm mượt thành công các keyframe được chọn.")
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self, "Thông báo",
-                    "Cần chọn ít nhất 3 keyframe trên cùng một đường cong (curve) để làm mượt!"
-                )
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi Làm mượt",
-                "Lỗi xảy ra khi làm mượt keyframe:\n%s" % str(e)
-            )
-        finally:
-            cmds.undoInfo(closeChunk=True)
+                self._smooth_cache.append({
+                    'curve': curve,
+                    'time': keys_time[i],
+                    'val_goc': val_goc,
+                    'val_smooth': val_smooth,
+                    'plugs': connected_plugs
+                })
+
+    def on_smooth_slider_changed(self, val):
+        """Nội suy trực tiếp cường độ làm mịn theo giá trị slider kéo"""
+        self.smooth_pct_label.setText("%d%%" % val)
+        if getattr(self, '_is_smoothing_drag', False) and hasattr(self, '_smooth_cache'):
+            pct = val / 100.0
+            for item in self._smooth_cache:
+                curve = item['curve']
+                time = item['time']
+                val_goc = item['val_goc']
+                val_smooth = item['val_smooth']
+                
+                # Nội suy LERP cường độ mượt giữa gốc (0%) và mượt hoàn toàn (100%)
+                val_new = val_goc + (val_smooth - val_goc) * pct
+                
+                # Cập nhật keyframe trên curve
+                cmds.keyframe(curve, time=(time, time), absolute=True, valueChange=val_new)
+                
+                # Ép gán giá trị thuộc tính trực tiếp để cập nhật viewport lập tức
+                for plug in item['plugs']:
+                    try:
+                        cmds.setAttr(plug, val_new)
+                    except Exception:
+                        pass
+                        
+            # Ép refresh viewport
+            cmds.refresh(force=True)
+
+    def on_smooth_slider_released(self):
+        """Đóng Undo chunk và reset slider về 0% để sẵn sàng cho lần kéo tiếp theo"""
+        cmds.undoInfo(closeChunk=True)
+        self._is_smoothing_drag = False
+        
+        # Block signals để set slider về 0% mà không kích hoạt lại thay đổi keyframe
+        self.smooth_slider.blockSignals(True)
+        self.smooth_slider.setValue(0)
+        self.smooth_pct_label.setText("0%")
+        self.smooth_slider.blockSignals(False)
+        
+        # In thông báo trạng thái
+        if hasattr(self, '_smooth_cache') and self._smooth_cache:
+            print(u"[SmoothSlider] Đã áp dụng làm mượt keyframe thành công.")
+        self._smooth_cache = []
 
     def on_local_scale_tool(self):
         """Khởi chạy công cụ Scale Keyframe Cục Bộ (Local Scale Tool - MEL)"""
