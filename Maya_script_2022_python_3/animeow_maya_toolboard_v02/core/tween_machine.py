@@ -99,46 +99,39 @@ def tween(tween_percent=0.5, objects=None):
         attrs_to_tween = list(set(attrs_to_tween))
         
         for full_attr in attrs_to_tween:
-            # Tìm keyframe trước và sau frame hiện tại
+            current_val = cmds.getAttr(full_attr)
+            
+            # Tìm keyframe trước
             prev_time = cmds.findKeyframe(
                 full_attr, 
                 time=(current_time, current_time), 
                 which='previous'
             )
+            prev_val = current_val
+            if prev_time is not None and abs(prev_time - current_time) > 0.001:
+                prev_vals = cmds.keyframe(
+                    full_attr, query=True,
+                    time=(prev_time, prev_time),
+                    valueChange=True
+                )
+                if prev_vals:
+                    prev_val = prev_vals[0]
+            
+            # Tìm keyframe sau
             next_time = cmds.findKeyframe(
                 full_attr, 
                 time=(current_time, current_time), 
                 which='next'
             )
-            
-            # Bỏ qua nếu không tìm được key trước/sau
-            # hoặc nếu prev == next (chỉ có 1 key duy nhất)
-            if prev_time is None or next_time is None:
-                total_skipped += 1
-                continue
-            
-            if abs(prev_time - next_time) < 0.001:
-                total_skipped += 1
-                continue
-            
-            # Lấy giá trị tại keyframe trước và sau
-            prev_vals = cmds.keyframe(
-                full_attr, query=True,
-                time=(prev_time, prev_time),
-                valueChange=True
-            )
-            next_vals = cmds.keyframe(
-                full_attr, query=True,
-                time=(next_time, next_time),
-                valueChange=True
-            )
-            
-            if not prev_vals or not next_vals:
-                total_skipped += 1
-                continue
-            
-            prev_val = prev_vals[0]
-            next_val = next_vals[0]
+            next_val = current_val
+            if next_time is not None and abs(next_time - current_time) > 0.001:
+                next_vals = cmds.keyframe(
+                    full_attr, query=True,
+                    time=(next_time, next_time),
+                    valueChange=True
+                )
+                if next_vals:
+                    next_val = next_vals[0]
             
             # Tính giá trị nội suy LERP
             tweened_val = prev_val + (next_val - prev_val) * tween_percent

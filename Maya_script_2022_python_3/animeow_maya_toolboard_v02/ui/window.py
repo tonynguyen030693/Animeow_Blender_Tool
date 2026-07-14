@@ -4054,23 +4054,99 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     # ── Tween Machine (Live Slider) ──
 
     def on_tween_slider_pressed(self):
-        """Mở một Undo chunk của Maya khi animator bắt đầu click slider"""
+        """Khởi tạo cache giá trị LERP gốc và mở Undo chunk của Maya khi bắt đầu click slider"""
         cmds.undoInfo(openChunk=True, chunkName="AnimeowTweenDrag")
         self._is_tweening_drag = True
+        self._tween_cache = []
+        
+        sel = cmds.ls(sl=True) or []
+        if not sel:
+            return
+            
+        current_time = cmds.currentTime(query=True)
+        
+        for obj in sel:
+            # Lấy trực tiếp toàn bộ animCurves của đối tượng này
+            anim_curves = cmds.keyframe(obj, query=True, name=True) or []
+            
+            # Tìm các thuộc tính (plugs) được kết nối từ các animCurves
+            attrs = []
+            for curve in anim_curves:
+                plugs = cmds.listConnections(curve + '.output', plugs=True, destination=True) or []
+                for plug in plugs:
+                    if plug.startswith(obj + '.'):
+                        attrs.append(plug)
+            attrs = list(set(attrs))
+            
+            for full_attr in attrs:
+                # Lấy giá trị hiện tại làm fallback mặc định
+                current_val = cmds.getAttr(full_attr)
+                
+                # Tìm keyframe trước
+                prev_time = cmds.findKeyframe(
+                    full_attr, 
+                    time=(current_time, current_time), 
+                    which='previous'
+                )
+                prev_val = current_val
+                if prev_time is not None and abs(prev_time - current_time) > 0.001:
+                    prev_vals = cmds.keyframe(
+                        full_attr, query=True,
+                        time=(prev_time, prev_time),
+                        valueChange=True
+                    )
+                    if prev_vals:
+                        prev_val = prev_vals[0]
+                
+                # Tìm keyframe sau
+                next_time = cmds.findKeyframe(
+                    full_attr, 
+                    time=(current_time, current_time), 
+                    which='next'
+                )
+                next_val = current_val
+                if next_time is not None and abs(next_time - current_time) > 0.001:
+                    next_vals = cmds.keyframe(
+                        full_attr, query=True,
+                        time=(next_time, next_time),
+                        valueChange=True
+                    )
+                    if next_vals:
+                        next_val = next_vals[0]
+                
+                # Lưu vào cache để nội suy cực nhanh trong lúc kéo slider
+                self._tween_cache.append({
+                    'attr': full_attr,
+                    'current_time': current_time,
+                    'prev_val': prev_val,
+                    'next_val': next_val
+                })
 
     def on_tween_slider_changed(self, val):
-        """Nội suy và hiển thị trực tiếp khi kéo slider"""
+        """Nội suy trực tiếp từ cache và hiển thị ngay trên viewport khi kéo slider"""
         self.tween_pct_label.setText("%d%%" % val)
-        if getattr(self, '_is_tweening_drag', False):
+        if getattr(self, '_is_tweening_drag', False) and hasattr(self, '_tween_cache'):
             pct = val / 100.0
-            tween_machine.tween(pct)
+            for item in self._tween_cache:
+                full_attr = item['attr']
+                prev_val = item['prev_val']
+                next_val = item['next_val']
+                current_time = item['current_time']
+                
+                # Tính giá trị LERP từ mốc ban đầu cố định
+                tweened_val = prev_val + (next_val - prev_val) * pct
+                
+                # Cập nhật keyframe
+                cmds.setKeyframe(full_attr, time=current_time, value=tweened_val)
+                
             # Ép Maya refresh viewport ngay lập tức để cập nhật tư thế trực quan
             cmds.refresh(force=True)
 
     def on_tween_slider_released(self):
-        """Đóng Undo chunk khi animator thả chuột ra"""
+        """Đóng Undo chunk và giải phóng cache khi animator thả chuột ra"""
         cmds.undoInfo(closeChunk=True)
         self._is_tweening_drag = False
+        self._tween_cache = []
         val = self.tween_slider.value()
         curr_time = cmds.currentTime(query=True)
         print(u"[TweenMachine] Đã áp dụng Tween %.0f%% tại frame %d." % (val, int(curr_time)))
