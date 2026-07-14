@@ -736,6 +736,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
     OP_RT_PRECISION = "AnimeowTbRtPrecision"
     OP_RT_TARGET = "AnimeowTbRtTarget"
+    
+    # Overlapper Settings OptionVars
+    OP_OV_SOFTNESS = "AnimeowTbOvSoftness"
+    OP_OV_SCALE = "AnimeowTbOvScale"
+    OP_OV_WIND_ENABLED = "AnimeowTbOvWindEnabled"
+    OP_OV_WIND_SCALE = "AnimeowTbOvWindScale"
+    OP_OV_WIND_SPEED = "AnimeowTbOvWindSpeed"
+    OP_OV_SKIP_FIRST = "AnimeowTbOvSkipFirst"
+    OP_OV_TRANSLATE = "AnimeowTbOvTranslate"
+    OP_OV_HIERARCHY = "AnimeowTbOvHierarchy"
+    OP_OV_CYCLE = "AnimeowTbOvCycle"
+    OP_OV_BAKE_LAYER = "AnimeowTbOvBakeLayer"
+    OP_OV_ADAPTIVE_SCALE = "AnimeowTbOvAdaptiveScale"
+    OP_OV_SEL_SET = "AnimeowTbOvSelSet"
 
     def __init__(self, parent=None, standalone_tab=None):
         self.standalone_tab = standalone_tab
@@ -1253,6 +1267,105 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         at_layout.addLayout(at_btn_row)
         
         tab2_layout.addWidget(self.at_group)
+        
+        # GroupBox 2: Overlapper (Tạo chuyển động trễ & follow-through)
+        self.ov_group = QtWidgets.QGroupBox("Overlapper (Tạo Chuyển Động Trễ & Follow Through)")
+        ov_layout = QtWidgets.QVBoxLayout(self.ov_group)
+        ov_layout.setContentsMargins(8, 12, 8, 8)
+        ov_layout.setSpacing(6)
+        
+        # Hàng 1: Softness (timeShift) và Scale (globalScale)
+        ov_param_row = QtWidgets.QHBoxLayout()
+        ov_param_row.addWidget(QtWidgets.QLabel("Softness:"))
+        self.ov_softness_spin = QtWidgets.QDoubleSpinBox()
+        self.ov_softness_spin.setRange(0.1, 100.0)
+        self.ov_softness_spin.setValue(3.0)
+        self.ov_softness_spin.setSingleStep(0.5)
+        self.ov_softness_spin.setFixedHeight(22)
+        ov_param_row.addWidget(self.ov_softness_spin)
+        
+        ov_param_row.addWidget(QtWidgets.QLabel("Scale:"))
+        self.ov_scale_spin = QtWidgets.QDoubleSpinBox()
+        self.ov_scale_spin.setRange(0.01, 100.0)
+        self.ov_scale_spin.setValue(1.0)
+        self.ov_scale_spin.setSingleStep(0.1)
+        self.ov_scale_spin.setFixedHeight(22)
+        ov_param_row.addWidget(self.ov_scale_spin)
+        ov_layout.addLayout(ov_param_row)
+        
+        # Hàng 2: Wind Checkbox, Wind Scale, Wind Speed
+        ov_wind_row = QtWidgets.QHBoxLayout()
+        self.ov_wind_cb = QtWidgets.QCheckBox("Wind (Gió)")
+        self.ov_wind_cb.setChecked(False)
+        ov_wind_row.addWidget(self.ov_wind_cb)
+        
+        ov_wind_row.addWidget(QtWidgets.QLabel("Wind Scale:"))
+        self.ov_wind_scale_spin = QtWidgets.QDoubleSpinBox()
+        self.ov_wind_scale_spin.setRange(0.01, 100.0)
+        self.ov_wind_scale_spin.setValue(1.0)
+        self.ov_wind_scale_spin.setSingleStep(0.1)
+        self.ov_wind_scale_spin.setFixedHeight(20)
+        ov_wind_row.addWidget(self.ov_wind_scale_spin)
+        
+        ov_wind_row.addWidget(QtWidgets.QLabel("Wind Speed:"))
+        self.ov_wind_speed_spin = QtWidgets.QDoubleSpinBox()
+        self.ov_wind_speed_spin.setRange(0.01, 100.0)
+        self.ov_wind_speed_spin.setValue(1.0)
+        self.ov_wind_speed_spin.setSingleStep(0.1)
+        self.ov_wind_speed_spin.setFixedHeight(20)
+        ov_wind_row.addWidget(self.ov_wind_speed_spin)
+        ov_layout.addLayout(ov_wind_row)
+        
+        # Hàng 3: Advanced options
+        ov_opt_layout = QtWidgets.QGridLayout()
+        self.ov_skip_first_cb = QtWidgets.QCheckBox("Skip First (Bỏ qua control gốc)")
+        self.ov_skip_first_cb.setToolTip("Không áp dụng overlapping cho control đầu tiên được chọn")
+        ov_opt_layout.addWidget(self.ov_skip_first_cb, 0, 0)
+        
+        self.ov_translate_cb = QtWidgets.QCheckBox("Add Translate (IK Mode)")
+        self.ov_translate_cb.setToolTip("Overlap cả tịnh tiến Translate (dành cho tay/chân IK)")
+        ov_opt_layout.addWidget(self.ov_translate_cb, 0, 1)
+        
+        self.ov_hierarchy_cb = QtWidgets.QCheckBox("Hierarchy (Phân cấp)")
+        self.ov_hierarchy_cb.setToolTip("Tự động áp dụng cho toàn bộ chuỗi điều khiển con bên dưới")
+        ov_opt_layout.addWidget(self.ov_hierarchy_cb, 1, 0)
+        
+        self.ov_cycle_cb = QtWidgets.QCheckBox("Cycle (Lặp vô tận)")
+        self.ov_cycle_cb.setToolTip("Tạo chuyển động overlapping lặp liền mạch (seamless cycle)")
+        ov_opt_layout.addWidget(self.ov_cycle_cb, 1, 1)
+        
+        self.ov_bake_layer_cb = QtWidgets.QCheckBox("Bake on Layer")
+        self.ov_bake_layer_cb.setToolTip("Nướng kết quả lên một Animation Layer mới thay vì BaseAnimation")
+        ov_opt_layout.addWidget(self.ov_bake_layer_cb, 2, 0)
+        
+        self.ov_adaptive_scale_cb = QtWidgets.QCheckBox("Adaptive Scale")
+        self.ov_adaptive_scale_cb.setToolTip("Tự động thay đổi Scale dựa trên khoảng cách giữa các control")
+        self.ov_adaptive_scale_cb.setChecked(True)
+        ov_opt_layout.addWidget(self.ov_adaptive_scale_cb, 2, 1)
+        
+        self.ov_sel_set_cb = QtWidgets.QCheckBox("Create Selection Set")
+        self.ov_sel_set_cb.setToolTip("Tạo selection set 'OverlapperSet' chứa các control được overlap")
+        self.ov_sel_set_cb.setChecked(True)
+        ov_opt_layout.addWidget(self.ov_sel_set_cb, 3, 0, 1, 2)
+        ov_layout.addLayout(ov_opt_layout)
+        
+        # Hàng 4: Nút bấm
+        ov_btn_row = QtWidgets.QHBoxLayout()
+        self.ov_execute_btn = QtWidgets.QPushButton("Overlap Action")
+        self.ov_execute_btn.setIcon(AnimeowIcons.icon_tween())
+        self.ov_execute_btn.setObjectName("accent_btn")
+        self.ov_execute_btn.setFixedHeight(28)
+        self.ov_execute_btn.clicked.connect(self.on_overlapper_execute)
+        ov_btn_row.addWidget(self.ov_execute_btn)
+        
+        self.ov_cleanup_btn = QtWidgets.QPushButton("Clean Up (Dọn dẹp)")
+        self.ov_cleanup_btn.setIcon(AnimeowIcons.icon_clean())
+        self.ov_cleanup_btn.setFixedHeight(28)
+        self.ov_cleanup_btn.clicked.connect(self.on_overlapper_cleanup)
+        ov_btn_row.addWidget(self.ov_cleanup_btn)
+        ov_layout.addLayout(ov_btn_row)
+        
+        tab2_layout.addWidget(self.ov_group)
         
         # GroupBox 3: Curve Editor Utilities
         self.curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
@@ -2097,6 +2210,33 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.round_target_combo.setCurrentIndex(val)
             if hasattr(self, 'fav_round_target_combo'):
                 self.fav_round_target_combo.setCurrentIndex(val)
+                
+        # Overlapper Settings
+        if hasattr(self, 'ov_softness_spin'):
+            if cmds.optionVar(exists=self.OP_OV_SOFTNESS):
+                self.ov_softness_spin.setValue(cmds.optionVar(query=self.OP_OV_SOFTNESS))
+            if cmds.optionVar(exists=self.OP_OV_SCALE):
+                self.ov_scale_spin.setValue(cmds.optionVar(query=self.OP_OV_SCALE))
+            if cmds.optionVar(exists=self.OP_OV_WIND_ENABLED):
+                self.ov_wind_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_WIND_ENABLED)))
+            if cmds.optionVar(exists=self.OP_OV_WIND_SCALE):
+                self.ov_wind_scale_spin.setValue(cmds.optionVar(query=self.OP_OV_WIND_SCALE))
+            if cmds.optionVar(exists=self.OP_OV_WIND_SPEED):
+                self.ov_wind_speed_spin.setValue(cmds.optionVar(query=self.OP_OV_WIND_SPEED))
+            if cmds.optionVar(exists=self.OP_OV_SKIP_FIRST):
+                self.ov_skip_first_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_SKIP_FIRST)))
+            if cmds.optionVar(exists=self.OP_OV_TRANSLATE):
+                self.ov_translate_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_TRANSLATE)))
+            if cmds.optionVar(exists=self.OP_OV_HIERARCHY):
+                self.ov_hierarchy_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_HIERARCHY)))
+            if cmds.optionVar(exists=self.OP_OV_CYCLE):
+                self.ov_cycle_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_CYCLE)))
+            if cmds.optionVar(exists=self.OP_OV_BAKE_LAYER):
+                self.ov_bake_layer_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_BAKE_LAYER)))
+            if cmds.optionVar(exists=self.OP_OV_ADAPTIVE_SCALE):
+                self.ov_adaptive_scale_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_ADAPTIVE_SCALE)))
+            if cmds.optionVar(exists=self.OP_OV_SEL_SET):
+                self.ov_sel_set_cb.setChecked(bool(cmds.optionVar(query=self.OP_OV_SEL_SET)))
 
     def save_settings(self):
         cmds.optionVar(stringValue=(self.OP_TARGET, self.target_txt.text()))
@@ -2142,6 +2282,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.optionVar(intValue=(self.OP_RT_TARGET, self.round_target_combo.currentIndex()))
         elif hasattr(self, 'fav_round_target_combo'):
             cmds.optionVar(intValue=(self.OP_RT_TARGET, self.fav_round_target_combo.currentIndex()))
+            
+        # Overlapper Settings
+        if hasattr(self, 'ov_softness_spin'):
+            cmds.optionVar(floatValue=(self.OP_OV_SOFTNESS, self.ov_softness_spin.value()))
+            cmds.optionVar(floatValue=(self.OP_OV_SCALE, self.ov_scale_spin.value()))
+            cmds.optionVar(intValue=(self.OP_OV_WIND_ENABLED, int(self.ov_wind_cb.isChecked())))
+            cmds.optionVar(floatValue=(self.OP_OV_WIND_SCALE, self.ov_wind_scale_spin.value()))
+            cmds.optionVar(floatValue=(self.OP_OV_WIND_SPEED, self.ov_wind_speed_spin.value()))
+            cmds.optionVar(intValue=(self.OP_OV_SKIP_FIRST, int(self.ov_skip_first_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_TRANSLATE, int(self.ov_translate_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_HIERARCHY, int(self.ov_hierarchy_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_CYCLE, int(self.ov_cycle_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_BAKE_LAYER, int(self.ov_bake_layer_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_ADAPTIVE_SCALE, int(self.ov_adaptive_scale_cb.isChecked())))
+            cmds.optionVar(intValue=(self.OP_OV_SEL_SET, int(self.ov_sel_set_cb.isChecked())))
 
     def on_get_target(self):
         sel = cmds.ls(sl=True)
@@ -4126,6 +4281,51 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self, "Lỗi tìm kiếm",
                     "Không tìm thấy tệp NP_curveLocalScale.mel đi kèm package cũng như trong đường dẫn Maya!\nLỗi: %s" % str(e)
                 )
+
+    def on_overlapper_execute(self):
+        """Khởi chạy công cụ Overlapper chuyển động trễ"""
+        self.save_settings()
+        
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowOverlapper")
+        try:
+            from ..core import overlapper
+            success, msg = overlapper.execute_overlapper(
+                softness=self.ov_softness_spin.value(),
+                scale=self.ov_scale_spin.value(),
+                wind_enabled=self.ov_wind_cb.isChecked(),
+                wind_scale=self.ov_wind_scale_spin.value(),
+                wind_speed=self.ov_wind_speed_spin.value(),
+                first_ctrl_skip=self.ov_skip_first_cb.isChecked(),
+                translate_mode=self.ov_translate_cb.isChecked(),
+                hierarchy_mode=self.ov_hierarchy_cb.isChecked(),
+                cycle_mode=self.ov_cycle_cb.isChecked(),
+                bake_on_layer=self.ov_bake_layer_cb.isChecked(),
+                adaptive_scale=self.ov_adaptive_scale_cb.isChecked(),
+                create_sel_set=self.ov_sel_set_cb.isChecked()
+            )
+            if success:
+                cmds.warning(msg)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi thực thi",
+                "Lỗi xảy ra khi chạy Overlapper:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            
+    def on_overlapper_cleanup(self):
+        """Dọn dẹp các joint và locator nháp của Overlapper"""
+        try:
+            from ..core import overlapper
+            overlapper.clean_up()
+            cmds.warning("Đã dọn dẹp sạch sẽ các đối tượng tạm của Overlapper.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi dọn dẹp",
+                "Lỗi xảy ra khi dọn dẹp Overlapper:\n%s" % str(e)
+            )
 
     def on_add_inbetween(self):
         """Thêm N frame trống (Inbetween) tại vị trí time slider hiện tại cho các đối tượng đang chọn"""
