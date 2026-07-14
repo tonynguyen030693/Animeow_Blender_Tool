@@ -764,6 +764,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.WORKSPACE_CONTROL_NAME = "AnimeowRoundWorkspaceControl"
                 
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
+        self._is_tweening_drag = False
         self.setWindowTitle(self.WINDOW_TITLE)
         self.setStyleSheet(QSS_STYLE)
         
@@ -1297,18 +1298,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         slider_row.addWidget(self.tween_pct_label)
         tween_layout.addLayout(slider_row)
         
-        # Cập nhật label khi kéo slider
-        self.tween_slider.valueChanged.connect(
-            lambda v: self.tween_pct_label.setText("%d%%" % v)
-        )
-        
-        # Nút bấm áp dụng Tween
-        self.tween_apply_btn = QtWidgets.QPushButton("Tween!")
-        self.tween_apply_btn.setIcon(AnimeowIcons.icon_tween())
-        self.tween_apply_btn.setObjectName("accent_btn")
-        self.tween_apply_btn.setFixedHeight(28)
-        self.tween_apply_btn.clicked.connect(self.on_tween_apply)
-        tween_layout.addWidget(self.tween_apply_btn)
+        # Kết nối Live Slider tự động cập nhật
+        self.tween_slider.sliderPressed.connect(self.on_tween_slider_pressed)
+        self.tween_slider.valueChanged.connect(self.on_tween_slider_changed)
+        self.tween_slider.sliderReleased.connect(self.on_tween_slider_released)
         
         # Hàng nút Preset nhanh
         preset_row = QtWidgets.QHBoxLayout()
@@ -4058,12 +4051,37 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         from ..core import shelf
         shelf.delete_obj_constraints()
 
-    # ── Tween Machine ──
+    # ── Tween Machine (Live Slider) ──
 
-    def on_tween_apply(self):
-        """Áp dụng nội suy tại frame hiện tại theo giá trị slider."""
-        pct = self.tween_slider.value() / 100.0
-        success, msg = tween_machine.tween_interactive(pct)
+    def on_tween_slider_pressed(self):
+        """Mở một Undo chunk của Maya khi animator bắt đầu click slider"""
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowTweenDrag")
+        self._is_tweening_drag = True
+
+    def on_tween_slider_changed(self, val):
+        """Nội suy và hiển thị trực tiếp khi kéo slider"""
+        self.tween_pct_label.setText("%d%%" % val)
+        if getattr(self, '_is_tweening_drag', False):
+            pct = val / 100.0
+            tween_machine.tween(pct)
+
+    def on_tween_slider_released(self):
+        """Đóng Undo chunk khi animator thả chuột ra"""
+        cmds.undoInfo(closeChunk=True)
+        self._is_tweening_drag = False
+        val = self.tween_slider.value()
+        curr_time = cmds.currentTime(query=True)
+        print(u"[TweenMachine] Đã áp dụng Tween %.0f%% tại frame %d." % (val, int(curr_time)))
+
+    def on_tween_preset(self, pct):
+        """Đặt slider về preset % và tự động áp dụng trực tiếp"""
+        # Block signals tạm thời để tránh kích hoạt valueChanged khi set value bằng code
+        self.tween_slider.blockSignals(True)
+        self.tween_slider.setValue(pct)
+        self.tween_pct_label.setText("%d%%" % pct)
+        self.tween_slider.blockSignals(False)
+        
+        success, msg = tween_machine.tween_interactive(pct / 100.0)
         if success:
             cmds.inViewMessage(
                 amg='<span style="color:#00BCD4;">%s</span>' % msg,
@@ -4071,11 +4089,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
         else:
             cmds.warning(msg)
-
-    def on_tween_preset(self, pct):
-        """Đặt slider về giá trị preset rồi áp dụng tween."""
-        self.tween_slider.setValue(pct)
-        self.on_tween_apply()
 
 
 def is_ui_alive(ui_obj):
