@@ -1107,11 +1107,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ns_layout.addWidget(QtWidgets.QLabel("Bước Bake:"), 0, 0)
         self.ns_step_combo = QtWidgets.QComboBox()
         self.ns_step_combo.addItems([
+            "On 1s (Bước 1)",
             "On 2s (Bước 2)",
             "On 3s (Bước 3)",
             "On 4s (Bước 4)",
-            "On 5s (Bước 5)",
-            "On 1s (Bước 1)"
+            "On 5s (Bước 5)"
         ])
         ns_layout.addWidget(self.ns_step_combo, 0, 1)
         
@@ -3319,7 +3319,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         step_idx = self.ns_step_combo.currentIndex()
-        steps = [2, 3, 4, 5, 1]
+        steps = [1, 2, 3, 4, 5]
         step = steps[step_idx]
         
         remove_constraints = self.ns_remove_constraints_cb.isChecked()
