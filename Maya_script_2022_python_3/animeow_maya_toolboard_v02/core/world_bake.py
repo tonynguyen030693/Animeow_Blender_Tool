@@ -15,6 +15,25 @@ def exception_to_unicode(e):
     except Exception:
         return "Lỗi hệ thống"
 
+def parent_to_animeow_group(node_name):
+    """Đảm bảo node_name được đưa vào group Animeow_locator"""
+    grp = "Animeow_locator"
+    if not cmds.objExists(grp):
+        grp = cmds.group(em=True, name=grp)
+    
+    current_parent = cmds.listRelatives(node_name, parent=True)
+    if not current_parent or current_parent[0] != grp:
+        cmds.parent(node_name, grp)
+
+def clean_empty_animeow_group():
+    """Xóa group Animeow_locator nếu nó trống rỗng"""
+    grp = "Animeow_locator"
+    if cmds.objExists(grp):
+        children = cmds.listRelatives(grp, children=True) or []
+        if not children:
+            cmds.delete(grp)
+
+
 def get_incoming_constraints(obj):
     """Tìm tất cả các constraint node trực tiếp hoặc gián tiếp (qua pairBlend) đang ràng buộc obj"""
     if not cmds.objExists(obj):
@@ -182,7 +201,7 @@ class WorldBakeManager(object):
     và trả ngược lại vật thể gốc, hỗ trợ lọc kênh (Translate, Rotate, Both)
     và bảo toàn keyframe cực trị / Bake theo key của đối tượng nguồn.
     """
-    PREFIX = "worldBake_loc_"
+    PREFIX = "Anm_loc_bake_"
     
     def __init__(self):
         pass
@@ -214,6 +233,9 @@ class WorldBakeManager(object):
         for axis in ['X','Y','Z']:
             cmds.setAttr(loc + ".localScale" + axis, 1.5)
             
+        # Đưa vào group quản lý chung
+        parent_to_animeow_group(loc)
+        
         # Ghi nhận kết nối
         cmds.addAttr(loc, longName='animeow_bakeSource', attributeType='message')
         cmds.connectAttr(obj + '.message', loc + '.animeow_bakeSource')
@@ -300,6 +322,7 @@ class WorldBakeManager(object):
                 cmds.delete(locator)
             except Exception:
                 pass
+        clean_empty_animeow_group()
                 
         print("[WorldBake] Đã bake ngược thành công từ %s vào %s." % (locator, obj))
         return obj

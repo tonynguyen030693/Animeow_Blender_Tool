@@ -2,10 +2,10 @@
 from __future__ import print_function, absolute_import, division
 
 import maya.cmds as cmds
-from .world_bake import smart_bake_object, get_incoming_constraints, get_pair_blend_nodes
+from .world_bake import smart_bake_object, get_incoming_constraints, get_pair_blend_nodes, parent_to_animeow_group, clean_empty_animeow_group
 
-PREFIX_LOC = "tempPivot_loc_"
-PREFIX_HELPER = "tempPivot_helper_"
+PREFIX_LOC = "Anm_loc_pivot_"
+PREFIX_HELPER = "Anm_loc_pivot_helper_"
 
 def get_clean_name(name):
     short_name = name.split("|")[-1]
@@ -50,6 +50,8 @@ def create_temp_locator(controls):
     
     for axis in ['X','Y','Z']:
         cmds.setAttr(pivot_loc + ".localScale" + axis, 1.8)
+        
+    parent_to_animeow_group(pivot_loc)
         
     # Lưu danh sách các control vào thuộc tính string trên pivot locator
     cmds.addAttr(pivot_loc, longName='animeow_tempPivotControls', dataType='string')
@@ -222,6 +224,8 @@ def release_temp_pivot(locator_or_control, start_frame, end_frame):
             cmds.delete(pivot_loc)
         except Exception:
             pass
+        
+    clean_empty_animeow_group()
         
     print("[TempPivot] Đã giải phóng Temp Pivot thành công.")
     return controls[0] if controls else None

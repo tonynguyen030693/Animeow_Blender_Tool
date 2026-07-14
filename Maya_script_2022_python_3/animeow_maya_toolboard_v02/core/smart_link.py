@@ -44,7 +44,24 @@ def get_extreme_frames(curve, tolerance=0.001):
             if abs(diff1) > tolerance or abs(diff2) > tolerance:
                 extreme_frames.append(int(round(keys[i])))
                 
-    return list(set(extreme_frames))
+def parent_to_animeow_group(node_name):
+    """Đảm bảo node_name được đưa vào group Animeow_locator"""
+    grp = "Animeow_locator"
+    if not cmds.objExists(grp):
+        grp = cmds.group(em=True, name=grp)
+    
+    current_parent = cmds.listRelatives(node_name, parent=True)
+    if not current_parent or current_parent[0] != grp:
+        cmds.parent(node_name, grp)
+
+def clean_empty_animeow_group():
+    """Xóa group Animeow_locator nếu nó trống rỗng"""
+    grp = "Animeow_locator"
+    if cmds.objExists(grp):
+        children = cmds.listRelatives(grp, children=True) or []
+        if not children:
+            cmds.delete(grp)
+
 
 class SmartLinkManager(object):
     """
@@ -66,7 +83,8 @@ class SmartLinkManager(object):
     def record_world_animation(self, start_frame, end_frame):
         """Ghi hình chuyển động thế giới của owner sang một locator tạm thời bằng Constraint & Bake"""
         # Tạo locator tạm
-        loc_temp = cmds.spaceLocator(name="loc_temp_" + self.owner)[0]
+        loc_temp = cmds.spaceLocator(name="Anm_loc_temp_" + self.owner)[0]
+        parent_to_animeow_group(loc_temp)
         
         # Tạo parentConstraint tạm thời từ owner sang loc_temp
         const = cmds.parentConstraint(self.owner, loc_temp, maintainOffset=False)[0]
@@ -102,11 +120,11 @@ class SmartLinkManager(object):
     def create_locator_pair(self):
         """Tạo cặp Locator Parent (Hook) và Child (Offset) tại vị trí thế giới của owner hiện tại"""
         # 1. Tạo Parent (Hook)
-        self.loc_parent = cmds.spaceLocator(name="loc_parent_" + self.owner)[0]
+        self.loc_parent = cmds.spaceLocator(name="Anm_loc_link_parent_" + self.owner)[0]
         cmds.matchTransform(self.loc_parent, self.owner, pos=True, rot=True)
         
         # 2. Tạo Child (Offset)
-        self.loc_child = cmds.spaceLocator(name="loc_child_" + self.owner)[0]
+        self.loc_child = cmds.spaceLocator(name="Anm_loc_link_child_" + self.owner)[0]
         cmds.matchTransform(self.loc_child, self.owner, pos=True, rot=True)
         
         # Thiết lập tỷ lệ hiển thị cho dễ nhìn trong viewport
@@ -116,6 +134,9 @@ class SmartLinkManager(object):
             
         # 3. Lồng làm cha con
         cmds.parent(self.loc_child, self.loc_parent)
+        
+        # Đưa vào group quản lý chung
+        parent_to_animeow_group(self.loc_parent)
         
         return self.loc_parent, self.loc_child
 
@@ -180,6 +201,7 @@ class SmartLinkManager(object):
         """Xóa locator tạm"""
         if loc_temp and cmds.objExists(loc_temp):
             cmds.delete(loc_temp)
+        clean_empty_animeow_group()
 
 
 class AnimationBaker(object):
@@ -192,8 +214,8 @@ class AnimationBaker(object):
 
     def find_locator_names(self):
         """Tìm cặp Locator đang liên kết với owner"""
-        loc_parent = "loc_parent_" + self.owner
-        loc_child = "loc_child_" + self.owner
+        loc_parent = "Anm_loc_link_parent_" + self.owner
+        loc_child = "Anm_loc_link_child_" + self.owner
         
         # Nếu không tìm thấy trực tiếp theo tên, quét ngược qua các constraint
         if not cmds.objExists(loc_child):
@@ -201,10 +223,10 @@ class AnimationBaker(object):
             for con in constraints:
                 targets = cmds.parentConstraint(con, query=True, targetList=True) or []
                 for target in targets:
-                    if "loc_child_" in target:
+                    if "Anm_loc_link_child_" in target or "loc_child_" in target:
                         loc_child = target
                         parents = cmds.listRelatives(loc_child, parent=True) or []
-                        if parents and "loc_parent_" in parents[0]:
+                        if parents and ("Anm_loc_link_parent_" in parents[0] or "loc_parent_" in parents[0]):
                             loc_parent = parents[0]
                         break
         
@@ -337,6 +359,7 @@ class AnimationBaker(object):
             cmds.delete(loc_parent)
         elif loc_child and cmds.objExists(loc_child):
             cmds.delete(loc_child)
+        clean_empty_animeow_group()
 
 
 class SpaceSwitcher(object):

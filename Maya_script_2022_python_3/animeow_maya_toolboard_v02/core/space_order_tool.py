@@ -2,6 +2,7 @@
 from __future__ import print_function, absolute_import, division
 
 import maya.cmds as cmds
+from .world_bake import parent_to_animeow_group, clean_empty_animeow_group
 
 def get_all_keys(obj):
     """Lấy tất cả các khung hình có keyframe bất kỳ (translate, rotate...) để làm kênh mẫu"""
@@ -50,8 +51,9 @@ def change_rotate_order(obj, new_order):
 
     # 2. Tạo locator thế giới tạm thời
     clean_name = obj.replace(":", "_").replace("|", "_")
-    loc = cmds.spaceLocator(name="temp_rotateOrder_loc_%s" % clean_name)[0]
+    loc = cmds.spaceLocator(name="Anm_loc_rotOrder_%s" % clean_name)[0]
     cmds.matchTransform(loc, obj, pos=True, rot=True)
+    parent_to_animeow_group(loc)
     cmds.setAttr(loc + ".rotateOrder", curr_order)
     
     # 3. Ghi anim thế giới lên locator tại các frame k qua matchTransform (Không dùng constraint để tránh bị lock kênh)
@@ -88,6 +90,7 @@ def change_rotate_order(obj, new_order):
     if cmds.objExists(loc):
         cmds.delete(loc)
         
+    clean_empty_animeow_group()
     return True, "Đã chuyển đổi Rotate Order thành công và bảo toàn %d keyframe!" % len(keys)
 
 def record_world_space(obj):
@@ -102,7 +105,7 @@ def record_world_space(obj):
         return None, "Đối tượng không có keyframe hoạt họa nào!"
         
     clean_name = obj.replace(":", "_").replace("|", "_")
-    loc_name = "animeow_space_record_%s" % clean_name
+    loc_name = "Anm_loc_space_record_%s" % clean_name
     
     # Xóa locator trùng cũ nếu có
     if cmds.objExists(loc_name):
@@ -122,6 +125,7 @@ def record_world_space(obj):
     # Bật Override Color (màu xanh lá cây 14 làm nổi bật)
     cmds.setAttr(loc + ".overrideEnabled", 1)
     cmds.setAttr(loc + ".overrideColor", 14)
+    parent_to_animeow_group(loc)
     
     # Lưu danh sách keyframe gốc vào locator dưới dạng chuỗi attribute để khi restore đọc lại
     cmds.addAttr(loc, longName="animeow_saved_keys", dataType="string")
@@ -186,5 +190,6 @@ def restore_world_space(obj, locator):
     if cmds.objExists(locator):
         cmds.delete(locator)
         
+    clean_empty_animeow_group()
     cmds.select(obj)
     return True, "Đã khôi phục thành công tọa độ thế giới cho %s tại %d keyframe!" % (obj, len(keys))
