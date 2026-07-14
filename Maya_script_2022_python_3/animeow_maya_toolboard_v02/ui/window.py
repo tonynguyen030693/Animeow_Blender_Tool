@@ -1354,9 +1354,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.local_scale_btn.clicked.connect(self.on_local_scale_tool)
         curve_layout.addWidget(self.local_scale_btn)
         
-        # Cụm Smooth Slider điều chỉnh cường độ làm mượt key
+        # Cụm Smooth Slider và Nút bấm làm mượt key
         smooth_row = QtWidgets.QHBoxLayout()
-        smooth_row.addWidget(QtWidgets.QLabel("Smooth:"))
+        
+        self.smooth_btn = QtWidgets.QPushButton("Smooth Keys")
+        self.smooth_btn.setIcon(AnimeowIcons.icon_clean())
+        self.smooth_btn.setFixedHeight(24)
+        self.smooth_btn.setToolTip("Click để làm mượt nhanh 100% keyframe được chọn")
+        self.smooth_btn.clicked.connect(self.on_smooth_btn_clicked)
+        smooth_row.addWidget(self.smooth_btn)
+        
         self.smooth_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.smooth_slider.setRange(0, 100)
         self.smooth_slider.setValue(0)
@@ -3829,6 +3836,70 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi Euler Filter", 
                 "Lỗi xảy ra khi thực hiện Euler Filter:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_smooth_btn_clicked(self):
+        """Làm mượt nhanh 100% các keyframe được chọn (hoạt động như nút bấm cũ)"""
+        curves = cmds.keyframe(q=True, name=True) or []
+        if not curves:
+            QtWidgets.QMessageBox.warning(
+                self, "Cảnh báo",
+                "Vui lòng chọn ít nhất 3 keyframe trong Graph Editor!"
+            )
+            return
+            
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowSmoothButton")
+        try:
+            total_smoothed = 0
+            for curve in curves:
+                keys_time = cmds.keyframe(curve, q=True, selected=True, timeChange=True) or []
+                keys_value = cmds.keyframe(curve, q=True, selected=True, valueChange=True) or []
+                
+                size = len(keys_time)
+                if size < 3:
+                    continue
+                    
+                # Tạo list chứa các giá trị mới
+                new_values = list(keys_value)
+                
+                # Tính moving average cho các key ở giữa (bỏ qua key đầu và key cuối)
+                for i in range(1, size - 1):
+                    new_values[i] = (keys_value[i-1] + keys_value[i] + keys_value[i+1]) / 3.0
+                    
+                # Áp dụng 100% làm mượt lên các keyframe tương ứng
+                for i in range(1, size - 1):
+                    cmds.keyframe(
+                        curve,
+                        time=(keys_time[i], keys_time[i]),
+                        absolute=True,
+                        valueChange=new_values[i]
+                    )
+                    
+                    # Cập nhật thuộc tính trực tiếp (nếu có kết nối) để viewport refresh tức thì
+                    connected_plugs = cmds.listConnections(curve + '.output', plugs=True, destination=True) or []
+                    for plug in connected_plugs:
+                        try:
+                            cmds.setAttr(plug, new_values[i])
+                        except Exception:
+                            pass
+                            
+                total_smoothed += 1
+                
+            if total_smoothed > 0:
+                # Ép refresh viewport
+                cmds.refresh(force=True)
+                print(u"[SmoothKeys] Đã làm mượt thành công các keyframe được chọn.")
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self, "Thông báo",
+                    "Cần chọn ít nhất 3 keyframe trên cùng một đường cong (curve) để làm mượt!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Làm mượt",
+                "Lỗi xảy ra khi làm mượt keyframe:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
