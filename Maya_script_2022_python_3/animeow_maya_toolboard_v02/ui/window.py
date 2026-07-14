@@ -3911,8 +3911,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 # Duyệt ngược từ cuối về đầu để khi xóa bằng index, chỉ số các key phía trước không bị thay đổi
                 for i in range(len(times) - 1, -1, -1):
                     t = times[i]
-                    # Nâng độ nhạy lên 1e-5 để bắt trọn mọi keyframe lệch cực nhỏ tạo ra hoa thị * trên timeline
-                    if abs(t - round(t)) > 1e-5:
+                    # Nâng độ nhạy lên 1e-9 để bắt trọn mọi keyframe lệch cực nhỏ (như 93.0000001) tạo ra hoa thị * trên timeline
+                    if abs(t - round(t)) > 1e-9:
                         cmds.cutKey(curve, index=(i, i))
                         deleted_count += 1
             
