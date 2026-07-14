@@ -2042,6 +2042,47 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.fav_clean_subframe_btn.clicked.connect(self.on_clean_subframe_keys)
                 ck_lay.addWidget(self.fav_clean_subframe_btn)
                 
+                # Cụm Smooth Keys & Slider trong Favorites
+                fav_smooth_row = QtWidgets.QHBoxLayout()
+                self.fav_smooth_btn = QtWidgets.QPushButton("Smooth Keys")
+                self.fav_smooth_btn.setIcon(AnimeowIcons.icon_smooth())
+                self.fav_smooth_btn.setFixedHeight(24)
+                self.fav_smooth_btn.setToolTip("Làm mịn 100% các keyframe được chọn trong Graph Editor")
+                self.fav_smooth_btn.clicked.connect(self.on_smooth_btn_clicked)
+                fav_smooth_row.addWidget(self.fav_smooth_btn)
+                
+                self.fav_smooth_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+                self.fav_smooth_slider.setRange(0, 100)
+                self.fav_smooth_slider.setValue(0)
+                self.fav_smooth_slider.setFixedHeight(20)
+                self.fav_smooth_slider.setToolTip("Kéo trượt để làm mịn keyframe tương tác từ 0% đến 100%")
+                self.fav_smooth_slider.setStyleSheet("""
+                    QSlider::groove:horizontal {
+                        background: #3A3A3A;
+                        height: 4px;
+                        border-radius: 2px;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #00BCD4;
+                        width: 12px;
+                        height: 12px;
+                        margin: -4px 0;
+                        border-radius: 6px;
+                    }
+                """)
+                fav_smooth_row.addWidget(self.fav_smooth_slider)
+                
+                self.fav_smooth_pct_label = QtWidgets.QLabel("0%")
+                self.fav_smooth_pct_label.setFixedWidth(30)
+                self.fav_smooth_pct_label.setAlignment(QtCore.Qt.AlignCenter)
+                self.fav_smooth_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4;")
+                fav_smooth_row.addWidget(self.fav_smooth_pct_label)
+                ck_lay.addLayout(fav_smooth_row)
+                
+                self.fav_smooth_slider.sliderPressed.connect(self.on_smooth_slider_pressed)
+                self.fav_smooth_slider.valueChanged.connect(self.on_smooth_slider_changed)
+                self.fav_smooth_slider.sliderReleased.connect(self.on_smooth_slider_released)
+                
                 fav_layout.addWidget(ck_group)
                 
                 # GroupBox 2: Tween Machine (Favorites)
@@ -2146,7 +2187,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 fav_layout.addWidget(fav_time_group)
                 
-                # GroupBox 2: Round Tool
+                # GroupBox 4: Round Tool (Favorites)
                 rnd_group = QtWidgets.QGroupBox("Làm tròn số (Round Tool)")
                 rnd_lay = QtWidgets.QVBoxLayout(rnd_group)
                 rnd_lay.setContentsMargins(8, 10, 8, 8)
@@ -2154,45 +2195,45 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 round_sub_layout = QtWidgets.QGridLayout()
                 round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
-                self.round_precision_combo = QtWidgets.QComboBox()
-                self.round_precision_combo.addItems([
+                self.fav_round_precision_combo = QtWidgets.QComboBox()
+                self.fav_round_precision_combo.addItems([
                     "Số nguyên (ví dụ: 1)", 
                     "1 chữ số thập phân (ví dụ: 1.1)", 
                     "2 chữ số thập phân (ví dụ: 1.23)",
                     "Đặt giá trị về 0 (Reset)"
                 ])
-                round_sub_layout.addWidget(self.round_precision_combo, 0, 1)
+                round_sub_layout.addWidget(self.fav_round_precision_combo, 0, 1)
                 
                 round_sub_layout.addWidget(QtWidgets.QLabel("Môi trường:"), 1, 0)
-                self.round_target_combo = QtWidgets.QComboBox()
-                self.round_target_combo.addItems([
+                self.fav_round_target_combo = QtWidgets.QComboBox()
+                self.fav_round_target_combo.addItems([
                     "Channel Box (Thuộc tính chọn)", 
                     "Graph Editor (Keyframe chọn)",
                     "Keyframe tại frame hiện tại",
                     "Toàn bộ keyframe (Timeline)"
                 ])
-                round_sub_layout.addWidget(self.round_target_combo, 1, 1)
+                round_sub_layout.addWidget(self.fav_round_target_combo, 1, 1)
                 
-                self.round_btn = QtWidgets.QPushButton("Làm tròn số")
-                self.round_btn.setIcon(AnimeowIcons.icon_round())
-                self.round_btn.setObjectName("accent_btn")
-                self.round_btn.setFixedHeight(28)
-                self.round_btn.clicked.connect(self.on_round_values)
-                round_sub_layout.addWidget(self.round_btn, 2, 0, 1, 2)
+                self.fav_round_btn = QtWidgets.QPushButton("Làm tròn số")
+                self.fav_round_btn.setIcon(AnimeowIcons.icon_round())
+                self.fav_round_btn.setObjectName("accent_btn")
+                self.fav_round_btn.setFixedHeight(28)
+                self.fav_round_btn.clicked.connect(self.on_round_values)
+                round_sub_layout.addWidget(self.fav_round_btn, 2, 0, 1, 2)
                 
                 # Reset row
                 reset_row = QtWidgets.QHBoxLayout()
-                self.reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
-                self.reset_t_btn.setIcon(AnimeowIcons.icon_reset())
-                self.reset_t_btn.setFixedHeight(24)
-                self.reset_t_btn.clicked.connect(self.on_reset_translate)
-                reset_row.addWidget(self.reset_t_btn)
+                self.fav_reset_t_btn = QtWidgets.QPushButton("Reset Translate (T -> 0)")
+                self.fav_reset_t_btn.setIcon(AnimeowIcons.icon_reset())
+                self.fav_reset_t_btn.setFixedHeight(24)
+                self.fav_reset_t_btn.clicked.connect(self.on_reset_translate)
+                reset_row.addWidget(self.fav_reset_t_btn)
                 
-                self.reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
-                self.reset_r_btn.setIcon(AnimeowIcons.icon_reset())
-                self.reset_r_btn.setFixedHeight(24)
-                self.reset_r_btn.clicked.connect(self.on_reset_rotate)
-                reset_row.addWidget(self.reset_r_btn)
+                self.fav_reset_r_btn = QtWidgets.QPushButton("Reset Rotate (R -> 0)")
+                self.fav_reset_r_btn.setIcon(AnimeowIcons.icon_reset())
+                self.fav_reset_r_btn.setFixedHeight(24)
+                self.fav_reset_r_btn.clicked.connect(self.on_reset_rotate)
+                reset_row.addWidget(self.fav_reset_r_btn)
                 
                 round_sub_layout.addLayout(reset_row, 3, 0, 1, 2)
                 rnd_lay.addLayout(round_sub_layout)
@@ -3190,12 +3231,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """Làm tròn số thuộc tính hoặc keyframe"""
         self.save_settings()
         
-        # Lấy độ chính xác: 0 = số nguyên, 1 = 1 chữ số, 2 = 2 chữ số, 3 -> -1 = đặt về 0
-        precision_idx = self.round_precision_combo.currentIndex()
+        # Check sender để lấy đúng combo box của Favorites hoặc Tab 2 chính
+        sender = self.sender()
+        if sender == getattr(self, 'fav_round_btn', None):
+            precision_idx = self.fav_round_precision_combo.currentIndex()
+            target_idx = self.fav_round_target_combo.currentIndex()
+        else:
+            precision_idx = self.round_precision_combo.currentIndex()
+            target_idx = self.round_target_combo.currentIndex()
+            
         precision = -1 if precision_idx == 3 else precision_idx
         
         # Lấy môi trường đích
-        target_idx = self.round_target_combo.currentIndex()
         target_map = {
             0: 'channel_box',
             1: 'graph_editor',
@@ -4200,7 +4247,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def on_smooth_slider_changed(self, val):
         """Nội suy trực tiếp cường độ làm mịn theo giá trị slider kéo"""
-        self.smooth_pct_label.setText("%d%%" % val)
+        sender = self.sender()
+        if sender == getattr(self, 'fav_smooth_slider', None):
+            lbl = self.fav_smooth_pct_label
+        else:
+            lbl = self.smooth_pct_label
+            
+        lbl.setText("%d%%" % val)
         if getattr(self, '_is_smoothing_drag', False) and hasattr(self, '_smooth_cache'):
             pct = val / 100.0
             for item in self._smooth_cache:
@@ -4230,11 +4283,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.undoInfo(closeChunk=True)
         self._is_smoothing_drag = False
         
+        sender = self.sender()
+        if sender == getattr(self, 'fav_smooth_slider', None):
+            sld = self.fav_smooth_slider
+            lbl = self.fav_smooth_pct_label
+        else:
+            sld = self.smooth_slider
+            lbl = self.smooth_pct_label
+            
         # Block signals để set slider về 0% mà không kích hoạt lại thay đổi keyframe
-        self.smooth_slider.blockSignals(True)
-        self.smooth_slider.setValue(0)
-        self.smooth_pct_label.setText("0%")
-        self.smooth_slider.blockSignals(False)
+        sld.blockSignals(True)
+        sld.setValue(0)
+        lbl.setText("0%")
+        sld.blockSignals(False)
         
         # In thông báo trạng thái
         if hasattr(self, '_smooth_cache') and self._smooth_cache:
