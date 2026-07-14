@@ -2019,7 +2019,132 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 btn_euler.clicked.connect(self.on_euler_filter)
                 ck_lay.addWidget(btn_euler)
                 
+                # Hàng ngang Clean Neighborhood trong Favorites
+                fav_neighborhood_row = QtWidgets.QHBoxLayout()
+                fav_neighborhood_row.addWidget(QtWidgets.QLabel("Dọn lân cận (Bán kính):"))
+                self.fav_clean_radius_spin = QtWidgets.QSpinBox()
+                self.fav_clean_radius_spin.setRange(1, 500)
+                self.fav_clean_radius_spin.setValue(3)
+                self.fav_clean_radius_spin.setFixedHeight(22)
+                fav_neighborhood_row.addWidget(self.fav_clean_radius_spin)
+                
+                self.fav_clean_neighbor_btn = QtWidgets.QPushButton("Clean Neighborhood")
+                self.fav_clean_neighbor_btn.setIcon(AnimeowIcons.icon_clean())
+                self.fav_clean_neighbor_btn.setFixedHeight(24)
+                self.fav_clean_neighbor_btn.clicked.connect(self.on_clean_neighborhood)
+                fav_neighborhood_row.addWidget(self.fav_clean_neighbor_btn)
+                ck_lay.addLayout(fav_neighborhood_row)
+                
+                # Nút dọn key lẻ trong Favorites
+                self.fav_clean_subframe_btn = QtWidgets.QPushButton("Dọn Key Lẻ (Clean Sub-frame Keys)")
+                self.fav_clean_subframe_btn.setIcon(AnimeowIcons.icon_clean())
+                self.fav_clean_subframe_btn.setFixedHeight(28)
+                self.fav_clean_subframe_btn.clicked.connect(self.on_clean_subframe_keys)
+                ck_lay.addWidget(self.fav_clean_subframe_btn)
+                
                 fav_layout.addWidget(ck_group)
+                
+                # GroupBox 2: Tween Machine (Favorites)
+                fav_tween_group = QtWidgets.QGroupBox("Tween Machine (Nội suy Keyframe)")
+                fav_tween_layout = QtWidgets.QVBoxLayout(fav_tween_group)
+                fav_tween_layout.setContentsMargins(8, 10, 8, 8)
+                fav_tween_layout.setSpacing(6)
+                
+                fav_tween_row = QtWidgets.QHBoxLayout()
+                fav_tween_row.addWidget(QtWidgets.QLabel("Prev"))
+                self.fav_tween_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+                self.fav_tween_slider.setRange(0, 100)
+                self.fav_tween_slider.setValue(50)
+                self.fav_tween_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+                self.fav_tween_slider.setTickInterval(25)
+                self.fav_tween_slider.setStyleSheet("""
+                    QSlider::groove:horizontal {
+                        background: #3A3A3A;
+                        height: 6px;
+                        border-radius: 3px;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #00BCD4;
+                        width: 14px;
+                        height: 14px;
+                        margin: -4px 0;
+                        border-radius: 7px;
+                    }
+                    QSlider::handle:horizontal:hover {
+                        background: #FFFFFF;
+                        border: 2px solid #00BCD4;
+                    }
+                """)
+                fav_tween_row.addWidget(self.fav_tween_slider)
+                fav_tween_row.addWidget(QtWidgets.QLabel("Next"))
+                
+                self.fav_tween_pct_label = QtWidgets.QLabel("50%")
+                self.fav_tween_pct_label.setFixedWidth(35)
+                self.fav_tween_pct_label.setAlignment(QtCore.Qt.AlignCenter)
+                self.fav_tween_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4; font-size: 11px;")
+                fav_tween_row.addWidget(self.fav_tween_pct_label)
+                fav_tween_layout.addLayout(fav_tween_row)
+                
+                # Preset row cho Favorites
+                fav_preset_row = QtWidgets.QHBoxLayout()
+                from functools import partial
+                for pct in [0, 25, 50, 75, 100]:
+                    btn = QtWidgets.QPushButton("%d%%" % pct)
+                    btn.setFixedHeight(20)
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background: #3A3A3A;
+                            border: 1px solid #555;
+                            border-radius: 4px;
+                            color: #E0E0E0;
+                            font-size: 10px;
+                        }
+                        QPushButton:hover {
+                            background: #00BCD4;
+                            color: #FFFFFF;
+                            border-color: #00BCD4;
+                        }
+                    """)
+                    btn.clicked.connect(partial(self.on_tween_preset, pct))
+                    fav_preset_row.addWidget(btn)
+                fav_tween_layout.addLayout(fav_preset_row)
+                
+                self.fav_tween_slider.sliderPressed.connect(self.on_tween_slider_pressed)
+                self.fav_tween_slider.valueChanged.connect(self.on_tween_slider_changed)
+                self.fav_tween_slider.sliderReleased.connect(self.on_tween_slider_released)
+                
+                fav_layout.addWidget(fav_tween_group)
+                
+                # GroupBox 3: Timing & Inbetweens (Favorites)
+                fav_time_group = QtWidgets.QGroupBox("Timing & Inbetweens (Timing & Diễn hoạt)")
+                fav_time_layout = QtWidgets.QVBoxLayout(fav_time_group)
+                fav_time_layout.setContentsMargins(8, 10, 8, 8)
+                fav_time_layout.setSpacing(6)
+                
+                fav_ib_count_row = QtWidgets.QHBoxLayout()
+                fav_ib_count_row.addWidget(QtWidgets.QLabel("Số lượng (Frames):"))
+                self.fav_ib_count_spin = QtWidgets.QSpinBox()
+                self.fav_ib_count_spin.setRange(1, 500)
+                self.fav_ib_count_spin.setValue(1)
+                self.fav_ib_count_spin.setFixedHeight(22)
+                fav_ib_count_row.addWidget(self.fav_ib_count_spin)
+                fav_time_layout.addLayout(fav_ib_count_row)
+                
+                fav_ib_btn_row = QtWidgets.QHBoxLayout()
+                self.fav_add_ib_btn = QtWidgets.QPushButton("Add Inbetween (+)")
+                self.fav_add_ib_btn.setIcon(AnimeowIcons.icon_reset())
+                self.fav_add_ib_btn.setFixedHeight(24)
+                self.fav_add_ib_btn.clicked.connect(self.on_add_inbetween)
+                fav_ib_btn_row.addWidget(self.fav_add_ib_btn)
+                
+                self.fav_remove_ib_btn = QtWidgets.QPushButton("Remove Inbetween (-)")
+                self.fav_remove_ib_btn.setIcon(AnimeowIcons.icon_clean())
+                self.fav_remove_ib_btn.setFixedHeight(24)
+                self.fav_remove_ib_btn.clicked.connect(self.on_remove_inbetween)
+                fav_ib_btn_row.addWidget(self.fav_remove_ib_btn)
+                fav_time_layout.addLayout(fav_ib_btn_row)
+                
+                fav_layout.addWidget(fav_time_group)
                 
                 # GroupBox 2: Round Tool
                 rnd_group = QtWidgets.QGroupBox("Làm tròn số (Round Tool)")
@@ -3864,7 +3989,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         current_time = cmds.currentTime(q=True)
-        r = self.clean_radius_spin.value()
+        
+        sender = self.sender()
+        if sender == getattr(self, 'fav_clean_neighbor_btn', None):
+            r = self.fav_clean_radius_spin.value()
+        else:
+            r = self.clean_radius_spin.value()
         
         # Bọc trong undo chunk để hoàn tác dễ dàng
         cmds.undoInfo(openChunk=True, chunkName="AnimeowCleanNeighborhood")
@@ -4144,7 +4274,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_add_inbetween(self):
         """Thêm N frame trống (Inbetween) tại vị trí time slider hiện tại cho các đối tượng đang chọn"""
         import maya.mel as mel
-        n = self.ib_count_spin.value()
+        
+        sender = self.sender()
+        if sender == getattr(self, 'fav_add_ib_btn', None):
+            n = self.fav_ib_count_spin.value()
+        else:
+            n = self.ib_count_spin.value()
         
         cmds.undoInfo(openChunk=True, chunkName="AnimeowAddInbetween")
         try:
@@ -4162,7 +4297,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_remove_inbetween(self):
         """Bớt N frame trống (Inbetween) tại vị trí time slider hiện tại cho các đối tượng đang chọn"""
         import maya.mel as mel
-        n = self.ib_count_spin.value()
+        
+        sender = self.sender()
+        if sender == getattr(self, 'fav_remove_ib_btn', None):
+            n = self.fav_ib_count_spin.value()
+        else:
+            n = self.ib_count_spin.value()
         
         cmds.undoInfo(openChunk=True, chunkName="AnimeowRemoveInbetween")
         try:
@@ -4416,7 +4556,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def on_tween_slider_changed(self, val):
         """Nội suy trực tiếp từ cache và hiển thị ngay trên viewport khi kéo slider"""
-        self.tween_pct_label.setText("%d%%" % val)
+        sender = self.sender()
+        if sender == getattr(self, 'fav_tween_slider', None):
+            lbl = self.fav_tween_pct_label
+        else:
+            lbl = self.tween_pct_label
+            
+        lbl.setText("%d%%" % val)
         if getattr(self, '_is_tweening_drag', False) and hasattr(self, '_tween_cache'):
             pct = val / 100.0
             for item in self._tween_cache:
@@ -4445,17 +4591,37 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.undoInfo(closeChunk=True)
         self._is_tweening_drag = False
         self._tween_cache = []
-        val = self.tween_slider.value()
+        
+        sender = self.sender()
+        if sender == getattr(self, 'fav_tween_slider', None):
+            sld = self.fav_tween_slider
+            lbl = self.fav_tween_pct_label
+        else:
+            sld = self.tween_slider
+            lbl = self.tween_pct_label
+            
+        # Reset slider về lại 50%
+        sld.blockSignals(True)
+        sld.setValue(50)
+        lbl.setText("50%")
+        sld.blockSignals(False)
+        
+        val = sld.value()
         curr_time = cmds.currentTime(query=True)
         print(u"[TweenMachine] Đã áp dụng Tween %.0f%% tại frame %d." % (val, int(curr_time)))
 
     def on_tween_preset(self, pct):
         """Đặt slider về preset % và tự động áp dụng trực tiếp"""
-        # Block signals tạm thời để tránh kích hoạt valueChanged khi set value bằng code
-        self.tween_slider.blockSignals(True)
-        self.tween_slider.setValue(pct)
-        self.tween_pct_label.setText("%d%%" % pct)
-        self.tween_slider.blockSignals(False)
+        # Đồng bộ set giá trị cho cả slider chính và phụ nếu chúng tồn tại
+        for sld, lbl in [
+            (getattr(self, 'tween_slider', None), getattr(self, 'tween_pct_label', None)),
+            (getattr(self, 'fav_tween_slider', None), getattr(self, 'fav_tween_pct_label', None))
+        ]:
+            if sld and lbl:
+                sld.blockSignals(True)
+                sld.setValue(pct)
+                lbl.setText("%d%%" % pct)
+                sld.blockSignals(False)
         
         success, msg = tween_machine.tween_interactive(pct / 100.0)
         if success:
