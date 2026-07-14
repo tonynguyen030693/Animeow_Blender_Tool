@@ -457,7 +457,6 @@ def overlap_chain(controls, softness, scale, wind_enabled, wind_scale, wind_spee
         preserveOutsideKeys=True,
         sparseAnimCurveBake=False,
         bakeOnOverrideLayer=bake_on_layer,
-        overrideLayer=anim_layer,
         minimizeRotation=False,
         controlPoints=False,
         shape=False,
