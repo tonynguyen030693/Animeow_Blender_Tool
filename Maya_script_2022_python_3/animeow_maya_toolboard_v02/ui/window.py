@@ -1354,6 +1354,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.clean_key_btn.clicked.connect(self.on_clean_redundant_keys)
         curve_layout.addWidget(self.clean_key_btn)
         
+        # Thêm 2 nút tích hợp mới song song
+        util_btn_row = QtWidgets.QHBoxLayout()
+        self.smooth_keys_btn = QtWidgets.QPushButton("Smooth Keys (Làm mượt key)")
+        self.smooth_keys_btn.setIcon(AnimeowIcons.icon_clean())
+        self.smooth_keys_btn.setFixedHeight(26)
+        self.smooth_keys_btn.clicked.connect(self.on_smooth_keys)
+        util_btn_row.addWidget(self.smooth_keys_btn)
+        
+        self.local_scale_btn = QtWidgets.QPushButton("Local Scale (Scale key)")
+        self.local_scale_btn.setIcon(AnimeowIcons.icon_tween())
+        self.local_scale_btn.setFixedHeight(26)
+        self.local_scale_btn.clicked.connect(self.on_local_scale_tool)
+        util_btn_row.addWidget(self.local_scale_btn)
+        curve_layout.addLayout(util_btn_row)
+        
         round_sub_layout = QtWidgets.QGridLayout()
         round_sub_layout.addWidget(QtWidgets.QLabel("Làm tròn đến:"), 0, 0)
         self.round_precision_combo = QtWidgets.QComboBox()
@@ -3791,6 +3806,91 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
         finally:
             cmds.undoInfo(closeChunk=True)
+
+    def on_smooth_keys(self):
+        """Làm mượt các keyframe được chọn bằng thuật toán Moving Average (bản Python tối ưu)"""
+        curves = cmds.keyframe(q=True, name=True) or []
+        if not curves:
+            QtWidgets.QMessageBox.warning(
+                self, "Cảnh báo",
+                "Vui lòng chọn ít nhất 3 keyframe trong Graph Editor!"
+            )
+            return
+            
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowSmoothKeys")
+        try:
+            total_smoothed = 0
+            for curve in curves:
+                # Lấy các keyframe đang được chọn trên curve này
+                keys_time = cmds.keyframe(curve, q=True, selected=True, timeChange=True) or []
+                keys_value = cmds.keyframe(curve, q=True, selected=True, valueChange=True) or []
+                
+                size = len(keys_time)
+                if size < 3:
+                    continue
+                    
+                # Tạo list chứa các giá trị mới
+                new_values = list(keys_value)
+                
+                # Tính moving average cho các key ở giữa (bỏ qua key đầu và key cuối)
+                for i in range(1, size - 1):
+                    new_values[i] = (keys_value[i-1] + keys_value[i] + keys_value[i+1]) / 3.0
+                    
+                # Áp dụng các giá trị mới lên các keyframe tương ứng
+                for i in range(1, size - 1):
+                    cmds.keyframe(
+                        curve,
+                        time=(keys_time[i], keys_time[i]),
+                        absolute=True,
+                        valueChange=new_values[i]
+                    )
+                total_smoothed += 1
+                
+            if total_smoothed > 0:
+                print(u"[AnimeowTool] Đã làm mượt thành công các keyframe được chọn.")
+                cmds.warning("Đã làm mượt thành công các keyframe được chọn.")
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self, "Thông báo",
+                    "Cần chọn ít nhất 3 keyframe trên cùng một đường cong (curve) để làm mượt!"
+                )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi Làm mượt",
+                "Lỗi xảy ra khi làm mượt keyframe:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_local_scale_tool(self):
+        """Khởi chạy công cụ Scale Keyframe Cục Bộ (Local Scale Tool - MEL)"""
+        import os
+        import maya.mel as mel
+        
+        # Tìm đường dẫn tệp MEL trong package
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        mel_file = os.path.join(current_dir, "..", "mel", "NP_curveLocalScale.mel")
+        mel_file = mel_file.replace("\\", "/")
+        
+        if os.path.exists(mel_file):
+            try:
+                mel.eval('source "%s";' % mel_file)
+                print(u"[AnimeowTool] Đã khởi chạy Curve Local Scale Tool từ package.")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Lỗi nạp script",
+                    "Lỗi xảy ra khi chạy tệp script MEL:\n%s" % str(e)
+                )
+        else:
+            # Fallback nếu không thấy file, thử chạy trực tiếp lệnh source
+            try:
+                mel.eval('source "NP_curveLocalScale.mel";')
+                print(u"[AnimeowTool] Fallback: Đã nạp Curve Local Scale Tool từ MAYA_SCRIPT_PATH.")
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Lỗi tìm kiếm",
+                    "Không tìm thấy tệp NP_curveLocalScale.mel đi kèm package cũng như trong đường dẫn Maya!\nLỗi: %s" % str(e)
+                )
 
     def on_fix_lost_shader(self):
         """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
