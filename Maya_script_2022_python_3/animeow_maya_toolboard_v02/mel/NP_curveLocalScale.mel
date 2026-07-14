@@ -52,10 +52,11 @@ window -tb 1 -width 374 -height 110 -t "curve local scale tool" -s 1 $nameWindow
 
 	radioButton -e -sl start;
 	//keep windows pref after closing
-	windowPref -exists Crv_WIN;
-	//Query the window preference size and position.
-	windowPref -query -topLeftCorner Crv_WIN;
-	windowPref -query -widthHeight Crv_WIN;
+	if (`windowPref -exists Crv_WIN`) {
+		//Query the window preference size and position.
+		windowPref -query -topLeftCorner Crv_WIN;
+		windowPref -query -widthHeight Crv_WIN;
+	}
 
 	//On branche une callback sur la selection de la courbe
 	int $job = 0;
