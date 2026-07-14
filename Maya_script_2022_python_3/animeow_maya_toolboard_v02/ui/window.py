@@ -2112,19 +2112,28 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         target = self.target_txt.text().strip()
         owner_raw = self.owner_txt.text().strip()
         
-        # Nếu chưa gán thông tin rõ ràng, tự động sử dụng vùng chọn
-        if not target or not owner_raw:
+        # Lấy danh sách owner và target
+        if not owner_raw:
+            # Nếu ô Owner trống, thử lấy từ selection trên viewport
             sel = cmds.ls(sl=True) or []
             if len(sel) >= 2:
+                # Nếu chọn ít nhất 2 vật thể: cái đầu là target, còn lại là owner
                 target = sel[0]
                 owners = sel[1:]
                 self.target_txt.setText(target)
                 self.owner_txt.setText(", ".join(owners))
                 self.save_settings()
+            elif len(sel) == 1:
+                # Nếu chỉ chọn đúng 1 vật thể, coi nó là Owner và Target sẽ là World
+                target = ""
+                owners = [sel[0]]
+                self.owner_txt.setText(owners[0])
+                self.target_txt.setText("")
+                self.save_settings()
             else:
                 QtWidgets.QMessageBox.warning(
                     self, "Thiếu thông tin",
-                    "Vui lòng gán Target & Owner hoặc chọn ít nhất 2 đối tượng trên viewport (đầu tiên là Target, các đối tượng tiếp theo là Owner)!"
+                    "Vui lòng gán Owner (Vật bị dẫn) hoặc chọn ít nhất 1 đối tượng trên viewport!"
                 )
                 return
         else:
