@@ -1330,6 +1330,37 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab2_layout.addWidget(self.tween_group)
         
+        # GroupBox: Timing & Inbetweens
+        self.time_group = QtWidgets.QGroupBox("Timing & Inbetweens (Timing & Diễn hoạt)")
+        time_layout = QtWidgets.QVBoxLayout(self.time_group)
+        time_layout.setContentsMargins(8, 12, 8, 8)
+        time_layout.setSpacing(6)
+        
+        ib_count_row = QtWidgets.QHBoxLayout()
+        ib_count_row.addWidget(QtWidgets.QLabel("Số lượng (Frames):"))
+        self.ib_count_spin = QtWidgets.QSpinBox()
+        self.ib_count_spin.setRange(1, 500)
+        self.ib_count_spin.setValue(1)
+        self.ib_count_spin.setFixedHeight(22)
+        ib_count_row.addWidget(self.ib_count_spin)
+        time_layout.addLayout(ib_count_row)
+        
+        ib_btn_row = QtWidgets.QHBoxLayout()
+        self.add_ib_btn = QtWidgets.QPushButton("Add Inbetween (+)")
+        self.add_ib_btn.setIcon(AnimeowIcons.icon_reset())
+        self.add_ib_btn.setFixedHeight(26)
+        self.add_ib_btn.clicked.connect(self.on_add_inbetween)
+        ib_btn_row.addWidget(self.add_ib_btn)
+        
+        self.remove_ib_btn = QtWidgets.QPushButton("Remove Inbetween (-)")
+        self.remove_ib_btn.setIcon(AnimeowIcons.icon_clean())
+        self.remove_ib_btn.setFixedHeight(26)
+        self.remove_ib_btn.clicked.connect(self.on_remove_inbetween)
+        ib_btn_row.addWidget(self.remove_ib_btn)
+        time_layout.addLayout(ib_btn_row)
+        
+        tab2_layout.addWidget(self.time_group)
+        
         # GroupBox 3: Curve Editor Utilities
         self.curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
         curve_layout = QtWidgets.QVBoxLayout(self.curve_group)
@@ -4013,6 +4044,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self, "Lỗi tìm kiếm",
                     "Không tìm thấy tệp NP_curveLocalScale.mel đi kèm package cũng như trong đường dẫn Maya!\nLỗi: %s" % str(e)
                 )
+
+    def on_add_inbetween(self):
+        """Thêm N frame trống (Inbetween) tại vị trí time slider hiện tại cho các đối tượng đang chọn"""
+        import maya.mel as mel
+        n = self.ib_count_spin.value()
+        
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowAddInbetween")
+        try:
+            for _ in range(n):
+                mel.eval("timeSliderEditKeys addInbetween;")
+            print(u"[AnimeowTool] Đã thêm thành công %d Inbetweens tại frame %d." % (n, int(cmds.currentTime(q=True))))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Lỗi xảy ra khi thêm Inbetween:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_remove_inbetween(self):
+        """Bớt N frame trống (Inbetween) tại vị trí time slider hiện tại cho các đối tượng đang chọn"""
+        import maya.mel as mel
+        n = self.ib_count_spin.value()
+        
+        cmds.undoInfo(openChunk=True, chunkName="AnimeowRemoveInbetween")
+        try:
+            for _ in range(n):
+                mel.eval("timeSliderEditKeys removeInbetween;")
+            print(u"[AnimeowTool] Đã xóa thành công %d Inbetweens tại frame %d." % (n, int(cmds.currentTime(q=True))))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Lỗi",
+                "Lỗi xảy ra khi xóa Inbetween:\n%s" % str(e)
+            )
+        finally:
+            cmds.undoInfo(closeChunk=True)
 
     def on_fix_lost_shader(self):
         """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
