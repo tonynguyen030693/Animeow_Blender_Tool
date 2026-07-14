@@ -1305,6 +1305,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         # Hàng nút Preset nhanh
         preset_row = QtWidgets.QHBoxLayout()
+        from functools import partial
         for pct in [0, 25, 50, 75, 100]:
             btn = QtWidgets.QPushButton("%d%%" % pct)
             btn.setFixedHeight(22)
@@ -1323,7 +1324,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     border-color: #00BCD4;
                 }
             """)
-            btn.clicked.connect(lambda checked, p=pct: self.on_tween_preset(p))
+            btn.clicked.connect(partial(self.on_tween_preset, pct))
             preset_row.addWidget(btn)
         tween_layout.addLayout(preset_row)
         
