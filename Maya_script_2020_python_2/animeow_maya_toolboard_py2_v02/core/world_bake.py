@@ -219,7 +219,7 @@ class WorldBakeManager(object):
     def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False):
         """Bake vật thể sang một locator ở không gian thế giới"""
         if not cmds.objExists(obj):
-            raise RuntimeError("Vật thể %s không tồn tại!" % obj)
+            raise RuntimeError(u"Vật thể %s không tồn tại!" % obj)
             
         clean_name = self.get_clean_name(obj)
         locator_name = "%s%s" % (self.PREFIX, clean_name)
@@ -267,7 +267,7 @@ class WorldBakeManager(object):
         else: # both
             cmds.parentConstraint(loc, obj, maintainOffset=True)
             
-        print("[WorldBake] Đã bake thành công %s sang locator %s." % (obj, loc))
+        print(u"[WorldBake] Đã bake thành công %s sang locator %s." % (obj, loc))
         return loc
 
     def bake_from_locator(self, locator_or_obj, start_frame, end_frame, step=1, smart_clean=True, smart_bake=False):
@@ -330,5 +330,5 @@ class WorldBakeManager(object):
                 pass
         clean_empty_animeow_group()
                 
-        print("[WorldBake] Đã bake ngược thành công từ %s vào %s." % (locator, obj))
+        print(u"[WorldBake] Đã bake ngược thành công từ %s vào %s." % (locator, obj))
         return obj

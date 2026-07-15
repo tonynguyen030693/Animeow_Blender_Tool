@@ -3220,6 +3220,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     len(sel), u", ".join(success_locs))
             )
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi World Bake",
                 u"Lỗi xảy ra khi Bake sang Locator:\n%s" % self.world_bake.exception_to_unicode(e)
@@ -3262,6 +3264,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 u"Đã bake ngược thành công từ Locator về %d vật thể gốc!" % len(success_objs)
             )
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi World Bake",
                 u"Lỗi xảy ra khi Bake ngược trở về:\n%s" % self.world_bake.exception_to_unicode(e)
