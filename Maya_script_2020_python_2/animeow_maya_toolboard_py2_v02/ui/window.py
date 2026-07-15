@@ -1,6 +1,30 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, absolute_import, division
 
+# Override __builtin__.print to safely handle unicode strings in Python 2
+try:
+    import __builtin__
+    _orig_print = getattr(__builtin__, 'print', None)
+    if _orig_print is None:
+        def _orig_print(*args, **kwargs):
+            fp = kwargs.get('file', sys.stdout)
+            sep = kwargs.get('sep', ' ')
+            end = kwargs.get('end', '\n')
+            fp.write(sep.join(str(arg) for arg in args) + end)
+
+    def safe_print(*args, **kwargs):
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, unicode):
+                safe_args.append(arg.encode('utf-8'))
+            else:
+                safe_args.append(arg)
+        _orig_print(*safe_args, **kwargs)
+
+    __builtin__.print = safe_print
+except Exception:
+    pass
+
 import os
 import sys
 import maya.cmds as cmds
@@ -4534,6 +4558,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             else:
                 QtWidgets.QMessageBox.warning(self, "Thất bại", "Không thể thay đổi Rotate Order của các vật thể được chọn.")
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
                 u"Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % smart_link.exception_to_unicode(e)
