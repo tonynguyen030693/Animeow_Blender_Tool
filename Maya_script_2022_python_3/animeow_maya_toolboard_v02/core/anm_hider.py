@@ -30,6 +30,10 @@ Leg_L_Hider = ''
 Extra_One_Hider = ''
 Extra_Two_Hider = ''
 Extra_Three_Hider = ''
+Extra_Four_Hider = ''
+Extra_Five_Hider = ''
+Extra_Six_Hider = ''
+Extra_Seven_Hider = ''
 ANM_Hider_Settings = ''
 
 allSet = []
@@ -83,6 +87,95 @@ def get_icon_path(icon_name):
     icon_path = os.path.abspath(os.path.join(current_dir, "..", "icons", "Icons_Hider", icon_name)).replace("\\", "/")
     return icon_path
 
+# Cache for colorized icons to prevent performance overhead on UI redraw
+_icon_cache = {}
+
+extra_num_map = {
+    "Extra_One": "1",
+    "Extra_Two": "2",
+    "Extra_Three": "3",
+    "Extra_Four": "4",
+    "Extra_Five": "5",
+    "Extra_Six": "6",
+    "Extra_Seven": "7"
+}
+
+def get_hider_icon(icon_name):
+    if icon_name in _icon_cache:
+        return _icon_cache[icon_name]
+        
+    # Determine tint color based on state (naming convention of PNGs)
+    if icon_name.endswith("_Empty.png"):
+        # Trạng thái rỗng (chưa có set): Trắng mờ nhẹ để dễ nhìn nhưng không bị sáng quá (alpha = 100)
+        color = QtGui.QColor(255, 255, 255, 100)
+    elif icon_name.endswith("_Off.png"):
+        # Trạng thái tắt (đang ẩn): Trắng mờ vừa phải (alpha = 170)
+        color = QtGui.QColor(255, 255, 255, 170)
+    elif any(x in icon_name for x in ["Head_Hider", "Torso_Hider", "Arm_R_Hider", "Arm_L_Hider", "Leg_R_Hider", "Leg_L_Hider", "Extra_One_Hider", "Extra_Two_Hider", "Extra_Three_Hider", "Extra_Four_Hider", "Extra_Five_Hider", "Extra_Six_Hider", "Extra_Seven_Hider", "All_Sets_Hider"]):
+        # Trạng thái bật (đang hiện): Cyan sáng nổi bật của Animeow (#00BCD4)
+        color = QtGui.QColor(0, 188, 212, 255)
+    else:
+        # Các nút tiện ích chức năng khác: Trắng sáng rõ ràng (alpha = 230)
+        color = QtGui.QColor(255, 255, 255, 230)
+
+    # Check if this is an Extra slot button to generate dynamically
+    is_extra = False
+    extra_num = ""
+    for key_prefix, num_str in extra_num_map.items():
+        if key_prefix in icon_name:
+            is_extra = True
+            extra_num = num_str
+            break
+            
+    if is_extra:
+        # Tự động vẽ icon số [1-7] bo góc cực đẹp đồng bộ giao diện
+        result = QtGui.QPixmap(30, 30)
+        result.fill(QtCore.Qt.transparent)
+        
+        painter = QtGui.QPainter(result)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        
+        # Border
+        pen = QtGui.QPen(color, 1.25)
+        painter.setPen(pen)
+        rect = QtCore.QRect(5, 5, 20, 20)
+        painter.drawRoundedRect(rect, 4, 4)
+        
+        # Text
+        font = painter.font()
+        font.setPointSize(9)
+        font.setBold(True)
+        font.setFamily("Segoe UI")
+        painter.setFont(font)
+        painter.drawText(rect, QtCore.Qt.AlignCenter, extra_num)
+        
+        painter.end()
+        icon = QtGui.QIcon(result)
+        _icon_cache[icon_name] = icon
+        return icon
+        
+    path = get_icon_path(icon_name)
+    pixmap = QtGui.QPixmap(path)
+    if pixmap.isNull():
+        icon = QtGui.QIcon(path)
+        _icon_cache[icon_name] = icon
+        return icon
+        
+    # Áp dụng bộ lọc màu bằng QPainter (CompositionMode_SourceIn) giữ nguyên kênh alpha
+    result = QtGui.QPixmap(pixmap.size())
+    result.fill(QtCore.Qt.transparent)
+    
+    painter = QtGui.QPainter(result)
+    painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+    painter.drawPixmap(0, 0, pixmap)
+    painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceIn)
+    painter.fillRect(result.rect(), color)
+    painter.end()
+    
+    icon = QtGui.QIcon(result)
+    _icon_cache[icon_name] = icon
+    return icon
+
 def get_maya_main_window():
     import maya.OpenMayaUI as mui
     ptr = mui.MQtUtil.mainWindow()
@@ -104,7 +197,7 @@ def setup_icons_path():
         os.environ["XBMLANGPATH"] = package_icons_dir + ";" + xbm_path
 
 def declaringSets():
-    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, ANM_Hider_Settings
+    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider, ANM_Hider_Settings
     All_Sets_Hider = ( namespaceHider + 'All_Sets_ANM_Hider' )
     Head_Hider = ( namespaceHider + 'Head_ANM_Hider' )
     Torso_Hider = ( namespaceHider + 'Torso_ANM_Hider' )
@@ -115,10 +208,14 @@ def declaringSets():
     Extra_One_Hider = ( namespaceHider + 'Extra_One_ANM_Hider' )
     Extra_Two_Hider = ( namespaceHider + 'Extra_Two_ANM_Hider' )
     Extra_Three_Hider = ( namespaceHider + 'Extra_Three_ANM_Hider' )
+    Extra_Four_Hider = ( namespaceHider + 'Extra_Four_ANM_Hider' )
+    Extra_Five_Hider = ( namespaceHider + 'Extra_Five_ANM_Hider' )
+    Extra_Six_Hider = ( namespaceHider + 'Extra_Six_ANM_Hider' )
+    Extra_Seven_Hider = ( namespaceHider + 'Extra_Seven_ANM_Hider' )
     ANM_Hider_Settings = ( namespaceHider + 'ANM_Hider_Settings' )
 
 def createAllSets():
-    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, ANM_Hider_Settings
+    global namespaceHider, All_Sets_Hider, Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider, ANM_Hider_Settings
     if cmds.objExists('All_Sets_ANM_Hider') == 0: cmds.sets(n='All_Sets_ANM_Hider', em=True)
     if cmds.objExists(Head_Hider) == 0: cmds.sets(n=Head_Hider, em=True)
     if cmds.objExists(Torso_Hider) == 0: cmds.sets(n=Torso_Hider, em=True)
@@ -129,29 +226,61 @@ def createAllSets():
     if cmds.objExists(Extra_One_Hider) == 0: cmds.sets(n=Extra_One_Hider, em=True)
     if cmds.objExists(Extra_Two_Hider) == 0: cmds.sets(n=Extra_Two_Hider, em=True)
     if cmds.objExists(Extra_Three_Hider) == 0: cmds.sets(n=Extra_Three_Hider, em=True)
+    if cmds.objExists(Extra_Four_Hider) == 0: cmds.sets(n=Extra_Four_Hider, em=True)
+    if cmds.objExists(Extra_Five_Hider) == 0: cmds.sets(n=Extra_Five_Hider, em=True)
+    if cmds.objExists(Extra_Six_Hider) == 0: cmds.sets(n=Extra_Six_Hider, em=True)
+    if cmds.objExists(Extra_Seven_Hider) == 0: cmds.sets(n=Extra_Seven_Hider, em=True)
     cmds.sets (Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider, Leg_R_Hider, Leg_L_Hider,
-    Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, edit=True, fe='All_Sets_ANM_Hider' )
+    Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider, Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider, edit=True, fe='All_Sets_ANM_Hider' )
 
 def createSettingsHider():
-    if cmds.objExists ('ANM_Hider_Settings') == 0:
-        selCurrent = cmds.ls (sl=True)
-        cmds.group (em=True, n= 'ANM_Hider_Settings')
+    global ANM_Hider_Settings
+    selCurrent = cmds.ls(sl=True)
+    
+    # 1. Tạo group ANM_Hider_Settings nếu chưa có trong scene
+    # Sử dụng biến đầy đủ ANM_Hider_Settings (đã chứa namespace)
+    if cmds.objExists(ANM_Hider_Settings) == 0:
+        cmds.group(em=True, n=ANM_Hider_Settings)
+        # Lock các thuộc tính mặc định của Group
         for attr in [".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz", ".v"]:
-            cmds.setAttr (attr, lock=True, keyable=False, channelBox=False )
-        # States Attributes
-        cmds.addAttr ('ANM_Hider_Settings', ln='All_Sets_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Head_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Torso_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Arm_R_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Arm_L_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Leg_L_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Leg_R_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_One_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_Two_Hider_State', at='bool', dv=True, keyable=True)
-        cmds.addAttr ('ANM_Hider_Settings', ln='Extra_Three_Hider_State', at='bool', dv=True, keyable=True)
-        # Edit Mode State
-        cmds.addAttr ('ANM_Hider_Settings', ln='Edit_Mode_State', at='bool', dv=True, keyable=True)
-        cmds.select(selCurrent)
+            try:
+                cmds.setAttr(ANM_Hider_Settings + attr, lock=True, keyable=False, channelBox=False)
+            except:
+                pass
+                
+    # 2. Kiểm tra và bổ sung các thuộc tính trạng thái (nếu thiếu)
+    # Rất quan trọng khi animator mở scene cũ đã có sẵn node ANM_Hider_Settings nhưng thiếu Extra 4-7
+    required_attrs = [
+        'All_Sets_Hider_State',
+        'Head_Hider_State',
+        'Torso_Hider_State',
+        'Arm_R_Hider_State',
+        'Arm_L_Hider_State',
+        'Leg_L_Hider_State',
+        'Leg_R_Hider_State',
+        'Extra_One_Hider_State',
+        'Extra_Two_Hider_State',
+        'Extra_Three_Hider_State',
+        'Extra_Four_Hider_State',
+        'Extra_Five_Hider_State',
+        'Extra_Six_Hider_State',
+        'Extra_Seven_Hider_State',
+        'Edit_Mode_State'
+    ]
+    
+    for attr_name in required_attrs:
+        full_attr = ANM_Hider_Settings + "." + attr_name
+        if cmds.objExists(full_attr) == 0:
+            try:
+                cmds.addAttr(ANM_Hider_Settings, ln=attr_name, at='bool', dv=True, keyable=True)
+            except Exception as e:
+                print(f"Error adding attribute {attr_name}: {e}")
+                
+    if selCurrent:
+        try:
+            cmds.select(selCurrent)
+        except:
+            pass
 
 def createHiderInTheScene():
     global namespaceHider, namespaceHiderForWindow
@@ -161,29 +290,41 @@ def createHiderInTheScene():
     createSettingsHider()
     createAllSets()
 
+def get_namespace_from_object(obj):
+    # Chỉ xét phần node name trước dấu chấm component "." để tránh nhầm ký tự ":" trong chỉ số mặt lưới (ví dụ: .f[34:50])
+    node_part = obj.split(".")[0]
+    # Lấy phần tên cơ sở (bỏ qua đường dẫn cha | nếu có)
+    base = node_part.split("|")[-1]
+    if ":" in base:
+        parts = base.split(":")
+        return ":".join(parts[:-1])
+    return ""
+
+def get_state_attr_name(set_name_without_ns):
+    # Quy đổi tên Set sang tên Attribute tương ứng trên Settings node
+    # Ví dụ: Head_ANM_Hider -> Head_Hider
+    if set_name_without_ns.endswith("_ANM_Hider"):
+        return set_name_without_ns.replace("_ANM_Hider", "_Hider")
+    return set_name_without_ns
+
 def declaringNameSpaces():
     global namespaceHider, namespaceHiderForWindow
     currentSel = cmds.ls(sl=True)
-    if cmds.objExists('*:ANM_Hider_Settings'):
-        cmds.select('*:ANM_Hider_Settings')
+    if len(currentSel) > 0:
+        # Thử lấy namespace qua referenceQuery trước
         try:
-            cmds.select('ANM_Hider_Settings', tgl=True)
+            ns = cmds.referenceQuery(currentSel[0], namespace=True, shortName=True)
         except:
-            pass    
-        settings = cmds.ls(sl=True)
-        if len(settings) >= 1:
-            try:
-                try:
-                    namespaceHiderForWindow = cmds.referenceQuery(currentSel[0], namespace=True, shortName=True)
-                    namespaceHider = namespaceHiderForWindow + ":" 
-                    declaringSets()
-                except:
-                    createHiderInTheScene()
-            except:
-                cmds.warning(hiderSystemWarning)
-    else:
-        createHiderInTheScene()
-    cmds.select(currentSel)
+            # Nếu là rig Import, trích xuất trực tiếp từ tên vật thể
+            ns = get_namespace_from_object(currentSel[0])
+            
+        if ns:
+            namespaceHiderForWindow = ns
+            namespaceHider = ns + ":"
+            declaringSets()
+            return
+            
+    createHiderInTheScene()
 
 def queryAllSet():
     global allSet, polys, shapes, transformAndShapeSet
@@ -207,10 +348,30 @@ def queryAllSet():
         pass
 
 def addSelectionToSet():
-    global setHider
+    global setHider, namespaceHider, namespaceHiderForWindow, _hider_window_instance
     try:
         sel = cmds.ls(sl=True, l=True)
         if len(sel) > 0:
+            # 1. Tự động nhận diện Namespace từ vật thể đang chọn để đồng bộ
+            ns = get_namespace_from_object(sel[0])
+            target_ns_hider = ns + ":" if ns else ""
+            
+            # Nếu namespace khác với namespace hiện hành của Hider, tiến hành cập nhật lại
+            if namespaceHider != target_ns_hider:
+                namespaceHider = target_ns_hider
+                namespaceHiderForWindow = ns if ns else "Created in the scene"
+                declaringSets()
+                if _hider_window_instance:
+                    _hider_window_instance.update_namespace_info()
+            
+            # Cập nhật lại biến setHider theo namespace mới
+            setHider = namespaceHider + setHider.split(":")[-1]
+            
+            # 2. Nếu set của bộ phận này chưa tồn tại trong scene, tự động khởi tạo luôn
+            if not cmds.objExists(setHider):
+                createAllSets()
+                createSettingsHider()
+                
             if cmds.objExists(setHider):
                 removeNameSpace()
                 if shapeMode == 'On':
@@ -229,6 +390,12 @@ def addSelectionToSet():
                 for shape in shapes:
                     cmds.polyOptions (shape, displayInvisibleFaces=1)
                 cmds.select(cl=True)
+                
+                # Cập nhật giao diện để sáng các icon lên
+                if _hider_window_instance:
+                    _hider_window_instance.check_all_button_states()
+            else:
+                cmds.warning(f"Không thể tạo hoặc tìm thấy Set: {setHider}")
         else:
             cmds.warning(nothingSelected)
     except Exception as e:
@@ -263,7 +430,7 @@ def showPolys():
     global setHider
     try:
         removeNameSpace()
-        if cmds.getAttr(ANM_Hider_Settings + '.' + setHider + '_State') == 0:
+        if cmds.getAttr(ANM_Hider_Settings + '.' + get_state_attr_name(setHider) + '_State') == 0:
             addNameSpace() 
             try:
                 cmds.showHidden(polys)
@@ -310,7 +477,7 @@ def hideSet():
     else:
         cmds.warning("set doesn't exist")
     removeNameSpace()
-    cmds.setAttr( ANM_Hider_Settings + '.' + (setHider + '_State'), 0)
+    cmds.setAttr( ANM_Hider_Settings + '.' + (get_state_attr_name(setHider) + '_State'), 0)
 
 def showSet():
     global setHider, namespaceHider
@@ -332,7 +499,7 @@ def showSet():
     else:
         cmds.warning(setDoesntExists)
     removeNameSpace()
-    cmds.setAttr( ANM_Hider_Settings + '.' + (setHider + '_State'), 1)
+    cmds.setAttr( ANM_Hider_Settings + '.' + (get_state_attr_name(setHider) + '_State'), 1)
 
 def showOrHideButton():
     global setHider
@@ -342,7 +509,7 @@ def showOrHideButton():
             cmds.warning('Set empty')
         else:
             removeNameSpace()
-            if cmds.getAttr( ANM_Hider_Settings + '.' + (setHider + '_State') ):
+            if cmds.getAttr( ANM_Hider_Settings + '.' + (get_state_attr_name(setHider) + '_State') ):
                 addNameSpace()
                 hideSet()
             else:
@@ -361,12 +528,20 @@ def ShowOrHideAllSetsButton():
 
 def ShowOrHideAllSets():
     global setHider
-    sets_In_AllSetsHider = cmds.sets(All_Sets_Hider, q=True) or []
+    raw_members = cmds.sets(All_Sets_Hider, q=True) or []
+    # Chỉ giữ lại các con thực sự là objectSet (tránh các cấu trúc mesh, component bị lọt vào)
+    sets_In_AllSetsHider = []
+    for s in raw_members:
+        if "." in s or "[" in s:
+            continue
+        if cmds.objExists(s) and cmds.nodeType(s) == 'objectSet':
+            sets_In_AllSetsHider.append(s)
+            
     result = []    
     for s_name in sets_In_AllSetsHider:
         contentSet = cmds.sets(s_name, q=True)
         result.append(contentSet)
-    if result == [None, None, None, None, None, None, None, None, None]:
+    if not result or all(r is None for r in result):
         cmds.warning('Set empty')
     else:
         for s_name in sets_In_AllSetsHider:
@@ -465,6 +640,10 @@ def removeAllExtraSets():
     if cmds.objExists(Extra_One_Hider): setHider = Extra_One_Hider; removeSet()
     if cmds.objExists(Extra_Two_Hider): setHider = Extra_Two_Hider; removeSet()
     if cmds.objExists(Extra_Three_Hider): setHider = Extra_Three_Hider; removeSet()
+    if cmds.objExists(Extra_Four_Hider): setHider = Extra_Four_Hider; removeSet()
+    if cmds.objExists(Extra_Five_Hider): setHider = Extra_Five_Hider; removeSet()
+    if cmds.objExists(Extra_Six_Hider): setHider = Extra_Six_Hider; removeSet()
+    if cmds.objExists(Extra_Seven_Hider): setHider = Extra_Seven_Hider; removeSet()
     cmds.select(currentSel)
     print(allExtraSetsRemoved), 
 
@@ -530,7 +709,8 @@ def saveSetsHider():
     if namespaceHiderForWindow == 'Created in the scene':
         createAllSets()
         allSets = [Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider,
-                   Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider]    
+                   Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider,
+                   Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider]    
         SourceFile = cmds.fileDialog2(startingDirectory ="/usr/u/bozo/myFiles/", fileFilter="Python File(*.py)")
         if SourceFile:
             SourceFile = ''.join([str(elem) for elem in SourceFile]) 
@@ -703,7 +883,8 @@ def checkAllSets():
     if response == 'Yes':
         choise = 'show'; ShowOrHideAllSets()
         allSetsCheck = [Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider,
-                        Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider]    
+                        Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider,
+                        Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider]    
         cmds.progressWindow( title='Progress Hider test', isInterruptable=True )                                 
         amount = 0
         for s_name in allSetsCheck:
@@ -737,7 +918,8 @@ def checkAllSetsIsolate():
     global setHider, choise
     choise = 'hide'; ShowOrHideAllSets()
     allSetsCheck = [Head_Hider, Torso_Hider, Arm_R_Hider, Arm_L_Hider,
-                    Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider]
+                    Leg_R_Hider, Leg_L_Hider, Extra_One_Hider, Extra_Two_Hider, Extra_Three_Hider,
+                    Extra_Four_Hider, Extra_Five_Hider, Extra_Six_Hider, Extra_Seven_Hider]
     cmds.progressWindow( title='Progress Hider test', isInterruptable=True )                                 
     amount = 0
     for s_name in allSetsCheck:
@@ -778,12 +960,12 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.faces_selection_mode = True  # Mặc định chọn Faces
         self.buttons = {}
         
-        self.setup_ui()
-        self.apply_stylesheet()
-        
-        # Load namespaces & settings
+        # Load namespaces & settings (Phải chạy trước setup_ui để khởi tạo giá trị cho các biến global như Head_Hider)
         declaringNameSpaces()
         createSettingsHider()
+        
+        self.setup_ui()
+        self.apply_stylesheet()
         self.update_namespace_info()
         self.refresh_ui()
 
@@ -843,6 +1025,10 @@ class ANMHiderWindow(QtWidgets.QDialog):
             ("Extra_One_Hider", Extra_One_Hider, "Extra 1", blueButtons_Ann, lambda: self.on_part_click(Extra_One_Hider)),
             ("Extra_Two_Hider", Extra_Two_Hider, "Extra 2", blueButtons_Ann, lambda: self.on_part_click(Extra_Two_Hider)),
             ("Extra_Three_Hider", Extra_Three_Hider, "Extra 3", blueButtons_Ann, lambda: self.on_part_click(Extra_Three_Hider)),
+            ("Extra_Four_Hider", Extra_Four_Hider, "Extra 4", blueButtons_Ann, lambda: self.on_part_click(Extra_Four_Hider)),
+            ("Extra_Five_Hider", Extra_Five_Hider, "Extra 5", blueButtons_Ann, lambda: self.on_part_click(Extra_Five_Hider)),
+            ("Extra_Six_Hider", Extra_Six_Hider, "Extra 6", blueButtons_Ann, lambda: self.on_part_click(Extra_Six_Hider)),
+            ("Extra_Seven_Hider", Extra_Seven_Hider, "Extra 7", blueButtons_Ann, lambda: self.on_part_click(Extra_Seven_Hider)),
         ]
         
         for key_name, var_name, label, tooltip, conn in self.hider_defs:
@@ -868,7 +1054,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.unlock_btn = QtWidgets.QPushButton()
         self.unlock_btn.setFixedSize(30, 30)
         self.unlock_btn.setToolTip("Lock/Unlock Utilities (Right click for options)")
-        self.unlock_btn.setIcon(QtGui.QIcon(get_icon_path("Unlock_Hider.png")))
+        self.unlock_btn.setIcon(get_hider_icon("Unlock_Hider.png"))
         self.unlock_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.unlock_btn.customContextMenuRequested.connect(self.show_unlock_context_menu)
         self.unlock_btn.clicked.connect(lambda: cmds.warning("Right click to see unlock/lock options"))
@@ -878,7 +1064,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.obj_mode_btn = QtWidgets.QPushButton()
         self.obj_mode_btn.setFixedSize(30, 30)
         self.obj_mode_btn.setToolTip("Object Mode")
-        self.obj_mode_btn.setIcon(QtGui.QIcon(get_icon_path("ObjectMode_Hider.png")))
+        self.obj_mode_btn.setIcon(get_hider_icon("ObjectMode_Hider.png"))
         self.obj_mode_btn.clicked.connect(self.on_object_mode)
         self.utility_layout.addWidget(self.obj_mode_btn)
         
@@ -886,7 +1072,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.poly_curve_btn = QtWidgets.QPushButton()
         self.poly_curve_btn.setFixedSize(30, 30)
         self.poly_curve_btn.setToolTip("Switch Poly/Curves Selection (Right click for color)")
-        self.poly_curve_btn.setIcon(QtGui.QIcon(get_icon_path("Only_Faces_Hider.png")))
+        self.poly_curve_btn.setIcon(get_hider_icon("Only_Faces_Hider.png"))
         self.poly_curve_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.poly_curve_btn.customContextMenuRequested.connect(self.show_color_context_menu)
         self.poly_curve_btn.clicked.connect(self.toggle_poly_curve_mode)
@@ -896,7 +1082,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.grow_btn = QtWidgets.QPushButton()
         self.grow_btn.setFixedSize(30, 30)
         self.grow_btn.setToolTip(grow_Ann)
-        self.grow_btn.setIcon(QtGui.QIcon(get_icon_path("Grow_Hider.png")))
+        self.grow_btn.setIcon(get_hider_icon("Grow_Hider.png"))
         self.grow_btn.clicked.connect(lambda: cmds.polySelectConstraint(pp=1))
         self.utility_layout.addWidget(self.grow_btn)
         
@@ -904,7 +1090,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.shrink_btn = QtWidgets.QPushButton()
         self.shrink_btn.setFixedSize(30, 30)
         self.shrink_btn.setToolTip(shrink_Ann)
-        self.shrink_btn.setIcon(QtGui.QIcon(get_icon_path("Shrink_Hider.png")))
+        self.shrink_btn.setIcon(get_hider_icon("Shrink_Hider.png"))
         self.shrink_btn.clicked.connect(lambda: cmds.polySelectConstraint(pp=2))
         self.utility_layout.addWidget(self.shrink_btn)
         
@@ -912,7 +1098,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.template_btn = QtWidgets.QPushButton()
         self.template_btn.setFixedSize(30, 30)
         self.template_btn.setToolTip("Select template lines between elbow and PV")
-        self.template_btn.setIcon(QtGui.QIcon(get_icon_path("Template_Line_Hider.png")))
+        self.template_btn.setIcon(get_hider_icon("Template_Line_Hider.png"))
         self.template_btn.clicked.connect(SelectTemplateLineWindow)
         self.utility_layout.addWidget(self.template_btn)
         
@@ -920,7 +1106,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.mirror_btn = QtWidgets.QPushButton()
         self.mirror_btn.setFixedSize(30, 30)
         self.mirror_btn.setToolTip("Mirror Right to Left")
-        self.mirror_btn.setIcon(QtGui.QIcon(get_icon_path("Mirror_Hider.png")))
+        self.mirror_btn.setIcon(get_hider_icon("Mirror_Hider.png"))
         self.mirror_btn.clicked.connect(mirrorHider)
         self.utility_layout.addWidget(self.mirror_btn)
         
@@ -928,7 +1114,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.check_sets_btn = QtWidgets.QPushButton()
         self.check_sets_btn.setFixedSize(30, 30)
         self.check_sets_btn.setToolTip("Check All Sets (Right click for Isolate Mode)")
-        self.check_sets_btn.setIcon(QtGui.QIcon(get_icon_path("Show_All_Hidden_Faces_Hider.png")))
+        self.check_sets_btn.setIcon(get_hider_icon("Show_All_Hidden_Faces_Hider.png"))
         self.check_sets_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.check_sets_btn.customContextMenuRequested.connect(self.show_check_sets_context_menu)
         self.check_sets_btn.clicked.connect(checkAllSets)
@@ -938,7 +1124,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.extra_funcs_btn = QtWidgets.QPushButton()
         self.extra_funcs_btn.setFixedSize(30, 30)
         self.extra_funcs_btn.setToolTip("Extra Functions (Right click for options)")
-        self.extra_funcs_btn.setIcon(QtGui.QIcon(get_icon_path("Extra_Functions_Hider.png")))
+        self.extra_funcs_btn.setIcon(get_hider_icon("Extra_Functions_Hider.png"))
         self.extra_funcs_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.extra_funcs_btn.customContextMenuRequested.connect(self.show_extra_context_menu)
         self.extra_funcs_btn.clicked.connect(lambda: cmds.warning("Right click to see extra functions"))
@@ -948,7 +1134,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.remove_all_btn = QtWidgets.QPushButton()
         self.remove_all_btn.setFixedSize(30, 30)
         self.remove_all_btn.setToolTip("Delete everything related to ANM Hider")
-        self.remove_all_btn.setIcon(QtGui.QIcon(get_icon_path("Remove_All_Hider.png")))
+        self.remove_all_btn.setIcon(get_hider_icon("Remove_All_Hider.png"))
         self.remove_all_btn.clicked.connect(self.on_remove_all_click)
         self.utility_layout.addWidget(self.remove_all_btn)
         
@@ -1023,14 +1209,15 @@ class ANMHiderWindow(QtWidgets.QDialog):
     def refresh_ui(self):
         # Cập nhật Edit Mode icon
         if self.is_edit_mode:
-            self.edit_mode_btn.setIcon(QtGui.QIcon(get_icon_path("Contract_Hider.png")))
+            self.edit_mode_btn.setIcon(get_hider_icon("Contract_Hider.png"))
             self.utility_widget.show()
         else:
-            self.edit_mode_btn.setIcon(QtGui.QIcon(get_icon_path("Expand_Hider.png")))
+            self.edit_mode_btn.setIcon(get_hider_icon("Expand_Hider.png"))
             self.utility_widget.hide()
             
         # Co dãn kích thước dialog mượt mà
-        self.setFixedSize(QtCore.QSize(QtCore.QWIDGETSIZE_MAX, QtCore.QWIDGETSIZE_MAX))
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(16777215, 16777215)
         self.adjustSize()
         self.setFixedSize(self.width(), self.height())
         
@@ -1060,7 +1247,7 @@ class ANMHiderWindow(QtWidgets.QDialog):
             
             btn = self.buttons.get(key_name)
             if btn:
-                btn.setIcon(QtGui.QIcon(get_icon_path(icon_file)))
+                btn.setIcon(get_hider_icon(icon_file))
 
     def toggle_edit_mode(self):
         self.is_edit_mode = not self.is_edit_mode
@@ -1175,14 +1362,14 @@ class ANMHiderWindow(QtWidgets.QDialog):
         self.faces_selection_mode = not self.faces_selection_mode
         switchPolyOrNurbsSel(self.faces_selection_mode)
         if self.faces_selection_mode:
-            self.poly_curve_btn.setIcon(QtGui.QIcon(get_icon_path("Only_Faces_Hider.png")))
+            self.poly_curve_btn.setIcon(get_hider_icon("Only_Faces_Hider.png"))
         else:
-            self.poly_curve_btn.setIcon(QtGui.QIcon(get_icon_path("Only_NurbsCurve_Hider.png")))
+            self.poly_curve_btn.setIcon(get_hider_icon("Only_NurbsCurve_Hider.png"))
 
     def on_object_mode(self):
         objectModeHider()
         self.faces_selection_mode = False
-        self.poly_curve_btn.setIcon(QtGui.QIcon(get_icon_path("Only_NurbsCurve_Hider.png")))
+        self.poly_curve_btn.setIcon(get_hider_icon("Only_NurbsCurve_Hider.png"))
 
     def on_remove_all_click(self):
         response = cmds.confirmDialog(
