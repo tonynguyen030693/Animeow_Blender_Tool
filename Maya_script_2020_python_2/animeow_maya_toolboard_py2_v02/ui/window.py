@@ -6,29 +6,35 @@ try:
     import __builtin__
     import sys
     current_print = getattr(__builtin__, 'print', None)
+    
+    # Extract the original print if already overridden to prevent nested recursion
     if current_print and getattr(current_print, '__name__', '') == 'safe_print':
-        pass
+        try:
+            _orig_print = current_print.__closure__[0].cell_contents
+        except Exception:
+            _orig_print = None
     else:
         _orig_print = current_print
-        if _orig_print is None:
-            def _orig_print(*args, **kwargs):
-                fp = kwargs.get('file', sys.stdout)
-                sep = kwargs.get('sep', ' ')
-                end = kwargs.get('end', '\n')
-                fp.write(sep.join(str(arg) for arg in args) + end)
 
-        def make_safe_print(orig_print):
-            def safe_print(*args, **kwargs):
-                safe_args = []
-                for arg in args:
-                    if isinstance(arg, unicode):
-                        safe_args.append(arg.encode('utf-8'))
-                    else:
-                        safe_args.append(arg)
-                orig_print(*safe_args, **kwargs)
-            return safe_print
+    if _orig_print is None:
+        def _orig_print(*args, **kwargs):
+            fp = kwargs.get('file', sys.stdout)
+            sep = kwargs.get('sep', ' ')
+            end = kwargs.get('end', '\n')
+            fp.write(sep.join(str(arg) for arg in args) + end)
 
-        __builtin__.print = make_safe_print(_orig_print)
+    def make_safe_print(orig_print):
+        def safe_print(*args, **kwargs):
+            safe_args = []
+            for arg in args:
+                if isinstance(arg, unicode):
+                    safe_args.append(arg.encode('utf-8'))
+                else:
+                    safe_args.append(arg)
+            orig_print(*safe_args, **kwargs)
+        return safe_print
+
+    __builtin__.print = make_safe_print(_orig_print)
 except Exception:
     pass
 
