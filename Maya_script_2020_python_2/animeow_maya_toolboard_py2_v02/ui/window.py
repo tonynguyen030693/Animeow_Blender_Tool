@@ -792,17 +792,57 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             except Exception:
                 pass
 
+    @property
+    def QtWidgets(self):
+        from PySide2 import QtWidgets
+        return QtWidgets
+
+    @property
+    def smart_link(self):
+        from ..core import smart_link
+        return smart_link
+
+    @property
+    def world_bake(self):
+        from ..core import world_bake
+        return world_bake
+
+    @property
+    def round_tool(self):
+        from ..core import round_tool
+        return round_tool
+
+    @property
+    def space_order_tool(self):
+        from ..core import space_order_tool
+        return space_order_tool
+
+    @property
+    def retarget_tool(self):
+        from ..core import retarget_tool
+        return retarget_tool
+
+    @property
+    def mirror_tool(self):
+        from ..core import mirror_tool
+        return mirror_tool
+
+    @property
+    def temp_pivot(self):
+        from ..core import temp_pivot
+        return temp_pivot
+
+    @property
+    def shelf(self):
+        from ..core import shelf
+        return shelf
+
+    @property
+    def tween_machine(self):
+        from ..core import tween_machine
+        return tween_machine
+
     def __init__(self, parent=None, standalone_tab=None):
-        self.QtWidgets = QtWidgets
-        self.smart_link = smart_link
-        self.world_bake = world_bake
-        self.round_tool = round_tool
-        self.space_order_tool = space_order_tool
-        self.retarget_tool = retarget_tool
-        self.mirror_tool = mirror_tool
-        self.temp_pivot = temp_pivot
-        self.shelf = shelf
-        self.tween_machine = tween_machine
         self.standalone_tab = standalone_tab
         
         if standalone_tab is not None:
