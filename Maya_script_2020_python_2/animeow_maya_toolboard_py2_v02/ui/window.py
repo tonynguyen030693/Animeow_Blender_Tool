@@ -752,6 +752,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_OV_ADAPTIVE_SCALE = "AnimeowTbOvAdaptiveScale"
     OP_OV_SEL_SET = "AnimeowTbOvSelSet"
 
+    def safe_warning(self, msg):
+        """Log warning safely to Maya command line without Unicode errors in Python 2"""
+        try:
+            if isinstance(msg, unicode):
+                msg = msg.encode('utf-8')
+            cmds.warning(msg)
+        except Exception:
+            try:
+                cmds.warning(str(msg))
+            except Exception:
+                pass
+
     def __init__(self, parent=None, standalone_tab=None):
         self.standalone_tab = standalone_tab
         
@@ -3254,7 +3266,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             success, msg = round_tool.round_selected_values(precision, target)
             if success:
-                cmds.warning(msg)
+                self.safe_warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
@@ -3283,7 +3295,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             success, msg = round_tool.round_selected_values(-1, target, channels)
             if success:
-                cmds.warning(msg)
+                self.safe_warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
@@ -3312,7 +3324,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             success, msg = round_tool.round_selected_values(-1, target, channels)
             if success:
-                cmds.warning(msg)
+                self.safe_warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
@@ -4375,7 +4387,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 create_sel_set=self.ov_sel_set_cb.isChecked()
             )
             if success:
-                cmds.warning(msg)
+                self.safe_warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
@@ -4391,7 +4403,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             from ..core import overlapper
             overlapper.clean_up()
-            cmds.warning("Đã dọn dẹp sạch sẽ các đối tượng tạm của Overlapper.")
+            self.safe_warning("Đã dọn dẹp sạch sẽ các đối tượng tạm của Overlapper.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi dọn dẹp",
@@ -4473,7 +4485,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     print("[SpaceOrder] %s: %s" % (obj, msg))
                     
             if success_count > 0:
-                cmds.warning("Đã đổi Rotate Order sang %s cho %d vật thể thành công!" % (new_order, success_count))
+                self.safe_warning(u"Đã đổi Rotate Order sang %s cho %d vật thể thành công!" % (new_order, success_count))
             else:
                 QtWidgets.QMessageBox.warning(self, "Thất bại", "Không thể thay đổi Rotate Order của các vật thể được chọn.")
         except Exception as e:
@@ -4496,7 +4508,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             loc, msg = space_order_tool.record_world_space(obj)
             if loc:
-                cmds.warning(msg)
+                self.safe_warning(msg)
                 QtWidgets.QMessageBox.information(
                     self, "Thành công", 
                     "Đã ghi nhận chuyển động sang Locator thế giới:\n%s\n\nBây giờ bạn có thể thay đổi Parent, Space hoặc cấu trúc của vật thể tùy ý, sau đó chọn vật thể và Locator để bấm Khôi phục (Restore)." % loc
@@ -4550,7 +4562,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             success, msg = space_order_tool.restore_world_space(obj, locator)
             if success:
-                cmds.warning(msg)
+                self.safe_warning(msg)
             else:
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
@@ -4761,7 +4773,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 pos='botCenter', fade=True
             )
         else:
-            cmds.warning(msg)
+            self.safe_warning(msg)
 
 
 def is_ui_alive(ui_obj):
