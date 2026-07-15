@@ -4955,11 +4955,17 @@ def show_window(tab_index=None, standalone_tab=None):
     old_ui = getattr(sys, sys_key, None)
     if is_ui_alive(old_ui):
         try:
+            old_ui.setParent(None)
+            old_ui.setObjectName("deleted_old_ui")
             old_ui.close()
             old_ui.deleteLater()
         except Exception:
             pass
         setattr(sys, sys_key, None)
+        try:
+            QtWidgets.QApplication.processEvents()
+        except Exception:
+            pass
 
     # 2. Xóa các workspaceControl cũ và dọn dẹp các control rác từ các bản build lỗi trước đó
     for name in [ctrl_name, ctrl_name + "WorkspaceControl"]:
