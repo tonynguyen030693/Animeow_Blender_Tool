@@ -1970,6 +1970,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 fav_layout.addWidget(ck_group)
                 
+                # GroupBox 1b: Curve Utilities (Favorites)
+                fav_curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
+                fav_curve_layout = QtWidgets.QVBoxLayout(fav_curve_group)
+                fav_curve_layout.setContentsMargins(8, 10, 8, 8)
+                fav_curve_layout.setSpacing(6)
+                
+                self.fav_local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
+                self.fav_local_scale_btn.setIcon(AnimeowIcons.icon_tween())
+                self.fav_local_scale_btn.setFixedHeight(28)
+                self.fav_local_scale_btn.clicked.connect(self.on_local_scale_tool)
+                fav_curve_layout.addWidget(self.fav_local_scale_btn)
+                
+                fav_layout.addWidget(fav_curve_group)
+                
                 # GroupBox 2: Tween Machine (Favorites)
                 fav_tween_group = QtWidgets.QGroupBox("Tween Machine (Nội suy Keyframe)")
                 fav_tween_layout = QtWidgets.QVBoxLayout(fav_tween_group)
