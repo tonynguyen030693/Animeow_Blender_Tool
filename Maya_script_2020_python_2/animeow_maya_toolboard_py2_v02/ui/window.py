@@ -765,6 +765,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 pass
 
     def __init__(self, parent=None, standalone_tab=None):
+        self.QtWidgets = QtWidgets
+        self.smart_link = smart_link
         self.standalone_tab = standalone_tab
         
         if standalone_tab is not None:
@@ -2634,7 +2636,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             studiolibrary._window = None
             studiolibrary.main()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Studio Library:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Studio Library:\n%s" % smart_link.exception_to_unicode(e))
 
     def on_launch_dwpicker(self):
         ensure_scripts_2022_path()
@@ -2647,7 +2650,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             else:
                 dwpicker.show()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy DWPicker:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy DWPicker:\n%s" % smart_link.exception_to_unicode(e))
 
     def on_launch_tweenmachine(self):
         path = ensure_scripts_2022_path()
@@ -2679,7 +2683,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 mel.eval('source "%s"; tweenMachine;' % tween_mel_path)
                 print("[TweenMachine] Da mo Tween Machine.")
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy Tween Machine:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Tween Machine:\n%s" % smart_link.exception_to_unicode(e))
 
     def on_launch_atools(self):
         ensure_scripts_2022_path()
@@ -2692,9 +2697,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 import aTools.general.main as aToolsMain
                 aToolsMain.show()
             except Exception as e2:
+                from PySide2 import QtWidgets
                 QtWidgets.QMessageBox.critical(
-                    self, "Lỗi", 
-                    "Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % str(e)
+                    self, u"Lỗi", 
+                    u"Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % smart_link.exception_to_unicode(e)
                 )
 
     def on_launch_animo(self):
@@ -2778,7 +2784,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 _tb.startUI()
                 print("[Animo] Đã khởi chạy Animo thành công.")
             except Exception as e:
-                QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khởi chạy Animo:\n%s" % str(e))
+                from PySide2 import QtWidgets
+                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Lỗi khởi chạy Animo:\n%s" % smart_link.exception_to_unicode(e))
 
     def on_launch_anm_hider(self):
         try:
@@ -2793,9 +2800,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             anm_hider.show_hider()
             print("[Animeow] Đã khởi chạy ANM Hider.")
         except Exception as e:
+            from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi", 
-                "Không thể chạy ANM Hider. Vui lòng đảm bảo bạn đã cài đặt anm_hider trong core:\n%s" % str(e)
+                self, u"Lỗi", 
+                u"Không thể chạy ANM Hider. Vui lòng đảm bảo bạn đã cài đặt anm_hider trong core:\n%s" % smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_multi_cam(self, checked):
@@ -3176,61 +3184,98 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_create_custom_shelf(self):
         """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
         try:
+            from ..core import shelf
             shelf.create_shelf()
         except Exception as e:
+            from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi",
-                u"Không thể tạo hoặc cập nhật Shelf:\n%s" % str(e)
+                u"Không thể tạo hoặc cập nhật Shelf:\n%s" % smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_graph_editor(self):
         """Bật/Tắt Graph Editor"""
         try:
+            from ..core import shelf
             shelf.toggle_graph_editor()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Graph Editor:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Không thể bật/tắt Graph Editor:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_toggle_reference_editor(self):
         """Bật/Tắt Reference Editor"""
         try:
+            from ..core import shelf
             shelf.toggle_reference_editor()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Reference Editor:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Không thể bật/tắt Reference Editor:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_toggle_outliner(self):
         """Bật/Tắt Outliner"""
         try:
+            from ..core import shelf
             shelf.toggle_outliner()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể bật/tắt Outliner:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Không thể bật/tắt Outliner:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_run_antivirus(self):
         """Khởi chạy quét và diệt virus trong scene"""
         try:
+            from ..core import shelf
             shelf.run_anti_virus()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể chạy diệt Virus:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Không thể chạy diệt Virus:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""
         try:
+            from ..core import shelf
             shelf.save_increment()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể thực hiện Save Increment:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Không thể thực hiện Save Increment:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_save_up_version(self):
         """Lưu file nâng Version"""
         try:
+            from ..core import shelf
             shelf.save_up_version()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi nâng version:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Lỗi xảy ra khi nâng version:\n%s" % smart_link.exception_to_unicode(e)
+            )
 
     def on_clean_folder(self):
         """Dọn dẹp thư mục"""
         try:
+            from ..core import shelf
             shelf.clean_folder()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % str(e))
+            from PySide2 import QtWidgets
+            QtWidgets.QMessageBox.critical(
+                self, u"Lỗi", 
+                u"Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % smart_link.exception_to_unicode(e)
+            )
     def on_round_values(self):
         """Làm tròn số thuộc tính hoặc keyframe"""
         self.save_settings()
