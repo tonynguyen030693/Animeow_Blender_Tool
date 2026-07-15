@@ -535,7 +535,7 @@ def create_arc_trail():
 # =========================================================================
 
 def create_shelf():
-    """Tạo hoặc cập nhật Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh"""
+    """Tạo hoặc cập nhật Shelf 'Animeow' với các nút công cụ nhanh"""
     shelf_name = "Animeow"
     
     # 1. Tìm shelf tab layout của Maya
@@ -628,6 +628,12 @@ def create_shelf():
             "annotation": "Mở cửa sổ Overlapper (Chuyển động trễ & Follow Through) độc lập",
             "image": get_icon("overlap_icon.png", "menuIconWindow.png"),
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='overlapper')"
+        },
+        {
+            "label": "Hider",
+            "annotation": "Khởi chạy ANM Hider (Ẩn/Hiện bộ phận nhân vật)",
+            "image": get_icon(os.path.join("Icons_Hider", "Hider_Icon.png"), "commandButton.png"),
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02.core.anm_hider as anm_hider\nanm_hider.show_hider()"
         },
         {
             "label": "Graph",
@@ -737,6 +743,6 @@ def create_shelf():
     # 6. Hiển thị thông báo
     cmds.confirmDialog(
         title=u"Thành công",
-        message=u"Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ 20 nút công cụ nhanh!",
+        message=u"Đã tạo/cập nhật thành công Shelf 'Animeow' với đầy đủ %d nút công cụ nhanh!" % len(tools),
         button=[u"Tuyệt vời"]
     )
