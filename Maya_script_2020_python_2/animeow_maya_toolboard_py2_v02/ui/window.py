@@ -4,6 +4,7 @@ from __future__ import print_function, absolute_import, division
 # Override __builtin__.print to safely handle unicode strings in Python 2
 try:
     import __builtin__
+    import sys
     current_print = getattr(__builtin__, 'print', None)
     if current_print and getattr(current_print, '__name__', '') == 'safe_print':
         pass
@@ -16,16 +17,18 @@ try:
                 end = kwargs.get('end', '\n')
                 fp.write(sep.join(str(arg) for arg in args) + end)
 
-        def safe_print(*args, **kwargs):
-            safe_args = []
-            for arg in args:
-                if isinstance(arg, unicode):
-                    safe_args.append(arg.encode('utf-8'))
-                else:
-                    safe_args.append(arg)
-            _orig_print(*safe_args, **kwargs)
+        def make_safe_print(orig_print):
+            def safe_print(*args, **kwargs):
+                safe_args = []
+                for arg in args:
+                    if isinstance(arg, unicode):
+                        safe_args.append(arg.encode('utf-8'))
+                    else:
+                        safe_args.append(arg)
+                orig_print(*safe_args, **kwargs)
+            return safe_print
 
-        __builtin__.print = safe_print
+        __builtin__.print = make_safe_print(_orig_print)
 except Exception:
     pass
 
