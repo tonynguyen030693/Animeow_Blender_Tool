@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division
+from __future__ import print_function, absolute_import, division, unicode_literals
 
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
@@ -9,11 +9,17 @@ def exception_to_unicode(e):
         msg = e.message if hasattr(e, 'message') and e.message else ""
         if not msg and e.args:
             msg = e.args[0]
-        if isinstance(msg, str):
+        if isinstance(msg, unicode):
             return msg
-        return str(msg)
+        if isinstance(msg, bytes):
+            return msg.decode('utf-8', errors='replace')
+        return unicode(msg)
     except Exception:
-        return "Lỗi hệ thống"
+        try:
+            val = str(e)
+            return val.decode('utf-8', errors='replace')
+        except Exception:
+            return unicode(e)
 
 def parent_to_animeow_group(node_name):
     """Đảm bảo node_name được đưa vào group Animeow_locator"""

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, absolute_import, division, unicode_literals
 """
 ANM Hider - Character part visibility manager for Maya.
 Re-written in PySide2 (Qt) for high-end modern flat UI/UX.
