@@ -3328,7 +3328,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """Load đối tượng đang chọn vào ô Tâm xoay tùy chọn"""
         sel = cmds.ls(sl=True) or []
         if sel:
-            self.tp_custom_pivot_edit.setText(sel[0])
+            self.tp_custom_pivot_edit.setText(", ".join(sel))
         else:
             self.tp_custom_pivot_edit.clear()
 
@@ -3340,9 +3340,15 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         custom_pivot = self.tp_custom_pivot_edit.text().strip()
-        if custom_pivot and not cmds.objExists(custom_pivot):
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vật thể làm tâm xoay tùy chọn '%s' không tồn tại!" % custom_pivot)
-            return
+        if custom_pivot:
+            custom_objs = [o.strip() for o in custom_pivot.split(",") if o.strip()]
+            invalid_objs = [o for o in custom_objs if not cmds.objExists(o)]
+            if invalid_objs:
+                QtWidgets.QMessageBox.warning(
+                    self, "Cảnh báo",
+                    "Các vật thể làm tâm xoay tùy chọn sau không tồn tại trong scene:\n%s" % ", ".join(invalid_objs)
+                )
+                return
             
         try:
             loc = temp_pivot.create_temp_locator(sel, custom_pivot=custom_pivot)

@@ -23,8 +23,18 @@ def create_temp_locator(controls, custom_pivot=None):
         raise RuntimeError("Không tìm thấy các control hợp lệ!")
         
     # 1. Tính toán vị trí tâm xoay (Rotate Pivot)
-    if custom_pivot and cmds.objExists(custom_pivot):
-        pos = cmds.xform(custom_pivot, q=True, ws=True, rotatePivot=True)
+    custom_objs = []
+    if custom_pivot:
+        custom_objs = [o.strip() for o in custom_pivot.split(",") if o.strip() and cmds.objExists(o.strip())]
+        
+    if custom_objs:
+        pos = [0.0, 0.0, 0.0]
+        for obj in custom_objs:
+            rp_pos = cmds.xform(obj, q=True, ws=True, rotatePivot=True)
+            pos[0] += rp_pos[0]
+            pos[1] += rp_pos[1]
+            pos[2] += rp_pos[2]
+        pos = [x / len(custom_objs) for x in pos]
     else:
         pos = [0.0, 0.0, 0.0]
         for ctrl in valid_controls:
