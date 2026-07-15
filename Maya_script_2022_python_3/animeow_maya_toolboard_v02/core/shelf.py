@@ -475,12 +475,16 @@ def launch_animo():
                 
         # Load và thực thi khởi động UI Animo
         try:
-            import importlib.util
             launcher_file = os.path.join(animo_launcher_dir, "Animo_Launcher.py")
-            spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
-            launcher_module = importlib.util.module_from_spec(spec)
-            sys.modules["Animo_Launcher_Module"] = launcher_module
-            spec.loader.exec_module(launcher_module)
+            try:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("Animo_Launcher_Module", launcher_file)
+                launcher_module = importlib.util.module_from_spec(spec)
+                sys.modules["Animo_Launcher_Module"] = launcher_module
+                spec.loader.exec_module(launcher_module)
+            except ImportError:
+                import imp
+                launcher_module = imp.load_source("Animo_Launcher_Module", launcher_file)
             _tb = launcher_module.toolbar()
             _tb.startUI()
             print("[Animo] Đã khởi chạy Animo thành công.")
