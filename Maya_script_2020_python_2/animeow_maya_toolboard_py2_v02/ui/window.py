@@ -3263,6 +3263,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             from ..core import shelf
             self.shelf.create_shelf()
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi",
