@@ -2358,16 +2358,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             is_world_link = True
 
         if not is_world_link and not cmds.objExists(target):
-            QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Target: %s không tồn tại trong scene!" % target)
+            QtWidgets.QMessageBox.critical(self, u"Lỗi đối tượng", u"Đối tượng Target: %s không tồn tại trong scene!" % target)
             return
 
         valid_owners = []
         for owner in owners:
             if not cmds.objExists(owner):
-                QtWidgets.QMessageBox.critical(self, "Lỗi đối tượng", "Đối tượng Owner: %s không tồn tại trong scene!" % owner)
+                QtWidgets.QMessageBox.critical(self, u"Lỗi đối tượng", u"Đối tượng Owner: %s không tồn tại trong scene!" % owner)
                 return
             if not is_world_link and target == owner:
-                QtWidgets.QMessageBox.warning(self, "Lỗi ràng buộc", "Không thể liên kết đối tượng %s với chính nó!" % owner)
+                QtWidgets.QMessageBox.warning(self, u"Lỗi ràng buộc", u"Không thể liên kết đối tượng %s với chính nó!" % owner)
                 continue
             valid_owners.append(owner)
 
@@ -2425,19 +2425,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             # Báo cáo kết quả
             if success_count > 0 and not failed_owners:
                 QtWidgets.QMessageBox.information(
-                    self, "Thành công", 
-                    "Đã tạo liên kết Locator thành công cho %d đối tượng!" % success_count
+                    self, u"Thành công", 
+                    u"Đã tạo liên kết Locator thành công cho %d đối tượng!" % success_count
                 )
             elif success_count > 0 and failed_owners:
-                err_msg = "Đã liên kết thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
+                err_msg = u"Đã liên kết thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
                 for f_owner, f_err in failed_owners:
-                    err_msg += "  + %s: %s\n" % (f_owner, f_err)
-                QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+                    err_msg += u"  + %s: %s\n" % (f_owner, f_err)
+                QtWidgets.QMessageBox.warning(self, u"Hoàn thành có lỗi", err_msg)
             else:
-                err_msg = "Không thể tạo liên kết cho đối tượng nào:\n"
+                err_msg = u"Không thể tạo liên kết cho đối tượng nào:\n"
                 for f_owner, f_err in failed_owners:
-                    err_msg += "  + %s: %s\n" % (f_owner, f_err)
-                QtWidgets.QMessageBox.critical(self, "Thất bại", err_msg)
+                    err_msg += u"  + %s: %s\n" % (f_owner, f_err)
+                QtWidgets.QMessageBox.critical(self, u"Thất bại", err_msg)
 
         else:
             # Gán trực tiếp không qua locator
@@ -2535,8 +2535,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
 
         res = QtWidgets.QMessageBox.question(
-            self, "Xác nhận Bake & Clean",
-            "Sẽ Bake chuyển động từ locator/constraint vào keyframe của %d đối tượng:\n%s\nvà dọn dẹp các liên kết thừa. Bạn có chắc chắn?" % (len(valid_owners), ", ".join(valid_owners)),
+            self, u"Xác nhận Bake & Clean",
+            u"Sẽ Bake chuyển động từ locator/constraint vào keyframe của %d đối tượng:\n%s\nvà dọn dẹp các liên kết thừa. Bạn có chắc chắn?" % (len(valid_owners), u", ".join(valid_owners)),
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         if res == QtWidgets.QMessageBox.No:
@@ -2569,19 +2569,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
         if success_count > 0 and not failed_owners:
             QtWidgets.QMessageBox.information(
-                self, "Thành công", 
-                "Đã Bake và dọn dẹp thành công chuyển động cho %d đối tượng!" % success_count
+                self, u"Thành công", 
+                u"Đã Bake và dọn dẹp thành công chuyển động cho %d đối tượng!" % success_count
             )
         elif success_count > 0 and failed_owners:
-            err_msg = "Đã Bake thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
+            err_msg = u"Đã Bake thành công %d đối tượng.\n❌ Thất bại %d đối tượng:\n" % (success_count, len(failed_owners))
             for f_owner, f_err in failed_owners:
-                err_msg += "  + %s: %s\n" % (f_owner, f_err)
-            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+                err_msg += u"  + %s: %s\n" % (f_owner, f_err)
+            QtWidgets.QMessageBox.warning(self, u"Hoàn thành có lỗi", err_msg)
         else:
-            err_msg = "Lỗi xảy ra khi bake cho các đối tượng:\n"
+            err_msg = u"Lỗi xảy ra khi bake cho các đối tượng:\n"
             for f_owner, f_err in failed_owners:
-                err_msg += "  + %s: %s\n" % (f_owner, f_err)
-            QtWidgets.QMessageBox.critical(self, "Thất bại", err_msg)
+                err_msg += u"  + %s: %s\n" % (f_owner, f_err)
+            QtWidgets.QMessageBox.critical(self, u"Thất bại", err_msg)
 
     def on_launch_studiolibrary(self):
         ensure_scripts_2022_path()
@@ -2858,8 +2858,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Xác nhận nếu xuất nhiều camera cùng lúc
         if len(target_cameras) > 1:
             res = QtWidgets.QMessageBox.question(
-                self, "Xác nhận quay hàng loạt",
-                "Bạn có chắc chắn muốn chạy Playblast cho %d camera đã chọn?" % len(target_cameras),
+                self, u"Xác nhận quay hàng loạt",
+                u"Bạn có chắc chắn muốn chạy Playblast cho %d camera đã chọn?" % len(target_cameras),
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
             if res == QtWidgets.QMessageBox.No:
@@ -2869,8 +2869,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         failed_cameras = []
         
         # Hiển thị QProgressDialog để báo cáo tiến trình
-        progress_dialog = QtWidgets.QProgressDialog("Đang xuất Playblast...", "Hủy", 0, len(target_cameras), self)
-        progress_dialog.setWindowTitle("Playblast Hàng Loạt")
+        progress_dialog = QtWidgets.QProgressDialog(u"Đang xuất Playblast...", u"Hủy", 0, len(target_cameras), self)
+        progress_dialog.setWindowTitle(u"Playblast Hàng Loạt")
         progress_dialog.setWindowModality(QtCore.Qt.WindowModal)
         progress_dialog.setMinimumDuration(0)
         
@@ -2880,7 +2880,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if progress_dialog.wasCanceled():
                 break
                 
-            progress_dialog.setLabelText("Đang quay camera: %s (%d/%d)..." % (cam, idx + 1, len(target_cameras)))
+            progress_dialog.setLabelText(u"Đang quay camera: %s (%d/%d)..." % (cam, idx + 1, len(target_cameras)))
             progress_dialog.setValue(idx)
             QtCore.QCoreApplication.processEvents()
             
@@ -2908,22 +2908,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if not failed_cameras:
             if len(target_cameras) == 1:
                 QtWidgets.QMessageBox.information(
-                    self, "Thành công", 
-                    "Đã xuất Playblast thành công cho camera: %s!\nĐường dẫn:\n%s" % (target_cameras[0], success_files[0])
+                    self, u"Thành công", 
+                    u"Đã xuất Playblast thành công cho camera: %s!\nĐường dẫn:\n%s" % (target_cameras[0], success_files[0])
                 )
             else:
                 QtWidgets.QMessageBox.information(
-                    self, "Thành công", 
-                    "Đã hoàn thành xuất Playblast hàng loạt cho %d camera thành công!\nCác tệp được lưu trong thư mục 'mov'." % len(success_files)
+                    self, u"Thành công", 
+                    u"Đã hoàn thành xuất Playblast hàng loạt cho %d camera thành công!\nCác tệp được lưu trong thư mục 'mov'." % len(success_files)
                 )
         else:
-            err_msg = "Kết quả xuất Playblast:\n\n"
+            err_msg = u"Kết quả xuất Playblast:\n\n"
             if success_files:
-                err_msg += "✅ Thành công %d camera.\n" % len(success_files)
-            err_msg += "❌ Thất bại %d camera:\n" % len(failed_cameras)
+                err_msg += u"✅ Thành công %d camera.\n" % len(success_files)
+            err_msg += u"❌ Thất bại %d camera:\n" % len(failed_cameras)
             for f_cam, f_err in failed_cameras:
-                err_msg += "  + %s: %s\n" % (f_cam, f_err)
-            QtWidgets.QMessageBox.warning(self, "Hoàn thành có lỗi", err_msg)
+                err_msg += u"  + %s: %s\n" % (f_cam, f_err)
+            QtWidgets.QMessageBox.warning(self, u"Hoàn thành có lỗi", err_msg)
 
     def on_launch_worldbake(self):
         ensure_scripts_2022_path()
