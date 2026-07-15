@@ -791,6 +791,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def __init__(self, parent=None, standalone_tab=None):
         self.QtWidgets = QtWidgets
         self.smart_link = smart_link
+        self.world_bake = world_bake
+        self.round_tool = round_tool
+        self.space_order_tool = space_order_tool
+        self.retarget_tool = retarget_tool
+        self.mirror_tool = mirror_tool
+        self.temp_pivot = temp_pivot
+        self.shelf = shelf
+        self.tween_machine = tween_machine
         self.standalone_tab = standalone_tab
         
         if standalone_tab is not None:
@@ -2448,7 +2456,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
             for owner in valid_owners:
                 # Kiểm tra xem owner đã có liên kết locator nào chưa
-                baker = smart_link.AnimationBaker(owner)
+                baker = self.smart_link.AnimationBaker(owner)
                 loc_parent, loc_child = baker.find_locator_names()
                 if loc_parent or loc_child:
                     failed_owners.append((owner, "Đã có liên kết locator từ trước."))
@@ -2456,7 +2464,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
                 try:
                     # Tiến hành tạo Smart Link
-                    manager = smart_link.SmartLinkManager(owner, target)
+                    manager = self.smart_link.SmartLinkManager(owner, target)
                     has_anim = manager.detect_existing_animation()
 
                     loc_temp = None
@@ -2475,13 +2483,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     if has_anim and loc_temp:
                         manager.match_animation_to_child(loc_temp, s_time, e_time)
                         cmds.currentTime(curr_time, edit=True)
-                        smart_link.SmartLinkManager.cleanup_temp(loc_temp)
+                        self.smart_link.SmartLinkManager.cleanup_temp(loc_temp)
                         manager.reset_owner_transforms()
 
                     print(u"[SmartLink] Đã liên kết thành công %s đi theo %s thông qua cặp Locator." % (owner, target))
                     success_count += 1
                 except Exception as e:
-                    failed_owners.append((owner, smart_link.exception_to_unicode(e)))
+                    failed_owners.append((owner, self.smart_link.exception_to_unicode(e)))
 
             # Báo cáo kết quả
             if success_count > 0 and not failed_owners:
@@ -2550,7 +2558,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if not cmds.objExists(owner):
                 continue
             try:
-                switcher = smart_link.SpaceSwitcher(owner, curr_time)
+                switcher = self.smart_link.SpaceSwitcher(owner, curr_time)
                 success = switcher.switch_to_target(new_target)
                 if success:
                     success_count += 1
@@ -2615,7 +2623,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         for owner in valid_owners:
             try:
-                baker = smart_link.AnimationBaker(owner)
+                baker = self.smart_link.AnimationBaker(owner)
                 baker.bake(
                     start_frame=s_time,
                     end_frame=e_time,
@@ -2626,7 +2634,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print(u"[SmartLink] Đã bake và dọn dẹp liên kết cho %s thành công." % owner)
                 success_count += 1
             except Exception as e:
-                failed_owners.append((owner, smart_link.exception_to_unicode(e)))
+                failed_owners.append((owner, self.smart_link.exception_to_unicode(e)))
                 
         if success_count > 0 and not failed_owners:
             QtWidgets.QMessageBox.information(
@@ -2661,7 +2669,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             studiolibrary.main()
         except Exception as e:
             from PySide2 import QtWidgets
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Studio Library:\n%s" % smart_link.exception_to_unicode(e))
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Studio Library:\n%s" % self.smart_link.exception_to_unicode(e))
 
     def on_launch_dwpicker(self):
         ensure_scripts_2022_path()
@@ -2675,7 +2683,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 dwpicker.show()
         except Exception as e:
             from PySide2 import QtWidgets
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy DWPicker:\n%s" % smart_link.exception_to_unicode(e))
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy DWPicker:\n%s" % self.smart_link.exception_to_unicode(e))
 
     def on_launch_tweenmachine(self):
         path = ensure_scripts_2022_path()
@@ -2708,7 +2716,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print("[TweenMachine] Da mo Tween Machine.")
         except Exception as e:
             from PySide2 import QtWidgets
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Tween Machine:\n%s" % smart_link.exception_to_unicode(e))
+            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể chạy Tween Machine:\n%s" % self.smart_link.exception_to_unicode(e))
 
     def on_launch_atools(self):
         ensure_scripts_2022_path()
@@ -2724,7 +2732,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 from PySide2 import QtWidgets
                 QtWidgets.QMessageBox.critical(
                     self, u"Lỗi", 
-                    u"Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % smart_link.exception_to_unicode(e)
+                    u"Không thể chạy aTools. Vui lòng đảm bảo bạn đã cài đặt aTools qua thư mục aTools_install:\n%s" % self.smart_link.exception_to_unicode(e)
                 )
 
     def on_launch_animo(self):
@@ -2809,7 +2817,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 print("[Animo] Đã khởi chạy Animo thành công.")
             except Exception as e:
                 from PySide2 import QtWidgets
-                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Lỗi khởi chạy Animo:\n%s" % smart_link.exception_to_unicode(e))
+                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Lỗi khởi chạy Animo:\n%s" % self.smart_link.exception_to_unicode(e))
 
     def on_launch_anm_hider(self):
         try:
@@ -2827,7 +2835,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể chạy ANM Hider. Vui lòng đảm bảo bạn đã cài đặt anm_hider trong core:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể chạy ANM Hider. Vui lòng đảm bảo bạn đã cài đặt anm_hider trong core:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_multi_cam(self, checked):
@@ -3135,7 +3143,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         idx = self.wb_channels_combo.currentIndex()
         channels = ['both', 'translate', 'rotate'][idx]
         
-        wbm = world_bake.WorldBakeManager()
+        wbm = self.world_bake.WorldBakeManager()
         
         success_locs = []
         try:
@@ -3160,7 +3168,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi World Bake",
-                u"Lỗi xảy ra khi Bake sang Locator:\n%s" % world_bake.exception_to_unicode(e)
+                u"Lỗi xảy ra khi Bake sang Locator:\n%s" % self.world_bake.exception_to_unicode(e)
             )
 
     def on_world_bake_from_locator(self):
@@ -3179,7 +3187,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         smart_clean = self.wb_smart_clean_cb.isChecked()
         smart_bake = self.wb_smart_bake_cb.isChecked()
         
-        wbm = world_bake.WorldBakeManager()
+        wbm = self.world_bake.WorldBakeManager()
         
         success_objs = []
         try:
@@ -3202,103 +3210,103 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi World Bake",
-                u"Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
+                u"Lỗi xảy ra khi Bake ngược trở về:\n%s" % self.world_bake.exception_to_unicode(e)
             )
 
     def on_create_custom_shelf(self):
         """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
         try:
             from ..core import shelf
-            shelf.create_shelf()
+            self.shelf.create_shelf()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi",
-                u"Không thể tạo hoặc cập nhật Shelf:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể tạo hoặc cập nhật Shelf:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_graph_editor(self):
         """Bật/Tắt Graph Editor"""
         try:
             from ..core import shelf
-            shelf.toggle_graph_editor()
+            self.shelf.toggle_graph_editor()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể bật/tắt Graph Editor:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể bật/tắt Graph Editor:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_reference_editor(self):
         """Bật/Tắt Reference Editor"""
         try:
             from ..core import shelf
-            shelf.toggle_reference_editor()
+            self.shelf.toggle_reference_editor()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể bật/tắt Reference Editor:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể bật/tắt Reference Editor:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_toggle_outliner(self):
         """Bật/Tắt Outliner"""
         try:
             from ..core import shelf
-            shelf.toggle_outliner()
+            self.shelf.toggle_outliner()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể bật/tắt Outliner:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể bật/tắt Outliner:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_run_antivirus(self):
         """Khởi chạy quét và diệt virus trong scene"""
         try:
             from ..core import shelf
-            shelf.run_anti_virus()
+            self.shelf.run_anti_virus()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể chạy diệt Virus:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể chạy diệt Virus:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""
         try:
             from ..core import shelf
-            shelf.save_increment()
+            self.shelf.save_increment()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Không thể thực hiện Save Increment:\n%s" % smart_link.exception_to_unicode(e)
+                u"Không thể thực hiện Save Increment:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_save_up_version(self):
         """Lưu file nâng Version"""
         try:
             from ..core import shelf
-            shelf.save_up_version()
+            self.shelf.save_up_version()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Lỗi xảy ra khi nâng version:\n%s" % smart_link.exception_to_unicode(e)
+                u"Lỗi xảy ra khi nâng version:\n%s" % self.smart_link.exception_to_unicode(e)
             )
 
     def on_clean_folder(self):
         """Dọn dẹp thư mục"""
         try:
             from ..core import shelf
-            shelf.clean_folder()
+            self.shelf.clean_folder()
         except Exception as e:
             from PySide2 import QtWidgets
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % smart_link.exception_to_unicode(e)
+                u"Lỗi xảy ra khi dọn dẹp thư mục:\n%s" % self.smart_link.exception_to_unicode(e)
             )
     def on_round_values(self):
         """Làm tròn số thuộc tính hoặc keyframe"""
@@ -3333,7 +3341,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Bọc trong một khối Undo chunk để animator có thể Ctrl + Z hoàn tác nhanh
         cmds.undoInfo(openChunk=True)
         try:
-            success, msg = round_tool.round_selected_values(precision, target)
+            success, msg = self.round_tool.round_selected_values(precision, target)
             if success:
                 self.safe_warning(msg)
             else:
@@ -3362,7 +3370,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True)
         try:
-            success, msg = round_tool.round_selected_values(-1, target, channels)
+            success, msg = self.round_tool.round_selected_values(-1, target, channels)
             if success:
                 self.safe_warning(msg)
             else:
@@ -3391,7 +3399,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True)
         try:
-            success, msg = round_tool.round_selected_values(-1, target, channels)
+            success, msg = self.round_tool.round_selected_values(-1, target, channels)
             if success:
                 self.safe_warning(msg)
             else:
@@ -3432,7 +3440,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 return
             
         try:
-            loc = temp_pivot.create_temp_locator(sel, custom_pivot=custom_pivot)
+            loc = self.temp_pivot.create_temp_locator(sel, custom_pivot=custom_pivot)
             cmds.select(loc)
             QtWidgets.QMessageBox.information(
                 self, u"Thành công",
@@ -3457,7 +3465,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True)
         try:
-            loc = temp_pivot.active_temp_pivot(obj, start_frame, end_frame)
+            loc = self.temp_pivot.active_temp_pivot(obj, start_frame, end_frame)
             cmds.select(loc)
             cmds.warning("Đã kích hoạt Temp Pivot thành công! Hãy diễn hoạt xoay/dịch chuyển trên locator này.")
         except Exception as e:
@@ -3481,7 +3489,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True)
         try:
-            control = temp_pivot.release_temp_pivot(obj, start_frame, end_frame)
+            control = self.temp_pivot.release_temp_pivot(obj, start_frame, end_frame)
             cmds.select(control)
             QtWidgets.QMessageBox.information(
                 self, u"Thành công",
@@ -3568,7 +3576,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         cmds.undoInfo(openChunk=True)
         try:
-            success, msg = mirror_tool.execute_mirror(
+            success, msg = self.mirror_tool.execute_mirror(
                 objects=objects_to_process,
                 mode=mode,
                 time_range=time_range,
@@ -3778,7 +3786,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.rt_table.selectRow(row)
 
     def on_rt_refresh_namespaces(self):
-        namespaces = retarget_tool.get_all_namespaces()
+        namespaces = self.retarget_tool.get_all_namespaces()
         self.rt_source_ns_combo.clear()
         self.rt_target_ns_combo.clear()
         self.rt_source_ns_combo.addItem("")
@@ -3794,7 +3802,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Namespace Nguồn và Namespace Đích không nên trùng nhau!")
             return
             
-        pairs = retarget_tool.auto_map_rigs(source_ns, target_ns)
+        pairs = self.retarget_tool.auto_map_rigs(source_ns, target_ns)
         self.on_rt_clear_table()
         
         for src, tgt in pairs:
@@ -3920,7 +3928,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True)
         try:
-            success, msg = retarget_tool.execute_retarget(
+            success, msg = self.retarget_tool.execute_retarget(
                 mapping_pairs=mapping_pairs,
                 start_frame=start_frame,
                 end_frame=end_frame,
@@ -4528,7 +4536,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_fix_lost_shader(self):
         """Mở khóa default shading group và texture list để sửa lỗi mất shader (lưới xanh lá)"""
         try:
-            shelf.fix_lost_shader()
+            self.shelf.fix_lost_shader()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Lỗi", 
@@ -4548,7 +4556,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             success_count = 0
             for obj in sel:
-                success, msg = space_order_tool.change_rotate_order(obj, new_order)
+                success, msg = self.space_order_tool.change_rotate_order(obj, new_order)
                 if success:
                     success_count += 1
                     print("[SpaceOrder] %s: %s" % (obj, msg))
@@ -4562,7 +4570,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             traceback.print_exc()
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % smart_link.exception_to_unicode(e)
+                u"Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % self.smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -4577,7 +4585,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         obj = sel[0]
         cmds.undoInfo(openChunk=True, chunkName="RecordWorldSpace")
         try:
-            loc, msg = space_order_tool.record_world_space(obj)
+            loc, msg = self.space_order_tool.record_world_space(obj)
             if loc:
                 self.safe_warning(msg)
                 QtWidgets.QMessageBox.information(
@@ -4589,7 +4597,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Lỗi xảy ra khi ghi Space thế giới:\n%s" % smart_link.exception_to_unicode(e)
+                u"Lỗi xảy ra khi ghi Space thế giới:\n%s" % self.smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -4631,7 +4639,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         cmds.undoInfo(openChunk=True, chunkName="RestoreWorldSpace")
         try:
-            success, msg = space_order_tool.restore_world_space(obj, locator)
+            success, msg = self.space_order_tool.restore_world_space(obj, locator)
             if success:
                 self.safe_warning(msg)
             else:
@@ -4639,7 +4647,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, u"Lỗi", 
-                u"Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % smart_link.exception_to_unicode(e)
+                u"Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % self.smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -4672,26 +4680,26 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_qc_parent(self):
         from ..core import shelf
         mo, skip_t, skip_r = self.get_qc_options()
-        shelf.create_parent_constraint(mo=mo, skip_translate=skip_t, skip_rotate=skip_r)
+        self.shelf.create_parent_constraint(mo=mo, skip_translate=skip_t, skip_rotate=skip_r)
         
     def on_qc_point(self):
         from ..core import shelf
         mo, skip_t, _ = self.get_qc_options()
-        shelf.create_point_constraint(mo=mo, skip_axes=skip_t)
+        self.shelf.create_point_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_orient(self):
         from ..core import shelf
         mo, _, skip_r = self.get_qc_options()
-        shelf.create_orient_constraint(mo=mo, skip_axes=skip_r)
+        self.shelf.create_orient_constraint(mo=mo, skip_axes=skip_r)
         
     def on_qc_scale(self):
         from ..core import shelf
         mo, skip_t, _ = self.get_qc_options()
-        shelf.create_scale_constraint(mo=mo, skip_axes=skip_t)
+        self.shelf.create_scale_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_delete(self):
         from ..core import shelf
-        shelf.delete_obj_constraints()
+        self.shelf.delete_obj_constraints()
 
     # ── Tween Machine (Live Slider) ──
 
@@ -4836,7 +4844,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 lbl.setText("%d%%" % pct)
                 sld.blockSignals(False)
         
-        success, msg = tween_machine.tween_interactive(pct / 100.0)
+        success, msg = self.tween_machine.tween_interactive(pct / 100.0)
         if success:
             cmds.refresh(force=True) # Ép refresh viewport
             cmds.inViewMessage(
