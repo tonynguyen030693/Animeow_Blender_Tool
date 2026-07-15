@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import print_function, absolute_import, division
 
 import os
 import sys
@@ -3109,21 +3109,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
             cmds.select(success_locs)
             QtWidgets.QMessageBox.information(
-                self, "Thành công",
-                "Đã bake thành công %d vật thể sang Locator không gian thế giới!\nCác locator mới: %s" % (
-                    len(sel), ", ".join(success_locs))
+                self, u"Thành công",
+                u"Đã bake thành công %d vật thể sang Locator không gian thế giới!\nCác locator mới: %s" % (
+                    len(sel), u", ".join(success_locs))
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi World Bake",
-                "Lỗi xảy ra khi Bake sang Locator:\n%s" % world_bake.exception_to_unicode(e)
+                self, u"Lỗi World Bake",
+                u"Lỗi xảy ra khi Bake sang Locator:\n%s" % world_bake.exception_to_unicode(e)
             )
 
     def on_world_bake_from_locator(self):
         """Bake ngược từ Locator trở về vật thể gốc"""
         sel = cmds.ls(sl=True) or []
         if not sel:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Locator hoặc vật thể gốc để Bake ngược trở lại!")
+            QtWidgets.QMessageBox.warning(self, u"Cảnh báo", u"Vui lòng chọn Locator hoặc vật thể gốc để Bake ngược trở lại!")
             return
             
         self.save_settings()
@@ -3152,13 +3152,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
             cmds.select(success_objs)
             QtWidgets.QMessageBox.information(
-                self, "Thành công",
-                "Đã bake ngược thành công từ Locator về %d vật thể gốc!" % len(success_objs)
+                self, u"Thành công",
+                u"Đã bake ngược thành công từ Locator về %d vật thể gốc!" % len(success_objs)
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi World Bake",
-                "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
+                self, u"Lỗi World Bake",
+                u"Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
             )
 
     def on_create_custom_shelf(self):
@@ -3167,8 +3167,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             shelf.create_shelf()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi",
-                "Không thể tạo hoặc cập nhật Shelf:\n%s" % str(e)
+                self, u"Lỗi",
+                u"Không thể tạo hoặc cập nhật Shelf:\n%s" % str(e)
             )
 
     def on_toggle_graph_editor(self):
@@ -3336,7 +3336,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """Tạo Temp Locator tại vị trí của control được chọn"""
         sel = cmds.ls(sl=True) or []
         if not sel:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một Rig Control trong Viewport!")
+            QtWidgets.QMessageBox.warning(self, u"Cảnh báo", u"Vui lòng chọn ít nhất một Rig Control trong Viewport!")
             return
             
         custom_pivot = self.tp_custom_pivot_edit.text().strip()
@@ -3345,8 +3345,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             invalid_objs = [o for o in custom_objs if not cmds.objExists(o)]
             if invalid_objs:
                 QtWidgets.QMessageBox.warning(
-                    self, "Cảnh báo",
-                    "Các vật thể làm tâm xoay tùy chọn sau không tồn tại trong scene:\n%s" % ", ".join(invalid_objs)
+                    self, u"Cảnh báo",
+                    u"Các vật thể làm tâm xoay tùy chọn sau không tồn tại trong scene:\n%s" % u", ".join(invalid_objs)
                 )
                 return
             
@@ -3354,20 +3354,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             loc = temp_pivot.create_temp_locator(sel, custom_pivot=custom_pivot)
             cmds.select(loc)
             QtWidgets.QMessageBox.information(
-                self, "Thành công",
-                "Đã tạo Temp Locator: %s\nHãy di chuyển Locator này tới vị trí Pivot mới, sau đó nhấn 'Kích hoạt Pivot'." % loc
+                self, u"Thành công",
+                u"Đã tạo Temp Locator: %s\nHãy di chuyển Locator này tới vị trí Pivot mới, sau đó nhấn 'Kích hoạt Pivot'." % loc
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi",
-                "Có lỗi xảy ra khi tạo Temp Locator:\n%s" % str(e)
+                self, u"Lỗi",
+                u"Có lỗi xảy ra khi tạo Temp Locator:\n%s" % str(e)
             )
 
     def on_tp_active(self):
         """Kích hoạt tâm xoay tạm thời"""
         sel = cmds.ls(sl=True) or []
         if not sel:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng!")
+            QtWidgets.QMessageBox.warning(self, u"Cảnh báo", u"Vui lòng chọn Temp Locator hoặc Control tương ứng!")
             return
             
         obj = sel[0]
@@ -3381,8 +3381,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.warning("Đã kích hoạt Temp Pivot thành công! Hãy diễn hoạt xoay/dịch chuyển trên locator này.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi Kích hoạt Pivot",
-                "Không thể kích hoạt Temp Pivot:\n%s" % str(e)
+                self, u"Lỗi Kích hoạt Pivot",
+                u"Không thể kích hoạt Temp Pivot:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -3391,7 +3391,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """Nướng ngược lại chuyển động và giải phóng tâm xoay"""
         sel = cmds.ls(sl=True) or []
         if not sel:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn Temp Locator hoộc Control tương ứng để giải phóng!")
+            QtWidgets.QMessageBox.warning(self, u"Cảnh báo", u"Vui lòng chọn Temp Locator hoặc Control tương ứng để giải phóng!")
             return
             
         obj = sel[0]
@@ -3403,13 +3403,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             control = temp_pivot.release_temp_pivot(obj, start_frame, end_frame)
             cmds.select(control)
             QtWidgets.QMessageBox.information(
-                self, "Thành công",
-                "Đã nướng trả chuyển động thành công về Control gốc: %s\nLocator tạm thời đã được gỡ bỏ." % control
+                self, u"Thành công",
+                u"Đã nướng trả chuyển động thành công về Control gốc: %s\nLocator tạm thời đã được gỡ bỏ." % control
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi Giải phóng Pivot",
-                "Có lỗi xảy ra khi giải phóng Temp Pivot:\n%s" % str(e)
+                self, u"Lỗi Giải phóng Pivot",
+                u"Có lỗi xảy ra khi giải phóng Temp Pivot:\n%s" % str(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
