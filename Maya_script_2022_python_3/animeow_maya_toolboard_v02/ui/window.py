@@ -1613,13 +1613,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.camera_list_widget = QtWidgets.QListWidget()
         self.camera_list_widget.setFixedHeight(80)
         self.camera_list_widget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.camera_list_widget.itemClicked.connect(self.on_camera_item_clicked)
         self.camera_list_widget.hide()
         pb_layout.addWidget(self.camera_list_widget, 4, 0, 1, 4)
         
         self.refresh_cam_btn = QtWidgets.QPushButton("Quét lại Cameras")
         self.refresh_cam_btn.setFixedHeight(22)
         self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
-        self.refresh_cam_btn.hide()
+        # Bỏ ẩn nút quét camera để nút luôn hiển thị phục vụ người dùng
         pb_layout.addWidget(self.refresh_cam_btn, 5, 0, 1, 4)
         
         self.pb_execute_btn = QtWidgets.QPushButton("Thực hiện Playblast")
@@ -1631,61 +1632,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         tab4_layout.addWidget(pb_group)
         
-        # GroupBox 2: Scene Management Utilities
-        scene_group = QtWidgets.QGroupBox("Scene Utilities (Quản lý cảnh)")
-        scene_layout = QtWidgets.QGridLayout(scene_group)
-        scene_layout.setContentsMargins(8, 12, 8, 8)
-        scene_layout.setSpacing(8)
-        
-        self.toggle_graph_btn = QtWidgets.QPushButton("Graph Editor (Bật/Tắt)")
-        self.toggle_graph_btn.setIcon(AnimeowIcons.icon_graph())
-        self.toggle_graph_btn.setFixedHeight(28)
-        self.toggle_graph_btn.clicked.connect(self.on_toggle_graph_editor)
-        scene_layout.addWidget(self.toggle_graph_btn, 0, 0)
-        
-        self.toggle_ref_btn = QtWidgets.QPushButton("Reference Editor (Bật/Tắt)")
-        self.toggle_ref_btn.setIcon(AnimeowIcons.icon_folder())
-        self.toggle_ref_btn.setFixedHeight(28)
-        self.toggle_ref_btn.clicked.connect(self.on_toggle_reference_editor)
-        scene_layout.addWidget(self.toggle_ref_btn, 0, 1)
-        
-        self.save_inc_btn = QtWidgets.QPushButton("Save Increment")
-        self.save_inc_btn.setIcon(AnimeowIcons.icon_save())
-        self.save_inc_btn.setFixedHeight(28)
-        self.save_inc_btn.clicked.connect(self.on_save_increment)
-        scene_layout.addWidget(self.save_inc_btn, 1, 0)
-        
-        self.save_up_ver_btn = QtWidgets.QPushButton("Save Up Version")
-        self.save_up_ver_btn.setIcon(AnimeowIcons.icon_save())
-        self.save_up_ver_btn.setFixedHeight(28)
-        self.save_up_ver_btn.clicked.connect(self.on_save_up_version)
-        scene_layout.addWidget(self.save_up_ver_btn, 1, 1)
-
-        self.fix_shader_btn = QtWidgets.QPushButton("Fix Lost Shader (Xanh lưới)")
-        self.fix_shader_btn.setIcon(AnimeowIcons.icon_reset())
-        self.fix_shader_btn.setFixedHeight(28)
-        self.fix_shader_btn.clicked.connect(self.on_fix_lost_shader)
-        scene_layout.addWidget(self.fix_shader_btn, 2, 0)
-        
-        self.clean_folder_btn = QtWidgets.QPushButton("Clean Folder (Dọn dẹp scenes)")
-        self.clean_folder_btn.setIcon(AnimeowIcons.icon_clean())
-        self.clean_folder_btn.setFixedHeight(28)
-        self.clean_folder_btn.clicked.connect(self.on_clean_folder)
-        scene_layout.addWidget(self.clean_folder_btn, 2, 1)
-        
-        self.toggle_outliner_btn = QtWidgets.QPushButton("Outliner (Bật/Tắt)")
-        self.toggle_outliner_btn.setIcon(AnimeowIcons.icon_outliner())
-        self.toggle_outliner_btn.setFixedHeight(28)
-        self.toggle_outliner_btn.clicked.connect(self.on_toggle_outliner)
-        scene_layout.addWidget(self.toggle_outliner_btn, 3, 0)
-        
-        self.run_antivirus_btn = QtWidgets.QPushButton("Diệt Virus (Quét & Clean)")
-        self.run_antivirus_btn.setIcon(AnimeowIcons.icon_shield())
-        self.run_antivirus_btn.setFixedHeight(28)
-        self.run_antivirus_btn.clicked.connect(self.on_run_antivirus)
-        scene_layout.addWidget(self.run_antivirus_btn, 3, 1)
-        
-        tab4_layout.addWidget(scene_group)
         tab4_layout.addStretch()
 
         # =========================================================================
@@ -2270,7 +2216,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(stringValue=(self.OP_PB_FORMAT, self.pb_format_combo.currentText()))
         cmds.optionVar(intValue=(self.OP_PB_WIDTH, self.pb_width_spin.value()))
         cmds.optionVar(intValue=(self.OP_PB_HEIGHT, self.pb_height_spin.value()))
-        cmds.optionVar(intValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
+        cmds.optionVar(floatValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
         cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_MULTI_CAM, int(self.multi_cam_cb.isChecked())))
@@ -2787,11 +2733,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 "Không thể chạy ANM Hider. Vui lòng đảm bảo bạn đã cài đặt anm_hider trong core:\n%s" % str(e)
             )
 
-    def on_toggle_multi_cam(self, state):
-        is_multi = (state == QtCore.Qt.Checked)
-        self.camera_combo.setVisible(not is_multi)
-        self.refresh_cam_btn.setVisible(not is_multi)
-        self.camera_list_widget.setVisible(is_multi)
+    def on_toggle_multi_cam(self, checked):
+        self.camera_combo.setVisible(not checked)
+        self.camera_list_widget.setVisible(checked)
+
+    def on_camera_item_clicked(self, item):
+        # Tự động đảo ngược trạng thái check khi click trực tiếp vào dòng camera
+        if item.checkState() == QtCore.Qt.Checked:
+            item.setCheckState(QtCore.Qt.Unchecked)
+        else:
+            item.setCheckState(QtCore.Qt.Checked)
 
     def on_refresh_cameras(self):
         """Làm mới danh sách camera trong scene"""
@@ -2843,7 +2794,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         width = self.pb_width_spin.value()
         height = self.pb_height_spin.value()
-        percent = self.pb_scale_spin.value()
+        percent = int(self.pb_scale_spin.value() * 100)
         viewer = self.pb_viewer_cb.isChecked()
         overwrite = self.pb_overwrite_cb.isChecked()
         
