@@ -728,6 +728,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_PB_OVERWRITE = "AnimeowTbPbOverwrite"
     OP_PB_MULTI_CAM = "AnimeowTbPbMultiCam"
     OP_PB_MULTI_CAMS_LIST = "AnimeowTbPbMultiCamsList"
+    OP_PB_CUSTOM_DIR = "AnimeowTbPbCustomDir"
     OP_AT_SHOW_TICKS = "AnimeowTbAtShowTicks"
     OP_AT_SHOW_KEYS = "AnimeowTbAtShowKeys"
     OP_AT_TICK_SIZE = "AnimeowTbAtTickSize"
@@ -1605,30 +1606,44 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_overwrite_cb.setChecked(True)
         pb_layout.addWidget(self.pb_overwrite_cb, 2, 2, 1, 2)
         
+        # Dòng chọn thư mục lưu tùy chỉnh (Custom Output Directory)
+        pb_layout.addWidget(QtWidgets.QLabel("Thư mục lưu:"), 3, 0)
+        self.pb_dir_edit = QtWidgets.QLineEdit()
+        self.pb_dir_edit.setPlaceholderText("Mặc định lưu vào thư mục 'mov' cùng cấp file scene")
+        self.pb_dir_edit.setToolTip("Chọn thư mục lưu video Playblast tùy chọn. Để trống nếu muốn tự động lưu theo Scene.")
+        pb_layout.addWidget(self.pb_dir_edit, 3, 1, 1, 2)
+        
+        self.pb_browse_btn = QtWidgets.QPushButton()
+        self.pb_browse_btn.setFixedSize(30, 22)
+        self.pb_browse_btn.setIcon(AnimeowIcons.icon_folder())
+        self.pb_browse_btn.setToolTip("Chọn thư mục...")
+        self.pb_browse_btn.clicked.connect(self.on_browse_pb_dir)
+        pb_layout.addWidget(self.pb_browse_btn, 3, 3)
+        
         self.multi_cam_cb = QtWidgets.QCheckBox("Quay hàng loạt (Multi-Camera)")
         self.multi_cam_cb.setChecked(False)
         self.multi_cam_cb.toggled.connect(self.on_toggle_multi_cam)
-        pb_layout.addWidget(self.multi_cam_cb, 3, 0, 1, 4)
+        pb_layout.addWidget(self.multi_cam_cb, 4, 0, 1, 4)
         
         self.camera_list_widget = QtWidgets.QListWidget()
         self.camera_list_widget.setFixedHeight(80)
         self.camera_list_widget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.camera_list_widget.itemClicked.connect(self.on_camera_item_clicked)
         self.camera_list_widget.hide()
-        pb_layout.addWidget(self.camera_list_widget, 4, 0, 1, 4)
+        pb_layout.addWidget(self.camera_list_widget, 5, 0, 1, 4)
         
         self.refresh_cam_btn = QtWidgets.QPushButton("Quét lại Cameras")
         self.refresh_cam_btn.setFixedHeight(22)
         self.refresh_cam_btn.clicked.connect(self.on_refresh_cameras)
         # Bỏ ẩn nút quét camera để nút luôn hiển thị phục vụ người dùng
-        pb_layout.addWidget(self.refresh_cam_btn, 5, 0, 1, 4)
+        pb_layout.addWidget(self.refresh_cam_btn, 6, 0, 1, 4)
         
         self.pb_execute_btn = QtWidgets.QPushButton("Thực hiện Playblast")
         self.pb_execute_btn.setIcon(AnimeowIcons.icon_play())
         self.pb_execute_btn.setObjectName("accent_btn")
         self.pb_execute_btn.setFixedHeight(30)
         self.pb_execute_btn.clicked.connect(self.on_run_playblast)
-        pb_layout.addWidget(self.pb_execute_btn, 6, 0, 1, 4)
+        pb_layout.addWidget(self.pb_execute_btn, 7, 0, 1, 4)
         
         tab4_layout.addWidget(pb_group)
         
@@ -2136,6 +2151,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         if cmds.optionVar(exists=self.OP_PB_MULTI_CAM):
             self.multi_cam_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_MULTI_CAM)))
+        if cmds.optionVar(exists=self.OP_PB_CUSTOM_DIR):
+            self.pb_dir_edit.setText(cmds.optionVar(query=self.OP_PB_CUSTOM_DIR))
             
         if cmds.optionVar(exists=self.OP_PB_MULTI_CAMS_LIST):
             saved_cams = cmds.optionVar(query=self.OP_PB_MULTI_CAMS_LIST).split(";")
@@ -2220,6 +2237,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_MULTI_CAM, int(self.multi_cam_cb.isChecked())))
+        cmds.optionVar(stringValue=(self.OP_PB_CUSTOM_DIR, self.pb_dir_edit.text().strip()))
         
         checked_cams = []
         for i in range(self.camera_list_widget.count()):
@@ -2744,6 +2762,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             item.setCheckState(QtCore.Qt.Checked)
 
+    def on_browse_pb_dir(self):
+        """Mở hộp thoại chọn thư mục lưu video"""
+        dir_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn Thư mục lưu Playblast", self.pb_dir_edit.text())
+        if dir_path:
+            dir_path = os.path.normpath(dir_path).replace("\\", "/")
+            self.pb_dir_edit.setText(dir_path)
+            self.save_settings()
+
     def on_refresh_cameras(self):
         """Làm mới danh sách camera trong scene"""
         previously_checked = []
@@ -2797,6 +2823,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         percent = int(self.pb_scale_spin.value() * 100)
         viewer = self.pb_viewer_cb.isChecked()
         overwrite = self.pb_overwrite_cb.isChecked()
+        custom_dir = self.pb_dir_edit.text().strip()
         
         is_multi = self.multi_cam_cb.isChecked()
         
@@ -2856,7 +2883,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     height=height,
                     camera=cam,
                     viewer=should_view,
-                    overwrite=overwrite
+                    overwrite=overwrite,
+                    custom_dir=custom_dir
                 )
                 success_files.append(output_file)
             except Exception as e:

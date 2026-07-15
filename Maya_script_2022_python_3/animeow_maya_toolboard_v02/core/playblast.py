@@ -182,11 +182,20 @@ class PlayblastManager(object):
         except Exception as e:
             print("[Playblast] Khong the sao luu video cu: %s" % str(e))
 
-    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080, camera=None, viewer=True, overwrite=False):
+    def run_playblast(self, format_ext="qt", percent=100, width=1920, height=1080, camera=None, viewer=True, overwrite=False, custom_dir=None):
         """Thực thi quay Playblast"""
-        playblast_dir, base_name = self.get_playblast_path()
-        if not playblast_dir:
-            raise RuntimeError("Vui lòng lưu file Maya hiện tại trước khi xuất Playblast!")
+        if custom_dir and os.path.isdir(custom_dir):
+            playblast_dir = custom_dir
+            current_filepath = cmds.file(q=True, sceneName=True)
+            if current_filepath:
+                filename = os.path.basename(current_filepath)
+                base_name, _ = os.path.splitext(filename)
+            else:
+                base_name = "untitled_playblast"
+        else:
+            playblast_dir, base_name = self.get_playblast_path()
+            if not playblast_dir:
+                raise RuntimeError("Vui lòng lưu file Maya hiện tại hoặc chọn Thư mục lưu tùy chỉnh trước khi xuất Playblast!")
             
         available_formats = cmds.playblast(query=True, format=True)
         fmt = "qt"
