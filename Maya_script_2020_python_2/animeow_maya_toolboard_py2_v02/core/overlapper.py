@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import print_function, absolute_import, division
 """
 Overlapper - Tool for creating overlapping action & follow-through in Maya.
 Converted from Overlapper release 1.2 (MEL) by Dmitrii Kolpakov.

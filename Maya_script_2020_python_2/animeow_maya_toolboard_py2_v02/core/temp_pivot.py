@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import print_function, absolute_import, division
 
 import maya.cmds as cmds
 from .world_bake import smart_bake_object, get_incoming_constraints, get_pair_blend_nodes, parent_to_animeow_group, clean_empty_animeow_group
