@@ -4478,8 +4478,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "Thất bại", "Không thể thay đổi Rotate Order của các vật thể được chọn.")
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi", 
-                "Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % str(e)
+                self, u"Lỗi", 
+                u"Lỗi xảy ra khi thay đổi Rotate Order:\n%s" % smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -4505,8 +4505,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi", 
-                "Lỗi xảy ra khi ghi Space thế giới:\n%s" % str(e)
+                self, u"Lỗi", 
+                u"Lỗi xảy ra khi ghi Space thế giới:\n%s" % smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
@@ -4555,8 +4555,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Lỗi", 
-                "Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % str(e)
+                self, u"Lỗi", 
+                u"Lỗi xảy ra khi khôi phục Space thế giới:\n%s" % smart_link.exception_to_unicode(e)
             )
         finally:
             cmds.undoInfo(closeChunk=True)
