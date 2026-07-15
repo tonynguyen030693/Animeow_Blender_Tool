@@ -620,6 +620,12 @@ def create_shelf():
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='arc_tracker')"
         },
         {
+            "label": "Overlap",
+            "annotation": "Mở cửa sổ Overlapper (Chuyển động trễ & Follow Through) độc lập",
+            "image": get_icon("overlap_icon.png", "menuIconWindow.png"),
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='overlapper')"
+        },
+        {
             "label": "Graph",
             "annotation": "Bật/Tắt Graph Editor",
             "image": "menuIconWindow.png",

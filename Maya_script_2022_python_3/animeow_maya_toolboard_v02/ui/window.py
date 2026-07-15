@@ -774,6 +774,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif standalone_tab == "arc_tracker":
                 self.WINDOW_TITLE = "Arc Tracker"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowArcWorkspaceControl"
+            elif standalone_tab == "overlapper":
+                self.WINDOW_TITLE = "Overlapper"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowOverlapperWorkspaceControl"
             elif standalone_tab == "round_tool":
                 self.WINDOW_TITLE = "Làm tròn số"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowRoundWorkspaceControl"
@@ -1766,6 +1769,15 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self.at_group.hide()
                     self.euler_filter_btn.hide()
                     self.curve_group.setTitle("Công cụ làm tròn số")
+                except Exception:
+                    pass
+            elif self.standalone_tab == "overlapper":
+                self.tab_widget.addTab(wrap_in_scroll(tab2), "Overlapper")
+                # Chỉ hiển thị Overlapper, ẩn các thành phần khác trong Tab 2
+                try:
+                    self.t2_title.hide()
+                    self.at_group.hide()
+                    self.curve_group.hide()
                 except Exception:
                     pass
             elif self.standalone_tab == "quick_const":
@@ -4749,6 +4761,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "arc_tracker":
             ctrl_name = "AnimeowArcWorkspaceControl"
             win_title = "Arc Tracker"
+        elif standalone_tab == "overlapper":
+            ctrl_name = "AnimeowOverlapperWorkspaceControl"
+            win_title = "Overlapper"
         elif standalone_tab == "round_tool":
             ctrl_name = "AnimeowRoundWorkspaceControl"
             win_title = "Làm tròn số"
