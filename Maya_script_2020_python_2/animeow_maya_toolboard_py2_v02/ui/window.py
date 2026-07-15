@@ -18,6 +18,7 @@ try:
 
     if _orig_print is None:
         def _orig_print(*args, **kwargs):
+            import sys
             fp = kwargs.get('file', sys.stdout)
             sep = kwargs.get('sep', ' ')
             end = kwargs.get('end', '\n')
