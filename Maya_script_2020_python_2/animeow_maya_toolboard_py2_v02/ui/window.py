@@ -35,7 +35,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine
+from animeow_maya_toolboard_py2_v02.core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -799,47 +799,47 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     @property
     def smart_link(self):
-        from ..core import smart_link
+        from animeow_maya_toolboard_py2_v02.core import smart_link
         return smart_link
 
     @property
     def world_bake(self):
-        from ..core import world_bake
+        from animeow_maya_toolboard_py2_v02.core import world_bake
         return world_bake
 
     @property
     def round_tool(self):
-        from ..core import round_tool
+        from animeow_maya_toolboard_py2_v02.core import round_tool
         return round_tool
 
     @property
     def space_order_tool(self):
-        from ..core import space_order_tool
+        from animeow_maya_toolboard_py2_v02.core import space_order_tool
         return space_order_tool
 
     @property
     def retarget_tool(self):
-        from ..core import retarget_tool
+        from animeow_maya_toolboard_py2_v02.core import retarget_tool
         return retarget_tool
 
     @property
     def mirror_tool(self):
-        from ..core import mirror_tool
+        from animeow_maya_toolboard_py2_v02.core import mirror_tool
         return mirror_tool
 
     @property
     def temp_pivot(self):
-        from ..core import temp_pivot
+        from animeow_maya_toolboard_py2_v02.core import temp_pivot
         return temp_pivot
 
     @property
     def shelf(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         return shelf
 
     @property
     def tween_machine(self):
-        from ..core import tween_machine
+        from animeow_maya_toolboard_py2_v02.core import tween_machine
         return tween_machine
 
     def __init__(self, parent=None, standalone_tab=None):
@@ -3260,7 +3260,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_create_custom_shelf(self):
         """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.create_shelf()
         except Exception as e:
             import traceback
@@ -3274,7 +3274,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_toggle_graph_editor(self):
         """Bật/Tắt Graph Editor"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.toggle_graph_editor()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3286,7 +3286,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_toggle_reference_editor(self):
         """Bật/Tắt Reference Editor"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.toggle_reference_editor()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3298,7 +3298,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_toggle_outliner(self):
         """Bật/Tắt Outliner"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.toggle_outliner()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3310,7 +3310,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_run_antivirus(self):
         """Khởi chạy quét và diệt virus trong scene"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.run_anti_virus()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3322,7 +3322,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_save_increment(self):
         """Lưu file tăng dần (Save Increment)"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.save_increment()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3334,7 +3334,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_save_up_version(self):
         """Lưu file nâng Version"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.save_up_version()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -3346,7 +3346,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_clean_folder(self):
         """Dọn dẹp thư mục"""
         try:
-            from ..core import shelf
+            from animeow_maya_toolboard_py2_v02.core import shelf
             self.shelf.clean_folder()
         except Exception as e:
             from PySide2 import QtWidgets
@@ -4146,7 +4146,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     
     def on_clean_redundant_keys(self):
         """Dọn dẹp keyframe có giá trị bằng nhau liên tiếp"""
-        from ..core import clean_redundant_keys
+        from animeow_maya_toolboard_py2_v02.core import clean_redundant_keys
         sel = cmds.ls(sl=True) or []
         if not sel:
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một đối tượng trên viewport!")
@@ -4494,7 +4494,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         cmds.undoInfo(openChunk=True, chunkName="AnimeowOverlapper")
         try:
-            from ..core import overlapper
+            from animeow_maya_toolboard_py2_v02.core import overlapper
             success, msg = overlapper.execute_overlapper(
                 softness=self.ov_softness_spin.value(),
                 scale=self.ov_scale_spin.value(),
@@ -4524,7 +4524,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_overlapper_cleanup(self):
         """Dọn dẹp các joint và locator nháp của Overlapper"""
         try:
-            from ..core import overlapper
+            from animeow_maya_toolboard_py2_v02.core import overlapper
             overlapper.clean_up()
             self.safe_warning("Đã dọn dẹp sạch sẽ các đối tượng tạm của Overlapper.")
         except Exception as e:
@@ -4724,27 +4724,27 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         return mo, skip_t, skip_r
 
     def on_qc_parent(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         mo, skip_t, skip_r = self.get_qc_options()
         self.shelf.create_parent_constraint(mo=mo, skip_translate=skip_t, skip_rotate=skip_r)
         
     def on_qc_point(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         mo, skip_t, _ = self.get_qc_options()
         self.shelf.create_point_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_orient(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         mo, _, skip_r = self.get_qc_options()
         self.shelf.create_orient_constraint(mo=mo, skip_axes=skip_r)
         
     def on_qc_scale(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         mo, skip_t, _ = self.get_qc_options()
         self.shelf.create_scale_constraint(mo=mo, skip_axes=skip_t)
         
     def on_qc_delete(self):
-        from ..core import shelf
+        from animeow_maya_toolboard_py2_v02.core import shelf
         self.shelf.delete_obj_constraints()
 
     # ── Tween Machine (Live Slider) ──
