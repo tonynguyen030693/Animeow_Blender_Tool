@@ -1149,27 +1149,50 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # GroupBox 3: Temp Pivot
         tp_group = QtWidgets.QGroupBox("Tâm xoay tạm thời (Temp Pivot)")
-        tp_layout = QtWidgets.QHBoxLayout(tp_group)
+        tp_layout = QtWidgets.QVBoxLayout(tp_group)
         tp_layout.setContentsMargins(8, 12, 8, 8)
         tp_layout.setSpacing(8)
+        
+        # Thêm dòng nhập tâm xoay tùy chọn
+        tp_custom_layout = QtWidgets.QHBoxLayout()
+        tp_custom_layout.setSpacing(6)
+        tp_custom_layout.addWidget(QtWidgets.QLabel("Tâm xoay tùy chọn:"))
+        
+        self.tp_custom_pivot_edit = QtWidgets.QLineEdit()
+        self.tp_custom_pivot_edit.setPlaceholderText("Trống = Dùng trọng tâm trung bình")
+        self.tp_custom_pivot_edit.setFixedHeight(22)
+        tp_custom_layout.addWidget(self.tp_custom_pivot_edit)
+        
+        self.tp_custom_pivot_btn = QtWidgets.QPushButton("Load Selected")
+        self.tp_custom_pivot_btn.setFixedHeight(22)
+        self.tp_custom_pivot_btn.clicked.connect(self.on_tp_load_custom_pivot)
+        tp_custom_layout.addWidget(self.tp_custom_pivot_btn)
+        
+        tp_layout.addLayout(tp_custom_layout)
+        
+        # Layout chứa các nút chức năng chính
+        tp_btn_layout = QtWidgets.QHBoxLayout()
+        tp_btn_layout.setSpacing(8)
         
         self.tp_create_btn = QtWidgets.QPushButton("1. Tạo Temp Locator")
         self.tp_create_btn.setIcon(AnimeowIcons.icon_pivot())
         self.tp_create_btn.setFixedHeight(28)
         self.tp_create_btn.clicked.connect(self.on_tp_create)
-        tp_layout.addWidget(self.tp_create_btn)
+        tp_btn_layout.addWidget(self.tp_create_btn)
         
         self.tp_active_btn = QtWidgets.QPushButton("2. Kích hoạt Pivot")
         self.tp_active_btn.setIcon(AnimeowIcons.icon_pivot())
         self.tp_active_btn.setFixedHeight(28)
         self.tp_active_btn.clicked.connect(self.on_tp_active)
-        tp_layout.addWidget(self.tp_active_btn)
+        tp_btn_layout.addWidget(self.tp_active_btn)
         
         self.tp_release_btn = QtWidgets.QPushButton("3. Bake & Giải phóng")
         self.tp_release_btn.setIcon(AnimeowIcons.icon_bake())
         self.tp_release_btn.setFixedHeight(28)
         self.tp_release_btn.clicked.connect(self.on_tp_release)
-        tp_layout.addWidget(self.tp_release_btn)
+        tp_btn_layout.addWidget(self.tp_release_btn)
+        
+        tp_layout.addLayout(tp_btn_layout)
         
         tab1_layout.addWidget(tp_group)
 
@@ -3301,6 +3324,14 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.undoInfo(closeChunk=True)
 
         # --- TEMP PIVOT CALLBACKS ---
+    def on_tp_load_custom_pivot(self):
+        """Load đối tượng đang chọn vào ô Tâm xoay tùy chọn"""
+        sel = cmds.ls(sl=True) or []
+        if sel:
+            self.tp_custom_pivot_edit.setText(sel[0])
+        else:
+            self.tp_custom_pivot_edit.clear()
+
     def on_tp_create(self):
         """Tạo Temp Locator tại vị trí của control được chọn"""
         sel = cmds.ls(sl=True) or []
@@ -3308,8 +3339,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chọn ít nhất một Rig Control trong Viewport!")
             return
             
+        custom_pivot = self.tp_custom_pivot_edit.text().strip()
+        if custom_pivot and not cmds.objExists(custom_pivot):
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vật thể làm tâm xoay tùy chọn '%s' không tồn tại!" % custom_pivot)
+            return
+            
         try:
-            loc = temp_pivot.create_temp_locator(sel)
+            loc = temp_pivot.create_temp_locator(sel, custom_pivot=custom_pivot)
             cmds.select(loc)
             QtWidgets.QMessageBox.information(
                 self, "Thành công",

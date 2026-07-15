@@ -11,7 +11,7 @@ def get_clean_name(name):
     short_name = name.split("|")[-1]
     return short_name.replace(":", "_")
 
-def create_temp_locator(controls):
+def create_temp_locator(controls, custom_pivot=None):
     """
     Tạo Temp Locator làm tâm xoay tạm thời, và tạo các helper locator tương ứng dưới nó.
     """
@@ -22,14 +22,17 @@ def create_temp_locator(controls):
     if not valid_controls:
         raise RuntimeError("Không tìm thấy các control hợp lệ!")
         
-    # 1. Tính toán vị trí trung bình hình học (Rotate Pivot)
-    pos = [0.0, 0.0, 0.0]
-    for ctrl in valid_controls:
-        rp_pos = cmds.xform(ctrl, q=True, ws=True, rotatePivot=True)
-        pos[0] += rp_pos[0]
-        pos[1] += rp_pos[1]
-        pos[2] += rp_pos[2]
-    pos = [x / len(valid_controls) for x in pos]
+    # 1. Tính toán vị trí tâm xoay (Rotate Pivot)
+    if custom_pivot and cmds.objExists(custom_pivot):
+        pos = cmds.xform(custom_pivot, q=True, ws=True, rotatePivot=True)
+    else:
+        pos = [0.0, 0.0, 0.0]
+        for ctrl in valid_controls:
+            rp_pos = cmds.xform(ctrl, q=True, ws=True, rotatePivot=True)
+            pos[0] += rp_pos[0]
+            pos[1] += rp_pos[1]
+            pos[2] += rp_pos[2]
+        pos = [x / len(valid_controls) for x in pos]
     
     # 2. Tạo Pivot Locator chính
     if len(valid_controls) == 1:
