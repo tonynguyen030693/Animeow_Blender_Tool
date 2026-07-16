@@ -492,6 +492,12 @@ def launch_animo():
             cmds.warning("Lỗi khởi chạy Animo: %s" % str(e))
 
 
+def run_fix_jitter(strength=1.0):
+    """Khử rung / Làm mượt các Keyframe đang chọn nhanh từ Shelf"""
+    from . import fix_jitter
+    fix_jitter.smooth_anim_curves(strength)
+
+
 def create_arc_trail():
     """Tạo Arc Trail cho các vật thể đang chọn (chạy nhanh từ Shelf)"""
     sel = cmds.ls(sl=True) or []
@@ -628,6 +634,12 @@ def create_shelf():
             "annotation": "Mở cửa sổ Overlapper (Chuyển động trễ & Follow Through) độc lập",
             "image": get_icon("overlap_icon.png", "menuIconWindow.png"),
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='overlapper')"
+        },
+        {
+            "label": "Jitter",
+            "annotation": "Làm mượt / Khử rung các Keyframe đang chọn nhanh (Cường độ 1.0)",
+            "image": get_icon("jitter_icon.png", "commandButton.png"),
+            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.run_fix_jitter(1.0)"
         },
         {
             "label": "Hider",
