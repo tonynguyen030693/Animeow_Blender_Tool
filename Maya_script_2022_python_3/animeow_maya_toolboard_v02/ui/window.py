@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -1383,6 +1383,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.local_scale_btn.clicked.connect(self.on_local_scale_tool)
         curve_layout.addWidget(self.local_scale_btn)
         
+        # Đường phân cách ngang
+        sep = QtWidgets.QFrame()
+        sep.setFrameShape(QtWidgets.QFrame.HLine)
+        sep.setFrameShadow(QtWidgets.QFrame.Sunken)
+        curve_layout.addWidget(sep)
+        
+        # Jitter Slider Layout
+        jitter_layout = QtWidgets.QHBoxLayout()
+        jitter_lbl_title = QtWidgets.QLabel(u"Cường độ mượt:")
+        jitter_lbl_title.setStyleSheet("color: #888888;")
+        jitter_layout.addWidget(jitter_lbl_title)
+        
+        self.jitter_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.jitter_slider.setRange(0, 100)
+        self.jitter_slider.setValue(100)
+        self.jitter_slider.setFixedHeight(20)
+        jitter_layout.addWidget(self.jitter_slider)
+        
+        self.jitter_lbl = QtWidgets.QLabel("1.00")
+        self.jitter_lbl.setFixedWidth(30)
+        self.jitter_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        self.jitter_lbl.setStyleSheet("font-weight: bold; color: #00BCD4;")
+        jitter_layout.addWidget(self.jitter_lbl)
+        
+        curve_layout.addLayout(jitter_layout)
+        
+        # Kết nối slider cập nhật label giá trị
+        self.jitter_slider.valueChanged.connect(lambda v: self.jitter_lbl.setText("%.2f" % (v / 100.0)))
+        
+        # Nút bấm Fix Jitter
+        self.fix_jitter_btn = QtWidgets.QPushButton(u"Fix Jitter (Khử rung / Làm mượt curve)")
+        self.fix_jitter_btn.setIcon(AnimeowIcons.icon_tween())
+        self.fix_jitter_btn.setFixedHeight(28)
+        self.fix_jitter_btn.clicked.connect(self.on_fix_jitter)
+        curve_layout.addWidget(self.fix_jitter_btn)
+        
         tab2_layout.addWidget(self.curve_group)
         tab2_layout.addStretch()
 
@@ -1957,6 +1993,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.fav_local_scale_btn.setFixedHeight(28)
                 self.fav_local_scale_btn.clicked.connect(self.on_local_scale_tool)
                 fav_curve_layout.addWidget(self.fav_local_scale_btn)
+                
+                # Phân cách ngang
+                fav_sep = QtWidgets.QFrame()
+                fav_sep.setFrameShape(QtWidgets.QFrame.HLine)
+                fav_sep.setFrameShadow(QtWidgets.QFrame.Sunken)
+                fav_curve_layout.addWidget(fav_sep)
+                
+                # Jitter Slider Layout cho Favorites
+                fav_jitter_layout = QtWidgets.QHBoxLayout()
+                fav_jitter_lbl_title = QtWidgets.QLabel(u"Cường độ mượt:")
+                fav_jitter_lbl_title.setStyleSheet("color: #888888;")
+                fav_jitter_layout.addWidget(fav_jitter_lbl_title)
+                
+                self.fav_jitter_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+                self.fav_jitter_slider.setRange(0, 100)
+                self.fav_jitter_slider.setValue(100)
+                self.fav_jitter_slider.setFixedHeight(20)
+                fav_jitter_layout.addWidget(self.fav_jitter_slider)
+                
+                self.fav_jitter_lbl = QtWidgets.QLabel("1.00")
+                self.fav_jitter_lbl.setFixedWidth(30)
+                self.fav_jitter_lbl.setAlignment(QtCore.Qt.AlignCenter)
+                self.fav_jitter_lbl.setStyleSheet("font-weight: bold; color: #00BCD4;")
+                fav_jitter_layout.addWidget(self.fav_jitter_lbl)
+                
+                fav_curve_layout.addLayout(fav_jitter_layout)
+                
+                # Kết nối slider cập nhật label
+                self.fav_jitter_slider.valueChanged.connect(lambda v: self.fav_jitter_lbl.setText("%.2f" % (v / 100.0)))
+                
+                # Nút bấm Fix Jitter cho Favorites
+                self.fav_fix_jitter_btn = QtWidgets.QPushButton(u"Fix Jitter (Khử rung / Làm mượt curve)")
+                self.fav_fix_jitter_btn.setIcon(AnimeowIcons.icon_tween())
+                self.fav_fix_jitter_btn.setFixedHeight(26)
+                self.fav_fix_jitter_btn.clicked.connect(self.on_fav_fix_jitter)
+                fav_curve_layout.addWidget(self.fav_fix_jitter_btn)
                 
                 fav_layout.addWidget(fav_curve_group)
                 
@@ -4315,6 +4387,34 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self, "Lỗi tìm kiếm",
                     "Không tìm thấy tệp NP_curveLocalScale.mel đi kèm package cũng như trong đường dẫn Maya!\nLỗi: %s" % str(e)
                 )
+
+    def on_fix_jitter(self):
+        """Khởi chạy công cụ làm mượt curve (Fix Jitter) từ tab chính"""
+        try:
+            from ..core import fix_jitter
+        except ImportError:
+            import animeow_maya_toolboard_v02.core.fix_jitter as fix_jitter
+            
+        strength = self.jitter_slider.value() / 100.0
+        success, msg = fix_jitter.smooth_anim_curves(strength)
+        if success:
+            print("[AnimeowTool] %s" % msg)
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+
+    def on_fav_fix_jitter(self):
+        """Khởi chạy công cụ làm mượt curve (Fix Jitter) từ favorites"""
+        try:
+            from ..core import fix_jitter
+        except ImportError:
+            import animeow_maya_toolboard_v02.core.fix_jitter as fix_jitter
+            
+        strength = self.fav_jitter_slider.value() / 100.0
+        success, msg = fix_jitter.smooth_anim_curves(strength)
+        if success:
+            print("[AnimeowTool] %s" % msg)
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
 
     def on_overlapper_execute(self):
         """Khởi chạy công cụ Overlapper chuyển động trễ"""
