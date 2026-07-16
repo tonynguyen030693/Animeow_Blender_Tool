@@ -1,0 +1,104 @@
+
+global proc SaceScenePlus()
+{
+			
+
+	string $dp_arrayPathName[] =  `file -q -l`;
+	string $dp_arrayFileName[] =  stringToStringArray($dp_arrayPathName[0], "." );
+
+	$_existFile = eval("file -q -ex \""+$dp_arrayPathName[0]+"\"");
+	
+	if($_existFile && size($dp_arrayFileName)>1)
+	{
+		
+		string $extension, $overWrite, $version[], $filePrefix[], $SofixFileName, $PREFIXfileName, $newFileName, $remove[], $pathString;
+		int $endString, $in = 0, $flag = 0, $count = 0, $existFile, $offset;
+
+		clear $filePrefix;
+		clear $version;
+		
+		switch ($dp_arrayFileName[size($dp_arrayFileName)-1]) 
+		  {
+		      case "ma":
+			  $extension =  "mayaAscii";
+			  break;
+		      case "mb":
+			  $extension =  "mayaBinary";
+			  break;
+		  }
+		
+		for($i=0;$i<size($dp_arrayFileName[size($dp_arrayFileName)-2]);$i++)
+		{
+			string $dp_tmp1 =  eval("endString(\""+$dp_arrayFileName[size($dp_arrayFileName)-2]+"\","+($i+1)+")");
+			string $dp_tmp =  eval("startString(\""+$dp_tmp1+"\", 1)");
+			if(`gmatch $dp_tmp "[0-9]"`)
+				{$version[$count] = $dp_tmp;$count++;$endString = $i;}
+			else
+			{
+				$i = size($dp_arrayFileName[size($dp_arrayFileName)-2]);
+			}
+		}	
+
+		if(size($version))
+		{
+			string $revVersion[];
+			clear  $revVersion;
+
+			for($i=0;$i<size($version);$i++)
+				$revVersion[$i] = $version[size($version)-$i-1]; 
+
+			int $Fversion = stringArrayToString($revVersion, "");
+			$Fversion = $Fversion+1;
+			
+			if($Fversion<10)
+				$SofixFileName = "0"+$Fversion;
+			else
+				$SofixFileName = $Fversion;
+		}
+		else
+		{
+			$SofixFileName = "_v01";
+			$endString = -1;	
+		}
+		
+		
+		$remove[0] = $dp_arrayFileName[size($dp_arrayFileName)-1];
+		string $pathArray[] = stringArrayRemove($remove, $dp_arrayFileName);
+		$pathString = stringArrayToString($pathArray, ".");
+		
+
+		$PREFIXfileName = startString($pathString,size($pathString)-$endString-1);
+		$newFileName = $PREFIXfileName + $SofixFileName + "." + $dp_arrayFileName[size($dp_arrayFileName)-1];	
+		
+		
+		$existFile = eval("file -q -ex \""+$newFileName+"\"");
+		
+		if($existFile)
+		{	
+			string $messege = $PREFIXfileName+$SofixFileName + "." + $dp_arrayFileName[1]+" allready exist.\nDo you want to repleace it?";
+			$overWrite = `confirmDialog -title "dp::Confirm" -message $messege
+						-button "Yes" -button "No" -defaultButton "Yes"
+						-cancelButton "No" -dismissString "No"`;
+		
+			if($overWrite=="Yes")
+			{
+				eval("file -rename \""+$newFileName+"\"");
+				eval("file -save -type \""+$extension+"\"");
+				addRecentFile($newFileName,$extension);
+				print ("Saved: "+$newFileName+"     by .:dp:.\n");
+			}
+		}
+
+		else
+		{
+			eval("file -rename \""+$newFileName+"\"");
+			eval("file -save -type \""+$extension+"\"");
+			addRecentFile($newFileName,$extension);
+			print ("Saved: "+$newFileName+" by .:dp:.\n");
+		}
+	}
+	else
+	{
+		SaveSceneAs;
+	}
+}

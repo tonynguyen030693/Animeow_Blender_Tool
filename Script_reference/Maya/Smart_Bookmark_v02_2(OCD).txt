@@ -1,0 +1,368 @@
+import maya.cmds as cmds
+import random
+import csv
+import sys
+import os
+
+# Bật plugin timeSliderBookmark
+if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
+    try:
+        cmds.loadPlugin('timeSliderBookmark')
+    except:
+        cmds.warning("Could not load Time Slider Bookmark plugin.")
+
+def create_numbered_bookmarks(start_num, color_mode, custom_color=None):
+    selection = cmds.ls(sl=True)
+    if not selection:
+        cmds.warning("Please select an object with keyframes.")
+        return
+
+    key_frames = cmds.keyframe(selection, q=True, tc=True)
+    if not key_frames:
+        cmds.warning("The selected object has no keyframes.")
+        return
+
+    unique_frames = sorted(list(set(key_frames)))
+    if len(unique_frames) < 2:
+        cmds.warning("At least 2 keyframes are required.")
+        return
+
+    try:
+        from maya.plugin.timeSliderBookmark.timeSliderBookmark import createBookmark
+    except ImportError:
+        cmds.warning("Could not find createBookmark module.")
+        return
+
+    idx = start_num 
+    shared_col = (random.random(), random.random(), random.random())
+    
+    for i in range(0, len(unique_frames) - 1, 2):
+        start, end = unique_frames[i], unique_frames[i+1]
+        
+        # Xử lý màu sắc theo tính năng được chọn
+        if color_mode == 'random_all':
+            col = (random.random(), random.random(), random.random())
+        elif color_mode == 'shared':
+            col = shared_col
+        else: # custom color từ bảng màu
+            col = custom_color if custom_color else (0.2, 0.6, 1.0)
+            
+        createBookmark(name=str(idx), start=start, stop=end, color=col)
+        idx += 1
+    print("Bookmarks created successfully!")
+
+def export_bookmarks_to_csv():
+    bookmarks = cmds.ls(type='timeSliderBookmark')
+    if not bookmarks:
+        cmds.warning("No bookmarks found in the scene.")
+        return
+
+    path = cmds.fileDialog2(ff="CSV Files (*.csv)", ds=2, fm=0, cap="Save Bookmark Data")
+    if not path: return
+    
+    data = [["Bookmark Name", "Start Frame", "End Frame"]]
+    for bm in bookmarks:
+        try:
+            n = cmds.getAttr(bm + ".name")
+        except:
+            n = bm
+        s = cmds.getAttr(bm + ".timeRangeStart")
+        e = cmds.getAttr(bm + ".timeRangeStop")
+        data.append([n, s, e])
+        
+    try:
+        if sys.version_info[0] < 3:
+            with open(path[0], 'wb') as f:
+                csv.writer(f).writerows(data)
+        else:
+            with open(path[0], 'w', newline='', encoding='utf-8') as f:
+                csv.writer(f).writerows(data)
+        print("Exported successfully!")
+    except Exception as e:
+        cmds.error("Failed to write file: " + str(e))
+
+def split_scene_by_bookmarks(start_filter, end_filter):
+    saved_selection = cmds.ls(sl=True)
+    if not saved_selection:
+        cmds.confirmDialog(title='Selection Required', 
+                           message='Hay chon cac Control/Object can xoa key truoc khi chay tool!', 
+                           button=['OK'])
+        return
+
+    scene_name = cmds.file(q=True, sn=True)
+    if not scene_name:
+        cmds.confirmDialog(title='Notice', message='Hay SAVE file Maya hien tai truoc khi chia shot!', button=['OK'])
+        return
+    scene_name = scene_name.replace('\\', '/')
+        
+    try:
+        cmds.file(save=True, force=True)
+    except Exception as e:
+        cmds.error("Khong the luu file: " + str(e))
+        return
+
+    selected_dir = cmds.fileDialog2(dialogStyle=2, fileMode=3, caption="Chon thu muc luu cac file Shot le")
+    if not selected_dir:
+        return
+    dir_name = selected_dir[0].replace('\\', '/')
+        
+    bookmarks = cmds.ls(type='timeSliderBookmark')
+    if not bookmarks:
+        cmds.warning("Khong tim thay Bookmark nao!")
+        return
+        
+    confirm = cmds.confirmDialog(title='Xac nhan chia Shot Le', 
+                                 message='Tool se tien hanh TACH tung shot thanh tung file rieng biet (Giu nguyen Reference).\nBan co chac chan?', 
+                                 button=['Tien hanh','Huy'], 
+                                 defaultButton='Tien hanh', cancelButton='Huy')
+    if confirm != 'Tien hanh':
+        return
+
+    base_name = os.path.basename(scene_name)
+    name_part, ext = os.path.splitext(base_name)
+    file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
+    
+    valid_bookmarks = []
+    for bm in bookmarks:
+        try: b_name = cmds.getAttr(bm + ".name")
+        except: b_name = bm
+            
+        if start_filter != 0 or end_filter != 0:
+            try:
+                bm_num = int(b_name)
+                if start_filter != 0 and bm_num < start_filter: continue
+                if end_filter != 0 and bm_num > end_filter: continue
+            except ValueError:
+                continue
+                
+        start_frame = cmds.getAttr(bm + ".timeRangeStart")
+        end_frame = cmds.getAttr(bm + ".timeRangeStop")
+        valid_bookmarks.append((bm, b_name, start_frame, end_frame))
+        
+    if not valid_bookmarks:
+        cmds.warning("Khong co Bookmark nao khop voi range ban nhap.")
+        return
+        
+    original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
+    if original_eval_mode != 'off':
+        cmds.evaluationManager(mode='off')
+
+    undo_was_enabled = cmds.undoInfo(q=True, state=True)
+    if not undo_was_enabled:
+        cmds.undoInfo(state=True)
+    
+    try:
+        for bm_node, b_name, start_f, end_f in valid_bookmarks:
+            cmds.undoInfo(openChunk=True)
+            try:
+                all_bms = cmds.ls(type='timeSliderBookmark')
+                for b in all_bms:
+                    try: check_name = cmds.getAttr(b + ".name")
+                    except: check_name = b
+                    if check_name != b_name:
+                        try: cmds.delete(b)
+                        except: pass
+
+                cmds.cutKey(saved_selection, time=(-9999999, start_f - 0.1), clear=True)
+                cmds.cutKey(saved_selection, time=(end_f + 0.1, 9999999), clear=True)
+                cmds.playbackOptions(min=start_f, max=end_f, animationStartTime=start_f, animationEndTime=end_f)
+            except Exception as e:
+                print("Loi: {}".format(str(e)))
+            finally:
+                cmds.undoInfo(closeChunk=True)
+            
+            new_file_name = "{}_{}{}".format(name_part, b_name, ext)
+            new_file_path = os.path.join(dir_name, new_file_name).replace('\\', '/')
+            
+            cmds.file(rename=new_file_path) 
+            try:
+                cmds.file(save=True, force=True, type=file_type) 
+                print("==> Da xuat shot le thanh cong: {}".format(new_file_name))
+            except Exception as e: 
+                print("Loi luu file: {}".format(str(e)))
+                
+            cmds.undo() 
+            
+    finally:
+        cmds.file(rename=scene_name)
+        if original_eval_mode != 'off': cmds.evaluationManager(mode=original_eval_mode)
+        if not undo_was_enabled: cmds.undoInfo(state=False)
+        if saved_selection:
+            try: cmds.select(saved_selection)
+            except: pass
+            
+    cmds.confirmDialog(title='Hoan thanh', message='Chia cac shot rieng le hoan tat!\n(Reference duoc giu nguyen 100%)', button=['Ngon!'])
+
+
+def export_group_shots(start_filter, end_filter):
+    if start_filter == 0 and end_filter == 0:
+        cmds.confirmDialog(title='Chu Y', message='De dung tinh nang Gop Shot, ban phai nhap khoang shot cu the!\n(Vi du: Tu 10 Den 15)', button=['OK'])
+        return
+
+    saved_selection = cmds.ls(sl=True)
+    if not saved_selection:
+        cmds.confirmDialog(title='Selection Required', message='Hay chon cac Control/Object can xoa key truoc khi chay tool!', button=['OK'])
+        return
+
+    scene_name = cmds.file(q=True, sn=True)
+    if not scene_name:
+        cmds.confirmDialog(title='Notice', message='Hay SAVE file Maya hien tai truoc khi chia shot!', button=['OK'])
+        return
+    scene_name = scene_name.replace('\\', '/')
+        
+    try: cmds.file(save=True, force=True)
+    except: return
+
+    selected_dir = cmds.fileDialog2(dialogStyle=2, fileMode=3, caption="Chon thu muc luu file Cum/Group")
+    if not selected_dir: return
+    dir_name = selected_dir[0].replace('\\', '/')
+        
+    bookmarks = cmds.ls(type='timeSliderBookmark')
+    if not bookmarks: return
+        
+    confirm = cmds.confirmDialog(title='Xac nhan Gop Shot', 
+                                 message='Tool se tao ra 1 file DUY NHAT (Giu nguyen Reference).\nBan co chac chan?', 
+                                 button=['Tien hanh','Huy'], defaultButton='Tien hanh', cancelButton='Huy')
+    if confirm != 'Tien hanh': return
+
+    base_name = os.path.basename(scene_name)
+    name_part, ext = os.path.splitext(base_name)
+    file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
+    
+    valid_bookmarks = []
+    global_start = 9999999
+    global_end = -9999999
+    
+    for bm in bookmarks:
+        try: b_name = cmds.getAttr(bm + ".name")
+        except: b_name = bm
+            
+        try:
+            bm_num = int(b_name)
+            if bm_num < start_filter or bm_num > end_filter: continue
+        except ValueError:
+            continue
+            
+        start_frame = cmds.getAttr(bm + ".timeRangeStart")
+        end_frame = cmds.getAttr(bm + ".timeRangeStop")
+        
+        if start_frame < global_start: global_start = start_frame
+        if end_frame > global_end: global_end = end_frame
+        valid_bookmarks.append(bm)
+        
+    if not valid_bookmarks:
+        cmds.warning("Khong co Bookmark nao khop voi khoang ban nhap de gop.")
+        return
+        
+    original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
+    if original_eval_mode != 'off': cmds.evaluationManager(mode='off')
+
+    undo_was_enabled = cmds.undoInfo(q=True, state=True)
+    if not undo_was_enabled: cmds.undoInfo(state=True)
+    
+    try:
+        cmds.undoInfo(openChunk=True)
+        try:
+            all_bms = cmds.ls(type='timeSliderBookmark')
+            for b in all_bms:
+                if b not in valid_bookmarks:
+                    try: cmds.delete(b)
+                    except: pass
+
+            cmds.cutKey(saved_selection, time=(-9999999, global_start - 0.1), clear=True)
+            cmds.cutKey(saved_selection, time=(global_end + 0.1, 9999999), clear=True)
+            cmds.playbackOptions(min=global_start, max=global_end, animationStartTime=global_start, animationEndTime=global_end)
+            
+        except Exception as e:
+            print("Loi: {}".format(str(e)))
+        finally:
+            cmds.undoInfo(closeChunk=True)
+        
+        new_file_name = "{}_{}-{}{}".format(name_part, start_filter, end_filter, ext)
+        new_file_path = os.path.join(dir_name, new_file_name).replace('\\', '/')
+        
+        cmds.file(rename=new_file_path)
+        try:
+            cmds.file(save=True, force=True, type=file_type)
+            print("==> Da xuat Cum Shot thanh cong: {}".format(new_file_name))
+        except Exception as e:
+            print("Loi luu file: {}".format(str(e)))
+            
+        cmds.undo()
+            
+    finally:
+        cmds.file(rename=scene_name) 
+        if original_eval_mode != 'off': cmds.evaluationManager(mode=original_eval_mode)
+        if not undo_was_enabled: cmds.undoInfo(state=False)
+        if saved_selection:
+            try: cmds.select(saved_selection)
+            except: pass
+            
+    cmds.confirmDialog(title='Hoan thanh', message='File Cum/Group tu {} den {} da duoc tao thanh cong!'.format(start_filter, end_filter), button=['Ngon!'])
+
+
+def show_ui():
+    win_name = "jaianBookmarkManager"
+    if cmds.window(win_name, ex=True):
+        cmds.deleteUI(win_name)
+        
+    window = cmds.window(win_name, title="Bookmark Manager - Jaian Edition", wh=(380, 380))
+    
+    main_form = cmds.formLayout()
+    wm_text = cmds.text(l="Tool by Jaian ", al='right', fn='obliqueLabelFont', parent=main_form)
+    tabs = cmds.tabLayout(innerMarginWidth=5, innerMarginHeight=5, parent=main_form)
+    
+    # --- TAB 1: CREATE ---
+    tab_create = cmds.columnLayout(adj=True, rs=8, co=('both', 10), parent=tabs)
+    cmds.text(l="BOOKMARK SETTINGS", fn="boldLabelFont", h=30, al="center")
+    start_fld = cmds.intFieldGrp(nf=1, l='Start Number:', v1=1, cw2=[80, 100])
+    
+    # --- UI ĐƯỢC THÊM: BẢNG CHỌN MÀU THEO Ý THÍCH ---
+    color_fld = cmds.colorSliderGrp(label='Pick Color:', rgb=(0.1, 0.6, 0.9), cw2=[80, 100])
+    
+    cmds.button(l="Create Bookmarks (Random Color Per Shot)", h=32, 
+                c=lambda x: create_numbered_bookmarks(cmds.intFieldGrp(start_fld, q=True, v1=True), 'random_all'))
+    cmds.button(l="Create Bookmarks (Shared Random Color)", h=32, 
+                c=lambda x: create_numbered_bookmarks(cmds.intFieldGrp(start_fld, q=True, v1=True), 'shared'))
+    cmds.button(l="Create Bookmarks (Use Chosen Color)", h=35, bgc=[0.2, 0.5, 0.3], 
+                c=lambda x: create_numbered_bookmarks(
+                    cmds.intFieldGrp(start_fld, q=True, v1=True), 
+                    'custom', 
+                    cmds.colorSliderGrp(color_fld, q=True, rgb=True)
+                ))
+
+    # --- TAB 2: EXPORT ---
+    tab_export = cmds.columnLayout(adj=True, rs=10, co=('both', 10), parent=tabs)
+    cmds.text(l="EXPORT DATA", fn="boldLabelFont", h=30, al="center")
+    cmds.separator(h=10, st='none')
+    cmds.button(l="Export Bookmarks to CSV", h=40, bgc=[0.2, 0.5, 0.4], 
+                c=lambda x: export_bookmarks_to_csv())
+    
+    # --- TAB 3: SPLIT SHOT ---
+    tab_split = cmds.columnLayout(adj=True, rs=10, co=('both', 10), parent=tabs)
+    cmds.text(l="AUTOMATIC EXPORT", fn="boldLabelFont", h=30, al="center")
+    range_fld = cmds.intFieldGrp(nf=2, label='Shot Range (Tu - Den):', v1=0, v2=0, cw3=[120, 50, 50])
+    cmds.text(l="!!! NHO CHON CONTROL NHAN VAT TRUOC !!!", al="center", fn="obliqueLabelFont")
+    cmds.separator(h=2, st='none')
+    
+    cmds.button(l="1. Export Tung Shot Rieng Le (Split Individually)", h=35, bgc=[0.3, 0.5, 0.7],
+                c=lambda x: split_scene_by_bookmarks(
+                    cmds.intFieldGrp(range_fld, q=True, v1=True),
+                    cmds.intFieldGrp(range_fld, q=True, v2=True)
+                ))
+    cmds.button(l="2. Export 1 File Gop Shot (Merge Group)", h=35, bgc=[0.7, 0.3, 0.2],
+                c=lambda x: export_group_shots(
+                    cmds.intFieldGrp(range_fld, q=True, v1=True),
+                    cmds.intFieldGrp(range_fld, q=True, v2=True)
+                ))
+
+    # Set Tab Labels
+    cmds.tabLayout(tabs, edit=True, tabLabel=((tab_create, 'Create Bookmark'), (tab_export, 'Export CSV'), (tab_split, 'Split / Merge')))
+    
+    cmds.formLayout(main_form, edit=True,
+                    attachForm=[(tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'right', 0), (tabs, 'bottom', 30),
+                                (wm_text, 'bottom', 5), (wm_text, 'right', 5)])
+
+    cmds.showWindow(win_name)
+
+show_ui()

@@ -1,0 +1,407 @@
+// ----------------------------
+// WRITTEN BY STIJN VANDE MAELE
+// ----------------------------
+
+if (`objExists svm_tweenMachine_calc`) delete svm_tweenMachine_calc;
+global proc svm_tweenMachine_calc(float $tweenValue)
+{
+    global int $svm_tweenMachine_sliderState;
+    string $sel[] = `ls -sl`;
+	string $animCurve[] = `keyframe -q -sl -name`;
+
+	if (`size($sel)` != 0 ) 
+	{			
+	    // TWEEN ONLY SELECTED KEYS IN THE GRAPH
+	    if (`size($animCurve)` != 0 && `menuItem -q -checkBox MENUITEM_svm_tweenMachine_operateKeys` == true )
+	    {
+	    	// DETECTED ANIMCURVE(S)
+			if (`menuItem -q -radioButton MENUITEM_svm_tweenMachine_calcNeutral` == true)
+			{
+				for ($i=0; $i<size($animCurve); $i++)
+			    {
+			        //print ("\n" + $animCurve[$i]);
+			        float $selTimes[] = `keyframe -q -sl -timeChange $animCurve[$i]`;
+			        //print $selTimes;
+			        int $sizeSelTimes = `size($selTimes)`;
+			        int $prevTime;
+			        int $nextTime;
+			        float $prevValue[];
+			        float $prevValue_temp[];
+			        float $nextValue[];
+			        float $nextValue_temp[];
+			        float $newValue;
+			        // FLATTEN THE SLIDER WHILE DRAG OVER 1.00
+			        if ($svm_tweenMachine_sliderState == 1 && $tweenValue >= 1.00 && $sizeSelTimes > 1)
+				    {
+				    	$nextTime = `findKeyframe -which "next" -t $selTimes[($sizeSelTimes-1)] $animCurve[$i]`;
+			            $nextValue_temp = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+			            for ($j=($sizeSelTimes-1); $j>=0; --$j)
+				    	{
+				            keyframe -t $selTimes[$j] -e -valueChange $nextValue_temp[0] $animCurve[$i];
+				            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+				            {
+				            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+			            	}
+				    	}
+				    }
+				    else if ($svm_tweenMachine_sliderState == 1 && $tweenValue <= 0.00 && $sizeSelTimes > 1)
+				    {
+				    	$prevTime = `findKeyframe -which "previous" -t $selTimes[0] $animCurve[$i]`;
+			            $prevValue_temp = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+			            for ($j=0; $j<`size($selTimes)`; ++$j)
+				    	{
+				            keyframe -t $selTimes[$j] -e -valueChange $prevValue_temp[0] $animCurve[$i];
+				            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+				            {
+				            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+			            	}
+				    	}
+				    }
+				    else
+				    {
+				    	// SAVE THE CURRENT VALUES TO TWEEN FROM
+				        for ($j=0; $j<$sizeSelTimes; ++$j)
+				        {
+				        	//print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+			        	 	$prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+				            $prevValue_temp = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+				            $prevValue[$j] = $prevValue_temp[0];
+				            $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+				            $nextValue_temp = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+				            $nextValue[$j] = $nextValue_temp[0];
+				        }
+				        // KEY SELECTED KEYS WITH THEIR ORIGINAL VALUE
+				        for ($j=0; $j<$sizeSelTimes; ++$j)
+				        {
+				            //print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+				            	//int $prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+				            	//print ("\n\tprevTime: " + $prevTime);
+				            	//float $prevValue[] = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+				            	//print ("\n\tprevValue: " + $prevValue[0]);
+				            	//int $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+				            	//print ("\n\tnextTime: " + $nextTime);
+				            	//float $nextValue[] = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+				            	//print ("\n\tnextValue: " + $nextValue[0]);
+				            if ($tweenValue == 0.00)
+				            {
+				            	$newValue = $prevValue[0];
+				            }
+				            else if ($tweenValue == 1.00)
+				            {
+				            	int $lastTime = $sizeSelTimes - 1;
+				            	$newValue = $nextValue[$lastTime];
+				            }
+				            else
+				            {
+				            	$newValue = ( $prevValue[$j] + ( ($nextValue[$j] - $prevValue[$j]) * $tweenValue) );
+				            	//print ("\n\tnewValue: " + $newValue);
+				            }
+				            keyframe -t $selTimes[$j] -e -valueChange $newValue $animCurve[$i];
+				            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+				            {
+				            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+			            	}
+				            //print ("\n\t[EXECUTED]");
+				    	}
+			        }
+		        }
+			}
+			else if (`menuItem -q -radioButton MENUITEM_svm_tweenMachine_calcIncremental` == true)
+			{
+				// TWEEN SELECTED KEYS IN THE GRAPH
+				if ($tweenValue > 0.500)
+				{
+			    	// TWEEN SELECTED KEYS IN THE GRAPH
+			    	for ($i=0; $i<size($animCurve); $i++)
+				    {
+				        float $selTimes[] = `keyframe -q -sl -timeChange $animCurve[$i]`;
+				        //print $selTimes;
+				        int $sizeSelTimes = `size($selTimes)`;
+				        // FLATTEN THE SLIDER WHILE DRAG OVER 1.00
+				        if ($svm_tweenMachine_sliderState == 1 && $tweenValue >= 1.00 && $sizeSelTimes > 1)
+					    {
+					    	$nextTime = `findKeyframe -which "next" -t $selTimes[($sizeSelTimes-1)] $animCurve[$i]`;
+				            $nextValue_temp = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+				            for ($j=($sizeSelTimes-1); $j>=0; --$j)
+					    	{
+					            keyframe -t $selTimes[$j] -e -valueChange $nextValue_temp[0] $animCurve[$i];
+					            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+					            {
+					            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+				            	}
+					    	}
+					    }
+					    // NORMAL TWEEN CALC
+					    else
+					    {
+					    	for ($j=($sizeSelTimes-1); $j>=0; --$j)
+					        {
+					            //print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+					            int $prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+					            //print ("\n\tprevTime: " + $prevTime);
+					            float $prevValue[] = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+					            //print ("\n\tprevValue: " + $prevValue[0]);
+					            int $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+					            //print ("\n\tnextTime: " + $nextTime);
+					            float $nextValue[] = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+					            //print ("\n\tnextValue: " + $nextValue[0]);
+					            float $newValue = ( $prevValue[0] + ( ($nextValue[0] - $prevValue[0]) * $tweenValue) );
+					            //print ("\n\tnewValue: " + $newValue);
+					            keyframe -t $selTimes[$j] -e -valueChange $newValue $animCurve[$i];
+					            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+					            {
+					            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+				            	}
+					            //print ("\n\t[EXECUTED]");
+					        }
+					    } 
+				    }
+				}
+				// TWEEN SELECTED KEYS IN THE GRAPH
+				else if ($tweenValue < 0.500)
+				{
+				    // TWEEN SELECTED KEYS IN THE GRAPH
+				    for ($i=0; $i<size($animCurve); $i++)
+				    {
+				        float $selTimes[] = `keyframe -q -sl -timeChange $animCurve[$i]`;
+				        //print $selTimes;
+				        int $sizeSelTimes = `size($selTimes)`;
+				        // FLATTEN THE SLIDER WHILE DRAG UNDER 0.00
+				        if ($svm_tweenMachine_sliderState == 1 && $tweenValue <= 0.00 && $sizeSelTimes > 1)
+					    {
+					    	$prevTime = `findKeyframe -which "previous" -t $selTimes[0] $animCurve[$i]`;
+				            $prevValue_temp = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+				            for ($j=0; $j<`size($selTimes)`; ++$j)
+					    	{
+					            keyframe -t $selTimes[$j] -e -valueChange $prevValue_temp[0] $animCurve[$i];
+					            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+					            {
+					            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+				            	}
+					    	}
+					    }
+				        // NORMAL TWEEN CALC
+				        else
+				        {
+					        for ($j=0; $j<`size($selTimes)`; ++$j)
+					        {
+					            //print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+					            int $prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+					            //print ("\n\tprevTime: " + $prevTime);
+					            float $prevValue[] = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+					            //print ("\n\tprevValue: " + $prevValue[0]);
+					            int $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+					            //print ("\n\tnextTime: " + $nextTime);
+					            float $nextValue[] = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+					            //print ("\n\tnextValue: " + $nextValue[0]);
+					            float $newValue = ( $prevValue[0] + ( ($nextValue[0] - $prevValue[0]) * $tweenValue) );
+					            //print ("\n\tnewValue: " + $newValue);
+					            keyframe -t $selTimes[$j] -e -valueChange $newValue $animCurve[$i];
+					            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+					            {
+					            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+				            	}
+					            //print ("\n\t[EXECUTED]");
+					        }
+				        }
+				    }
+				}
+				else if ($tweenValue == 0.500)
+				{
+					for ($i=0; $i<size($animCurve); $i++)
+				    {
+				        float $selTimes[] = `keyframe -q -sl -timeChange $animCurve[$i]`;
+				        //print $selTimes;
+				        int $sizeSelTimes = `size($selTimes)`;
+				        int $prevTime;
+				        int $nextTime;
+				        float $prevValue[];
+				        float $prevValue_temp[];
+				        float $nextValue[];
+				        float $nextValue_temp[];
+				        float $newValue;
+				        // SAVE THE CURRENT VALUES TO TWEEN FROM
+				        for ($j=0; $j<$sizeSelTimes; ++$j)
+				        {
+				        	//print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+			        	 	$prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+				            $prevValue_temp = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+				            $prevValue[$j] = $prevValue_temp[0];
+				            $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+				            $nextValue_temp = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+				            $nextValue[$j] = $nextValue_temp[0];
+				        }
+				        // KEY SELECTED KEYS WITH THEIR ORIGINAL VALUE
+				        for ($j=0; $j<$sizeSelTimes; ++$j)
+				        {
+				            //print ("\n" + $animCurve[$i] + " -> " + $selTimes[$j]);
+				            int $prevTime = `findKeyframe -which "previous" -t $selTimes[$j] $animCurve[$i]`;
+				            //print ("\n\tprevTime: " + $prevTime);
+				            	//float $prevValue[] = `keyframe -t $prevTime -q -valueChange $animCurve[$i]`;
+				            	//print ("\n\tprevValue: " + $prevValue[0]);
+				            int $nextTime = `findKeyframe -which "next" -t $selTimes[$j] $animCurve[$i]`;
+				            //print ("\n\tnextTime: " + $nextTime);
+				            	//float $nextValue[] = `keyframe -t $nextTime -q -valueChange $animCurve[$i]`;
+				            	//print ("\n\tnextValue: " + $nextValue[0]);
+				            if ($tweenValue == 0.00)
+				            {
+				            	$newValue = $prevValue[0];
+				            }
+				            else if ($tweenValue == 1.00)
+				            {
+				            	int $lastTime = $sizeSelTimes - 1;
+				            	$newValue = $nextValue[$lastTime];
+				            }
+				            else
+				            {
+				            	$newValue = ( $prevValue[$j] + ( ($nextValue[$j] - $prevValue[$j]) * $tweenValue) );
+				            	//print ("\n\tnewValue: " + $newValue);
+				            }
+				            keyframe -t $selTimes[$j] -e -valueChange $newValue $animCurve[$i];
+				            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+				            {
+				            	keyframe -e -tickDrawSpecial true -t $selTimes[$j] $animCurve[$i];
+			            	}
+				            //print ("\n\t[EXECUTED]");
+				        }
+			        }
+				}
+			}
+	    }
+		// TWEEN SELECTED CHANNELS OR OBJECT(S) ON THE CURRENT FRAME
+		else
+		{
+			string $curve[], $attr[], $con[], $tmp[], $obj_attr[];
+			float $curTime_1; float $curTime_2;
+
+			global string $gPlayBackSlider;
+			float $timeRange[] = `timeControl -q -rangeArray $gPlayBackSlider`;
+			if (($timeRange[1] - $timeRange[0]) == 1) floatArrayRemoveAtIndex(1, $timeRange);
+			else $timeRange[1] -= 1;
+
+			// CHECK IF ATTRIBUTES ARE SELECTED IN CHANNELBOX
+			global string $gChannelBoxName; //"mainChannelBox"
+			string $ChanBox = $gChannelBoxName;
+			$attr = `channelBox -q -selectedMainAttributes $ChanBox`; 
+			
+			if ( `size($attr)`>0 && `menuItem -q -checkBox MENUITEM_svm_tweenMachine_operateChannels` == true ) 
+			{
+			    // GET CURVES FROM SELECTED ATTRIBUTES
+			    clear $curve;
+		        for ($s=0; $s<`size($sel)`; ++$s) 
+		        {
+		            for ($a=0; $a<`size($attr)`; ++$a)
+		            {
+		                if ( `objExists ($sel[$s] + "." + $attr[$a])` == false ) continue;
+		                if ( `getAttr -l ($sel[$s] + "." + $attr[$a])` == true ) continue; // REMOVE LOCKED ATTRIBUTES
+		                else 
+		                {
+			                string $tempCurve[] = `keyframe -q -name ($sel[$s] + "." + $attr[$a])`;
+		                	if ( $tempCurve[0] == "" ) continue; // REMOVE ATTRIBUTES WITHOUT KEYS
+		                	else
+		                	{
+		                	 	$curve[`size($curve)`] = $tempCurve[0];
+		                	}
+		                }
+		            }
+		        }
+			} 
+			else // TWEEN FULL OBJECT | ALL ATTRIBUTES OF THE OBJECT
+			{
+			    // GET ALL CURVES OF ALL OBJECTS
+	    		$curve = `keyframe -q -name $sel`;
+	    		// REMOVE LOCKED ATTRIBUTES
+	    		for ($c=0; $c<`size($curve)`; ++$c)
+	    		{
+	    			clear $con; $con = `listConnections -plugs true $curve[$c]`; // get attr and obj name from curve
+		            clear $obj_attr; 
+		            tokenize $con[0] "." $obj_attr;
+		            if ( `getAttr -l ($obj_attr[0] + "." + $obj_attr[1])` == true )
+		            {
+		            	stringArrayRemoveAtIndex($c, $curve);
+		            }
+	    		}
+			}
+
+			// TWEEN EACH CURVE
+			for ($c=0; $c<`size($curve)`; ++$c) 
+			{
+				if ( `keyframe -q -keyframeCount $curve[$c]` != 0 )
+				{
+					//print ("\n" + $curve[$c]);
+					
+					// CHECK THE TIMERANGE
+					if (`size($timeRange)` == 2) 
+					{
+						$curTime_1 = $timeRange[0];
+						$curTime_2 = $timeRange[1];
+					}
+					else
+					{
+						$curTime_1 = $timeRange[0];
+						$curTime_2 = $timeRange[0];
+					}
+					
+					//CALCULATE THE NEW VALUE
+						//float $curTime = `currentTime -query`;
+					//print ("\n\tcurTime: " + $curTime);
+					int $prevTime = `findKeyframe -which "previous" -t $curTime_1 $curve[$c]`;
+					//print ("\n\tprevTime: " + $prevTime);
+					float $prevValue[] = `keyframe -t $prevTime -q -valueChange $curve[$c]`;
+					//print ("\n\tprevValue: " + $prevValue[0]);
+					int $nextTime = `findKeyframe -which "next" -t $curTime_2 $curve[$c]`;
+					//print ("\n\tnextTime: " + $nextTime);
+		            float $nextValue[] = `keyframe -t $nextTime -q -valueChange $curve[$c]`;
+		            //print ("\n\tnextValue: " + $nextValue[0]);
+		            float $newValue = ( $prevValue[0] + ( ($nextValue[0] - $prevValue[0]) * $tweenValue) );
+		            //print ("\n\tnewValue: " + $newValue);
+		            
+		            // CHECK IF THE ATTRIBUTE IS DYNAMIC
+		            float $tempMin;
+		            string $con[] = `listConnections -plugs true $curve[$c]`; // get attr and obj name from curve
+		            clear $obj_attr; 
+		            tokenize $con[0] "." $obj_attr;
+		            if ( `attributeQuery -node $obj_attr[0] -minExists $obj_attr[1]` == 1 ) 
+		            {
+						if ( `getAttr -type ($obj_attr[0] + "." + $obj_attr[1])` != "bool" )
+						{
+							$tempMin = `addAttr -q -min ($obj_attr[0] + "." + $obj_attr[1])`;
+							if ( $newValue < $tempMin ) $newValue = $tempMin;
+						}
+					} 
+					float $tempMax;
+					if ( `attributeQuery -node $obj_attr[0] -maxExists $obj_attr[1]` == 1 ) 
+		            {
+						if ( `getAttr -type ($obj_attr[0] + "." + $obj_attr[1])` != "bool" )
+						{
+							$tempMax = `addAttr -q -max ($obj_attr[0] + "." + $obj_attr[1])`;
+							if ( $newValue > $tempMax ) $newValue = $tempMax;
+						}
+					}
+
+					// SET KEY ON GIVEN TIMERANGE
+	            	if (`size($timeRange)` == 1) 
+		            {
+		            	setKeyframe -t $curTime_1 -v $newValue $curve[$c];
+		            		//keyframe -tickDrawSpecial false -t $curTime_1 $curve[$c];
+		            }
+		            else keyframe -time ($curTime_1 + ":" + $curTime_2) -e -valueChange $newValue $curve[$c];
+		            if (`menuItem -q -checkBox MENUITEM_svm_tweenMachine_tickColor` == true)
+		            {
+		            	keyframe -e -tickDrawSpecial true -t ($curTime_1 + ":" + $curTime_2) $curve[$c];
+		            }
+	            }
+            }
+		}
+		float $updateViewportBugFix = `currentTime -q`; currentTime -e -u false ($updateViewportBugFix + 1); currentTime -e -u true $updateViewportBugFix;
+    }
+    else 
+    {
+    	print ("\n[ERROR].......svm_tweenMachine -> selection: empty");
+    	confirmDialog   -title "  "
+		                -message "No selection found"
+		                -button "Ok"
+		                -defaultButton "Ok"
+		                -icon "warning";
+    }
+}

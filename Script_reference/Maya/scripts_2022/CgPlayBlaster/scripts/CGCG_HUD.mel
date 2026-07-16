@@ -1,0 +1,682 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 1988-2013 CGCG Inc.
+// All Rights Reserved.
+//
+// This file contains unpublished confidential and proprietary
+// information of CGCG Inc..  The contents of this file
+// may not be copied or duplicated, in whole or in part, by any
+// means, electronic or hardcopy, without the express prior
+// written permission of CGCG Inc.
+//
+//    $HeadURL: \\pantheon\MEL\cgcg\scripts\common\CgPlayBlaster/scripts/CGCG_HUD.mel $
+//    $Revision: 8c78dded78c5 $
+//    $Author: indigo $
+//    $Date: 2014/02/11 10:55:03 $
+//
+///////////////////////////////////////////////////////////////////////////////
+
+// 
+// Program: CGCG_HUD.mel
+//
+// Comment: Show HUD 資訊工具
+//
+// Date: 2007.12.17 (1st)
+//		2008.07.22 (v1.1)
+//						新增，USERNAME
+//		2008.07.23 (v1.1)
+//						調整 USERNAME 可以變成「可變式」
+//						新增 Focal Length
+//		2008.10.01 (v1.2)
+//						將函式 CGCG_HUD_ReturnUserName 移除，改用 getenv "USER"
+//						並將 Global 變數移除，直接使用 OptionVAR
+//						Camera 依照 Panel 改變
+//		2008.10.21 (v1.3)
+//						因為許老師那邊反應 HeadsUpDisplay 的白色字體會看不清楚，
+//						因此，新增改變 HeadsUpDisplay 的字體顏色。
+//		2008.11.11 (v1.4)
+//						因為 Frame Count Error 一直出現！所以把它加進來吧！
+//		2009.01.07 (v1.5)
+//						Import Smoke Dummy : "Smoke:headsUpExpression" 的關係，造成 Frame Count Error
+//		2009.01.16 
+//						黑鬼東發現，如果開啟 Preference 的時候，Maya 找不到 ViewAxis 時，Maya 的介面會整個掛掉！= ="
+//						global string $gPreferenceWindow = "PreferencesWindow";
+//						whatIs preferencesWnd (C:/aw/Maya2008/scripts/startup/preferencesWnd.mel)
+// Author: Pan
+
+// (v1.4) 新增
+// 1. 基本的問題：headUpExpression
+global int $g_uiState;
+proc BasicFixFrameCountError(string $ExpError, string $HudError)
+{
+	//string $ExpError = "headsUpExpression";
+	//string $HudError = "HUDFrameCount";
+	if(`objExists $ExpError`)
+	{
+		// 刪除 headsUpExpression
+		delete $ExpError;
+		
+		// 移除 HUDFrameCount
+		if(`headsUpDisplay -q -ex $HudError`)
+		{
+			headsUpDisplay -e -rem $HudError;
+			print(" Frame Count Error 已經解除，請存檔，避免這問題再發生！謝謝...(若尚未解除，請通知研發部！謝謝...)\n");
+		}
+		else
+		{
+			print($HudError+"已經不存在，如果還 Frame Count Error 仍然存在，請通知研發部！謝謝...\n");
+		}
+	}
+	else
+	{
+		//print($ExpError+"已經不存在，如果還 Frame Count Error 仍然存在，請通知研發部！謝謝...\n");
+	}
+}
+
+// (v1.4) 新增
+// 2. 因為 Frame Count 會莫名奇妙出現！所以只好「強制關閉」了~
+proc AdvanceFixFrameCountError()
+{
+	int $HUDBlocks[] = { 0, 1, 2, 3 };	// 0 是我們在用的！
+	int $Positions[] = { 0, 4, 5, 7, 9 };
+	for($Position in $Positions) for($HUDBlock in $HUDBlocks) headsUpDisplay -removePosition $Position $HUDBlock;
+}
+
+// (v1.4) 新增
+// 修正：HeadsUpDisplay 的 Frame Count Error 情形
+global proc CGCG_FixFrameCountError()
+{
+	
+	// 1. 基本的問題：headUpExpression, Smoke:headsUpExpression
+	BasicFixFrameCountError("headsUpExpression", "HUDFrameCount");
+	BasicFixFrameCountError("Smoke:headsUpExpression", "HUDFrameCount");
+	
+	// 2. 因為 Frame Count 會莫名奇妙出現！所以只好「強制關閉」了~
+	AdvanceFixFrameCountError();
+	
+	//print("如果還 Frame Count Error 仍然存在，請通知研發部！謝謝...\n");
+}
+
+// Camera Focal Length Use
+proc string[] CGCG_HUD_ReturnCameraInfo()
+{
+	// 依照 Model Panel 改變 Camera
+	string $ModelPane = `paneLayout -q -pane1 viewPanes`;
+	string $Camera = `modelPanel -q -camera $ModelPane`;
+	
+	string $Attr = ".focalLength";
+	
+	return { $Camera, $Attr };
+}
+
+// 設定預設的 Option VAR
+proc CGCG_HUD_DefaultVAR()
+{
+	if(!`optionVar -ex "CGCG_HUD_UserName"`) optionVar -stringValue "CGCG_HUD_UserName" (`getenv "USER"`);
+	if(!`optionVar -ex "CGCG_HUD_FrameType"`) optionVar -intValue "CGCG_HUD_FrameType" 3;
+	if(!`optionVar -ex "CGCG_HUD_FocalLength"`) optionVar -intValue "CGCG_HUD_FocalLength" 2;
+	if(!`optionVar -ex "CGCG_HUD_SceneNameType"`) optionVar -intValue "CGCG_HUD_SceneNameType" 1;
+	if(!`optionVar -ex "CGCG_HUD_HUDFonts"`) optionVar -stringValue "CGCG_HUD_HUDFonts" small;
+				
+	// (v1.3 新增)
+	if(!`optionVar -ex "CGCG_HUD_LabelColor"`) optionVar -intValue "CGCG_HUD_LabelColor" 7;	// 7:綠色
+	if(!`optionVar -ex "CGCG_HUD_ValueColor"`) optionVar -intValue "CGCG_HUD_ValueColor" 13;	// 16:白色，13:紅色
+	
+	//Default enable without UI
+	if(!`optionVar -ex "CGCG_HUD_enableDate"`) optionVar -intValue "CGCG_HUD_enableDate" 1;			// date
+	if(!`optionVar -ex "CGCG_HUD_enableFrame"`) optionVar -intValue "CGCG_HUD_enableFrame" 1;			// frame
+	if(!`optionVar -ex "CGCG_HUD_enableFocal"`) optionVar -intValue "CGCG_HUD_enableFocal" 1;			// focal length
+	if(!`optionVar -ex "CGCG_HUD_enableSceneName"`) optionVar -intValue "CGCG_HUD_enableSceneName" 1;	// scene name
+	if(!`optionVar -ex "CGCG_HUD_enableUser"`) optionVar -intValue "CGCG_HUD_enableUser" 1;			// frame
+}
+
+// 0 for 720, 3 for 640 (規格定死，不用做選擇！)
+proc int CGCG_HUD_ReturnHUDBlock()
+{
+	int $HUDBlock = 0;			// 0 for 720, 3 for 640 (規格定死，不用做選擇！)
+	return $HUDBlock;
+}
+
+proc string CGCG_HUD_ReturnDate()
+{
+	string $Date = `about -currentDate`;	// 2009/04/20
+	//$Date = substituteAllString($Date, "/", "");	// 取得 8 位數 20090420
+	$Date = `substring $Date 3 10`;	// 只取得 6 位數 090420
+	return $Date;
+}
+
+// Show HUD Display
+global proc CGCG_HUDDisplay(int $uiStatus, int $enable)
+{
+	int $HUDBlock = CGCG_HUD_ReturnHUDBlock();			// 0 for 720, 3 for 640 (規格定死，不用做選擇！)
+	
+	//string $FontSize = "small";	// 視狀況決定 small or large (習慣用 small)
+	string $FontSize = "small";
+	int $focalSelect = 1;
+	int $sceneSelect = 1;
+		
+	/*
+	Section
+	____________________
+	|       |       |       |       |       |
+	|  0   |  1   |  2   |  3   |  4   |
+	|___ |___ |___ |___ |___ |
+	|       |       |       |       |       |
+	|  5   |  6   |  7   |  8   |  9   |
+	|___ |___ |___ |___ |___ |
+	*/
+	
+	// // (v1.4) 修正 將所有的 Section 關閉
+	CGCG_FixFrameCountError();
+	int $dateStatus, $frameStatus, $focalStatus, 
+		$sceneStatus, $userStatus = 0;
+		
+	if($enable)
+	{
+		if($uiStatus)
+		{
+			$FontSize = `optionMenuGrp -q -value CGCG_HUD_OptionMenuFonts`;
+			optionVar -stringValue "CGCG_HUD_HUDFonts" $FontSize;
+			
+			//Enable UI Status
+			$dateStatus = `checkBox -q -value CGCG_HUD_CheckBoxDate`;
+			$frameStatus = `checkBox -q -value CGCG_HUD_CheckBoxFramesType`;
+			$focalStatus = `checkBox -q -value CGCG_HUD_CheckBoxFocalLength`;
+			$sceneStatus = `checkBox -q -value CGCG_HUD_CheckBoxSceneName`;
+			$userStatus = `checkBox -q -value CGCG_HUD_CheckBoxUser`;
+			$focalSelect = `radioButtonGrp -query -select CGCG_HUD_RadioButtonFocalLength`;
+			$sceneSelect = `radioButtonGrp -query -select CGCG_HUD_RadioButtonSceneName`;
+			
+			optionVar -iv "CGCG_HUD_enableDate" $dateStatus;
+			optionVar -iv "CGCG_HUD_enableFrame" $frameStatus;
+			optionVar -iv "CGCG_HUD_enableFocal" $focalStatus;
+			optionVar -iv "CGCG_HUD_enableSceneName" $sceneStatus;
+			optionVar -iv "CGCG_HUD_enableUser" $userStatus;
+			optionVar -iv "CGCG_HUD_enableUser" $userStatus;
+			optionVar -iv "CGCG_HUD_FocalLength" $focalSelect;
+			optionVar -iv "CGCG_HUD_SceneNameType" $sceneSelect;
+			
+		}else
+		{
+			$FontSize = `optionVar -q "CGCG_HUD_HUDFonts"`;
+			
+			//Disable UI Status
+			$dateStatus = `optionVar -q "CGCG_HUD_enableDate"`;
+			$frameStatus = `optionVar -q "CGCG_HUD_enableFrame"`;
+			$focalStatus = `optionVar -q "CGCG_HUD_enableFocal"`;
+			$sceneStatus = `optionVar -q "CGCG_HUD_enableSceneName"`;
+			$userStatus = `optionVar -q "CGCG_HUD_enableUser"`;
+			$focalSelect = `optionVar -q "CGCG_HUD_FocalLength"`;
+			$sceneSelect = `optionVar -q "CGCG_HUD_SceneNameType"`;
+		}	
+	}
+	// 1 左上：顯示 Date 09/10/28
+	//if(0)
+	if($dateStatus)
+	{
+		headsUpDisplay 
+			-section 0
+			-block $HUDBlock	//-- 0 for 720, 3 for 640
+			-blockSize $FontSize
+			-label "Date:"
+			-dataFontSize $FontSize
+			-labelFontSize $FontSize
+			-command "CGCG_HUDGetLeftUpDisplay"
+			-blockAlignment "right"
+			//-allowOverlap 0
+			-attachToRefresh
+		CGCG_HUDLeftUpDisplay;
+	}
+	
+	// 4 右上：顯示 Frame Number
+	if($frameStatus)
+	{
+		headsUpDisplay 
+			-section 4
+			-block $HUDBlock	//-- 0 for 720, 3 for 640
+			-blockSize $FontSize
+			-label "Frame:"
+			-dataFontSize $FontSize
+			-labelFontSize $FontSize
+			-command "CGCG_HUDGetRightUpDisplay"
+			-blockAlignment "right"
+			//-allowOverlap 0
+			-attachToRefresh
+		CGCG_HUDRightUpDisplay;
+	}
+	
+	// 5 左下：顯示 Camera Focal Length
+	if($focalStatus)
+	{
+		// Show View Axis
+		if($focalSelect == 1)
+		{
+			headsUpDisplay 
+				-section 5 
+				-block $HUDBlock
+				-preset "viewAxis" 
+			HUDViewAxis;
+		}
+		else if($focalSelect == 2)
+		{
+			headsUpDisplay 
+				-section 5
+				-block $HUDBlock
+				-blockSize $FontSize
+				-label "Focal Length:"
+				-dataFontSize $FontSize
+				-labelFontSize $FontSize
+				-command "CGCG_HUDGetLeftBottomDisplay"
+				-blockAlignment "left"
+				-attachToRefresh
+			HUDViewAxis;
+			//CGCG_HUDLeftBottomDisplay;
+		}
+	}
+	
+	// 7 中下：顯示 Scene Name
+	if($sceneStatus)
+	{
+		//int $Select = `radioButtonGrp -query -select CGCG_HUD_RadioButtonSceneName`;
+		
+		// Show Scene Name
+		if($sceneSelect == 1)
+		{
+			headsUpDisplay 
+				-section 7
+				-block $HUDBlock	//-- 0 for 720, 3 for 640
+				-blockSize $FontSize
+				-label ""
+				-dataFontSize $FontSize
+				-labelFontSize $FontSize
+				-command "CGCG_HUDGetMiddleBottomDisplay"
+				-blockAlignment "left"
+				-attachToRefresh
+			CGCG_HUDMiddleBottomDisplay;
+		}
+		// Show Camera Name
+		else if($sceneSelect == 2)
+		{
+			headsUpDisplay 
+				-section 7
+				-block $HUDBlock	//-- 0 for 720, 3 for 640
+				-blockSize $FontSize
+				-labelFontSize $FontSize
+				-preset "cameraNames"	
+				-blockAlignment "left"
+			CGCG_HUDMiddleBottomDisplay;
+		}
+	}
+	
+	// 9 右下：顯示 User Name
+	if($userStatus)
+	{
+		headsUpDisplay 
+			-section 9
+			-block $HUDBlock	//-- 0 for 720, 3 for 640
+			-blockSize $FontSize
+			-label "User:"
+			-dataFontSize $FontSize
+			-labelFontSize $FontSize
+			-command "CGCG_HUDGetRightBottomDisplay"
+			-blockAlignment "right"
+			//-allowOverlap 0
+			-attachToRefresh
+		CGCG_HUDRightDownDisplay;
+	}
+}
+
+// HUD Command : 左上顯示 0 (Date)
+global proc string CGCG_HUDGetLeftUpDisplay()
+{
+	string $result = CGCG_HUD_ReturnDate();
+	return $result;
+}
+
+// HUD Command : 右上顯示 4 (FrameType)
+global proc string CGCG_HUDGetRightUpDisplay()
+{
+	int $Select;
+	
+	// 避免視窗關閉之後找不到值
+	if(`control -q -ex CGCG_HUD_RadioButtonFrameType`)
+	{
+		$Select = `radioButtonGrp -query -select CGCG_HUD_RadioButtonFrameType`;
+		optionVar -intValue "CGCG_HUD_FrameType" $Select;
+	}
+	else
+	{
+		$Select = `optionVar -q "CGCG_HUD_FrameType"`;
+	}
+	
+	// 取得 Current Frame、Total Frame
+	int $Current = `currentTime -q`;
+	int $Total = `playbackOptions -q -maxTime`;
+	string $result;
+	
+	switch($Select)
+	{
+		case 1:	$result = $Current+" -Current";				break;
+		case 2:	$result = $Current+" / "+$Total+"[film]";	break;
+		case 3:	$result = $Current+" / "+$Total;			break;
+	}
+	
+	return $result;
+}
+
+// HUD Command : 左下顯示 5 (Camera FocalLength)
+global proc string CGCG_HUDGetLeftBottomDisplay()
+{
+	// 取得 Camera 的 FocalLength
+	string $Buffer[] = CGCG_HUD_ReturnCameraInfo();
+	string $Camera = $Buffer[0];	
+	string $Attr = $Buffer[1];
+	
+	string $result;
+	
+	if(`objExists $Camera`)
+	{
+		$result = `getAttr ($Camera + $Attr)`;
+	}
+	else
+	{
+		//print("Can NOT find Camera : " + $Camera + "\n");
+		$result = "UNKNOWN";
+	}
+	
+	return $result;
+}
+
+// HUD Command : 中下顯示 7 (Scene Name)
+global proc string CGCG_HUDGetMiddleBottomDisplay()
+{
+	global int $g_uiState;
+	
+	string $result;
+	
+	// 避免視窗關閉之後找不到值
+	if (`control -q -ex CGCG_HUDtfg0`)
+	{
+		$result = `textFieldGrp -q -text CGCG_HUDtfg0`;
+		optionVar -stringValue "CGCG_HUD_SceneName" $result;
+	}
+	else
+	{
+		if($g_uiState)
+		{
+			$result = `optionVar -q "CGCG_HUD_SceneName"`;
+		}else
+		{
+			// for None UI Display
+			$result = basenameEx(`file -q -sn`);
+		}
+	}
+	
+	return $result;
+}
+
+// HUD Command : 右下顯示 9 (User Name)
+global proc string CGCG_HUDGetRightBottomDisplay()
+{
+	string $result;
+	
+	// 避免視窗關閉之後找不到值
+	if(`control -q -ex CGCG_HUD_TextFieldUser`)
+	{
+		$result = `textField -q -text CGCG_HUD_TextFieldUser`;
+		optionVar -stringValue "CGCG_HUD_UserName" $result;
+	}
+	else
+	{
+		$result = `optionVar -q "CGCG_HUD_UserName"`;
+	}
+	
+	return $result;
+}
+
+// CheckBox Command : 切換 Controllers Enable
+global proc CGCG_HUDCheckBoxCommand(string $CheckBox, string $Control, int $Which)
+{
+	// 0 for 720, 3 for 640 (規格定死，不用做選擇！)
+	int $HUDBlock = CGCG_HUD_ReturnHUDBlock();
+	int $Value = `checkBox -q -value $CheckBox`;
+	
+	headsUpDisplay -removePosition $Which $HUDBlock;
+	control -e -enable $Value $Control;
+	
+	if($Value) CGCG_HUDDisplay(1, 1);
+}
+
+// (v1.3) 新增
+// ColorChange Command : 切換 Color 時候的 Command 
+global proc CGCG_HUDChangeColor(string $Control, string $HeadUpDisplay)
+{
+	int $ColorValue = (`colorIndexSliderGrp -q -value $Control`);
+	optionVar -intValue $Control $ColorValue;
+	if(($ColorValue-1) >= 1) displayColor -dormant $HeadUpDisplay ($ColorValue-1);
+}
+
+
+// Show HUD 資訊工具的視窗配置
+proc CGCG_HUDLayout()
+{
+	// 取得 Scene Name
+	string $SceneName = basenameEx(`file -q -sn`);
+	if($SceneName == "") $SceneName = "Scene Name";
+	
+	// Layout Settings
+	int $InColumnOffset = 15;
+	string $InFrameBorderStyle = "etchedOut";
+	// Main Column
+	columnLayout -adj 1;
+		// Scene Name
+		textFieldGrp 
+			-label "Scene Name : " 
+			-text $SceneName 
+			-columnWidth 1 80 
+			-adjustableColumn 2
+			-cc "CGCG_HUDDisplay(1, 1)"
+		CGCG_HUDtfg0;
+		
+		// HUD Options
+		frameLayout -label " HUD Options" -borderStyle "etchedOut";
+			rowColumnLayout 
+				-numberOfColumns 3
+				-columnWidth 1 120
+				-columnWidth 2 120
+				-columnWidth 3 120;
+				
+				// 左上(0)
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left"
+							-label "Date : " 
+							-value 1 
+							-changeCommand "CGCG_HUDCheckBoxCommand CGCG_HUD_CheckBoxDate CGCG_HUD_TextFieldDate 0"
+						CGCG_HUD_CheckBoxDate;
+						
+						columnLayout -adj 1 -cat "left" $InColumnOffset;
+							textField
+								-text `CGCG_HUD_ReturnDate`
+								-editable 0
+								-changeCommand "CGCG_HUDDisplay(1, 1)" 
+							CGCG_HUD_TextFieldDate;
+						setParent ..;
+					setParent ..;
+				setParent ..;
+				
+				// 中上(2)
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left"
+							-label "RESOLUTION : " 
+							-value 1 
+							-enable 0;
+						//columnLayout -adj 1 -cat "left" 18;
+							//text -label "Film Resolution" -align "left" -enable 0;
+							text -label (`getAttr "defaultResolution.width"`+" X "+`getAttr "defaultResolution.height"`) -align "center" -enable 0;
+						//setParent ..;
+					setParent ..;
+				setParent ..;
+				
+				
+				// 右上(4)
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left"
+							-label "Frame : " 
+							-value 1 
+							-changeCommand "CGCG_HUDCheckBoxCommand CGCG_HUD_CheckBoxFramesType CGCG_HUD_RadioButtonFrameType 4"
+						CGCG_HUD_CheckBoxFramesType;
+						
+						columnLayout -adj 1 -cat "left" $InColumnOffset;
+							radioButtonGrp 
+								-numberOfRadioButtons 3 
+								-labelArray3 "Current" "Other" "Current/Total"
+								-vertical
+								-select `optionVar -q "CGCG_HUD_FrameType"` 
+								-changeCommand "CGCG_HUDDisplay(1, 1)" 
+							CGCG_HUD_RadioButtonFrameType;
+						setParent ..;
+					setParent ..;
+				setParent ..;
+				
+				// 左下(5) 
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left"
+							-label "Focal Length : " 
+							-value 1 
+							-changeCommand "CGCG_HUDCheckBoxCommand CGCG_HUD_CheckBoxFocalLength CGCG_HUD_RadioButtonFocalLength 5"
+						CGCG_HUD_CheckBoxFocalLength;
+						
+						columnLayout -adj 1 -cat "left" $InColumnOffset;
+							radioButtonGrp 
+								-numberOfRadioButtons 2 
+								-labelArray2 "View Axis" "Focal Length"
+								-vertical
+								-select `optionVar -q "CGCG_HUD_FocalLength"` 
+								-changeCommand "CGCG_HUDDisplay(1, 1)" 
+							CGCG_HUD_RadioButtonFocalLength;
+						setParent ..;
+					setParent ..;
+				setParent ..;
+				
+				// 中下(7)
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left" 
+							-label "Scene Name : " 
+							-value 1 
+							-changeCommand "CGCG_HUDCheckBoxCommand CGCG_HUD_CheckBoxSceneName CGCG_HUD_RadioButtonSceneName 7"
+						CGCG_HUD_CheckBoxSceneName;
+						
+						columnLayout -adj 1 -cat "left" $InColumnOffset;
+							radioButtonGrp 
+								-numberOfRadioButtons 2 
+								-labelArray2 "Scene Name" "Camera Name"
+								-vertical
+								-select 1 
+								-changeCommand "CGCG_HUDDisplay(1, 1)" 
+							CGCG_HUD_RadioButtonSceneName;
+						setParent ..;
+					setParent ..;
+				setParent ..;
+				
+				// 右下(9)
+				frameLayout -labelVisible 0 -borderStyle $InFrameBorderStyle;				
+					columnLayout -h 80 -adj 1;
+						checkBox 
+							-align "left" 
+							-label "User : " 
+							-value 1 
+							-changeCommand "CGCG_HUDCheckBoxCommand CGCG_HUD_CheckBoxUser CGCG_HUD_TextFieldUser 9" 
+						CGCG_HUD_CheckBoxUser;
+						
+						columnLayout -adj 1 -cat "left" $InColumnOffset;
+							textField
+								-text `getenv "USER"` 
+								-changeCommand "CGCG_HUDDisplay(1, 1)" 
+							CGCG_HUD_TextFieldUser;
+						setParent ..;
+					setParent ..;
+				setParent ..;
+				
+			setParent ..;
+		setParent ..;
+		
+		// (v1.3) 新增 HUD Color Settings
+		frameLayout -label " HUD Settings" -borderStyle "etchedOut";
+			columnLayout;
+				colorIndexSliderGrp 
+					-label "HUD Label : " 
+					-columnWidth 1 80
+					-columnWidth 2 40
+					-min 2
+					-max 24
+					-value (`optionVar -q "CGCG_HUD_LabelColor"`)
+					-changeCommand "CGCG_HUDChangeColor CGCG_HUD_LabelColor headsUpDisplayLabels"
+				CGCG_HUD_LabelColor;
+				
+				colorIndexSliderGrp 
+					-label "HUD Value : " 
+					-columnWidth 1 80
+					-columnWidth 2 40
+					-min 2 
+					-max 24 
+					-value (`optionVar -q "CGCG_HUD_ValueColor"`)
+					-changeCommand "CGCG_HUDChangeColor CGCG_HUD_ValueColor headsUpDisplayValues"
+				CGCG_HUD_ValueColor;
+				
+				optionMenuGrp 
+					-label "HUD Fonts : " 
+					-columnWidth 1 80 
+					-columnAlign 1 "right" 
+					-changeCommand "CGCG_HUDDisplay(1, 1)"
+				CGCG_HUD_OptionMenuFonts;
+					menuItem -label "small";
+					menuItem -label "large";
+				optionMenuGrp -e -value `optionVar -q "CGCG_HUD_HUDFonts"` CGCG_HUD_OptionMenuFonts;
+					
+			setParent ..;
+		setParent ..;
+}
+
+// Show HUD 資訊工具
+global proc CGCG_HUD_win()
+{
+	global int $g_uiState;
+	$g_uiState = 1;
+	string $Window = "CGCG_HUDEditor";
+	if(`window -ex $Window`) deleteUI $Window;
+	window -t "CGCG HUD Editor v1.5" $Window;
+	
+	CGCG_HUD_DefaultVAR;
+	CGCG_HUDLayout;
+	CGCG_HUDDisplay(1, 1);
+	
+	// (v1.3) 新增，做第一次的調色！
+	CGCG_HUDChangeColor("CGCG_HUD_LabelColor", "headsUpDisplayLabels");
+	CGCG_HUDChangeColor("CGCG_HUD_ValueColor", "headsUpDisplayValues");
+	
+	showWindow;
+	window -e -wh 366 310 $Window;	
+}
+
+global proc CGCG_HUD_show(int $enable)
+{
+	global int $g_uiState;
+	$g_uiState = 0;
+	
+	string $Window = "CGCG_HUDEditor";
+	if(`window -ex $Window`) deleteUI $Window;
+	
+	CGCG_HUD_DefaultVAR;
+	CGCG_HUDDisplay(0, $enable);
+}
+//CGCG_HUD_show(0);

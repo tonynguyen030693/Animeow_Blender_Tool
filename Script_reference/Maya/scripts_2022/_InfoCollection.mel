@@ -1,0 +1,40 @@
+global proc BatchINfor()
+{
+  $_project = `workspace -q -fn`;
+  string $names = `file -q -sn`; 
+  string $nameb = `file -q -sn -shn`; 
+  string $fix_a = substituteAllString($names, "02_Scenes/03_Animation/3_KEY", "02_Scenes/05_Lighting"); 
+  string $fix_b = substituteAllString($fix_a, $nameb, ".log"); 
+  string $fix_c = substituteAllString($fix_b, "/", "\\\\"); 
+  int $_pMin = `playbackOptions -q -min`;
+  int $_pMax = `playbackOptions -q -max`;
+
+  string $FPS =`currentUnit -q -time`;
+  string $_Note = $fix_c + "\\info.txt";
+  
+  int $LogDir =`file -q -exists $fix_c`;
+      if($LogDir != 0)
+      {
+        string $_info_w = "/" + $_pMin + "/" + $_pMax + "/" + $FPS;
+        $fileId=`fopen $_Note "w"`;
+        fprint $fileId $_info_w;
+        fclose $fileId;    
+      }
+      else
+      {
+        sysFile -makeDir $fix_c; 
+        string $attribcmd ="attrib +h +s ";
+        string $attrib =$attribcmd + "\"" + $fix_c +"\"";
+        system( $attrib );  
+        string $_info_w = "/" + $_pMin + "/" + $_pMax + "/" + $FPS;
+        $fileId=`fopen $_Note "w"`;
+        fprint $fileId $_info_w;
+        fclose $fileId;    
+      }
+
+}
+
+///////////////////////////////////////////////////////////////////
+//////////////Bake File
+BatchINfor();
+

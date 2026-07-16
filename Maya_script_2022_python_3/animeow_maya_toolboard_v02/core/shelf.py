@@ -660,6 +660,12 @@ def create_shelf():
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='quick_const')"
         },
         {
+            "label": "ViewL",
+            "annotation": "Mở hộp công cụ Animeow View Layer độc lập",
+            "image": "polyMesh.png",
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='view_layer')"
+        },
+        {
             "label": "S.Inc",
             "annotation": "Lưu Increment phiên bản phụ",
             "image": "save.png",

@@ -1,0 +1,8 @@
+How to install LMlocator:
+
+Just drag`n`drop the "LMlocator_Drag&Drop_Install.mel" file into Maya (drop in any viewport).
+This will add the LMlocator tool to the current shelf.
+If you have a LMlocator previous version installed, right click in the LMlocator icons in the shelf and
+delete them before you drag and drop the new "LMlocator_Drag&Drop_Install.mel" file into the Maya viewport.
+
+twitter: @luismiherrera

@@ -1,0 +1,16 @@
+proc string getCurrentDir(string $procName)
+{
+	string $buffer[] = stringToStringArray(`whatIs $procName`, " ");
+	return dirname($buffer[`size $buffer`-1]);
+}
+
+global proc assemblyConvertCache()
+{
+	string $moduleDir = getCurrentDir("assemblyConvertCache");
+    python("import sys,os");
+	python("pyDir = os.path.normpath('"+$moduleDir+"' + '/../pysrc')");
+	python("if pyDir not in sys.path: sys.path.append(pyDir)");
+	python("import assemblyConvertCache.mainWin");
+	python("assemblyConvertCache.mainWin.run()");
+}
+

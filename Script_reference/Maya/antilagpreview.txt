@@ -1,0 +1,8 @@
+import maya.cmds as cmds
+# Xóa các node refresh preview bị treo
+previews = cmds.ls("xgmRefreshPreview*")
+if previews:
+    cmds.delete(previews)
+    print("Đã xóa các node Preview lỗi!")
+else:
+    print("Không tìm thấy node preview nào bị treo.")

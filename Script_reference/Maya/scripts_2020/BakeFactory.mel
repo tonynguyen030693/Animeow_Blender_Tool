@@ -1,0 +1,221 @@
+/*
+------------------------------------------------
+		  LICENSE
+------------------------------------------------
+
+BakeFactory v1.1
+Copyright (c) 2018 Sergey Loza
+The MIT License (MIT)
+
+------------------------------------------------
+		 INFO
+------------------------------------------------
+
+BakeFactory can help you to simplify and speed-up baking process.
+
+Tool Features:
+- Bake your animation with one hotkey.
+- Bake current timeslider or selected time range.
+- Bake specific channels.
+- Don't delete constraints or Blend Parent keys.
+- Move existing keys.
+
+If you have any suggestions or questions about BakeFactory email me at  SergeyLozaWork@gmail.com
+
+-----------------------------------------------
+		USAGE
+-----------------------------------------------
+1. Put this script into maya's scripts folder.
+2. In the maya's MEL command line, type following command:   source BakeFactory.mel;
+3. Assign this commnad to your preferred hotkey:         BakeFactoryMath();
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+*/
+
+//UI
+global string $BakeFactory = "BakeFactory";
+if(`window -ex $BakeFactory`) deleteUI $BakeFactory;
+    window -t "BakeFactory" $BakeFactory;
+    rowColumnLayout  -numberOfRows 1 -cs 1 4 -ral 1 "center";
+    text -label " ";
+    button -l "-" -w 24 -c "SubBakeStep";
+    intField -v 2 -min 1 -h 30 -w 26 BakeData ;
+    button -l "+" -w 24 -c "AddBakeStep";
+    text -label "||"; 
+    button -l "Bake" -w 44 -c "BakeFactoryMath()";
+    text -label "||";    
+    button -l "ReRan" -w 44 -c "ReRangerMath()";
+showWindow $BakeFactory;
+window -edit -widthHeight 213 35 $BakeFactory;
+
+// + button
+global proc AddBakeStep() {   
+    int $DataTemp = `intField -q -v BakeData`;
+    $DataTemp = $DataTemp + 1;
+    intField -e -v $DataTemp BakeData;
+    } 
+         
+// - button    
+global proc SubBakeStep() {
+    int $DataTemp = `intField -q -v BakeData`;
+    $DataTemp = $DataTemp - 1;
+    intField -e -v $DataTemp BakeData;
+    }
+    
+//Save Constrain
+proc ConstrainSave() {
+	string $ObjBuff[] = `ls -sl`;
+    for ($i=0; $i<size($ObjBuff); $i++){
+       	 if (`attributeQuery -n $ObjBuff[$i] -ex "blendParent1"`){    
+          selectKey -add -k ($ObjBuff[$i] + ".blendParent1") ;
+          doTemplateChannel graphEditor1FromOutliner 1;}
+    } 
+} 
+    
+//Load Constrain        
+proc ConstrainLoad() {
+	string $ObjBuff[] = `ls -sl`;
+    for ($i=0; $i<size($ObjBuff); $i++){
+       	 if (`attributeQuery -n $ObjBuff[$i] -ex "blendParent1"`){    
+          selectKey -add -k ($ObjBuff[$i] + ".blendParent1") ;
+          doTemplateChannel graphEditor1FromOutliner 0;}
+        } 
+    }  
+//Key Exists At this Frame?
+proc int keyExistsAtFrame(int $frameNum, string $object, string $attribute){
+    int $value;
+    selectKey -clear;
+    int $value = `selectKey -add -k -t $frameNum ($object + "." + $attribute)`;    
+    if($value)
+        return 1;
+    else
+        return 0;
+}
+
+   
+//Blend Parent Fix
+proc BlendParentFix() {
+    string $ObjBuff[] = `ls -sl`;    
+    global string $gPlayBackSlider;    
+    float $range[] =`timeControl -q -ra $gPlayBackSlider`;
+    if ($range[0] + 1 == $range[1]) { 
+        float $minTime = `playbackOptions -q -min`;
+        float $maxTime = `playbackOptions -q -max`;
+        $range[0] =  $minTime;
+        $range[1] =  $maxTime;       
+    }   
+    snapKey -at ".blendParent1" -t ($range[0]+":"+$range[1]) -timeMultiple 1.1;
+    snapKey -at ".blendParent1" -t ($range[0]+":"+$range[1]) -timeMultiple 1;    
+    int $BakeStep = `intField -query -value BakeData`;
+    float $IndexKeyFrames[] = `keyframe -t ($range[0]+":"+$range[1]) -q`; 
+    for ($i=0; $i < size($ObjBuff); $i++){
+        if (`attributeQuery -n $ObjBuff[$i] -ex "blendParent1"`){    
+            if (`keyframe -at ".blendParent1" -q  -kc $ObjBuff[$i]` < 1)    
+            setKeyframe -at ".blendParent1" $ObjBuff[$i];
+            //Fix Blend Parent Keys Position
+            float $IndexBlendParentKeys[] = `keyframe -at ".blendParent1" -t ($range[0]+":"+$range[1]) -q $ObjBuff[$i]`;      
+            for ($b = 0; $b < size($IndexBlendParentKeys); $b++){       
+                int $BlendDiff = ($IndexBlendParentKeys[$b] - $range[0]) % $BakeStep;  
+                if ($BlendDiff > 0){
+                        if ($b > 0){ 
+                            if (($IndexBlendParentKeys[$b] - $IndexBlendParentKeys[$b - 1] <= $BakeStep)){                               
+                                cutKey -at ".blendParent1" -time $IndexBlendParentKeys[$b];
+                                $IndexBlendParentKeys[$b] = `keyframe -at ".blendParent1" -time $IndexBlendParentKeys[$b]`; 
+                                } else {                           
+                                keyframe -at ".blendParent1" -time $IndexBlendParentKeys[$b] -timeChange ($IndexBlendParentKeys[$b] - $BlendDiff) $ObjBuff[$i];
+                                $IndexBlendParentKeys[$b] = `keyframe -at ".blendParent1" -time $IndexBlendParentKeys[$b]`; 
+                           }
+                        } else {        
+                            keyframe -at ".blendParent1" -time $IndexBlendParentKeys[$b] -timeChange ($IndexBlendParentKeys[$b] - $BlendDiff) $ObjBuff[$i];
+                        }
+                }                
+            }     
+        }       
+    }
+}      
+        
+//Bake Factory Math   
+global proc BakeFactoryMath() {
+    //Get Range
+    global string $gPlayBackSlider;    
+    float $range[] =`timeControl -q -ra $gPlayBackSlider`;
+    if ($range[0] + 1 == $range[1]) { 
+        float $minTime = `playbackOptions -q -min`;
+        float $maxTime = `playbackOptions -q -max`;
+        $range[0] =  $minTime;
+        $range[1] =  $maxTime;       
+    }
+    BlendParentFix();
+    ConstrainSave();
+    selectKey -clear ;
+    int $BakeStep = `intField -query -value BakeData`;
+    string $ChannBuff[] = `channelBox -q -sma mainChannelBox`;
+    if (size($ChannBuff) > 0){
+        for ($i=0; $i<size($ChannBuff); $i++){           	
+            bakeResults -pok 1 -t ($range[0]+":"+$range[1]) -sb ($BakeStep+"") -at $ChannBuff[$i];
+        }
+    } else {
+    bakeResults -pok 1 -t ($range[0]+":"+$range[1]) -sb ($BakeStep+"");    
+    } 
+	ConstrainLoad();
+	selectKey -clear;
+	//Delete Unsnapped
+     selectKey -unsnappedKeys 1;
+     cutKey -animation keys -clear;
+	selectKey -clear; 
+}
+
+//ReRanger Math
+global proc ReRangerMath() {
+    //range or slider
+    global string $gPlayBackSlider;    
+    float $range[] =`timeControl -q -ra $gPlayBackSlider`;
+    if ($range[0] + 1 == $range[1]) { 
+        float $minTime = `playbackOptions -q -min`;
+        float $maxTime = `playbackOptions -q -max`;
+        $range[0] =  $minTime;
+        $range[1] =  $maxTime;       
+    }
+    //Shift number
+    float $KeyStepp = `intField -query -value BakeData`;
+    string $ObjBuff[] = `ls -sl`;
+    int $KeyframeCount;
+    for ($i=0; $i < size($ObjBuff); $i++){           	
+        int $KeyframeTemp = `keyframe -t ($range[0]+":"+$range[1]) -at translateX -q -kc $ObjBuff[$i]`; 
+        if ($KeyframeTemp > $KeyframeCount){
+            $KeyframeCount = $KeyframeTemp;
+        }
+    }
+    for ($i=0; $i < size($ObjBuff); $i++){           	
+        int $KeyframeTemp = `keyframe -t ($range[0]+":"+$range[1]) -at rotateY -q -kc $ObjBuff[$i]`; 
+        if ($KeyframeTemp > $KeyframeCount){
+            $KeyframeCount = $KeyframeTemp;
+        }
+    }
+    //Range Setup
+    float $IndexKeyFrames[] = `keyframe -t ($range[0]+":"+$range[1]) -q`; 
+    float $StartRange = $IndexKeyFrames[$KeyframeCount-1] - $IndexKeyFrames[0];
+    float $NewRange = ($KeyframeCount - 1) * $KeyStepp;  
+    float $RangeEnding;
+    if ($StartRange < $NewRange){
+        $RangeEnding = $IndexKeyFrames[0] + $NewRange;
+    } else {
+        $RangeEnding = $IndexKeyFrames[0] + $StartRange;
+    }
+    float $RangeBeg = $IndexKeyFrames[0];
+    //RerangeMath
+    for ($i=0; $i < $KeyframeCount - 1; ++$i){        
+        float $IndexKeyFrames[] = `keyframe -time ($RangeBeg + ":" + ($RangeEnding + 1)) -q`; 
+        if ($IndexKeyFrames[$i+1] - $IndexKeyFrames[$i] < $KeyStepp){
+            float $KeyDiff = $KeyStepp - ($IndexKeyFrames[$i+1] - $IndexKeyFrames[$i]);
+            if ($KeyDiff < 0){
+                keyframe -time $IndexKeyFrames[$i+1] -timeChange ($IndexKeyFrames[$i] + $KeyStepp);  
+            } else {
+                keyframe -edit -relative -timeChange $KeyDiff -t ($IndexKeyFrames[$i+1] + ":" + $RangeEnding);                
+            }                     
+        } else {  
+            keyframe -time $IndexKeyFrames[$i+1] -timeChange ($IndexKeyFrames[$i] + $KeyStepp);      
+        }
+    }
+}     

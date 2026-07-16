@@ -1,0 +1,431 @@
+// bh_animProxy V1.02 011117 
+
+global proc bh_animProxy()
+    {
+	float $mayaVersion =`getApplicationVersionAsFloat`;
+	string $mayaVer=`about -version`;
+	if ($mayaVersion>2016)// (2016.5 or newer has the new render layers.. 
+		{
+		   
+		   int $legacyOption=`optionVar -q renderSetupEnable`;
+		   if ($legacyOption==1) // maya is using the new system...
+		   {
+			   error "Please go to Preferences>Rendering and switch 'Preferred Render Setup System' to 'Legacy Render Layers' and then restart Maya";
+		   }
+		}
+	
+	if ($mayaVer=="2016 Extension 2 SP1")// (2016.5 or newer has the new render layers.. 
+		{
+		   
+		   int $legacyOption=`optionVar -q renderSetupEnable`;
+		   if ($legacyOption==1) // maya is using the new system...
+		   {
+			   error "Please go to Preferences>Rendering and switch 'Preferred Render Setup System' to 'Legacy Render Layers' and then restart Maya";
+		   }
+		}		
+		
+	if ($mayaVer=="2016 Extension 2 SP2")// (2016.5 or newer has the new render layers.. 
+		{
+		   
+		   int $legacyOption=`optionVar -q renderSetupEnable`;
+		   if ($legacyOption==1) // maya is using the new system...
+		   {
+			   error "Please go to Preferences>Rendering and switch 'Preferred Render Setup System' to 'Legacy Render Layers' and then restart Maya";
+		   }
+		}	
+		
+		
+		
+	
+    if (`window -exists bh_animProxyUI`)
+        deleteUI bh_animProxyUI;
+        
+        window -toolbox 1 -width 180 -t "bh_animProxy" -mxb 0 -mnb 0 bh_animProxyUI;
+        columnLayout -adj 1 -rowSpacing 1 -columnWidth 180 mainCol;
+     
+        rowColumnLayout -numberOfColumns 7;
+	
+ 
+        button -label "Sphere" -command bh_animProxySphere animSphereButton;  
+      
+        button -label " Cube " -command bh_animProxyCube animCubeButton;      
+		
+    text -label "  Scale: ";
+	  floatField  -minValue 0.01    -pre 2 -step 0.1  -value 1 -ann "Hold CTRL and Click Drag to change value interactively - release to set scale " -cc bhScaleAnimProxy scaleValField;
+   checkBox -v 1 -label "Textured" texCheckBox;
+	
+	button -label "Delete" -command bh_deleteAnimSphere delButton;  
+        showWindow bh_animProxyUI;
+    
+    }
+    bh_animProxy;
+	
+	
+     /////////////////////////////////////////////////////////////////////////////////////////////////
+     ///////////////////////////////////////////////////////////////////////////////////////////////// 
+    
+  // procs////////////////////
+  
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  global proc bh_animProxySphere()
+  {
+      int $texOrNot =`checkBox -q -v texCheckBox`;
+      if ($texOrNot==0)
+      {
+          bh_createAnimSphere;
+		evalDeferred("print \"Anim proxy created!\"");
+		  
+      }
+      if ($texOrNot==1)
+      {
+          bh_createAnimSphereStripey;
+
+		evalDeferred("print \"Anim proxy created!\"");
+		
+      }
+  }
+  
+    global proc bh_animProxyCube()
+  {
+      int $texOrNot =`checkBox -q -v texCheckBox`;
+      if ($texOrNot==0)
+      {
+          bh_createAnimCube;
+		 
+		evalDeferred("print \"Anim proxy created!\"");
+		 
+      }
+      if ($texOrNot==1)
+      {
+          bh_createAnimCubeStripey;
+		  
+		evalDeferred("print \"Anim proxy created!\"");
+		  
+      }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+
+global proc bh_createAnimCube()
+{
+// run the delete command first to clean up the scene ?    
+bh_deleteAnimSphere;
+
+string $ctrlSel[]=`ls -sl`;
+
+if (`size $ctrlSel`<1)
+error "Please select a control first";
+
+
+//create the render layer 
+
+if (!`objExists ("AnimProxy_Layer")`)
+{
+string $depLayer= `createRenderLayer -name "AnimProxy_Layer"`;
+
+
+}
+// make the depth Render Layer Active
+editRenderLayerGlobals -currentRenderLayer "AnimProxy_Layer";
+
+
+for ($each in $ctrlSel){
+
+string $ctrl=$each;
+
+select -cl;
+string $proxGroup=`group -em -name ($ctrl+"_AnimSphere") `;
+string $proxSphere[]=`polyCube  -w 1.5 -d 1.5 -h 1.5 -name ($ctrl+"_AnimSphereMesh") `;
+parent $proxSphere[0] $proxGroup;
+
+// set the starting scale.. 
+float $scaleVal = `floatField -query -value scaleValField`;
+setAttr ($proxGroup+".scaleX") $scaleVal;
+setAttr ($proxGroup+".scaleY") $scaleVal;
+setAttr ($proxGroup+".scaleZ") $scaleVal;
+
+
+select -r $ctrl $proxGroup;
+pointConstraint;
+orientConstraint;
+select -r $ctrl;
+}
+select -r $ctrlSel;
+
+}
+  
+///////////////////////////////////////////////////////////////////////////////////  
+global proc bh_createAnimSphere()
+{
+// run the delete command first to clean up the scene ?    
+bh_deleteAnimSphere;
+
+string $ctrlSel[]=`ls -sl`;
+
+if (`size $ctrlSel`<1)
+error "Please select a control first";
+
+
+//create the render layer 
+
+if (!`objExists ("AnimProxy_Layer")`)
+{
+string $depLayer= `createRenderLayer -name "AnimProxy_Layer"`;
+
+
+}
+// make the depth Render Layer Active
+editRenderLayerGlobals -currentRenderLayer "AnimProxy_Layer";
+
+
+for ($each in $ctrlSel){
+
+string $ctrl=$each;
+
+select -cl;
+string $proxGroup=`group -em -name ($ctrl+"_AnimSphere") `;
+string $proxSphere[]=`polySphere -name ($ctrl+"_AnimSphereMesh") -r 1`;
+parent $proxSphere[0] $proxGroup;
+
+// set the starting scale.. 
+float $scaleVal = `floatField -query -value scaleValField`;
+setAttr ($proxGroup+".scaleX") $scaleVal;
+setAttr ($proxGroup+".scaleY") $scaleVal;
+setAttr ($proxGroup+".scaleZ") $scaleVal;
+
+
+select -r $ctrl $proxGroup;
+pointConstraint;
+orientConstraint;
+select -r $ctrl;
+}
+select -r $ctrlSel;
+
+}
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+global proc bh_deleteAnimSphere()
+{
+
+string $animSphereMesh[]=`ls -r 1 "*_AnimSphere"`;
+if (`size $animSphereMesh`>0)
+delete  $animSphereMesh;
+
+editRenderLayerGlobals -currentRenderLayer defaultRenderLayer;
+if (`objExists ("AnimProxy_Layer")`){
+delete AnimProxy_Layer;}
+if (`objExists ("Stripe_Shader")`){
+delete Stripe_Shader;}
+
+if (`objExists ("StripeRamp")`){
+delete StripeRamp;}
+
+if (`objExists ("StripeShaderSG")`){
+delete StripeShaderSG;}
+
+print "Animation proxy setup removed successfully!";
+
+}
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+// variations.. 
+
+global proc bh_createAnimSphereStripey()
+{
+// run the delete command first to clean up the scene ?    
+bh_deleteAnimSphere;
+
+string $ctrlSel[]=`ls -sl`;
+
+if (`size $ctrlSel`<1)
+error "Please select a control first";
+
+
+
+//create the render layer 
+
+if (!`objExists ("AnimProxy_Layer")`)
+{
+string $depLayer= `createRenderLayer -name "AnimProxy_Layer"`;
+
+
+}
+
+
+if (!`objExists ("Stripe_Shader")`)
+{
+// create the shader
+
+string $stripeShadr=`shadingNode -name "Stripe_Shader" -asShader lambert`;
+string $StripeShaderSG=`sets -renderable true -noSurfaceShader true -empty -name StripeShaderSG`;
+connectAttr -f ($stripeShadr+".outColor") ($StripeShaderSG+".surfaceShader");
+
+
+string $rampNode=`shadingNode -name "StripeRamp" -asTexture ramp`;
+setAttr ($rampNode+".type") 0;
+setAttr ($rampNode+".interpolation") 0;
+setAttr ($rampNode+".colorEntryList[1].position") 0.1;
+setAttr ($rampNode+".colorEntryList[1].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[2].position") 0.2;
+setAttr ($rampNode+".colorEntryList[2].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[3].position") 0.3;
+setAttr ($rampNode+".colorEntryList[3].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[4].position") 0.4;
+setAttr ($rampNode+".colorEntryList[4].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[5].position") 0.5;
+setAttr ($rampNode+".colorEntryList[5].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[6].position") 0.6;
+setAttr ($rampNode+".colorEntryList[6].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[7].position") 0.7;
+setAttr ($rampNode+".colorEntryList[7].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[8].position") 0.8;
+setAttr ($rampNode+".colorEntryList[8].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[9].position") 0.9;
+setAttr ($rampNode+".colorEntryList[9].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[10].position") 1;
+setAttr ($rampNode+".colorEntryList[10].color") -type double3 0 0 0;
+connectAttr -f ($rampNode+".outColor") ($stripeShadr+".color");
+}
+
+setAttr "StripeRamp.type" 0;
+// make the  Render Layer Active
+editRenderLayerGlobals -currentRenderLayer "AnimProxy_Layer";
+//editRenderLayerMembers -noRecurse "AnimProxy_Layer" $each;// add each object to the Render Layer
+for ($each in $ctrlSel){
+string $ctrl=$each;
+select -cl;
+string $proxGroup=`group -em -name ($ctrl+"_AnimSphere") `;
+string $proxSphere[]=`polySphere -name ($ctrl+"_AnimSphereMesh") -r 1`;
+parent $proxSphere[0] $proxGroup;
+
+select -r  $proxSphere[0];
+hyperShade -assign "Stripe_Shader"; // assign the shader 
+
+// set the starting scale.. 
+float $scaleVal = `floatField -query -value scaleValField`;
+setAttr ($proxGroup+".scaleX") $scaleVal;
+setAttr ($proxGroup+".scaleY") $scaleVal;
+setAttr ($proxGroup+".scaleZ") $scaleVal;
+
+select -r $ctrl $proxGroup;
+pointConstraint;
+orientConstraint;
+select -r $ctrl;
+}
+select -r $ctrlSel;
+
+}
+/////////////////////////////////////////////////////////////////////////////////////
+
+global proc bh_createAnimCubeStripey()
+{
+// run the delete command first to clean up the scene ?    
+bh_deleteAnimSphere;
+
+string $ctrlSel[]=`ls -sl`;
+
+if (`size $ctrlSel`<1)
+error "Please select a control first";
+
+
+
+//create the render layer 
+
+if (!`objExists ("AnimProxy_Layer")`)
+{
+string $depLayer= `createRenderLayer -name "AnimProxy_Layer"`;
+
+
+}
+
+
+if (!`objExists ("Stripe_Shader")`)
+{
+// create the shader
+
+string $stripeShadr=`shadingNode -name "Stripe_Shader" -asShader lambert`;
+string $StripeShaderSG=`sets -renderable true -noSurfaceShader true -empty -name StripeShaderSG`;
+connectAttr -f ($stripeShadr+".outColor") ($StripeShaderSG+".surfaceShader");
+
+string $rampNode=`shadingNode -name "StripeRamp" -asTexture ramp`;
+setAttr ($rampNode+".type") 0;
+setAttr ($rampNode+".interpolation") 0;
+setAttr ($rampNode+".colorEntryList[1].position") 0.1;
+setAttr ($rampNode+".colorEntryList[1].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[2].position") 0.2;
+setAttr ($rampNode+".colorEntryList[2].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[3].position") 0.3;
+setAttr ($rampNode+".colorEntryList[3].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[4].position") 0.4;
+setAttr ($rampNode+".colorEntryList[4].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[5].position") 0.5;
+setAttr ($rampNode+".colorEntryList[5].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[6].position") 0.6;
+setAttr ($rampNode+".colorEntryList[6].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[7].position") 0.7;
+setAttr ($rampNode+".colorEntryList[7].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[8].position") 0.8;
+setAttr ($rampNode+".colorEntryList[8].color") -type double3 0 0 0;
+setAttr ($rampNode+".colorEntryList[9].position") 0.9;
+setAttr ($rampNode+".colorEntryList[9].color") -type double3 1 1 1 ;
+setAttr ($rampNode+".colorEntryList[10].position") 1;
+setAttr ($rampNode+".colorEntryList[10].color") -type double3 0 0 0;
+connectAttr -f ($rampNode+".outColor") ($stripeShadr+".color");
+}
+
+setAttr "StripeRamp.type" 8;
+// make the  Render Layer Active
+editRenderLayerGlobals -currentRenderLayer "AnimProxy_Layer";
+//editRenderLayerMembers -noRecurse "AnimProxy_Layer" $each;// add each object to the Render Layer
+for ($each in $ctrlSel){
+string $ctrl=$each;
+select -cl;
+string $proxGroup=`group -em -name ($ctrl+"_AnimSphere") `;
+string $proxSphere[]=`polyCube  -w 1.5 -d 1.5 -h 1.5 -name ($ctrl+"_AnimSphereMesh") `;
+parent $proxSphere[0] $proxGroup;
+
+select -r  $proxSphere[0];
+hyperShade -assign "Stripe_Shader"; // assign the shader 
+
+// set the starting scale.. 
+float $scaleVal = `floatField -query -value scaleValField`;
+setAttr ($proxGroup+".scaleX") $scaleVal;
+setAttr ($proxGroup+".scaleY") $scaleVal;
+setAttr ($proxGroup+".scaleZ") $scaleVal;
+
+select -r $ctrl $proxGroup;
+pointConstraint;
+orientConstraint;
+select -r $ctrl;
+}
+select -r $ctrlSel;
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+global proc bhScaleAnimProxy()
+{
+    string $animSphereMesh[]=`ls -r 1 "*_AnimSphere"`;
+    float $scaleVal = `floatField -query -value scaleValField`;
+    //print $scaleVal;
+    if (`size $animSphereMesh`>0)
+    {
+        for ($each in $animSphereMesh)
+        {
+            setAttr ($each+".scaleX") $scaleVal;
+            setAttr ($each+".scaleY") $scaleVal;
+            setAttr ($each+".scaleZ") $scaleVal;
+        }
+    }
+    
+    
+    
+}

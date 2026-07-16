@@ -1,0 +1,20 @@
+// Field
+string $scriptName  = "Combine";
+string $icon		= "pythonFamily.png";
+
+// Install-Scriptstring
+$melPath 	= `whatIs asInstallScriptLocator`;
+
+string $packagePath = python("'" + $melPath + "'[24:].split('__install__')[0]");
+
+string $currentShelf= `tabLayout -q -selectTab $gShelfTopLevel`;
+setParent $currentShelf;
+
+string $scriptCommand  = "import sys; sys.path.append('" + $packagePath + "');import cbSingleTon as cbTool;\ntry:\n    reload\nexcept NameError:\n    try:\n        from importlib import reload\n    except ImportError:\n        from imp import reload\nreload(cbTool);\ncbTool.showUI()";
+shelfButton -command $scriptCommand -sourceType "python" -annotation $scriptName -imageOverlayLabel $scriptName -label $scriptName -image $icon -image1 $icon  ; 
+
+// File-Path's Locator
+global proc asInstallScriptLocator (){}
+
+
+

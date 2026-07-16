@@ -1,0 +1,9 @@
+{
+    "increment": true, 
+    "is_bake": true, 
+    "is_constraint": true, 
+    "is_merge": false, 
+    "is_smartBake": false, 
+    "is_start": true, 
+    "start_Frame": 1859
+}

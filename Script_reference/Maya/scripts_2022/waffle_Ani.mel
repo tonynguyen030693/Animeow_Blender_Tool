@@ -1,0 +1,452 @@
+global proc waffle_ByeByeFile(int $case)
+{
+
+  switch($case)
+  {
+      case 1 :
+          $response = `confirmDialog -title "Confirm" 
+                          -message "진짜로 파일을 지울건가요?"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+            $response2 = `confirmDialog -title "진짜?" 
+                            -message "더는 안묻는다 확실하지?"
+                            -button "Yes" 
+                            -button "No"
+                            -defaultButton "Yes"
+                            -cancelButton "No"
+                            -dismissString "No"`;          
+              if( $response2 == "Yes" ) 
+                  {
+                  $Curr_project = `workspace -q -fn`;
+                  $RootPath = stringToStringArray($Curr_project, "/");
+                  $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];;  
+
+                  string $EPs_ByeBye_1=`optionMenu -q -v waffle_EP`;
+                  string $CUTs_ByeBye=`optionMenu -q -v waffle_CUT`;
+                  string $N_Path = $project + "\\02_Scenes\\05_Lighting\\" + $EPs_ByeBye_1 + "\\" + $CUTs_ByeBye + "\\";
+                  string $waffle_Lit[] = `textScrollList -q -si waffle_Lit_List`;
+
+                      for ($i=0; $i<size($waffle_Lit); $i++)
+                      {
+                      string $waffle_Lit_filename = $N_Path+$waffle_Lit[$i];
+                      sysFile -delete $waffle_Lit_filename;    
+
+                      }
+                  waffle_get_EPs(3);
+                  print("선택한 파일을 지웠습니다.\n"); 
+                  }
+                  else if( $response2 == "No" ) 
+                  {
+                    print("내가 그럴줄 알았지...\n");
+                  }
+    
+                  
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+      break;		
+
+      case 2 :
+          $response = `confirmDialog -title "Confirm" 
+                          -message "진짜로 파일을 지울건가요?"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+              $Curr_project = `workspace -q -fn`;
+              $RootPath = stringToStringArray($Curr_project, "/");
+              $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];;  
+
+              string $EPs_ByeBye_2=`optionMenu -q -v waffle_EP`;
+              string $CUTs_ByeBye=`optionMenu -q -v waffle_CUT`;
+              string $N_Path = $project + "\\02_Scenes\\05_Lighting\\" + $EPs_ByeBye_2 + "\\" + $CUTs_ByeBye + "\\" + "Z_Source\\";
+              string $waffle_src[] = `textScrollList -q -si waffle_src_List`;
+
+                  for ($i=0; $i<size($waffle_src); $i++)
+                  {
+                  string $waffle_src_filename = $N_Path+$waffle_src[$i];
+                  sysFile -delete $waffle_src_filename;    
+
+                  }
+              waffle_get_EPs(3);
+              print("선택한 파일을 지웠습니다.\n"); 
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+      break;	
+
+      case 3 :
+          $response = `confirmDialog -title "Confirm" 
+                          -message "진짜로 파일을 지울건가요?"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+              $Curr_project = `workspace -q -fn`;
+              $RootPath = stringToStringArray($Curr_project, "/");
+              $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];;  
+
+              string $EPs_ByeBye_2=`optionMenu -q -v waffle_EP`;
+              string $CUTs_ByeBye=`optionMenu -q -v waffle_CUT`;
+              string $N_Path = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_ByeBye_2 + "\\" + $CUTs_ByeBye + "\\";
+              string $waffle_Ani[] = `textScrollList -q -si waffle_Ani_List`;
+
+                  for ($i=0; $i<size($waffle_Ani); $i++)
+                  {
+                  string $waffle_Ani_filename = $N_Path+$waffle_Ani[$i];
+                  sysFile -delete $waffle_Ani_filename;    
+
+                  }
+              waffle_get_EPs(3);
+              print("선택한 파일을 지웠습니다.\n"); 
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+      break;
+
+      case 33 :
+          $response = `confirmDialog -title "Confirm" 
+                          -message "진짜로 폴더를 지울건가요? (비어있는 폴더만 지워집니다.)"
+                          -button "Yes" 
+                          -button "No"
+                          -defaultButton "Yes"
+                          -cancelButton "No"
+                          -dismissString "No"`;
+          
+          // check response	  
+          if( $response == "Yes" ) 
+          {
+              $Curr_project = `workspace -q -fn`;
+              $RootPath = stringToStringArray($Curr_project, "/");
+              $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];;  
+
+              string $EPs_ByeBye_2=`optionMenu -q -v waffle_EP`;
+              string $CUTs_ByeBye=`optionMenu -q -v waffle_CUT`;
+              string $N_Path = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_ByeBye_2 + "\\" + $CUTs_ByeBye + "\\";
+              string $waffle_Ani[] = `textScrollList -q -si waffle_Ani_List`;
+
+                  sysFile -red $N_Path;    
+              waffle_get_EPs(2);
+
+              print("선택한 폴더를 지웠습니다.\n"); 
+          } 
+          else if( $response == "No" ) 
+          {
+            print("휴~~~ ^^;\n");
+          }
+      break;
+            	
+  }
+
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+global proc waffle_KeepFiles(int $case)
+{
+    //Move Lit to History
+    $Get2_project = `workspace -q -fn`;
+    $RootPath4his = stringToStringArray($Get2_project, "/");
+    $project4His = $RootPath4his[0] + "\\" + $RootPath4his[1] + "\\" + $RootPath4his[2];
+
+
+    string $EPs_OPMN=`optionMenu -q -v waffle_EP`;
+    string $CUTs_OPMN=`optionMenu -q -v waffle_CUT`;
+    string $Ani_File_Path = $project4His + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_OPMN + "\\" + $CUTs_OPMN + "\\";
+    string $His_PathA = $project4His + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_OPMN + "\\" + $CUTs_OPMN + "\\_ALY";
+    string $His_PathB = $project4His + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_OPMN + "\\" + $CUTs_OPMN + "\\_BLK";
+    string $His_PathD = $project4His + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EPs_OPMN + "\\" + $CUTs_OPMN + "\\_DTL";
+    
+    string $waffle_Ani_O[] = `textScrollList -q -si waffle_Ani_List`;
+    string $waffle_Ani_his_2[] = `textScrollList -q -si waffle_Ani_List_2`;
+            string $waffle_Ani_his_3[] = `textScrollList -q -si waffle_Ani_List_3`;
+                    string $waffle_Ani_his_4[] = `textScrollList -q -si waffle_Ani_List_4`;
+
+ 
+    switch($case)
+    {
+        case 1 :
+          for ($i=0; $i<size($waffle_Ani_O); $i++)
+          {
+            string $Ani_Selected = $Ani_File_Path+$waffle_Ani_O[$i];
+            sysFile -makeDir $His_PathA;
+            string $syscmd ="move "+$Ani_Selected+ " " + $His_PathA;
+            system( $syscmd );
+          }
+          waffle_get_EPs(3);waffle_get_EPs(4);  
+        break;
+
+
+        case 2 :
+          for ($i=0; $i<size($waffle_Ani_O); $i++)
+          {
+            string $Ani_Selected = $Ani_File_Path+$waffle_Ani_O[$i];
+            sysFile -makeDir $His_PathB;
+            string $syscmd ="move "+$Ani_Selected+ " " + $His_PathB;
+            system( $syscmd );
+          }
+          waffle_get_EPs(3);waffle_get_EPs(5);  
+        break;
+        
+        case 3 :
+          for ($i=0; $i<size($waffle_Ani_O); $i++)
+          {
+            string $Ani_Selected = $Ani_File_Path+$waffle_Ani_O[$i];
+            sysFile -makeDir $His_PathD;
+            string $syscmd ="move "+$Ani_Selected+ " " + $His_PathD;
+            system( $syscmd );
+          }
+          waffle_get_EPs(3);waffle_get_EPs(6);  
+        break;
+
+    }
+
+}
+
+
+global proc waffle_MakeAni(int $case)
+{
+    $Path = `workspace -q -fn`;
+    string $init_3[]= `getFileList -folder $Path -filespec "*.ini"`;
+    string $ini_gets_3 = $init_3[0]; 
+    string $G_I_3[] = stringToStringArray($ini_gets_3, ".");
+    
+    
+    $RootPath = stringToStringArray($Path, "/");
+    $project = $RootPath[0] + "\\" + $RootPath[1]+ "\\" + $RootPath[2];  
+    
+    
+    string $EP_A02=`optionMenu -q -v waffle_EP`;
+    string $CUT_A02=`optionMenu -q -v waffle_CUT`;
+    
+    string $waffle_AniRoot = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $EP_A02 + "\\" + $CUT_A02 + "\\";
+
+
+    string $waffle_A0F_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.2000.ma";
+    string $waffle_A0F_RN = $waffle_AniRoot + $waffle_A0F_MA;      
+
+
+    string $waffle_LAY_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0101.ma";
+    string $waffle_LAY_RN = $waffle_AniRoot + $waffle_LAY_MA;
+    
+    string $waffle_A01_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0201.ma";
+    string $waffle_A01_RN = $waffle_AniRoot + $waffle_A01_MA;      
+    
+    string $waffle_A02_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0301.ma";
+    string $waffle_A02_RN = $waffle_AniRoot + $waffle_A02_MA;      
+
+    string $waffle_A03_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0401.ma";
+    string $waffle_A03_RN = $waffle_AniRoot + $waffle_A03_MA;    
+      
+    string $waffle_A031_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0501.ma";
+    string $waffle_A031_RN = $waffle_AniRoot + $waffle_A031_MA;   
+    
+    string $waffle_A032_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0601.ma";
+    string $waffle_A032_RN = $waffle_AniRoot + $waffle_A032_MA;   
+    
+    string $waffle_A033_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0701.ma";
+    string $waffle_A033_RN = $waffle_AniRoot + $waffle_A033_MA;   
+    
+    string $waffle_A034_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0801.ma";
+    string $waffle_A034_RN = $waffle_AniRoot + $waffle_A034_MA;   
+    
+    string $waffle_A035_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.0901.ma";
+    string $waffle_A035_RN = $waffle_AniRoot + $waffle_A035_MA;                   
+    
+    string $waffle_A036_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.1001.ma";
+    string $waffle_A036_RN = $waffle_AniRoot + $waffle_A036_MA;   
+    
+    string $waffle_A037_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.1101.ma";
+    string $waffle_A037_RN = $waffle_AniRoot + $waffle_A037_MA;   
+    
+    string $waffle_A038_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.1201.ma";
+    string $waffle_A038_RN = $waffle_AniRoot + $waffle_A038_MA;   
+    
+    string $waffle_A039_MA = $G_I_3[0] + "_" + $EP_A02 + "_" + $CUT_A02 + "_Ani.1301.ma";
+    string $waffle_A039_RN = $waffle_AniRoot + $waffle_A039_MA;   
+ 
+
+
+
+    switch($case)
+    {
+
+        case 1 :
+            file -rn $waffle_LAY_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;   
+
+        case 2 :
+            file -rn $waffle_A01_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;            
+
+        case 3 :
+            file -rn $waffle_A02_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 4 :
+            file -rn $waffle_A03_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 41 :
+            file -rn $waffle_A031_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 42 :
+            file -rn $waffle_A032_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 43 :
+            file -rn $waffle_A033_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 44 :
+            file -rn $waffle_A034_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 45 :
+            file -rn $waffle_A035_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 46 :
+            file -rn $waffle_A036_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 47 :
+            file -rn $waffle_A037_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+        case 48 :
+            file -rn $waffle_A038_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+                
+
+
+        case 5 :
+            file -rn $waffle_A0F_RN ; 
+            file -f -save  -options "v=0;" -type "mayaAscii";
+            waffle_get_EPs(3);
+            
+        break;
+
+
+      case 6 :
+          string $Got_EPs=`optionMenu -q -v waffle_EP`;
+
+          string $BatchCut_Name =`textField -q -tx waffle_MakeDir_FLD`;
+                 $cutReArray = stringToStringArray($BatchCut_Name, "-");
+
+            int $b_start = $cutReArray[0];
+            int $b_end = $cutReArray[1];
+
+        for ($i = $b_start; $i <= $b_end; $i++)
+        {           
+
+            if($i<100)
+            {
+                if($i<10)
+                {
+                $CutName = "C"+"00"+$i;    
+
+                string $ani_nFile = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $Got_EPs + "\\" + $CutName + "\\";
+                string $ani_BatchFiles = $G_I_3[0] + "_" + $Got_EPs + "_" + $CutName + "_Ani.0101.ma";
+                string $ani_FullPathName = $ani_nFile + $ani_BatchFiles;
+                sysFile -makeDir $ani_nFile;
+                
+                file -rn $ani_FullPathName ; 
+                file -f -save  -options "v=0;" -type "mayaAscii";
+
+                }
+                else
+                {
+                $CutName = "C"+"0"+$i;    
+
+                string $ani_nFile = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $Got_EPs + "\\" + $CutName + "\\";
+                string $ani_BatchFiles = $G_I_3[0] + "_" + $Got_EPs + "_" + $CutName + "_Ani.0101.ma";
+                string $ani_FullPathName = $ani_nFile + $ani_BatchFiles;
+                sysFile -makeDir $ani_nFile;
+
+                file -rn $ani_FullPathName ; 
+                file -f -save  -options "v=0;" -type "mayaAscii";
+                }
+            }
+            else 
+            {
+              $CutName = "C"+$i;    
+
+              string $ani_nFile = $project + "\\02_Scenes\\03_Animation\\3_KEY\\" + $Got_EPs + "\\" + $CutName + "\\";
+              string $ani_BatchFiles = $G_I_3[0] + "_" + $Got_EPs + "_" + $CutName + "_Ani.0101.ma";
+              string $ani_FullPathName = $ani_nFile + $ani_BatchFiles;
+              sysFile -makeDir $ani_nFile;
+
+              file -rn $ani_FullPathName ; 
+              file -f -save  -options "v=0;" -type "mayaAscii";
+          }
+            
+        }
+    
+          waffle_get_EPs(2);
+          waffle_get_EPs(3);
+          break;      
+
+   
+    }
+}

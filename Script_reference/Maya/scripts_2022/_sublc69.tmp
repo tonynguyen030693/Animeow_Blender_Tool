@@ -1,0 +1,2335 @@
+from maya import cmds
+from maya import OpenMaya
+import math
+class GeneralUtility():
+    @staticmethod
+    def findNodeShape(objName,getAll=False):
+        shapes = cmds.listRelatives(objName, s=True, pa=True)
+        if not shapes:
+            raise RuntimeError, '%s has no shape'%objName
+        retList=[]
+        for shape in shapes:
+            is_intermediate = cmds.getAttr('%s.intermediateObject'%shape)
+            if (not is_intermediate):
+                retList.append(shape)
+        if(len(retList)>0):
+            if(getAll):
+                return retList
+            else:
+                return retList[0]
+        else:
+            raise RuntimeError('Could not find shape on node {0}'.format(objName))
+    @staticmethod
+    def findNodeIntermediateShape(objName):
+        shapes = cmds.listRelatives(objName, s=True, pa=True)
+        if not shapes:
+            raise RuntimeError, '%s has no shape'%objName
+        for shape in shapes:
+            is_intermediate = cmds.getAttr('%s.intermediateObject'%shape)
+            if (is_intermediate and cmds.listConnections('%s.worldMesh' % shape,source=False)):
+                return shape
+        raise RuntimeError('Could not find shape on node {0}'.format(objName))
+    @staticmethod
+    def getComponentCenter(compList):
+        center=[0,0,0]
+        for comp in compList:
+            pos=cmds.xform(comp,q=1,ws=1,t=1)
+            center[0]+=pos[0]
+            center[1]+=pos[1]
+            center[2]+=pos[2]
+        center[0]/=len(compList)
+        center[1]/=len(compList)
+        center[2]/=len(compList)
+        return center
+    @staticmethod
+    def getObjectMatrix(obj):
+        matList=cmds.xform(obj,q=1,ws=1,m=1)
+        util=maya.OpenMaya.MScriptUtil()
+        mat=OpenMaya.MMatrix()
+        util.createMatrixFromList(matList,mat)
+        return mat
+    @staticmethod
+    def transformationMatrix(mat,translate=None,rotate=None,space=OpenMaya.MSpace.kTransform):
+        tranMat=OpenMaya.MTransformationMatrix(mat)
+        if(translate):
+            tranMat.translateBy(OpenMaya.MVector(translate[0],translate[1],translate[2]),space)
+        if(rotate):
+            tranMat.rotateBy(OpenMaya.MEulerRotation(rotate[0],rotate[1],rotate[2]),space)
+        return tranMat.asMatrix()
+    @staticmethod
+    def getDistance(obj1,obj2): 
+        t1=cmds.xform(obj1,q=1,ws=1,t=1)
+        t2=cmds.xform(obj2,q=1,ws=1,t=1)
+        p1=OpenMaya.MPoint(t1[0],t1[1],t1[2])
+        p2=OpenMaya.MPoint(t2[0],t2[1],t2[2])
+        return p1.distanceTo(p2)
+    @staticmethod
+    def getVector(obj1,obj2):
+        if(not isinstance(obj1,OpenMaya.MPoint)):
+            t1=cmds.xform(obj1,q=1,ws=1,t=1)
+            p1=OpenMaya.MPoint(t1[0],t1[1],t1[2])
+        else:
+            p1=obj1
+        if(not isinstance(obj2,OpenMaya.MPoint)):
+            t2=cmds.xform(obj2,q=1,ws=1,t=1)
+            p2=OpenMaya.MPoint(t2[0],t2[1],t2[2])
+        else:
+            p2=obj2
+        return p2-p1
+    @staticmethod
+    def getPerpendicularVector(vec1,vec2):
+        vec1=OpenMaya.MVector(vec1)
+        vec2=OpenMaya.MVector(vec2)
+        len2=vec1*vec2/vec2.length()
+        vec2.normalize()
+        pVec=vec2*len2
+        return pVec-vec1
+    @staticmethod
+    def getPoleMoveVector(obj1,obj2,obj3,typ='first'):
+        # obj1='L_arm'
+        # obj2='L_lowarm'
+        # obj3='L_hand'
+
+        vec1=GeneralUtility.getVector(obj1,obj2)
+        vec2=GeneralUtility.getVector(obj1,obj3)
+        if(typ=='first'):
+            pVec=GeneralUtility.getPerpendicularVector(vec2,vec1)
+        else:
+            pVec=GeneralUtility.getPerpendicularVector(vec1,vec2)
+            pVec*=-1
+        pVec.normalize()
+        moveVec=pVec*vec1.length()
+        return  moveVec
+
+    @staticmethod
+    def getWorldSpaceFront(obj,offsetRatate=[0,0,0]):
+        mat=GeneralUtility.getObjectMatrix(obj)
+        mat=GeneralUtility.transformationMatrix(mat,rotate=[math.radians(offsetRatate[0]),math.radians(offsetRatate[1]),math.radians(offsetRatate[2])])
+        vec=OpenMaya.MVector(1,0,0)
+        return vec*mat.inverse()
+    @staticmethod
+    def getWorldSpaceDirection(obj,Direct=[1,0,0]):
+        mat=GeneralUtility.getObjectMatrix(obj)
+        vec=OpenMaya.MVector(Direct[0],Direct[1],Direct[2])
+        return vec*mat.inverse()
+    @staticmethod
+    def getJointChain(rootJnt):
+        jntList=[rootJnt]
+        loopNum=0
+        while True:
+            chList=cmds.listRelatives(rootJnt,c=1,typ='joint',ad=0)
+            if(chList==None):
+                break
+            jntList.append(chList[0])
+            rootJnt=chList[0]
+            if(loopNum>1000):
+                raise RuntimeError,'Loop Limit!'
+            loopNum+=1
+        return jntList
+    @staticmethod
+    def connectAllShapeAttr(ctrl,cAttr,sAttr):
+        shapeList=GeneralUtility.findNodeShape(ctrl,getAll=True)
+        for shape in shapeList:
+                cmds.connectAttr(cAttr,shape+'.'+sAttr)
+    @staticmethod
+    def createSdkGrp(ctrl):
+        sdkGrp=ctrl+'_sdk'
+        if(cmds.objExists(sdkGrp)):
+            return sdkGrp
+        sdkGrp=cmds.group(em=1,n=sdkGrp)
+        cmds.parent(sdkGrp,ctrl)
+        GeneralUtility.resetTransformAttr(sdkGrp)
+        pObj=cmds.listRelatives(ctrl,p=1)
+        if(pObj):
+            cmds.parent(sdkGrp,pObj[0])
+        else:
+            cmds.parent(sdkGrp,w=1)
+        cmds.parent(ctrl,sdkGrp)
+        return sdkGrp
+    @staticmethod
+    def transferSdkValueToCtrl(ctrl):
+        pos=cmds.xform(ctrl,q=1,ws=1,t=1)
+        rot=cmds.xform(ctrl,q=1,ws=1,ro=1)
+        sdkGrp=GeneralUtility.createSdkGrp(ctrl)
+        GeneralUtility.resetTransformAttr(sdkGrp)
+        cmds.xform(ctrl,ws=1,t=pos)
+        cmds.xform(ctrl,ws=1,ro=rot)
+    @staticmethod
+    def resetTransformAttr(obj):
+        attrList=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        valList=[0,0,0,0,0,0,1,1,1]
+        for attr,dv in zip(attrList,valList):
+            isLock=cmds.getAttr(obj+'.'+attr,l=1)
+            if(isLock):
+                continue
+            cmds.setAttr(obj+'.'+attr,dv)
+
+
+# curve,zeroGrp=ControlUtility.createControl('sss')
+# ControlUtility.scaleCV(curve,2)
+class ControlUtility():
+    GlobalScale=1
+    @staticmethod
+    def createControl(cName,cType='Circle',Mirror=True,T=True,R=True,S=False):
+        curve=ControlUtility.createCurve(cName,cType)
+        cmds.rename(curve,cName)
+        ControlUtility.scaleCV(curve,ControlUtility.GlobalScale,typ='ObjectCenter')
+        cmds.setAttr(curve+'.v',l=1,k=0)
+        ControlUtility.lockTranslate(curve,x=not T,y=not T,z=not T)
+        ControlUtility.lockRotate(curve,x=not R,y=not R,z=not R)
+        ControlUtility.lockScale(curve,x=not S,y=not S,z=not S)
+        zeroGrp=ControlUtility.createZeroGrp(curve,Mirror)
+        return zeroGrp
+    @staticmethod
+    def createZeroGrp(curve,Mirror):
+        zeroGrp=cmds.group(em=1,n=curve+'_zero')
+        cmds.delete(cmds.parentConstraint(curve,zeroGrp))
+        pObj=cmds.listRelatives(curve,p=1)
+        if(pObj):
+            cmds.parent(zeroGrp,pObj[0])
+        if(Mirror):
+            mirGrp=cmds.group(em=1,n=curve+'_mir')
+            cmds.delete(cmds.parentConstraint(zeroGrp,mirGrp))
+            cmds.parent(mirGrp,zeroGrp)
+            cmds.parent(curve,mirGrp)
+            if(curve[:2]=='R_'):
+                cmds.setAttr(mirGrp+'.sx',-1)
+                cmds.setAttr(mirGrp+'.sy',-1)
+                cmds.setAttr(mirGrp+'.sz',-1)
+        else:
+            cmds.parent(curve,zeroGrp)
+        return zeroGrp
+
+    @staticmethod
+    def createParentGrp(curve,suf):
+        pGrp=cmds.duplicate(curve,po=1,n=curve+suf)[0]
+        cmds.parent(curve,pGrp)
+        return pGrp
+    @staticmethod
+    def createInverseGrp(curve):
+        invGrp=cmds.duplicate(curve,po=1,n=curve+'_inv')[0]
+        cmds.parent(curve,invGrp)
+        invMulNode=cmds.createNode('multiplyDivide',n=invGrp+'_mulNode')
+        cmds.setAttr(invMulNode+'.i2',-1,-1,-1,typ='float3')
+        cmds.connectAttr(curve+'.r',invMulNode+'.i1')
+        cmds.connectAttr(invMulNode+'.o',invGrp+'.r')
+        return invGrp
+    @staticmethod
+    def lockTranslate(curve,x=1,y=1,z=1):
+        cmds.setAttr(curve+'.tx',l=x,k=not x)
+        cmds.setAttr(curve+'.ty',l=y,k=not y)
+        cmds.setAttr(curve+'.tz',l=z,k=not z)
+    @staticmethod
+    def lockRotate(curve,x=1,y=1,z=1):
+        cmds.setAttr(curve+'.rx',l=x,k=not x)
+        cmds.setAttr(curve+'.ry',l=y,k=not y)
+        cmds.setAttr(curve+'.rz',l=z,k=not z)
+    @staticmethod
+    def lockScale(curve,x=1,y=1,z=1):
+        cmds.setAttr(curve+'.sx',l=x,k=not x)
+        cmds.setAttr(curve+'.sy',l=y,k=not y)
+        cmds.setAttr(curve+'.sz',l=z,k=not z)
+
+    @staticmethod
+    def scaleCV(curve,size,typ='ShapeCenter'):
+        if(isinstance(size,list)):
+            sx,sy,sz=size
+        else:
+            sx,sy,sz=size,size,size
+        if(typ=='ObjectCenter' or typ==1):
+            center=cmds.xform(curve,q=1,ws=1,t=1)
+            cmds.scale(sx,sy,sz,cmds.ls(curve+'.cv[*]'),r=1,ocp=1,p=center)
+        elif(typ=='WorldCenter' or typ==2):
+            center=(0,0,0)
+            cmds.scale(sx,sy,sz,cmds.ls(curve+'.cv[*]'),r=1,ocp=1,p=center)
+        elif(typ=='ShapeCenter' or typ==3):
+            shapes=GeneralUtility.findNodeShape(curve,getAll=True)
+            for shape in shapes:
+                cvList=cmds.ls(shape+'.cv[*]',fl=1)
+                center=GeneralUtility.getComponentCenter(cvList)
+                cmds.scale(sx,sy,sz,cvList,r=1,ocp=1,p=center)
+    @staticmethod
+    def moveCV(curve,vec):
+        shapes=GeneralUtility.findNodeShape(curve,getAll=True)
+        for shape in shapes:
+            cvList=cmds.ls(shape+'.cv[*]',fl=1)
+            cmds.move(vec.x,vec.y,vec.z,cvList,r=1)
+
+    @staticmethod
+    def createCurve(cName,cType):
+        if(cType=='Root'):
+            cName=cmds.circle(n=cName,r=1,nr=[0,1,0],ch=0)
+            return cName[0]
+        if(cType=='Circle'):
+            cName=cmds.circle(n=cName,r=1.3,nr=[1,0,0],ch=0)
+            return cName[0]
+        if(cType=='Circle_Arrow'):
+            cName=cmds.curve(n=cName,d=1,p=[(0.0,0.991,-0.125),(0.0,1.113,0.0),(0.0,0.991,0.126),(0.0,0.969,0.249),(0.0,0.93,0.369),(0.0,0.875,0.482),(0.0,0.811,0.59),(0.0,0.729,0.685),(0.0,0.639,0.772),(0.0,0.536,0.846),(0.0,0.426,0.905),(0.0,0.309,0.953),(0.0,0.187,0.983),(0.0,0.063,1.0),(-0.0,-0.063,1.0),(-0.0,-0.187,0.983),(-0.0,-0.309,0.953),(-0.0,-0.426,0.905),(-0.0,-0.536,0.846),(-0.0,-0.639,0.772),(-0.0,-0.729,0.685),(-0.0,-0.811,0.59),(-0.0,-0.875,0.482),(-0.0,-0.93,0.369),(-0.0,-0.97,0.249),(-0.0,-0.99,0.126),(-0.0,-1.0,0.0),(-0.0,-0.988,-0.125),(-0.0,-0.97,-0.249),(-0.0,-0.928,-0.368),(-0.0,-0.874,-0.481),(-0.0,-0.811,-0.59),(-0.0,-0.729,-0.686),(-0.0,-0.638,-0.772),(-0.0,-0.536,-0.846),(-0.0,-0.425,-0.905),(-0.0,-0.309,-0.953),(-0.0,-0.187,-0.983),(-0.0,-0.063,-1.0),(0.0,0.064,-1.0),(0.0,0.187,-0.983),(0.0,0.31,-0.953),(0.0,0.426,-0.904),(0.0,0.536,-0.846),(0.0,0.639,-0.772),(0.0,0.729,-0.685),(0.0,0.811,-0.589),(0.0,0.875,-0.481),(0.0,0.93,-0.369),(0.0,0.969,-0.248),(0.0,0.991,-0.125),(0.0,1.002,0.0),(0.0,0.991,0.126)])
+            return cName
+        if(cType=='Sphere'):
+            cName=cmds.curve(n=cName,d=1,p=[(0.504214,0,0),(0.491572,0.112198,0),(0.454281,0.21877,0),(0.394211,0.314372,0),(0.314372,0.394211,0),(0.21877,0.454281,0),(0.112198,0.491572,0),(0,0.504214,0),(-0.112198,0.491572,0),(-0.21877,0.454281,0),(-0.314372,0.394211,0),(-0.394211,0.314372,0),(-0.454281,0.21877,0),(-0.491572,0.112198,0),(-0.504214,0,0),(-0.491572,-0.112198,0),(-0.454281,-0.21877,0),(-0.394211,-0.314372,0),(-0.314372,-0.394211,0),(-0.21877,-0.454281,0),(-0.112198,-0.491572,0),(0,-0.504214,0),(0.112198,-0.491572,0),(0.21877,-0.454281,0),(0.314372,-0.394211,0),(0.394211,-0.314372,0),(0.454281,-0.21877,0),(0.491572,-0.112198,0),(0.504214,0,0),(0.491572,0,-0.112198),(0.454281,0,-0.21877),(0.394211,0,-0.314372),(0.314372,0,-0.394211),(0.21877,0,-0.454281),(0.112198,0,-0.491572),(0,0,-0.504214),(-0.112198,0,-0.491572),(-0.21877,0,-0.454281),(-0.314372,0,-0.394211),(-0.394211,0,-0.314372),(-0.454281,0,-0.21877),(-0.491572,0,-0.112198),(-0.504214,0,0),(-0.491572,0,0.112198),(-0.454281,0,0.21877),(-0.394211,0,0.314372),(-0.314372,0,0.394211),(-0.21877,0,0.454281),(-0.112198,0,0.491572),(0,0,0.504214),(0,0.112198,0.491572),(0,0.21877,0.454281),(0,0.314372,0.394211),(0,0.394211,0.314372),(0,0.454281,0.21877),(0,0.491572,0.112198),(0,0.504214,0),(0,0.491572,-0.112198),(0,0.454281,-0.21877),(0,0.394211,-0.314372),(0,0.314372,-0.394211),(0,0.21877,-0.454281),(0,0.112198,-0.491572),(0,0,-0.504214),(0,-0.112198,-0.491572),(0,-0.21877,-0.454281),(0,-0.314372,-0.394211),(0,-0.394211,-0.314372),(0,-0.454281,-0.21877),(0,-0.491572,-0.112198),(0,-0.504214,0),(0,-0.491572,0.112198),(0,-0.454281,0.21877),(0,-0.394211,0.314372),(0,-0.314372,0.394211),(0,-0.21877,0.454281),(0,-0.112198,0.491572),(0,0,0.504214),(0.112198,0,0.491572),(0.21877,0,0.454281),(0.314372,0,0.394211),(0.394211,0,0.314372),(0.454281,0,0.21877),(0.491572,0,0.112198),(0.504214,0,0)])
+            return cName
+        if(cType=='Triangle'):
+            cName=cmds.curve(d=1,n=cName,p=[(0,0,0.25),(0,0.05,0.1),(0,-0.05,0.1),(0,0,0.25)])
+            return cName
+        if(cType=='Rect'):
+            cName=cmds.curve(d=1,n=cName,p=[(0,-2,2),(0,-2,-2),(0,2,-2),(0,2,2),(0,-2,2)])
+            return cName
+        if(cType=='Cube'):
+            cName=cmds.curve(d=1,n=cName,p=[(0.1,0.1,-0.1),(-0.1,0.1,-0.1),(-0.1,0.1,0.1),(0.1,0.1,0.1),(0.1,0.1,-0.1),(0.1,-0.1,-0.1),(0.1,-0.1,0.1),(0.1,0.1,0.1),(-0.1,0.1,0.1),(-0.1,-0.1,0.1),(0.1,-0.1,0.1),(0.1,-0.1,-0.1),(-0.1,-0.1,-0.1),(-0.1,-0.1,0.1),(-0.1,0.1,0.1),(-0.1,0.1,-0.1),(-0.1,-0.1,-0.1)])
+            return cName
+        if(cType=='Cross'):
+            cName=cmds.curve(n=cName,d=1,p=[(-1,0,-1),(0 ,0 ,-1),(0,0,-2),(1,0,-2),(1,0,-1),(2,0,-1),(2,0,0),(1,0,0),(1,0,1),(0,0,1),(0,0,0),(-1,0,0),(-1,0,-1)])
+            return cName
+        if(cType=='Circle_Line'):
+            cName=cmds.curve(n=cName,d=3,p=[(0,0,0),(0,1.3,0),(0,1.3,0),(0,1.3,0),(0,1.388,-0.213),(0,1.6,-0.3),(0,1.81,-0.213),(0,1.9,0),(0,1.815,0.213),(0,1.597,0.3),(0,1.388,0.213),(0,1.3,0),(0,1.3,0),(0,1.3,0)])
+            return cName
+        if(cType=='Heel'):
+            cName=cmds.curve(n=cName,d=3,p=[(4,0,9.8),(4,0,9.8),(4,0,9.8),(4.15,0,-2.59),(3,0,-4.59),(0,0,-5.59),(-3,0,-4.59),(-4.15,0,-2.59),(-3,0,9.8),(-3,0,9.8),(-3,0,9.8),(4,0,9.8)])
+            return cName
+        if(cType=='Toe'):
+            cName=cmds.curve(n=cName,d=3,p=[(1.4,4,0),(1.4,4,0),(1.4,4,0),(8.324,4,0),(10.973,3,0),(12.297,0,0),(10.973,-3,0),(8.324,-4,0),(1.4,-3,0),(1.4,-3,0),(1.4,-3,0),(1.4,4,0)])
+            return cName
+        if(cType=='None'):
+            cName=cmds.group(n=cName,em=1)
+            return cName
+# attrStrList=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+# sel=cmds.listRelatives('move_Ctrl',c=1,typ='joint',ad=1)
+# lockInfo={}
+# for i in sel:
+#     lockList=[]
+#     for attr in attrStrList:
+#         isLock=cmds.getAttr(i+'.'+attr,l=1)
+#         lockList.append(isLock)
+#     lockInfo[i]=lockList
+# for i in lockInfo:
+#     for attr,isLock in zip(attrStrList,lockInfo[i]):
+#         cmds.setAttr(i+'.'+attr,l=isLock)
+#      
+class BBodyRigging():
+    def __init__(self,rootPath=''):
+        self.rootPath=rootPath
+        if(self.rootPath==''):
+            self.rootPath='C:/Users/sundongdong.OF3D/Desktop/sdd_bodyRig/'
+        self.filesPath=self.rootPath+'files/'
+   
+    def importJointTemplate(self,*args):
+        JointTemplatePath=self.filesPath+'Template/BaseJoint.ma'
+        fullPath=unicode(JointTemplatePath,'gbk')
+        cmds.file(fullPath,i=1,type="mayaAscii")
+    def getMirrorName(self,obj):
+        L_,R_='L_','R_'
+        _L,_R='_L','_R'
+        if(obj[:len(L_)]==L_):
+            mirObj=R_+obj[len(L_):]
+            return mirObj
+        elif(obj[:len(R_)]==R_):
+            mirObj=L_+obj[len(R_):]
+            return mirObj
+        elif(obj[-len(_L):]==_L):
+            mirObj=obj[:-len(_L)]+_R
+            return mirObj
+        elif(obj[-len(_R):]==_R):
+            mirObj=obj[:-len(_R)]+_L
+            return mirObj
+        else:
+            return obj
+    def mirrorJoint(self,*args):
+        prefix=args[0]
+        jntCtrl='Temp_Ctrl'
+        if(not cmds.objExists(jntCtrl)):
+            raise RuntimeError,'%s is not exists!'%jntCtrl
+            return
+        if(prefix=='select'):
+            sel=cmds.ls(sl=1)
+            if len(sel)==0:
+                return
+            allJoint=sel
+        else:
+            allJoint=cmds.listRelatives(jntCtrl,c=1,typ='joint',ad=1)
+        attrStrList=('tx','ty','tz','rx','ry','rz')
+        
+        for jnt in allJoint:
+            if(prefix!='select' and jnt[:2]!=prefix):
+                continue
+            mirJnt=self.getMirrorName(jnt)
+            pObj=cmds.listRelatives(jnt,p=1,typ='joint')
+            if(mirJnt==jnt):
+                mirValueList=(1,-1,1,1,1,-1)
+            elif(pObj==None):
+                mirValueList=(-1,1,1,1,1,1)
+            else:
+                mirValueList=(-1,-1,-1,1,1,1)
+            for attr,mirVal in zip(attrStrList,mirValueList):
+                isLock=cmds.getAttr(mirJnt+'.'+attr,l=1)
+                if(isLock):
+                    continue
+                val=cmds.getAttr(jnt+'.'+attr)
+                cmds.setAttr(mirJnt+'.'+attr,mirVal*val)
+
+    def armRig(self,shoulderJnt,uparmJnt,lowarmJnt,handJnt):
+        armRigGrp=uparmJnt+'_rig_grp'
+        armRigGrp=cmds.group(em=1,n=armRigGrp)
+        cmds.delete(cmds.parentConstraint(uparmJnt,armRigGrp))
+        allCtrl='all_ctrl'
+        cmds.parent(armRigGrp,allCtrl)
+        # shoulder rig
+        shoulderRigGrp=shoulderJnt+'_rig_grp'
+        shoulderRigGrp=cmds.group(em=1,n=shoulderRigGrp)
+        cmds.delete(cmds.parentConstraint(shoulderJnt,shoulderRigGrp))
+
+        shoulderIkGrp=shoulderJnt+'_ik_grp'
+        shoulderIkGrp=cmds.group(em=1,n=shoulderIkGrp)
+        cmds.delete(cmds.parentConstraint(shoulderRigGrp,shoulderIkGrp))
+        cmds.parent(shoulderIkGrp,shoulderRigGrp)
+
+        shoulderIk=cmds.duplicate(shoulderJnt,po=1,rr=1,n=shoulderJnt+'_ik')[0]
+        cmds.parent(shoulderIk,shoulderIkGrp)
+        shoulderIkEnd=cmds.duplicate(uparmJnt,po=1,rr=1,n=shoulderJnt+'_ik_end')[0]
+        cmds.parent(shoulderIkEnd,shoulderIk)
+
+
+        shoulderIkCtrlGrp=shoulderJnt+'_ik_ctrl_grp'
+        shoulderIkCtrlGrp=cmds.group(em=1,n=shoulderIkCtrlGrp)
+        cmds.delete(cmds.parentConstraint(shoulderRigGrp,shoulderIkCtrlGrp))
+        cmds.parent(shoulderIkCtrlGrp,shoulderRigGrp)
+
+        shoulderCtrl=shoulderJnt+'_ctrl'
+        shoulderCtrlZero=ControlUtility.createControl(shoulderCtrl,'Sphere')
+        cmds.delete(cmds.parentConstraint(shoulderJnt,shoulderCtrlZero))
+        cmds.parent(shoulderCtrlZero,shoulderIkCtrlGrp)
+        dis=GeneralUtility.getDistance(shoulderIk,shoulderIkEnd)
+        vec=GeneralUtility.getWorldSpaceFront(shoulderCtrl,offsetRatate=[0,0,-40])
+        ControlUtility.moveCV(shoulderCtrl,vec*dis)
+        ControlUtility.scaleCV(shoulderCtrl,2)
+
+        shoulderIkHandle=shoulderJnt+'_ikHandle'
+        shoulderIkHandle=cmds.ikHandle(sj=shoulderIk,ee=shoulderIkEnd,n=shoulderIkHandle,sol='ikRPsolver')[0]
+        cmds.parent(shoulderIkHandle,shoulderCtrl)
+        cmds.setAttr(shoulderIkHandle+'.v',0)
+
+        cmds.parent(shoulderRigGrp,armRigGrp)
+
+        # and follow grp
+        shoulderFollowGrp=shoulderJnt+'_follow_grp'
+        self.addFollowGrp(shoulderFollowGrp,shoulderIk)
+
+        # ik rig
+        armIkRigGrp=uparmJnt+'_ik_rig_grp'
+        armIkRigGrp=cmds.group(em=1,n=armIkRigGrp)
+        cmds.delete(cmds.parentConstraint(uparmJnt,armIkRigGrp))
+        cmds.parent(armIkRigGrp,armRigGrp)
+
+        armIkGrp=uparmJnt+'_ik_jnt_grp'
+        armIkGrp=cmds.duplicate(armIkRigGrp,po=1,rr=1,n=armIkGrp)[0]
+        cmds.parent(armIkGrp,armIkRigGrp)
+
+        uparmIk=cmds.duplicate(uparmJnt,po=1,rr=1,n=uparmJnt+'_ik')[0]
+        cmds.parent(uparmIk,armIkGrp)
+
+        lowarmIk=cmds.duplicate(lowarmJnt,po=1,rr=1,n=lowarmJnt+'_ik')[0]
+        cmds.parent(lowarmIk,uparmIk)
+
+        handIk=cmds.duplicate(handJnt,po=1,rr=1,n=handJnt+'_ik')[0]
+        cmds.parent(handIk,lowarmIk)
+
+
+        armIkCtrlGrp=uparmJnt+'_ik_ctrl_grp'
+        armIkCtrlGrp=cmds.duplicate(armIkRigGrp,po=1,rr=1,n=armIkCtrlGrp)[0]
+        cmds.parent(armIkCtrlGrp,armIkRigGrp)
+
+        armIkRootCtrl=uparmIk+'_root_ctrl'
+        armIkRootCtrlZero=ControlUtility.createControl(armIkRootCtrl,'Sphere')
+        cmds.delete(cmds.parentConstraint(uparmIk,armIkRootCtrlZero))
+        cmds.parent(armIkRootCtrlZero,armIkCtrlGrp)
+        cmds.parentConstraint(armIkRootCtrl,armIkGrp)
+
+
+        armIkCtrl=uparmIk+'_ctrl'
+        armIkCtrlZero=ControlUtility.createControl(armIkCtrl,'Cube')
+        cmds.delete(cmds.parentConstraint(handIk,armIkCtrlZero))
+        cmds.parent(armIkCtrlZero,armIkCtrlGrp)
+        ControlUtility.scaleCV(armIkCtrl,[5,30,30])
+
+        
+        armIkPoleCtrl=uparmIk+'_pole_ctrl'
+        armIkPoleCtrlZero=ControlUtility.createControl(armIkPoleCtrl,'Sphere',R=False)
+        cmds.delete(cmds.parentConstraint(uparmIk,armIkPoleCtrlZero))
+        cmds.delete(cmds.pointConstraint(lowarmIk,armIkPoleCtrlZero))
+        cmds.parent(armIkPoleCtrlZero,armIkCtrlGrp)
+        vec=GeneralUtility.getPoleMoveVector(uparmIk,lowarmIk,handIk)
+        cmds.move(vec.x,vec.y,vec.z,armIkPoleCtrlZero,r=1)
+
+
+        armIkHandle=uparmJnt+'_ikHandle'
+        armIkHandle=cmds.ikHandle(sj=uparmIk,ee=handIk,n=armIkHandle,sol='ikRPsolver')[0]
+        cmds.parent(armIkHandle,armIkCtrl)
+        cmds.poleVectorConstraint(armIkPoleCtrl,armIkHandle)
+        cmds.orientConstraint(armIkCtrl,handIk)
+        cmds.setAttr(armIkHandle+'.v',0)
+
+
+        armIkLocGrp=uparmJnt+'_ik_loc_grp'
+        armIkLocGrp=cmds.duplicate(armIkRigGrp,po=1,rr=1,n=armIkLocGrp)[0]
+        cmds.parent(armIkLocGrp,armIkRigGrp)
+        cmds.setAttr(armIkLocGrp+'.v',0)
+        cmds.parentConstraint(armIkRootCtrl,armIkLocGrp)
+
+        uparmIkLoc=uparmIk+'_loc'
+        uparmIkLoc=cmds.spaceLocator(n=uparmIkLoc)[0]
+        cmds.delete(cmds.pointConstraint(uparmIk,uparmIkLoc))
+        cmds.parent(uparmIkLoc,armIkLocGrp)
+
+        uparmIkPoleLoc=armIkPoleCtrl+'_loc'
+        uparmIkPoleLoc=cmds.spaceLocator(n=uparmIkPoleLoc)[0]
+        cmds.pointConstraint(armIkPoleCtrl,uparmIkPoleLoc)
+        cmds.parent(uparmIkPoleLoc,armIkLocGrp)
+
+        handIkCtrlLoc=armIkCtrl+'_loc'
+        handIkCtrlLoc=cmds.spaceLocator(n=handIkCtrlLoc)[0]
+        cmds.pointConstraint(armIkHandle,handIkCtrlLoc)
+        cmds.parent(handIkCtrlLoc,armIkLocGrp)
+
+        # root vis
+        cmds.addAttr(armIkCtrl,ln='rootVis',at='long',k=1,dv=0,max=1,min=0)
+        GeneralUtility.connectAllShapeAttr(armIkRootCtrl,armIkCtrl+'.rootVis','visibility')
+
+        # ik stretch
+        upLen=cmds.getAttr(lowarmJnt+'.tx')
+        dnLen=cmds.getAttr(handJnt+'.tx')
+
+        cmds.addAttr(armIkCtrl,ln='stretch',at='float',max=1,min=0,k=1)
+        cmds.addAttr(armIkCtrl,ln='upLength',at='float',k=1)
+        cmds.addAttr(armIkCtrl,ln='dnLength',at='float',k=1)
+
+
+
+        upIkStretchAdd=uparmIk+'_stretch_addNode'
+        upIkStretchAdd=cmds.createNode('plusMinusAverage',n=upIkStretchAdd)
+        cmds.setAttr(upIkStretchAdd+'.i1[0]',abs(upLen))
+        cmds.connectAttr(armIkCtrl+'.upLength',upIkStretchAdd+'.i1[1]')
+
+        lowIkStretchAdd=lowarmIk+'_stretch_addNode'
+        lowIkStretchAdd=cmds.createNode('plusMinusAverage',n=lowIkStretchAdd)
+        cmds.setAttr(lowIkStretchAdd+'.i1[0]',abs(dnLen))
+        cmds.connectAttr(armIkCtrl+'.dnLength',lowIkStretchAdd+'.i1[1]',f=1)
+
+        handIkStretchAdd=handIk+'_stretch_addNode'
+        handIkStretchAdd=cmds.createNode('plusMinusAverage',n=handIkStretchAdd)
+        cmds.connectAttr(lowIkStretchAdd+'.o1',handIkStretchAdd+'.i1[0]')
+        cmds.connectAttr(upIkStretchAdd+'.o1',handIkStretchAdd+'.i1[1]')
+
+        handIkStretchLenMul=handIk+'_stretch_len_mulNode'
+        handIkStretchLenMul=cmds.createNode('multiplyDivide',n=handIkStretchLenMul)
+        cmds.setAttr(handIkStretchLenMul+'.i1x',1 if upLen>0 else -1)
+        cmds.setAttr(handIkStretchLenMul+'.i1y',1 if upLen>0 else -1)
+        cmds.connectAttr(upIkStretchAdd+'.o1',handIkStretchLenMul+'.i2x')
+        cmds.connectAttr(lowIkStretchAdd+'.o1',handIkStretchLenMul+'.i2y')
+
+        handIkStretchDis=handIk+'_stretch_disNode'
+        handIkStretchDis=cmds.createNode('distanceBetween',n=handIkStretchDis)
+        cmds.connectAttr(uparmIkLoc+'.t',handIkStretchDis+'.p1')
+        cmds.connectAttr(handIkCtrlLoc+'.t',handIkStretchDis+'.p2')
+
+        handIkStretchDiv=handIk+'_stretch_divNode'
+        handIkStretchDiv=cmds.createNode('multiplyDivide',n=handIkStretchDiv)
+        cmds.setAttr(handIkStretchDiv+'.op',2)
+        cmds.connectAttr(handIkStretchDis+'.d',handIkStretchDiv+'.i1x')
+        cmds.connectAttr(handIkStretchAdd+'.o1',handIkStretchDiv+'.i2x')
+
+        handIkStretchCon=handIk+'_stretch_conNode'
+        handIkStretchCon=cmds.createNode('condition',n=handIkStretchCon)
+        cmds.connectAttr(handIkStretchDiv+'.ox',handIkStretchCon+'.ft')
+        cmds.connectAttr(handIkStretchDiv+'.ox',handIkStretchCon+'.ctr')
+        cmds.setAttr(handIkStretchCon+'.st',1)
+        cmds.setAttr(handIkStretchCon+'.op',2)
+        cmds.setAttr(handIkStretchCon+'.cfr',1)
+
+        handIkStretchBlend=handIk+'_stretch_blendNode'
+        handIkStretchBlend=cmds.createNode('blendTwoAttr',n=handIkStretchBlend)
+
+        cmds.setAttr(handIkStretchBlend+'.i[0]',1)
+        cmds.connectAttr(handIkStretchCon+'.ocr',handIkStretchBlend+'.i[1]')
+        cmds.connectAttr(armIkCtrl+'.stretch',handIkStretchBlend+'.ab')
+
+        handIkStretchMul=handIk+'_mulNode'
+        handIkStretchMul=cmds.createNode('multiplyDivide',n=handIkStretchMul)
+        cmds.connectAttr(handIkStretchBlend+'.o',handIkStretchMul+'.i1x')
+        cmds.connectAttr(handIkStretchBlend+'.o',handIkStretchMul+'.i1y')
+        cmds.connectAttr(handIkStretchLenMul+'.ox',handIkStretchMul+'.i2x')
+        cmds.connectAttr(handIkStretchLenMul+'.oy',handIkStretchMul+'.i2y')
+
+        # cmds.connectAttr(handIkMul+'.ox',lowarmIk+'.tx')
+        # cmds.connectAttr(handIkMul+'.oy',handIk+'.tx')
+    
+        # pole help line
+        self.adddHelpLine(armIkPoleCtrl,lowarmIk,armIkCtrlGrp)
+        # ik lock
+        
+        cmds.addAttr(armIkPoleCtrl,ln='lock',at='float',max=1,min=0,k=1)
+        uparmIkDis=uparmIk+'_disNode'
+        uparmIkDis=cmds.createNode('distanceBetween',n=uparmIkDis)
+        cmds.connectAttr(uparmIkLoc+'.t',uparmIkDis+'.p1')
+        cmds.connectAttr(uparmIkPoleLoc+'.t',uparmIkDis+'.p2')
+
+        lowarmIkDis=lowarmIk+'_disNode'
+        lowarmIkDis=cmds.createNode('distanceBetween',n=lowarmIkDis)
+        cmds.connectAttr(uparmIkPoleLoc+'.t',lowarmIkDis+'.p1')
+        cmds.connectAttr(handIkCtrlLoc+'.t',lowarmIkDis+'.p2')
+
+        uparmIkLockDiv=uparmIk+'_lock_divNode'
+        uparmIkLockDiv=cmds.createNode('multiplyDivide',n=uparmIkLockDiv)
+        cmds.connectAttr(uparmIkDis+'.d',uparmIkLockDiv+'.i1x')
+        cmds.setAttr(uparmIkLockDiv+'.i2x',abs(upLen))
+        cmds.connectAttr(lowarmIkDis+'.d',uparmIkLockDiv+'.i1y')
+        cmds.setAttr(uparmIkLockDiv+'.i2y',abs(dnLen))
+        cmds.setAttr(uparmIkLockDiv+'.op',2)
+
+        uparmIkLockMul=uparmIk+'_lock_mulNode'
+        uparmIkLockMul=cmds.createNode('multiplyDivide',n=uparmIkLockMul)
+        cmds.connectAttr(uparmIkLockDiv+'.ox',uparmIkLockMul+'.i1x')
+        cmds.setAttr(uparmIkLockMul+'.i2x',upLen)
+        cmds.connectAttr(uparmIkLockDiv+'.oy',uparmIkLockMul+'.i1y')
+        cmds.setAttr(uparmIkLockMul+'.i2y',dnLen)
+
+        
+        # blend ik stretch and lock
+        uparmIkLockBlend=uparmIk+'_stretch_lock_blendNode'
+        uparmIkLockBlend=cmds.createNode('blendColors',n=uparmIkLockBlend)
+        cmds.connectAttr(uparmIkLockMul+'.ox',uparmIkLockBlend+'.c1r',f=1)
+        cmds.connectAttr(uparmIkLockMul+'.oy',uparmIkLockBlend+'.c1g',f=1)
+        cmds.connectAttr(handIkStretchMul+'.ox',uparmIkLockBlend+'.c2r',f=1)
+        cmds.connectAttr(handIkStretchMul+'.oy',uparmIkLockBlend+'.c2g',f=1)
+        cmds.connectAttr(armIkPoleCtrl+'.lock',uparmIkLockBlend+'.b')
+
+
+        cmds.connectAttr(uparmIkLockBlend+'.opr',lowarmIk+'.tx')
+        cmds.connectAttr(uparmIkLockBlend+'.opg',handIk+'.tx')
+
+
+        # fk rig
+        armFkRigGrp=uparmJnt+'_fk_rig_grp'
+        armFkRigGrp=cmds.group(em=1,n=armFkRigGrp)
+        cmds.delete(cmds.parentConstraint(uparmJnt,armFkRigGrp))
+        cmds.parent(armFkRigGrp,armRigGrp)
+
+        armFkJntGrp=uparmJnt+'_fk_jnt_grp'
+        armFkJntGrp=cmds.duplicate(armFkRigGrp,po=1,rr=1,n=armFkJntGrp)[0]
+        cmds.parent(armFkJntGrp,armFkRigGrp)
+
+        uparmFk=cmds.duplicate(uparmJnt,po=1,rr=1,n=uparmJnt+'_fk')[0]
+        cmds.parent(uparmFk,armFkJntGrp)
+
+        lowarmFk=cmds.duplicate(lowarmJnt,po=1,rr=1,n=lowarmJnt+'_fk')[0]
+        cmds.parent(lowarmFk,uparmFk)
+
+        handFk=cmds.duplicate(handJnt,po=1,rr=1,n=handJnt+'_fk')[0]
+        cmds.parent(handFk,lowarmFk)
+
+        armFkCtrlGrp=uparmJnt+'_fk_Ctrl_grp'
+        armFkCtrlGrp=cmds.duplicate(armFkRigGrp,po=1,rr=1,n=armFkCtrlGrp)[0]
+        cmds.parent(armFkCtrlGrp,armFkRigGrp)
+
+
+        uparmFkCtrl=uparmFk+'_ctrl'
+        uparmFkCtrlZero=ControlUtility.createControl(uparmFkCtrl,'Circle',T=False)
+        uparmFkRootCtrl=uparmFk+'_root_ctrl'
+        uparmFkRootCtrl=cmds.duplicate(uparmFkCtrl,n=uparmFkRootCtrl,rr=1)[0]
+        cmds.parent(uparmFkCtrl,uparmFkRootCtrl)
+        cmds.addAttr(uparmFkCtrl,ln='rootVis',at='long',k=1,max=0,min=1,dv=0)
+        ControlUtility.scaleCV(uparmFkRootCtrl,5)
+        GeneralUtility.connectAllShapeAttr(uparmFkRootCtrl,uparmFkCtrl+'.rootVis','visibility')
+
+        cmds.delete(cmds.parentConstraint(uparmFk,uparmFkCtrlZero))
+        cmds.parentConstraint(uparmFkCtrl,uparmFk)
+        cmds.parent(uparmFkCtrlZero,armFkCtrlGrp)
+        ControlUtility.scaleCV(uparmFkCtrl,4)
+
+
+        lowarmFkCtrl=lowarmFk+'_ctrl'
+        lowarmFkCtrlZero=ControlUtility.createControl(lowarmFkCtrl,'Circle',T=False)
+        ControlUtility.lockRotate(lowarmFkCtrl,z=0)
+        cmds.delete(cmds.parentConstraint(lowarmFk,lowarmFkCtrlZero))
+        cmds.parentConstraint(lowarmFkCtrl,lowarmFk)
+        cmds.parent(lowarmFkCtrlZero,uparmFkCtrl)
+        ControlUtility.scaleCV(lowarmFkCtrl,4)
+
+
+        handFkCtrl=handFk+'_ctrl'
+        handFkCtrlZero=ControlUtility.createControl(handFkCtrl,'Circle',T=False)
+        cmds.delete(cmds.parentConstraint(handFk,handFkCtrlZero))
+        cmds.parentConstraint(handFkCtrl,handFk)
+        cmds.parent(handFkCtrlZero,lowarmFkCtrl)
+        ControlUtility.scaleCV(handFkCtrl,4)
+
+
+
+        # fk stretch
+        cmds.addAttr(uparmFkCtrl,ln='upLength',at='float',k=1)
+
+        uparmFkAdd=uparmFk+'_stretch_addNode'
+        uparmFkAdd=cmds.createNode('plusMinusAverage',n=uparmFkAdd)
+        cmds.connectAttr(uparmFkCtrl+'.upLength',uparmFkAdd+'.i1[0]')
+        cmds.setAttr(uparmFkAdd+'.i1[1]',cmds.getAttr(lowarmFkCtrlZero+'.tx'))
+        cmds.connectAttr(uparmFkAdd+'.o1',lowarmFkCtrlZero+'.tx')
+
+        cmds.addAttr(lowarmFkCtrl,ln='dnLength',at='float',k=1)
+        lowarmFkAdd=lowarmFk+'_stretch_addNode'
+        lowarmFkAdd=cmds.createNode('plusMinusAverage',n=lowarmFkAdd)
+        cmds.connectAttr(lowarmFkCtrl+'.dnLength',lowarmFkAdd+'.i1[0]')
+        cmds.setAttr(lowarmFkAdd+'.i1[1]',cmds.getAttr(handFkCtrlZero+'.tx'))
+        cmds.connectAttr(lowarmFkAdd+'.o1',handFkCtrlZero+'.tx')
+
+
+
+        # dri jnt
+        armDrJntGrp=uparmJnt+'_dr_jnt_grp'
+        armDrJntGrp=cmds.group(em=1,n=armDrJntGrp)
+        cmds.delete(cmds.parentConstraint(shoulderJnt,armDrJntGrp))
+        cmds.parent(armDrJntGrp,armRigGrp)
+
+        shoulderDr=cmds.duplicate(shoulderJnt,po=1,rr=1,n=shoulderJnt+'_dr')[0]
+        self.addToSdkHandle(shoulderDr)
+        cmds.parent(shoulderDr,armDrJntGrp)
+
+
+        uparmDr=cmds.duplicate(uparmJnt,po=1,rr=1,n=uparmJnt+'_dr')[0]
+        self.addToSdkHandle(uparmDr)
+        cmds.parent(uparmDr,shoulderDr)
+
+        lowarmDr=cmds.duplicate(lowarmJnt,po=1,rr=1,n=lowarmJnt+'_dr')[0]
+        self.addToSdkHandle(lowarmDr)
+        cmds.parent(lowarmDr,uparmDr)
+
+        handDr=cmds.duplicate(handJnt,po=1,rr=1,n=handJnt+'_dr')[0]
+        self.addToSdkHandle(handDr)
+        cmds.parent(handDr,lowarmDr)
+
+        armSwitchCtrl=uparmJnt+'_switch_ctrl'
+        armSwitchCtrlZero=ControlUtility.createControl(armSwitchCtrl,'Cross',T=False,R=False)
+        cmds.parentConstraint(handDr,armSwitchCtrlZero)
+        cmds.parent(armSwitchCtrlZero,armRigGrp)
+        dis=GeneralUtility.getDistance(lowarmJnt,handJnt)
+        vec=GeneralUtility.getWorldSpaceDirection(armSwitchCtrl,[0,0,1])
+        ControlUtility.moveCV(armSwitchCtrl,vec*dis*0.3)
+
+
+        cmds.parentConstraint(shoulderIk,shoulderDr)
+        # ik fk switch
+        cmds.addAttr(armSwitchCtrl,ln='ikfk',at='long',k=1,dv=0,max=1,min=0)
+
+        armSwitchRev=armSwitchCtrl+'_ikfk_revNode'
+        armSwitchRev=cmds.createNode('reverse',n=armSwitchRev)
+        cmds.connectAttr(armSwitchCtrl+'.ikfk',armSwitchRev+'.ix')
+
+
+        ikfkAttr=armSwitchCtrl+'.ikfk'
+        ikfkInvAttr=armSwitchRev+'.ox'
+        uparmCon=cmds.parentConstraint(uparmIk,uparmFk,uparmDr)[0]
+        cmds.connectAttr(ikfkInvAttr,uparmCon+'.w0')
+        cmds.connectAttr(ikfkAttr,uparmCon+'.w1')
+
+        lowarmCon=cmds.parentConstraint(lowarmIk,lowarmFk,lowarmDr)[0]
+        cmds.connectAttr(ikfkInvAttr,lowarmCon+'.w0')
+        cmds.connectAttr(ikfkAttr,lowarmCon+'.w1')
+
+        handCon=cmds.parentConstraint(handIk,handFk,handDr)[0]
+        cmds.connectAttr(ikfkInvAttr,handCon+'.w0')
+        cmds.connectAttr(ikfkAttr,handCon+'.w1')
+
+        cmds.connectAttr(ikfkInvAttr,armIkRigGrp+'.v')
+        cmds.connectAttr(ikfkAttr,armFkRigGrp+'.v')
+
+
+        # twist second
+        cmds.addAttr(armSwitchCtrl,ln='secVis',at='long',k=1,max=0,min=1,dv=0)
+        switchAttr=armSwitchCtrl+'.secVis'
+        eZero=self.addSceondRig(uparmJnt,uparmDr,lowarmDr,armRigGrp,switchAttr,typ='up')
+        sCtrl=self.addSceondRig(lowarmJnt,lowarmDr,handDr,armRigGrp,switchAttr,typ='low')
+        cmds.delete(cmds.pointConstraint(eZero,q=1,n=1))
+        cmds.pointConstraint(sCtrl,eZero)
+        cmds.setAttr(eZero+'.v',0)
+
+        # shoulder follow
+        shoulderFollowChest=shoulderRigGrp+'_follow_chest'
+        self.addFollowToGrp(shoulderFollowChest,shoulderRigGrp,'Chest')
+        cmds.parentConstraint(shoulderFollowChest,shoulderRigGrp)
+        # arm ik follow
+        armIkFollowShoulder=armIkRootCtrlZero+'_follow_Shoulder'
+        self.addFollowToGrp(armIkFollowShoulder,armIkRootCtrlZero,shoulderFollowGrp)
+        cmds.parentConstraint(armIkFollowShoulder,armIkRootCtrlZero)
+
+        # ik pole follow
+        cmds.addAttr(armIkPoleCtrl,ln='follow',at='enum',en='hand:shoulder:world',k=1)
+
+        armPoleFollowShoulder=armIkPoleCtrlZero+'_follow_shoulder'
+        self.addFollowToGrp(armPoleFollowShoulder,uparmIk,shoulderFollowGrp)
+        tx=cmds.getAttr(lowarmJnt+'.tx')
+        direction=tx/abs(tx)
+        cmds.aimConstraint(armIkCtrl,armPoleFollowShoulder,mo=1,aim=(direction,0,0),u=(0,0,1),wut="objectrotation",wu=(0,0,1),wuo=armIkCtrl)
+        armIkPoleFollowRot=cmds.duplicate(armPoleFollowShoulder,n=uparmIk+'_pole_follow_rot',po=1,rr=1)[0]
+        cmds.parent(armIkPoleFollowRot,armPoleFollowShoulder)
+        armIkPoleFollowCon=cmds.duplicate(armPoleFollowShoulder,n=uparmIk+'_pole_follow_con',po=1,rr=1)[0]
+        cmds.delete(cmds.parentConstraint(armIkPoleCtrl,armIkPoleFollowCon))
+        cmds.parent(armIkPoleFollowCon,armIkPoleFollowRot)
+
+        driverAttr=handIkStretchDis+'.d'
+        drivenAttr=armIkPoleFollowRot+'.rz'
+        driverValue=cmds.getAttr(driverAttr)
+        cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=0,dv=driverValue,itt='linear',ott='linear')
+        cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=-45*direction,dv=0,itt='linear',ott='linear')
+
+        armPoleFollowShoulderNorol=armIkPoleCtrlZero+'_follow_shoulder_norol'
+        self.addFollowToGrp(armPoleFollowShoulderNorol,armIkPoleCtrlZero,shoulderFollowGrp)
+
+        armPoleFollowWrold=armIkPoleCtrlZero+'_follow_world'
+        self.addFollowToGrp(armPoleFollowWrold,armIkPoleCtrlZero,'World')
+
+        followList=[armIkPoleFollowCon,armPoleFollowShoulderNorol,armPoleFollowWrold]
+        followAttr=armIkPoleCtrl+'.follow'
+        self.addConstraintByFollowList(followList,armIkPoleCtrlZero,followAttr)
+
+
+        # hand ik follow
+        cmds.addAttr(armIkCtrl,ln='follow',at='enum',en='world:body:hip:chest:head:shoulder',k=1)
+
+        armIkFollowWorld=armIkCtrlZero+'_follow_world'
+        self.addFollowToGrp(armIkFollowWorld,armIkCtrlZero,'World')
+
+        armIkFollowBody=armIkCtrlZero+'_follow_body'
+        self.addFollowToGrp(armIkFollowBody,armIkCtrlZero,'Body')
+
+        armIkFollowHip=armIkCtrlZero+'_follow_hip'
+        self.addFollowToGrp(armIkFollowHip,armIkCtrlZero,'Hip')
+
+        armIkFollowChest=armIkCtrlZero+'_follow_chest'
+        self.addFollowToGrp(armIkFollowChest,armIkCtrlZero,'Chest')
+
+        armIkFollowHead=armIkCtrlZero+'_follow_head'
+        self.addFollowToGrp(armIkFollowHead,armIkCtrlZero,'Head')
+
+        armIkFollowShoulder=armIkCtrlZero+'_follow_shoulder'
+        self.addFollowToGrp(armIkFollowShoulder,armIkCtrlZero,shoulderFollowGrp)
+
+        followList=[armIkFollowWorld,armIkFollowBody,armIkFollowHip,armIkFollowChest,armIkFollowHead,armIkFollowShoulder]
+        followAttr=armIkCtrl+'.follow'
+        self.addConstraintByFollowList(followList,armIkCtrlZero,followAttr)
+
+
+
+        # arm fk follow
+
+        cmds.addAttr(uparmFkCtrl,ln='follow',at='long',k=1,max=0,min=1,dv=1)
+        followInv=cmds.createNode('reverse',n=uparmFkCtrl+'_follow_invNode')
+        cmds.connectAttr(uparmFkCtrl+'.follow',followInv+'.ix')
+
+        armFkFollowShoulder=armFkCtrlGrp+'_follow_shoulder'
+        self.addFollowToGrp(armFkFollowShoulder,armFkCtrlGrp,shoulderFollowGrp)
+
+        armFkFollowWorld=armFkCtrlGrp+'_follow_world'
+        self.addFollowToGrp(armFkFollowWorld,armFkCtrlGrp,'World')
+
+        cmds.pointConstraint(armFkFollowShoulder,armFkCtrlGrp)
+        con=cmds.orientConstraint(armFkFollowShoulder,armFkFollowWorld,armFkCtrlGrp)[0]
+        cmds.connectAttr(uparmFkCtrl+'.follow',con+'.w0')
+        cmds.connectAttr(followInv+'.ox',con+'.w1')
+
+        self.fingerRig(handJnt,handDr,armSwitchCtrl)
+        
+    def adddHelpLine(self,sObj,eObj,rigGrp):
+        grp=sObj+'_helpline_grp'
+        grp=cmds.group(em=1,n=grp)
+        cmds.parent(grp,rigGrp)
+        cmds.setAttr(grp+'.it',0)
+        curve=cmds.curve(n=sObj+'_helpline',d=1,p=[(0,0,0),(1,0,0)])
+        cmds.setAttr(curve+'.overrideEnabled',1)
+        cmds.setAttr(curve+'.overrideDisplayType',2)
+        cmds.parent(curve,grp)
+        loc1=cmds.spaceLocator(n=curve+'_loc1')[0]
+        cmds.connectAttr(loc1+'.worldPosition',curve+'.cv[0]')
+        cmds.pointConstraint(sObj,loc1)
+        cmds.setAttr(loc1+'.visibility',0)
+        cmds.parent(loc1,grp)
+        loc2=cmds.spaceLocator(n=curve+'_loc2')[0]
+        cmds.connectAttr(loc2+'.worldPosition',curve+'.cv[1]')
+        cmds.setAttr(loc2+'.visibility',0)
+        cmds.parent(loc2,grp)
+        cmds.pointConstraint(eObj,loc2)
+        
+    def addConstraintByFollowList(self,followList,conObj,followAttr):
+        for idx,followGrp in enumerate(followList):
+            con=cmds.parentConstraint(followGrp,conObj)
+            if(isinstance(con,list)):
+                con=con[0]
+            followCond=cmds.createNode('condition',n=followGrp+'_condNode')
+            cmds.connectAttr(followAttr,followCond+'.ft')
+            cmds.setAttr(followCond+'.st',idx)
+            cmds.setAttr(followCond+'.ctr',1)
+            cmds.setAttr(followCond+'.cfr',0)
+            cmds.setAttr(followCond+'.op',0)
+            cmds.connectAttr(followCond+'.ocr',con+'.w%s'%idx)
+
+    def addSceondRig(self,upJnt,upDr,lowDr,RigGrp,switchAttr,typ='up'):
+
+        uparmTwistGrp=upJnt+'_twist_grp'
+        uparmTwistGrp=cmds.group(em=1,n=uparmTwistGrp)
+        cmds.delete(cmds.parentConstraint(upDr,uparmTwistGrp))
+        cmds.parent(uparmTwistGrp,upDr if typ=='up' else lowDr)
+        cmds.setAttr(uparmTwistGrp+'.v',0)
+
+        uparmNonRoll=upJnt+'_nonroll'
+        uparmNonRoll=cmds.duplicate(upDr if typ=='up' else lowDr,po=1,rr=1,n=uparmNonRoll)[0]
+        cmds.parent(uparmNonRoll,uparmTwistGrp)
+
+
+        uparmNonRollEnd=upJnt+'_nonroll_end'
+        uparmNonRollEnd=cmds.duplicate(upDr if typ=='up' else lowDr,po=1,rr=1,n=uparmNonRollEnd)[0]
+        cmds.parent(uparmNonRollEnd,uparmNonRoll)
+
+        cmds.setAttr(uparmNonRollEnd+'.ty',l=1)
+        cmds.setAttr(uparmNonRollEnd+'.tz',l=1)
+        vec=GeneralUtility.getVector(upDr,lowDr)
+        vec.normalize()
+        cmds.move(vec.x,vec.y,vec.x,uparmNonRollEnd,r=1)
+
+        uparmNonRollIkHandle=uparmNonRoll+'_ikHandle'
+        uparmNonRollIkHandle=cmds.ikHandle(sj=uparmNonRoll,ee=uparmNonRollEnd,n=uparmNonRollIkHandle,sol='ikSCsolver')[0]
+        pObj=cmds.listRelatives(upDr if typ=='up' else lowDr,p=1)[0]
+        cmds.parent(uparmNonRollIkHandle,pObj)
+        uparmNonRollIkHandleZero=ControlUtility.createZeroGrp(uparmNonRollIkHandle,Mirror=False)
+        cmds.setAttr(uparmNonRollIkHandleZero+'.v',0)
+
+        followArmLoc=uparmNonRoll+'_follow_arm_loc'
+        followArmLoc=cmds.spaceLocator(n=followArmLoc)[0]
+        cmds.delete(cmds.parentConstraint(uparmNonRollEnd,followArmLoc))
+        cmds.parent(followArmLoc,uparmTwistGrp)
+        cmds.pointConstraint(followArmLoc,uparmNonRollIkHandle)
+
+        uparmTwist=upJnt+'_twist'
+        uparmTwist=cmds.duplicate(uparmNonRoll,po=1,rr=1,n=uparmTwist)[0]
+        cmds.parent(uparmTwist,uparmNonRoll)
+
+        uparmTwistEnd=upJnt+'_twist_end'
+        uparmTwistEnd=cmds.duplicate(uparmNonRollEnd,po=1,rr=1,n=uparmTwistEnd)[0]
+        cmds.parent(uparmTwistEnd,uparmTwist)
+
+        followTwistAimLoc=uparmTwist+'_aim_loc'
+        followTwistAimLoc=cmds.spaceLocator(n=followTwistAimLoc)[0]
+        cmds.delete(cmds.parentConstraint(uparmTwistEnd,followTwistAimLoc))
+        cmds.parent(followTwistAimLoc,uparmTwistGrp)
+
+        followTwistUpLoc=uparmTwist+'_up_loc'
+        followTwistUpLoc=cmds.spaceLocator(n=followTwistUpLoc)[0]
+        cmds.delete(cmds.parentConstraint(uparmTwist,followTwistUpLoc))
+        cmds.parent(followTwistUpLoc,uparmTwistGrp)
+        cmds.aimConstraint(followTwistAimLoc,uparmTwist,aim=(vec.x/abs(vec.x),0,0),u=(0,0,1),wut="objectrotation",wu=(0,0,1),wuo=followTwistUpLoc)
+
+
+        secondeRigGrp=upJnt+'_second_rig_grp'
+        secondeRigGrp=cmds.group(em=1,n=secondeRigGrp)
+        cmds.delete(cmds.parentConstraint(upDr,secondeRigGrp))
+        cmds.parent(secondeRigGrp,RigGrp)
+
+        secondeRotGrp=upJnt+'_second_rotation_grp'
+        secondeRotGrp=cmds.duplicate(secondeRigGrp,po=1,rr=1,n=secondeRotGrp)[0]
+        cmds.parent(secondeRotGrp,secondeRigGrp)
+        cmds.parentConstraint(upDr,secondeRotGrp)
+
+        jLen=cmds.getAttr(lowDr+'.tx')
+        secondeRotList=[]
+        for i in range(5):
+            secondeRot=upJnt+'_sec%s_rotation'%(i+1)
+            secondeRot=cmds.duplicate(secondeRotGrp,po=1,rr=1,n=secondeRot)[0]
+            cmds.setAttr(secondeRot+'.tx',i*(jLen/4))
+            cmds.parent(secondeRot,secondeRotGrp)
+            secondeRotMul=cmds.createNode('multiplyDivide',n=secondeRot+'_mulNode')
+            cmds.connectAttr(uparmTwist+'.rx',secondeRotMul+'.i1x')
+            if(typ=='up'):
+                cmds.setAttr(secondeRotMul+'.i2x',(1-i*0.25)*-1)
+            else:
+                cmds.setAttr(secondeRotMul+'.i2x',i*0.25)
+
+            cmds.connectAttr(secondeRotMul+'.ox',secondeRot+'.rx')
+            secondeRotList.append(secondeRot)
+
+        sPos=cmds.xform(upDr,q=1,ws=1,t=1)
+        ePos=cmds.xform(lowDr,q=1,ws=1,t=1)
+        mPos=[(sPos[0]+ePos[0])*0.5,(sPos[1]+ePos[1])*0.5,(sPos[2]+ePos[2])*0.5]
+
+        secondCurve=upJnt+'_second_curve'
+        secondCurve=cmds.curve(n=secondCurve,d=2,p=[sPos,mPos,ePos])
+        cmds.setAttr(secondCurve+'.it',0)
+        secondCurveZero=ControlUtility.createZeroGrp(secondCurve,Mirror=False)
+        cmds.parent(secondCurveZero,secondeRigGrp)
+
+
+        secondeCtrlGrp=upJnt+'_second_ctrl_grp'
+        secondeCtrlGrp=cmds.duplicate(secondeRigGrp,po=1,rr=1,n=secondeCtrlGrp)[0]
+        cmds.parent(secondeCtrlGrp,secondeRigGrp)
+        cmds.parentConstraint(upDr,secondeCtrlGrp)
+        cmds.connectAttr(switchAttr,secondeCtrlGrp+'.v')
+
+
+        secondSCtrl=upJnt+'_second_01_ctrl'
+        secondSCtrlZero=ControlUtility.createControl(secondSCtrl,'Rect')
+        secondSCtrlLoc=cmds.spaceLocator(n=secondSCtrl+'_loc')[0]
+        cmds.setAttr(secondSCtrlLoc+'.visibility',0)
+        cmds.parent(secondSCtrlLoc,secondSCtrl)
+        cmds.delete(cmds.parentConstraint(upDr,secondSCtrlZero))
+        cmds.parent(secondSCtrlZero,secondeCtrlGrp)
+        cmds.connectAttr(secondSCtrlLoc+'.worldPosition',secondCurve+'.cv[0]')
+
+        secondECtrl=upJnt+'_second_03_ctrl'
+        secondECtrlZero=ControlUtility.createControl(secondECtrl,'Rect')
+        secondECtrlLoc=cmds.spaceLocator(n=secondECtrl+'_loc')[0]
+        cmds.setAttr(secondECtrlLoc+'.visibility',0)
+        cmds.parent(secondECtrlLoc,secondECtrl)
+        cmds.delete(cmds.parentConstraint(lowDr,secondECtrlZero))
+        cmds.parent(secondECtrlZero,secondeCtrlGrp)
+        cmds.connectAttr(secondECtrlLoc+'.worldPosition',secondCurve+'.cv[2]')
+        cmds.pointConstraint(lowDr,secondECtrlZero)
+
+        secondMCtrl=upJnt+'_second_02_ctrl'
+        secondMCtrlZero=ControlUtility.createControl(secondMCtrl,'Rect')
+        secondMCtrlLoc=cmds.spaceLocator(n=secondMCtrl+'_loc')[0]
+        cmds.setAttr(secondMCtrlLoc+'.visibility',0)
+        cmds.parent(secondMCtrlLoc,secondMCtrl)
+        cmds.pointConstraint(secondSCtrl,secondECtrl,secondMCtrlZero)
+        cmds.parent(secondMCtrlZero,secondeCtrlGrp)
+        cmds.connectAttr(secondMCtrlLoc+'.worldPosition',secondCurve+'.cv[1]')
+
+        cmds.aimConstraint(secondECtrl,secondMCtrlZero,aim=(jLen/abs(jLen),0,0),u=(0,0,1),wut="objectrotation",wu=(0,0,1),wuo=secondeRotList[2])
+
+
+        secondePosGrp=upJnt+'_second_position_grp'
+        secondePosGrp=cmds.group(em=1,n=secondePosGrp)
+        cmds.parent(secondePosGrp,secondeRigGrp)
+
+        secondePosOff=upJnt+'_second_position_off'
+        secondePosOff=cmds.group(em=1,n=secondePosOff)
+        cmds.parent(secondePosOff,secondePosGrp)
+        cmds.setAttr(secondePosOff+'.it',0)
+
+        secondePosList=[]
+        for i in range(5):
+            secondePos=upJnt+'_sec%s_position'%(i+1)
+            secondePos=cmds.group(n=secondePos,em=1)
+            cmds.parent(secondePos,secondePosOff)
+            secondePosInfo=cmds.createNode('pointOnCurveInfo',n=secondePos+'_infoNode')
+            cmds.connectAttr(secondCurve+'.worldSpace',secondePosInfo+'.ic')
+            cmds.connectAttr(secondePosInfo+'.p',secondePos+'.t')
+            cmds.setAttr(secondePosInfo+'.pr',i*0.25)
+            secondePosList.append(secondePos)
+
+        secondeDrGrp=upJnt+'_second_dr_grp'
+        secondeDrGrp=cmds.duplicate(secondeRigGrp,po=1,rr=1,n=secondeDrGrp)[0]
+        cmds.parent(secondeDrGrp,secondeRigGrp)
+        cmds.parentConstraint(upDr,secondeDrGrp)
+
+        secondeDrList=[]
+        for i in range(5):
+            secondeDr=upJnt+'_sec%s_dr'%(i+1)
+            secondeDr=cmds.duplicate(upDr,n=secondeDr,po=1,rr=1)[0]
+            cmds.parent(secondeDr,secondeDrGrp)
+            cmds.pointConstraint(secondePosList[i],secondeDr)
+            cmds.tangentConstraint(secondCurve,secondeDr,aim=(jLen/abs(jLen),0,0),u=(0,0,1),wut="objectrotation",wu=(0,0,1),wuo=secondeRotList[i])
+            # cmds.setAttr(secondeDr+'.displayLocalAxis',1)
+
+        return secondECtrlZero if(typ=='up')else secondSCtrl
+
+    def fingerRig(self,handJnt,handDr,armSwitchCtrl):
+        #     pass
+        # handJnt='L_hand'
+        # handDr=handJnt+'_dr'
+        # armSwitchCtrl='L_arm_switch_ctrl'
+        cmds.addAttr(armSwitchCtrl,ln='fingerRootVis',at='long',k=1,dv=0,max=1,min=0)
+        cmds.addAttr(armSwitchCtrl,ln='thumb',at='float',k=1,dv=0,max=10,min=-2)
+        cmds.addAttr(armSwitchCtrl,ln='index',at='float',k=1,dv=0,max=10,min=-2)
+        cmds.addAttr(armSwitchCtrl,ln='middle',at='float',k=1,dv=0,max=10,min=-2)
+        cmds.addAttr(armSwitchCtrl,ln='ring',at='float',k=1,dv=0,max=10,min=-2)
+        cmds.addAttr(armSwitchCtrl,ln='pinky',at='float',k=1,dv=0,max=10,min=-2)
+
+
+        fingerAllRigGrp=handJnt+'_finger_rig_grp'
+        fingerAllRigGrp=cmds.group(em=1,n=fingerAllRigGrp)
+        cmds.parentConstraint(handDr,fingerAllRigGrp)
+        allCtrl='all_ctrl'
+        cmds.parent(fingerAllRigGrp,allCtrl)
+
+        rootJntList=cmds.listRelatives(handJnt,c=1,typ='joint',ad=0)
+        for rootJnt in rootJntList:
+            fingerRigGrp=rootJnt+'_rig_grp'
+            fingerRigGrp=cmds.group(em=1,n=fingerRigGrp)
+            cmds.delete(cmds.parentConstraint(rootJnt,fingerRigGrp))
+            cmds.parent(fingerRigGrp,fingerAllRigGrp)
+
+            fingerJntList=GeneralUtility.getJointChain(rootJnt)
+            # duplicate driver joint
+            fingerDrJntGrp=cmds.duplicate(fingerRigGrp,n=rootJnt+'_dr_jnt_grp',po=1,rr=1)[0]
+            cmds.parent(fingerDrJntGrp,fingerRigGrp)
+            fingerDrList=[]
+            for fingerJnt in fingerJntList:
+                fingerDr=cmds.duplicate(fingerJnt,po=1,rr=1,n=fingerJnt+'_dr')[0]
+                self.addToSdkHandle(fingerDr)
+                cmds.parent(fingerDr,fingerDrJntGrp)
+                fingerDrList.append(fingerDr)
+                
+            for idx in range(1,len(fingerDrList)):
+                cmds.parent(fingerDrList[idx],fingerDrList[idx-1])
+            # crate control
+            fingerCtrlGrp=cmds.duplicate(fingerRigGrp,n=rootJnt+'_ctrl_grp',po=1,rr=1)[0]
+            cmds.parent(fingerCtrlGrp,fingerRigGrp)
+            fingerCtrlList=[]
+            for idx,fingerJnt in enumerate(fingerJntList[:-1]) :
+                fingerCtrl=fingerJnt+'_ctrl'
+                if(idx==0):
+                    fingerCtrlZero=ControlUtility.createControl(fingerCtrl,'Circle_Line')
+                    GeneralUtility.connectAllShapeAttr(fingerCtrl,armSwitchCtrl+'.fingerRootVis','visibility')
+                else:
+                    fingerCtrlZero=ControlUtility.createControl(fingerCtrl,'Circle_Arrow',T=False)
+
+                ControlUtility.scaleCV(fingerCtrl,0.8,typ='ObjectCenter')
+                cmds.delete(cmds.parentConstraint(fingerJnt,fingerCtrlZero))
+                cmds.parent(fingerCtrlZero,fingerCtrlGrp)
+                cmds.parentConstraint(fingerCtrl,fingerDrList[idx])
+                fingerCtrlList.append([fingerCtrl,fingerCtrlZero])
+            for idx in range(1,len(fingerCtrlList)):
+                cmds.parent(fingerCtrlList[idx][1],fingerCtrlList[idx-1][0])
+
+
+
+    def legRig(self,uplegJnt,lowlegJnt,footJnt,toebaseJnt,toeendJnt,toeinJnt,toeoutJnt,heelJnt):
+        legRigGrp=uplegJnt+'_rig_grp'
+        legRigGrp=cmds.group(em=1,n=legRigGrp)
+        cmds.delete(cmds.parentConstraint(uplegJnt,legRigGrp))
+        allCtrl='all_ctrl'
+        cmds.parent(legRigGrp,allCtrl)
+        # cmds.parentConstraint()
+
+        # ik rig
+        legIkRigGrp=uplegJnt+'_ik_rig_grp'
+        legIkRigGrp=cmds.group(em=1,n=legIkRigGrp)
+        cmds.delete(cmds.parentConstraint(uplegJnt,legIkRigGrp))
+        cmds.parent(legIkRigGrp,legRigGrp)
+
+        legIkJntGrp=uplegJnt+'_ik_jnt_grp'
+        legIkJntGrp=cmds.duplicate(legIkRigGrp,po=1,rr=1,n=legIkJntGrp)[0]
+        cmds.parent(legIkJntGrp,legIkRigGrp)
+
+        uplegIk=cmds.duplicate(uplegJnt,po=1,rr=1,n=uplegJnt+'_ik')[0]
+        cmds.parent(uplegIk,legIkJntGrp)
+
+        lowlegIk=cmds.duplicate(lowlegJnt,po=1,rr=1,n=lowlegJnt+'_ik')[0]
+        cmds.parent(lowlegIk,uplegIk)
+
+        footIk=cmds.duplicate(footJnt,po=1,rr=1,n=footJnt+'_ik')[0]
+        cmds.parent(footIk,lowlegIk)
+
+        toebaseIk=cmds.duplicate(toebaseJnt,po=1,rr=1,n=toebaseJnt+'_ik')[0]
+        cmds.parent(toebaseIk,footIk)
+
+        toeendIk=cmds.duplicate(toeendJnt,po=1,rr=1,n=toeendJnt+'_ik')[0]
+        cmds.parent(toeendIk,toebaseIk)
+
+
+        legIkCtrlGrp=uplegJnt+'_ik_ctrl_grp'
+        legIkCtrlGrp=cmds.duplicate(legIkRigGrp,po=1,rr=1,n=legIkCtrlGrp)[0]
+        cmds.parent(legIkCtrlGrp,legIkRigGrp)
+
+        legIkRootCtrl=uplegIk+'_root_ctrl'
+        legIkRootCtrlZero=ControlUtility.createControl(legIkRootCtrl,'Sphere')
+        cmds.delete(cmds.parentConstraint(uplegIk,legIkRootCtrlZero))
+        cmds.parent(legIkRootCtrlZero,legIkCtrlGrp)
+        cmds.parentConstraint(legIkRootCtrl,legIkJntGrp)
+
+
+        legIkCtrl=uplegIk+'_ctrl'
+        legIkCtrlZero=ControlUtility.createControl(legIkCtrl,'Heel')
+        cmds.delete(cmds.parentConstraint(footIk,legIkCtrlZero))
+        cmds.rotate(0,0,90,legIkCtrlZero,r=1,os=1,fo=1)
+        cmds.parent(legIkCtrlZero,legIkCtrlGrp)
+        vec1=GeneralUtility.getVector(heelJnt,footJnt)
+        vec2=GeneralUtility.getVector(heelJnt,toeendJnt)
+        pVec=GeneralUtility.getPerpendicularVector(vec1,vec2)
+        ControlUtility.moveCV(legIkCtrl,pVec)
+
+        legIkPoleCtrl=uplegIk+'_pole_ctrl'
+        legIkPoleCtrlZero=ControlUtility.createControl(legIkPoleCtrl,'Sphere',R=False)
+        cmds.delete(cmds.parentConstraint(uplegIk,legIkPoleCtrlZero))
+        cmds.delete(cmds.pointConstraint(lowlegIk,legIkPoleCtrlZero))
+        cmds.parent(legIkPoleCtrlZero,legIkCtrlGrp)
+        vec=GeneralUtility.getPoleMoveVector(uplegIk,lowlegIk,footIk)
+        cmds.move(vec.x,vec.y,vec.z,legIkPoleCtrlZero,r=1)
+
+
+        toebaseIkCtrl=toebaseIk+'_ctrl'
+        toebaseIkCtrlZero=ControlUtility.createControl(toebaseIkCtrl,'Toe',T=False)
+        cmds.delete(cmds.parentConstraint(toebaseIk,toebaseIkCtrlZero))
+        vec1=GeneralUtility.getVector(toeendJnt,toebaseJnt)
+        vec2=GeneralUtility.getVector(toeendJnt,heelJnt)
+        pVec=GeneralUtility.getPerpendicularVector(vec1,vec2)
+        ControlUtility.moveCV(toebaseIkCtrl,pVec)
+
+
+        toeendIkCtrl=toeendIk+'_ctrl'
+        toeendIkCtrlZero=ControlUtility.createControl(toeendIkCtrl,'Sphere',T=False)
+        toeendIkCtrlRot=ControlUtility.createParentGrp(toeendIkCtrl,'_rot')
+        cmds.delete(cmds.parentConstraint(toeendIk,toeendIkCtrlZero))
+
+        heelIkCtrl=heelJnt+'_ik_ctrl'
+        heelIkCtrlZero=ControlUtility.createControl(heelIkCtrl,'Sphere',T=False)
+        cmds.delete(cmds.parentConstraint(heelJnt,heelIkCtrlZero))
+
+        toeIkRot=toebaseIk+'_rot'
+        toeIkRotZero=ControlUtility.createControl(toeIkRot,'None')
+        cmds.delete(cmds.parentConstraint(toebaseIk,toeIkRotZero))
+
+        toeinIkRot=toeinJnt+'_ik_rot'
+        toeinIkRotZero=ControlUtility.createControl(toeinIkRot,'None')
+        cmds.delete(cmds.parentConstraint(toeinJnt,toeinIkRotZero))
+
+        toeoutIkRot=toeoutJnt+'_ik_rot'
+        toeoutIkRotZero=ControlUtility.createControl(toeoutIkRot,'None')
+        cmds.delete(cmds.parentConstraint(toeoutJnt,toeoutIkRotZero))
+
+
+        legIkHandle=uplegJnt+'_ikHandle'
+        legIkHandle=cmds.ikHandle(sj=uplegIk,ee=footIk,n=legIkHandle,sol='ikRPsolver')[0]
+        cmds.setAttr(legIkHandle+'.v',0)
+        footIkHandle=footJnt+'_ikHandle'
+        footIkHandle=cmds.ikHandle(sj=footIk,ee=toebaseIk,n=footIkHandle,sol='ikRPsolver')[0]
+        cmds.setAttr(footIkHandle+'.v',0)
+        toeIkHandle=toebaseJnt+'_ikHandle'
+        toeIkHandle=cmds.ikHandle(sj=toebaseIk,ee=toeendIk,n=toeIkHandle,sol='ikRPsolver')[0]
+        cmds.setAttr(toeIkHandle+'.v',0)
+
+        cmds.parent(legIkHandle,toeIkRot)
+        cmds.parent(footIkHandle,toeIkRot)
+        cmds.parent(toeIkHandle,toebaseIkCtrl)
+        cmds.parent(toeIkRotZero,toebaseIkCtrlZero,toeoutIkRot)
+        cmds.parent(toeoutIkRotZero,toeinIkRot)
+        cmds.parent(toeinIkRotZero,heelIkCtrl)
+        cmds.parent(heelIkCtrlZero,toeendIkCtrl)
+        cmds.parent(toeendIkCtrlZero,legIkCtrl)
+
+        cmds.poleVectorConstraint(legIkPoleCtrl,legIkHandle)
+
+        footIkCtrl=footIk+'_ctrl'
+        footIkCtrlZero=ControlUtility.createControl(footIkCtrl,'Sphere',T=False)
+        ControlUtility.createInverseGrp(footIkCtrl)
+        cmds.delete(cmds.parentConstraint(toebaseIk,footIkCtrlZero))
+        cmds.parentConstraint(footIk,footIkCtrlZero,mo=1)
+        cmds.parent(footIkCtrlZero,legIkCtrlGrp)
+        vec1=GeneralUtility.getVector(toeendJnt,heelJnt)
+        vec2=GeneralUtility.getVector(toeendJnt,footJnt)
+        pVec=GeneralUtility.getPerpendicularVector(vec1,vec2)
+        ControlUtility.moveCV(footIkCtrl,pVec*0.5)
+
+        cmds.transformLimits(footIkCtrl,ry=[0,0],ery=[1,0])
+
+        # footIk='L_foot_ik'
+        # footIkCtrl='L_foot_ik_ctrl'
+        cmds.addAttr(footIkCtrl,ln='footLift',at='float',k=1,dv=30)
+        cmds.addAttr(footIkCtrl,ln='footStraight',at='float',k=1,dv=60)
+        rang1=cmds.createNode('setRange',n=footIk+'_footLift_rangNode')
+        cmds.connectAttr(footIkCtrl+'.ry',rang1+'.vx')
+        cmds.setAttr(rang1+'.nx',0)
+        cmds.setAttr(rang1+'.mx',1)
+        cmds.connectAttr(footIkCtrl+'.footLift',rang1+'.omx')
+
+        rang2=cmds.createNode('setRange',n=footIk+'_footStraight_rangNode')
+        cmds.connectAttr(footIkCtrl+'.ry',rang2+'.vx')
+        cmds.setAttr(rang2+'.nx',0)
+        cmds.setAttr(rang2+'.mx',1)
+        cmds.connectAttr(footIkCtrl+'.footLift',rang2+'.onx')
+        cmds.connectAttr(footIkCtrl+'.footStraight',rang2+'.omx')
+
+        addNode=cmds.createNode('plusMinusAverage',n=footIk+'_addNode')
+        cmds.connectAttr(rang1+'.ox',addNode+'.i1[0]')
+        cmds.connectAttr(rang2+'.ox',addNode+'.i1[1]')
+        cmds.setAttr(addNode+'.op',2)
+
+        mulNode=cmds.createNode('multiplyDivide',n=footIk+'_mulNode')
+        cmds.connectAttr(addNode+'.o1',mulNode+'.i1x')
+        cmds.connectAttr(footIkCtrl+'.ry',mulNode+'.i2x')
+
+        cmds.connectAttr(footIkCtrl+'.rz',toeIkRot+'.rz')
+        cmds.connectAttr(mulNode+'.ox',toeIkRot+'.ry')
+
+
+        cmds.connectAttr(footIkCtrl+'.rx',toeinIkRot+'.rx')
+        cmds.transformLimits(toeinIkRot,rx=[0,0],erx=[1,0])
+        cmds.connectAttr(footIkCtrl+'.rx',toeoutIkRot+'.rx')
+        cmds.transformLimits(toeoutIkRot,rx=[0,0],erx=[0,1])
+
+        cmds.connectAttr(rang2+'.ox',mulNode+'.i1y')
+        cmds.connectAttr(footIkCtrl+'.ry',mulNode+'.i2y')
+        cmds.connectAttr(mulNode+'.oy',toeendIkCtrlRot+'.ry')
+
+
+        # footEndIkHandle=footEndIk+'_ikHandle'
+        # footEndIkHandle=cmds.ikHandle(sj=footIk,ee=footEndIk,n=footEndIkHandle,sol='ikSCsolver')[0]
+        # cmds.parent(footEndIkHandle,footIkCtrl)
+        # cmds.setAttr(footEndIkHandle+'.v',0)
+
+        legIkLocGrp=uplegJnt+'_ik_loc_grp'
+        legIkLocGrp=cmds.duplicate(legIkRigGrp,po=1,rr=1,n=legIkLocGrp)[0]
+        cmds.parent(legIkLocGrp,legIkRigGrp)
+        cmds.setAttr(legIkLocGrp+'.v',0)
+        cmds.parentConstraint(legIkRootCtrl,legIkLocGrp)
+
+        uplegIkLoc=uplegIk+'_loc'
+        uplegIkLoc=cmds.spaceLocator(n=uplegIkLoc)[0]
+        cmds.delete(cmds.pointConstraint(uplegIk,uplegIkLoc))
+        cmds.parent(uplegIkLoc,legIkLocGrp)
+
+        lowlegIkCtrlLoc=legIkPoleCtrl+'_loc'
+        lowlegIkCtrlLoc=cmds.spaceLocator(n=lowlegIkCtrlLoc)[0]
+        cmds.pointConstraint(legIkPoleCtrl,lowlegIkCtrlLoc)
+        cmds.parent(lowlegIkCtrlLoc,legIkLocGrp)
+
+        footIkCtrlLoc=legIkCtrl+'_loc'
+        footIkCtrlLoc=cmds.spaceLocator(n=footIkCtrlLoc)[0]
+        cmds.pointConstraint(legIkHandle,footIkCtrlLoc)
+        cmds.parent(footIkCtrlLoc,legIkLocGrp)
+
+        # root vis
+        cmds.addAttr(legIkCtrl,ln='rootVis',at='long',k=1,dv=0,max=1,min=0)
+        GeneralUtility.connectAllShapeAttr(legIkRootCtrl,legIkCtrl+'.rootVis','visibility')
+
+        # ik stretch
+        upLen=cmds.getAttr(lowlegJnt+'.tx')
+        dnLen=cmds.getAttr(footJnt+'.tx')
+
+        cmds.addAttr(legIkCtrl,ln='stretch',at='float',max=1,min=0,k=1)
+        cmds.addAttr(legIkCtrl,ln='upLength',at='float',k=1)
+        cmds.addAttr(legIkCtrl,ln='dnLength',at='float',k=1)
+
+        upIkStretchAdd=uplegIk+'_stretch_addNode'
+        upIkStretchAdd=cmds.createNode('plusMinusAverage',n=upIkStretchAdd)
+        cmds.setAttr(upIkStretchAdd+'.i1[0]',abs(upLen))
+        cmds.connectAttr(legIkCtrl+'.upLength',upIkStretchAdd+'.i1[1]')
+
+        lowIkStretchAdd=lowlegIk+'_stretch_addNode'
+        lowIkStretchAdd=cmds.createNode('plusMinusAverage',n=lowIkStretchAdd)
+        cmds.setAttr(lowIkStretchAdd+'.i1[0]',abs(dnLen))
+        cmds.connectAttr(legIkCtrl+'.dnLength',lowIkStretchAdd+'.i1[1]',f=1)
+
+        footIkStretchAdd=footIk+'_stretch_addNode'
+        footIkStretchAdd=cmds.createNode('plusMinusAverage',n=footIkStretchAdd)
+        cmds.connectAttr(lowIkStretchAdd+'.o1',footIkStretchAdd+'.i1[0]')
+        cmds.connectAttr(upIkStretchAdd+'.o1',footIkStretchAdd+'.i1[1]')
+
+        footIkStretchLenMul=footIk+'_stretch_len_mulNode'
+        footIkStretchLenMul=cmds.createNode('multiplyDivide',n=footIkStretchLenMul)
+        cmds.setAttr(footIkStretchLenMul+'.i1x',1 if upLen>0 else -1)
+        cmds.setAttr(footIkStretchLenMul+'.i1y',1 if upLen>0 else -1)
+        cmds.connectAttr(upIkStretchAdd+'.o1',footIkStretchLenMul+'.i2x')
+        cmds.connectAttr(lowIkStretchAdd+'.o1',footIkStretchLenMul+'.i2y')
+
+        footIkStretchDis=footIk+'_stretch_disNode'
+        footIkStretchDis=cmds.createNode('distanceBetween',n=footIkStretchDis)
+        cmds.connectAttr(uplegIkLoc+'.t',footIkStretchDis+'.p1')
+        cmds.connectAttr(footIkCtrlLoc+'.t',footIkStretchDis+'.p2')
+
+        footIkStretchDiv=footIk+'_stretch_divNode'
+        footIkStretchDiv=cmds.createNode('multiplyDivide',n=footIkStretchDiv)
+        cmds.setAttr(footIkStretchDiv+'.op',2)
+        cmds.connectAttr(footIkStretchDis+'.d',footIkStretchDiv+'.i1x')
+        cmds.connectAttr(footIkStretchAdd+'.o1',footIkStretchDiv+'.i2x')
+
+        footIkStretchCon=footIk+'_stretch_conNode'
+        footIkStretchCon=cmds.createNode('condition',n=footIkStretchCon)
+        cmds.connectAttr(footIkStretchDiv+'.ox',footIkStretchCon+'.ft')
+        cmds.connectAttr(footIkStretchDiv+'.ox',footIkStretchCon+'.ctr')
+        cmds.setAttr(footIkStretchCon+'.st',1)
+        cmds.setAttr(footIkStretchCon+'.op',2)
+        cmds.setAttr(footIkStretchCon+'.cfr',1)
+
+        footIkStretchBlend=footIk+'_stretch_blendNode'
+        footIkStretchBlend=cmds.createNode('blendTwoAttr',n=footIkStretchBlend)
+
+        cmds.setAttr(footIkStretchBlend+'.i[0]',1)
+        cmds.connectAttr(footIkStretchCon+'.ocr',footIkStretchBlend+'.i[1]')
+        cmds.connectAttr(legIkCtrl+'.stretch',footIkStretchBlend+'.ab')
+
+        footIkStretchMul=footIk+'_mulNode'
+        footIkStretchMul=cmds.createNode('multiplyDivide',n=footIkStretchMul)
+        cmds.connectAttr(footIkStretchBlend+'.o',footIkStretchMul+'.i1x')
+        cmds.connectAttr(footIkStretchBlend+'.o',footIkStretchMul+'.i1y')
+        cmds.connectAttr(footIkStretchLenMul+'.ox',footIkStretchMul+'.i2x')
+        cmds.connectAttr(footIkStretchLenMul+'.oy',footIkStretchMul+'.i2y')
+
+        # cmds.connectAttr(footIkMul+'.ox',lowlegIk+'.tx')
+        # cmds.connectAttr(footIkMul+'.oy',footIk+'.tx')
+        # pole help line
+        self.adddHelpLine(legIkPoleCtrl,lowlegIk,legIkCtrlGrp)
+        # ik lock
+        cmds.addAttr(legIkPoleCtrl,ln='lock',at='float',max=1,min=0,k=1)
+        uplegIkDis=uplegIk+'_disNode'
+        uplegIkDis=cmds.createNode('distanceBetween',n=uplegIkDis)
+        cmds.connectAttr(uplegIkLoc+'.t',uplegIkDis+'.p1')
+        cmds.connectAttr(lowlegIkCtrlLoc+'.t',uplegIkDis+'.p2')
+
+        lowlegIkDis=lowlegIk+'_disNode'
+        lowlegIkDis=cmds.createNode('distanceBetween',n=lowlegIkDis)
+        cmds.connectAttr(lowlegIkCtrlLoc+'.t',lowlegIkDis+'.p1')
+        cmds.connectAttr(footIkCtrlLoc+'.t',lowlegIkDis+'.p2')
+
+        uplegIkLockDiv=uplegIk+'_lock_divNode'
+        uplegIkLockDiv=cmds.createNode('multiplyDivide',n=uplegIkLockDiv)
+        cmds.connectAttr(uplegIkDis+'.d',uplegIkLockDiv+'.i1x')
+        cmds.setAttr(uplegIkLockDiv+'.i2x',abs(upLen))
+        cmds.connectAttr(lowlegIkDis+'.d',uplegIkLockDiv+'.i1y')
+        cmds.setAttr(uplegIkLockDiv+'.i2y',abs(dnLen))
+        cmds.setAttr(uplegIkLockDiv+'.op',2)
+
+        uplegIkLockMul=uplegIk+'_lock_mulNode'
+        uplegIkLockMul=cmds.createNode('multiplyDivide',n=uplegIkLockMul)
+        cmds.connectAttr(uplegIkLockDiv+'.ox',uplegIkLockMul+'.i1x')
+        cmds.setAttr(uplegIkLockMul+'.i2x',upLen)
+        cmds.connectAttr(uplegIkLockDiv+'.oy',uplegIkLockMul+'.i1y')
+        cmds.setAttr(uplegIkLockMul+'.i2y',dnLen)
+
+
+
+        # blend ik stretch and lock
+        uplegIkLockBlend=uplegIk+'_stretch_lock_blendNode'
+        uplegIkLockBlend=cmds.createNode('blendColors',n=uplegIkLockBlend)
+        cmds.connectAttr(uplegIkLockMul+'.ox',uplegIkLockBlend+'.c1r',f=1)
+        cmds.connectAttr(uplegIkLockMul+'.oy',uplegIkLockBlend+'.c1g',f=1)
+        cmds.connectAttr(footIkStretchMul+'.ox',uplegIkLockBlend+'.c2r',f=1)
+        cmds.connectAttr(footIkStretchMul+'.oy',uplegIkLockBlend+'.c2g',f=1)
+        cmds.connectAttr(legIkPoleCtrl+'.lock',uplegIkLockBlend+'.b')
+
+
+        cmds.connectAttr(uplegIkLockBlend+'.opr',lowlegIk+'.tx')
+        cmds.connectAttr(uplegIkLockBlend+'.opg',footIk+'.tx')
+
+        # fk rig
+        legFkRigGrp=uplegJnt+'_fk_rig_grp'
+        legFkRigGrp=cmds.group(em=1,n=legFkRigGrp)
+        cmds.delete(cmds.parentConstraint(uplegJnt,legFkRigGrp))
+        cmds.parent(legFkRigGrp,legRigGrp)
+
+        legFkJntGrp=uplegJnt+'_fk_jnt_grp'
+        legFkJntGrp=cmds.duplicate(legFkRigGrp,po=1,rr=1,n=legFkJntGrp)[0]
+        cmds.parent(legFkJntGrp,legFkRigGrp)
+
+        uplegFk=cmds.duplicate(uplegJnt,po=1,rr=1,n=uplegJnt+'_fk')[0]
+        cmds.parent(uplegFk,legFkJntGrp)
+
+        lowlegFk=cmds.duplicate(lowlegJnt,po=1,rr=1,n=lowlegJnt+'_fk')[0]
+        cmds.parent(lowlegFk,uplegFk)
+
+        footFk=cmds.duplicate(footJnt,po=1,rr=1,n=footJnt+'_fk')[0]
+        cmds.parent(footFk,lowlegFk)
+
+        toebaseFk=cmds.duplicate(toebaseJnt,po=1,rr=1,n=toebaseJnt+'_fk')[0]
+        cmds.parent(toebaseFk,footFk)
+
+
+        legFkCtrlGrp=uplegJnt+'_fk_Ctrl_grp'
+        legFkCtrlGrp=cmds.duplicate(legFkRigGrp,po=1,rr=1,n=legFkCtrlGrp)[0]
+        cmds.parent(legFkCtrlGrp,legFkRigGrp)
+
+
+        uplegFkCtrl=uplegFk+'_ctrl'
+        uplegFkCtrlZero=ControlUtility.createControl(uplegFkCtrl,'Circle')
+        uplegFkRootCtrl=uplegFk+'_root_ctrl'
+        uplegFkRootCtrl=cmds.duplicate(uplegFkCtrl,n=uplegFkRootCtrl,rr=1)[0]
+        cmds.parent(uplegFkCtrl,uplegFkRootCtrl)
+        cmds.addAttr(uplegFkCtrl,ln='rootVis',at='long',k=1,max=0,min=1,dv=0)
+        ControlUtility.scaleCV(uplegFkRootCtrl,5)
+        GeneralUtility.connectAllShapeAttr(uplegFkRootCtrl,uplegFkCtrl+'.rootVis','visibility')
+
+        cmds.delete(cmds.parentConstraint(uplegFk,uplegFkCtrlZero))
+        cmds.parentConstraint(uplegFkCtrl,uplegFk)
+        cmds.parent(uplegFkCtrlZero,legFkCtrlGrp)
+        ControlUtility.scaleCV(uplegFkCtrl,4)
+
+
+        lowlegFkCtrl=lowlegFk+'_ctrl'
+        lowlegFkCtrlZero=ControlUtility.createControl(lowlegFkCtrl,'Circle')
+        ControlUtility.lockRotate(lowlegFkCtrl,z=0)
+        cmds.delete(cmds.parentConstraint(lowlegFk,lowlegFkCtrlZero))
+        cmds.parentConstraint(lowlegFkCtrl,lowlegFk)
+        cmds.parent(lowlegFkCtrlZero,uplegFkCtrl)
+        ControlUtility.scaleCV(lowlegFkCtrl,4)
+
+
+        footFkCtrl=footFk+'_ctrl'
+        footFkCtrlZero=ControlUtility.createControl(footFkCtrl,'Circle')
+        cmds.delete(cmds.parentConstraint(footFk,footFkCtrlZero))
+        cmds.parentConstraint(footFkCtrl,footFk)
+        cmds.parent(footFkCtrlZero,lowlegFkCtrl)
+        ControlUtility.scaleCV(footFkCtrl,4)
+
+        toebaseFkCtrl=toebaseFk+'_ctrl'
+        toebaseFkCtrlZero=ControlUtility.createControl(toebaseFkCtrl,'Circle')
+        cmds.delete(cmds.parentConstraint(toebaseFk,toebaseFkCtrlZero))
+        cmds.parentConstraint(toebaseFkCtrl,toebaseFk)
+        cmds.parent(toebaseFkCtrlZero,footFkCtrl)
+        ControlUtility.scaleCV(toebaseFkCtrl,4)
+
+
+        # fk stretch
+        cmds.addAttr(uplegFkCtrl,ln='upLength',at='float',k=1)
+
+        uplegFkAdd=uplegFk+'_stretch_addNode'
+        uplegFkAdd=cmds.createNode('plusMinusAverage',n=uplegFkAdd)
+        cmds.connectAttr(uplegFkCtrl+'.upLength',uplegFkAdd+'.i1[0]')
+        cmds.setAttr(uplegFkAdd+'.i1[1]',cmds.getAttr(lowlegFkCtrlZero+'.tx'))
+        cmds.connectAttr(uplegFkAdd+'.o1',lowlegFkCtrlZero+'.tx')
+
+        cmds.addAttr(lowlegFkCtrl,ln='dnLength',at='float',k=1)
+        lowlegFkAdd=lowlegFk+'_stretch_addNode'
+        lowlegFkAdd=cmds.createNode('plusMinusAverage',n=lowlegFkAdd)
+        cmds.connectAttr(lowlegFkCtrl+'.dnLength',lowlegFkAdd+'.i1[0]')
+        cmds.setAttr(lowlegFkAdd+'.i1[1]',cmds.getAttr(footFkCtrlZero+'.tx'))
+        cmds.connectAttr(lowlegFkAdd+'.o1',footFkCtrlZero+'.tx')
+
+
+
+        # dri jnt
+        legDrJntGrp=uplegJnt+'_dr_jnt_grp'
+        legDrJntGrp=cmds.group(em=1,n=legDrJntGrp)
+        cmds.delete(cmds.parentConstraint(uplegJnt,legDrJntGrp))
+        cmds.parent(legDrJntGrp,legRigGrp)
+
+        uplegDr=cmds.duplicate(uplegJnt,po=1,rr=1,n=uplegJnt+'_dr')[0]
+        self.addToSdkHandle(uplegDr)
+        cmds.parent(uplegDr,legDrJntGrp)
+
+        lowlegDr=cmds.duplicate(lowlegJnt,po=1,rr=1,n=lowlegJnt+'_dr')[0]
+        self.addToSdkHandle(lowlegDr)
+        cmds.parent(lowlegDr,uplegDr)
+
+        footDr=cmds.duplicate(footJnt,po=1,rr=1,n=footJnt+'_dr')[0]
+        self.addToSdkHandle(footDr)
+        cmds.parent(footDr,lowlegDr)
+
+        toebaseDr=cmds.duplicate(toebaseJnt,po=1,rr=1,n=toebaseJnt+'_dr')[0]
+        self.addToSdkHandle(toebaseDr)
+        cmds.parent(toebaseDr,footDr)
+
+        toeendDr=cmds.duplicate(toeendJnt,po=1,rr=1,n=toeendJnt+'_dr')[0]
+        cmds.parent(toeendDr,toebaseDr)
+
+        legSwitchCtrl=uplegJnt+'_switch_ctrl'
+        legSwitchCtrlZero=ControlUtility.createControl(legSwitchCtrl,'Cross',T=False,R=False)
+        cmds.parentConstraint(footDr,legSwitchCtrlZero)
+        cmds.parent(legSwitchCtrlZero,legRigGrp)
+
+        vec=GeneralUtility.getVector(toeinJnt,toeoutJnt)
+        ControlUtility.moveCV(legSwitchCtrl,vec)
+
+
+
+        # ik fk switch
+        cmds.addAttr(legSwitchCtrl,ln='ikfk',at='long',k=1,dv=0,max=1,min=0)
+
+        legSwitchRev=legSwitchCtrl+'_ikfk_revNode'
+        legSwitchRev=cmds.createNode('reverse',n=legSwitchRev)
+        cmds.connectAttr(legSwitchCtrl+'.ikfk',legSwitchRev+'.ix')
+
+
+
+        ikfkAttr=legSwitchCtrl+'.ikfk'
+        ikfkInvAttr=legSwitchRev+'.ox'
+        uplegCon=cmds.parentConstraint(uplegIk,uplegFk,uplegDr)[0]
+        cmds.connectAttr(ikfkInvAttr,uplegCon+'.w0')
+        cmds.connectAttr(ikfkAttr,uplegCon+'.w1')
+
+        lowlegCon=cmds.parentConstraint(lowlegIk,lowlegFk,lowlegDr)[0]
+        cmds.connectAttr(ikfkInvAttr,lowlegCon+'.w0')
+        cmds.connectAttr(ikfkAttr,lowlegCon+'.w1')
+
+        footCon=cmds.parentConstraint(footIk,footFk,footDr)[0]
+        cmds.connectAttr(ikfkInvAttr,footCon+'.w0')
+        cmds.connectAttr(ikfkAttr,footCon+'.w1')
+
+        toebaseCon=cmds.parentConstraint(toebaseIk,toebaseFk,toebaseDr)[0]
+        cmds.connectAttr(ikfkInvAttr,toebaseCon+'.w0')
+        cmds.connectAttr(ikfkAttr,toebaseCon+'.w1')
+
+        cmds.connectAttr(ikfkInvAttr,legIkRigGrp+'.v')
+        cmds.connectAttr(ikfkAttr,legFkRigGrp+'.v')
+
+        # twist second
+        cmds.addAttr(legSwitchCtrl,ln='secVis',at='long',k=1,max=0,min=1,dv=0)
+        switchAttr=legSwitchCtrl+'.secVis'
+        eZero=self.addSceondRig(uplegJnt,uplegDr,lowlegDr,legRigGrp,switchAttr,typ='up')
+        sCtrl=self.addSceondRig(lowlegJnt,lowlegDr,footDr,legRigGrp,switchAttr,typ='low')
+        cmds.delete(cmds.pointConstraint(eZero,q=1,n=1))
+        cmds.pointConstraint(sCtrl,eZero)
+        cmds.setAttr(eZero+'.v',0)
+
+
+        # leg ik follow
+        legIkFollowHip=legIkRootCtrlZero+'_follow_hip'
+        self.addFollowToGrp(legIkFollowHip,legIkRootCtrlZero,'Hip')
+
+        cmds.parentConstraint(legIkFollowHip,legIkRootCtrlZero)
+
+
+        # ik pole follow
+        cmds.addAttr(legIkPoleCtrl,ln='follow',at='enum',en='foot:hip:world',k=1)
+        legPoleFollowHip=legIkPoleCtrlZero+'_follow_hip'
+        self.addFollowToGrp(legPoleFollowHip,uplegIk,'Hip')
+        tx=cmds.getAttr(lowlegJnt+'.tx')
+        direction=tx/abs(tx)
+        cmds.aimConstraint(legIkCtrl,legPoleFollowHip,mo=1,aim=(direction,0,0),u=(0,0,1),wut="objectrotation",wu=(0,0,1),wuo=legIkCtrl)
+        legIkPoleFollowRot=cmds.duplicate(legPoleFollowHip,n=uplegJnt+'_pole_follow_rot',po=1,rr=1)[0]
+        cmds.parent(legIkPoleFollowRot,legPoleFollowHip)
+        legIkPoleFollowCon=cmds.duplicate(legPoleFollowHip,n=uplegJnt+'_pole_follow_con',po=1,rr=1)[0]
+        cmds.delete(cmds.parentConstraint(legIkPoleCtrl,legIkPoleFollowCon))
+        cmds.parent(legIkPoleFollowCon,legIkPoleFollowRot)
+
+        driverAttr=footIkStretchDis+'.d'
+        drivenAttr=legIkPoleFollowRot+'.rz'
+        driverValue=cmds.getAttr(driverAttr)
+        cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=0,dv=driverValue,itt='linear',ott='linear')
+        cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=45*direction,dv=0,itt='linear',ott='linear')
+
+        legPoleFollowHipNorol=legIkPoleCtrlZero+'_follow_hip_norol'
+        self.addFollowToGrp(legPoleFollowHipNorol,legIkPoleCtrlZero,'Hip')
+
+        legPoleFollowWorld=legIkPoleCtrlZero+'_follow_world'
+        self.addFollowToGrp(legPoleFollowWorld,legIkPoleCtrlZero,'World')
+
+        followList=[legIkPoleFollowCon,legPoleFollowHipNorol,legPoleFollowWorld]
+        followAttr=legIkPoleCtrl+'.follow'
+        self.addConstraintByFollowList(followList,legIkPoleCtrlZero,followAttr)
+
+
+        # leg ik follow
+        cmds.addAttr(legIkCtrl,ln='follow',at='enum',en='world:body:hip',k=1)
+
+        legIkFollowWorld=legIkCtrlZero+'_follow_world'
+        self.addFollowToGrp(legIkFollowWorld,legIkCtrlZero,'World')
+
+        legIkFollowBody=legIkCtrlZero+'_follow_body'
+        self.addFollowToGrp(legIkFollowBody,legIkCtrlZero,'Body')
+
+        legIkFollowHip=legIkCtrlZero+'_follow_hip'
+        self.addFollowToGrp(legIkFollowHip,legIkCtrlZero,'Hip')
+
+
+        followList=[legIkFollowWorld,legIkFollowBody,legIkFollowHip]
+        followAttr=legIkCtrl+'.follow'
+        self.addConstraintByFollowList(followList,legIkCtrlZero,followAttr)
+
+        # leg fk follow
+        cmds.addAttr(uplegFkCtrl,ln='follow',at='long',k=1,max=0,min=1,dv=1)
+        followInv=cmds.createNode('reverse',n=uplegFkCtrl+'_follow_invNode')
+        cmds.connectAttr(uplegFkCtrl+'.follow',followInv+'.ix')
+
+        legFkFollowHip=legFkCtrlGrp+'_follow_hip'
+        self.addFollowToGrp(legFkFollowHip,legFkCtrlGrp,'Hip')
+
+        legFkFollowWorld=legFkCtrlGrp+'_follow_world'
+        self.addFollowToGrp(legFkFollowWorld,legFkCtrlGrp,'World')
+
+
+        cmds.pointConstraint(legFkFollowHip,legFkCtrlGrp)
+        con=cmds.orientConstraint(legFkFollowHip,legFkFollowWorld,legFkCtrlGrp)[0]
+        cmds.connectAttr(uplegFkCtrl+'.follow',con+'.w0')
+        cmds.connectAttr(followInv+'.ox',con+'.w1')
+
+    def spineRig(self,spineJntList,chestJnt,chestMidJnt,hipJnt):
+        bodyCtrl='body_ctrl'
+        bodyCtrlZero=ControlUtility.createControl(bodyCtrl,'Circle',Mirror=False)
+        cmds.delete(cmds.parentConstraint(spineJntList[0],bodyCtrlZero))
+        ControlUtility.scaleCV(bodyCtrl,15)
+        cmds.addAttr(bodyCtrl,ln='ikVis',at='long',k=1,dv=0,max=1,min=0)
+        cmds.addAttr(bodyCtrl,ln='fkVis',at='long',k=1,dv=0,max=1,min=0)
+        cmds.addAttr(bodyCtrl,ln='stretch',at='float',k=1,max=0,min=1)
+
+        allCtrl='all_ctrl'
+        cmds.parent(bodyCtrlZero,allCtrl)
+
+
+        spineRigGrp=cmds.group(em=1,n='spine_rig_grp')
+        cmds.delete(cmds.parentConstraint(spineJntList[0],spineRigGrp))
+        cmds.parent(spineRigGrp,bodyCtrl)
+        # ik rig
+
+        spineIkJntGrp=cmds.duplicate(spineRigGrp,po=1,rr=1,n='spine_ik_jnt_grp')[0]
+        cmds.parent(spineIkJntGrp,spineRigGrp)
+        # ik joint
+        spineIkJntList=[]
+        for spineJnt in spineJntList:
+            spineIkJnt=cmds.duplicate(spineJnt,po=1,rr=1,n=spineJnt+'_ik')[0]
+            cmds.parent(spineIkJnt,spineIkJntGrp)
+            spineIkJntList.append(spineIkJnt)
+
+        for idx in range(1,len(spineIkJntList)):
+            cmds.parent(spineIkJntList[idx],spineIkJntList[idx-1])
+
+        # ik end
+        spineIkJnt=cmds.duplicate(chestJnt,po=1,rr=1,n='spine_end_ik')[0]
+        cmds.parent(spineIkJnt,spineIkJntList[-1])
+        spineIkJntList.append(spineIkJnt)
+        # ik curve 
+
+
+        cvList=[]
+        for spineIkJnt in spineIkJntList:
+            pos=cmds.xform(spineIkJnt,q=1,ws=1,t=1)
+            cvList.append(pos)
+
+
+
+        spineCurve='spine_ik_curve'
+        spineCurve=cmds.curve(n=spineCurve,d=2,p=cvList)
+        cmds.setAttr(spineCurve+'.it',0)
+        spineCurveGrp=cmds.group(spineCurve,n='spine_curve_grp')
+        cmds.parent(spineCurveGrp,spineRigGrp)
+
+        spineScaleCurve='spine_globalscale_curve'
+        spineScaleCurve=cmds.curve(n=spineScaleCurve,d=1,p=[(0,0,0),(1,0,0)])
+        cmds.delete(cmds.parentConstraint(spineRigGrp,spineScaleCurve))
+        cmds.parent(spineScaleCurve,spineCurveGrp)
+
+        # ik control
+        spineIkCtrlGrp=cmds.duplicate(spineRigGrp,po=1,rr=1,n='spine_ik_ctrl_grp')[0]
+        cmds.parent(spineIkCtrlGrp,spineRigGrp)
+        cmds.connectAttr(bodyCtrl+'.ikVis',spineIkCtrlGrp+'.v')
+
+        spineIkCtrlList=[]
+        for idx,spineIkJnt in enumerate(spineIkJntList):
+            spineIkCtrl=spineIkJnt+'_ctrl'
+            spineIkCtrlZero=ControlUtility.createControl(spineIkCtrl,'Rect',Mirror=False,R=False)
+            cmds.delete(cmds.parentConstraint(spineIkJnt,spineIkCtrlZero))
+            spineIkCtrlLoc=cmds.spaceLocator(n=spineIkCtrl+'_loc')[0]
+            cmds.setAttr(spineIkCtrlLoc+'.visibility',0)
+            cmds.delete(cmds.parentConstraint(spineIkCtrl,spineIkCtrlLoc))
+            cmds.parent(spineIkCtrlLoc,spineIkCtrl)
+            cmds.connectAttr(spineIkCtrlLoc+'.worldPosition',spineCurve+'.cv[%s]'%idx)
+            cmds.parent(spineIkCtrlZero,spineIkCtrlGrp)
+            spineIkCtrlList.append([spineIkCtrl,spineIkCtrlZero])
+
+
+        # spline ik
+        spineIkHandle='spine_ikHandle'
+        spineIkHandle=cmds.ikHandle(sj=spineIkJntList[0],ee=spineIkJntList[-1],c=spineCurve,n=spineIkHandle,ccv=0,pcv=0,sol='ikSplineSolver')[0]
+
+        cmds.setAttr(spineIkHandle+'.dTwistControlEnable',1)
+        cmds.setAttr(spineIkHandle+'.dTwistControlEnable',1)
+        cmds.setAttr(spineIkHandle+'.dWorldUpType',4)
+        cmds.setAttr(spineIkHandle+'.dForwardAxis',0)
+        cmds.setAttr(spineIkHandle+'.dWorldUpAxis',3)
+        cmds.setAttr(spineIkHandle+'.dWorldUpVector',0,0,1,typ='float3')
+        cmds.setAttr(spineIkHandle+'.dWorldUpVectorEnd',0,0,1,typ='float3')
+        cmds.connectAttr(spineIkCtrlList[0][0]+'.worldMatrix',spineIkHandle+'.dWorldUpMatrix')
+        cmds.connectAttr(spineIkCtrlList[-1][0]+'.worldMatrix',spineIkHandle+'.dWorldUpMatrixEnd')
+        cmds.setAttr(spineIkHandle+'.v',0)
+
+        spineIkHandleZero=cmds.group(spineIkHandle,n=spineIkHandle+'_zero')
+        cmds.parent(spineIkHandleZero,spineRigGrp)
+
+        # ik stretch
+
+
+        spineCurveInfo=spineCurve+'_infoNode'
+        spineCurveInfo=cmds.createNode('curveInfo',n=spineCurveInfo)
+        cmds.connectAttr(spineCurve+'.worldSpace',spineCurveInfo+'.inputCurve')
+
+        spineScaleInfo=spineScaleCurve+'_infoNode'
+        spineScaleInfo=cmds.createNode('curveInfo',n=spineScaleInfo)
+        cmds.connectAttr(spineScaleCurve+'.worldSpace',spineScaleInfo+'.inputCurve')
+
+        spineCurveMul=spineCurve+'_mulNode'
+        spineCurveMul=cmds.createNode('multiplyDivide',n=spineCurveMul)
+        cmds.connectAttr(spineScaleInfo+'.al',spineCurveMul+'.i1x')
+        oldLen=cmds.getAttr(spineCurveInfo+'.al')
+        cmds.setAttr(spineCurveMul+'.i2x',oldLen)
+
+        spineCurveDiv=spineCurve+'_divNode'
+        spineCurveDiv=cmds.createNode('multiplyDivide',n=spineCurveDiv)
+        cmds.setAttr(spineCurveDiv+'.op',2)
+        cmds.connectAttr(spineCurveInfo+'.al',spineCurveDiv+'.i1x')
+        cmds.connectAttr(spineCurveMul+'.ox',spineCurveDiv+'.i2x')
+
+        spineStretchBlend='spine_stretch_blendNode'
+        spineStretchBlend=cmds.createNode('blendTwoAttr',n=spineStretchBlend)
+        cmds.connectAttr(bodyCtrl+'.stretch',spineStretchBlend+'.ab')
+        cmds.setAttr(spineStretchBlend+'.i[0]',1)
+        cmds.connectAttr(spineCurveDiv+'.ox',spineStretchBlend+'.i[1]')
+
+        for spineIkJnt in spineIkJntList[1:]:
+            spineIkJntMul=spineIkJnt+'_mulNode'
+            spineIkJntMul=cmds.createNode('multiplyDivide',n=spineIkJntMul)
+            oldTx=cmds.getAttr(spineIkJnt+'.tx')
+            cmds.setAttr(spineIkJntMul+'.i1x',oldTx)
+            cmds.connectAttr(spineStretchBlend+'.o',spineIkJntMul+'.i2x')
+            cmds.connectAttr(spineIkJntMul+'.ox',spineIkJnt+'.tx')
+
+
+        # fk control
+        spineFkCtrlGrp=cmds.duplicate(spineRigGrp,po=1,rr=1,n='spine_fk_ctrl_grp')[0]
+        cmds.parent(spineFkCtrlGrp,spineRigGrp)
+
+
+        spineFkCtrlList=[]
+        for spineFkJnt in spineJntList:
+            spineFkCtrl=spineFkJnt+'_ctrl'
+            spineFkCtrlZero=ControlUtility.createControl(spineFkCtrl,'Circle',Mirror=False)
+            ControlUtility.scaleCV(spineFkCtrl,12)
+            cmds.delete(cmds.parentConstraint(spineFkJnt,spineFkCtrlZero))
+            cmds.parent(spineFkCtrlZero,spineFkCtrlGrp)
+            spineFkCtrlList.append([spineFkCtrl,spineFkCtrlZero])
+
+        for idx in range(1,len(spineFkCtrlList)):
+            cmds.parent(spineFkCtrlList[idx][1],spineFkCtrlList[idx-1][0])
+
+        for spineFkCtrl,spineIkCtrl in zip(spineFkCtrlList,spineIkCtrlList[:-1]):
+            cmds.parentConstraint(spineFkCtrl[0],spineIkCtrl[1])
+
+        GeneralUtility.connectAllShapeAttr(spineFkCtrlList[0][0],bodyCtrl+'.fkVis','visibility')
+        for i in range(2,len(spineFkCtrlList),2):
+            GeneralUtility.connectAllShapeAttr(spineFkCtrlList[i][0],bodyCtrl+'.fkVis','visibility')
+
+        # driver joint
+        spineDrJntGrp=cmds.duplicate(spineRigGrp,po=1,rr=1,n='spine_dr_jnt_grp')[0]
+        cmds.parent(spineDrJntGrp,spineRigGrp)
+        spineDrList=[]
+        for spineJnt in spineJntList:
+            spineDr=cmds.duplicate(spineJnt,po=1,rr=1,n=spineJnt+'_dr')[0]
+            cmds.parent(spineDr,spineDrJntGrp)
+            spineDrList.append(spineDr)
+
+        for idx in range(1,len(spineDrList)):
+            cmds.parent(spineDrList[idx],spineDrList[idx-1])
+
+        for spineDr,spineIkJnt in zip(spineDrList,spineIkJntList[:-1]):
+            cmds.parentConstraint(spineIkJnt,spineDr)
+
+        chestDr=cmds.duplicate(chestJnt,po=1,rr=1,n=chestJnt+'_dr')[0]
+        self.addToSdkHandle(chestDr)
+        cmds.parent(chestDr,spineDrList[-1])
+        chestCtrl=chestJnt+'_ctrl'
+        chestCtrlZero=ControlUtility.createControl(chestCtrl,'Circle',Mirror=False)
+        cmds.delete(cmds.parentConstraint(chestJnt,chestCtrlZero))
+        cmds.parentConstraint(chestCtrl,chestDr)
+        cmds.parentConstraint(chestCtrl,spineIkCtrlList[-1][1])
+        ControlUtility.scaleCV(chestCtrl,12)
+        cmds.parent(chestCtrlZero,spineFkCtrlList[-1][0])
+
+        chestMidDr=cmds.duplicate(chestMidJnt,po=1,rr=1,n=chestMidJnt+'_dr')[0]
+        self.addToSdkHandle(chestMidDr)
+        cmds.parent(chestMidDr,chestDr)
+        chestMidCtrl=chestMidJnt+'_ctrl'
+        chestMidCtrlZero=ControlUtility.createControl(chestMidCtrl,'Circle',Mirror=False)
+        cmds.delete(cmds.parentConstraint(chestMidJnt,chestMidCtrlZero))
+        cmds.parentConstraint(chestMidCtrl,chestMidDr)
+        ControlUtility.scaleCV(chestMidCtrl,12)
+        cmds.parent(chestMidCtrlZero,chestCtrl)
+
+        GeneralUtility.connectAllShapeAttr(chestMidCtrl,bodyCtrl+'.fkVis','visibility')
+
+
+        hipDr=cmds.duplicate(hipJnt,po=1,rr=1,n=hipJnt+'_dr')[0]
+        cmds.parent(hipDr,spineDrJntGrp)
+        hipCtrl=hipJnt+'_ctrl'
+        hipCtrlZero=ControlUtility.createControl(hipCtrl,'Circle',Mirror=False)
+        cmds.delete(cmds.parentConstraint(spineJntList[0],hipCtrlZero))
+        cmds.parentConstraint(hipCtrl,hipDr,mo=1)
+
+        vec=GeneralUtility.getVector(spineJntList[0],hipJnt)
+
+        ControlUtility.moveCV(hipCtrl,vec)
+        ControlUtility.scaleCV(hipCtrl,12)
+        cmds.parent(hipCtrlZero,bodyCtrl)
+
+
+        # follow grp
+        bodyFollowGrp='body_follow_grp'
+        self.addFollowGrp(bodyFollowGrp,bodyCtrl)
+
+        chestFollowGrp='chest_follow_grp'
+        self.addFollowGrp(chestFollowGrp,chestMidCtrl)
+
+        hipFollowGrp='hip_follow_grp'
+        self.addFollowGrp(hipFollowGrp,hipCtrl)
+
+
+    def neckRig(self,neckJntList,headJnt,headEndJnt):
+        neckRigGrp=cmds.group(em=1,n='neck_rig_grp')
+        cmds.delete(cmds.parentConstraint(neckJntList[0],neckRigGrp))
+        allCtrl='all_ctrl'
+        cmds.parent(neckRigGrp,allCtrl)
+
+        neckDrJntGrp=cmds.duplicate(neckRigGrp,po=1,rr=1,n='neck_dr_jnt_grp')[0]
+        cmds.parent(neckDrJntGrp,neckRigGrp)
+        neckDrList=[]
+        for neckJnt in neckJntList:
+            neckDr=cmds.duplicate(neckJnt,po=1,rr=1,n=neckJnt+'_dr')[0]
+            self.addToSdkHandle(neckDr)
+            cmds.parent(neckDr,neckDrJntGrp)
+            neckDrList.append(neckDr)
+
+        for idx in range(1,len(neckDrList)):
+            cmds.parent(neckDrList[idx],neckDrList[idx-1])
+
+        neckFkCtrlGrp=cmds.duplicate(neckRigGrp,po=1,rr=1,n='neck_fk_ctrl_grp')[0]
+        cmds.parent(neckFkCtrlGrp,neckRigGrp)
+
+        neckFkCtrlList=[]
+        for neckFkJnt in neckJntList:
+            neckFkCtrl=neckFkJnt+'_ctrl'
+            neckFkCtrlZero=ControlUtility.createControl(neckFkCtrl,'Circle',Mirror=False)
+            ControlUtility.scaleCV(neckFkCtrl,5)
+            cmds.delete(cmds.parentConstraint(neckFkJnt,neckFkCtrlZero))
+            cmds.parent(neckFkCtrlZero,neckFkCtrlGrp)
+            neckFkCtrlList.append([neckFkCtrl,neckFkCtrlZero])
+
+        for idx in range(1,len(neckFkCtrlList)):
+            cmds.parent(neckFkCtrlList[idx][1],neckFkCtrlList[idx-1][0])
+
+        for neckFkCtrl,neckDr in zip(neckFkCtrlList,neckDrList):
+            cmds.parentConstraint(neckFkCtrl[0],neckDr)
+
+
+        # head rig
+
+        headDrJntGrp=cmds.group(em=1,n='head_dr_jnt_grp')
+        cmds.delete(cmds.parentConstraint(headJnt,headDrJntGrp))
+        cmds.parent(headDrJntGrp,neckRigGrp)
+
+        headDr=cmds.duplicate(headJnt,po=1,rr=1,n=headJnt+'_dr')[0]
+        self.addToSdkHandle(headDr)
+        cmds.parent(headDr,headDrJntGrp)
+
+        headEndDr=cmds.duplicate(headEndJnt,po=1,rr=1,n=headEndJnt+'_dr')[0]
+        cmds.parent(headEndDr,headDr)
+
+
+        headFkCtrlGrp=cmds.group(em=1,n='head_fk_ctrl_grp')
+        cmds.delete(cmds.parentConstraint(headJnt,headFkCtrlGrp))
+        cmds.parent(headFkCtrlGrp,neckRigGrp)
+
+
+        headFkCtrl=headJnt+'_ctrl'
+        headFkCtrlZero=ControlUtility.createControl(headFkCtrl,'Circle',Mirror=False)
+        cmds.delete(cmds.parentConstraint(headJnt,headFkCtrlZero))
+        ControlUtility.scaleCV(headFkCtrl,6)
+        cmds.parentConstraint(headFkCtrl,headDr)
+        cmds.parent(headFkCtrlZero,headFkCtrlGrp)
+
+
+        # follow grp
+        neckFollowGrp='neck_follow_grp'
+        self.addFollowGrp(neckFollowGrp,neckFkCtrlList[-1][0])
+
+        headFollowGrp='head_follow_grp'
+        self.addFollowGrp(headFollowGrp,headFkCtrl)
+
+        # neck follow
+        neckRootCtrl=neckFkCtrlList[0][0]
+        cmds.addAttr(neckRootCtrl,ln='follow',at='float',k=1,max=0,min=1,dv=1)
+        followInv=cmds.createNode('reverse',n=neckRootCtrl+'_follow_invNode')
+        cmds.connectAttr(neckRootCtrl+'.follow',followInv+'.ix')
+
+        neckFollwChest=neckFkCtrlGrp+'_follow_chest'
+        self.addFollowToGrp(neckFollwChest,neckFkCtrlGrp,'Chest')
+
+        neckFollowWorld=neckFkCtrlGrp+'_follow_world'
+        self.addFollowToGrp(neckFollowWorld,neckFkCtrlGrp,'World')
+
+        cmds.pointConstraint(neckFollwChest,neckFkCtrlGrp)
+        con=cmds.orientConstraint(neckFollwChest,neckFollowWorld,neckFkCtrlGrp)[0]
+        cmds.connectAttr(neckRootCtrl+'.follow',con+'.w0')
+        cmds.connectAttr(followInv+'.ox',con+'.w1')
+
+        # head follow
+
+        cmds.addAttr(headFkCtrl,ln='follow',at='float',k=1,max=0,min=1,dv=1)
+        followInv=cmds.createNode('reverse',n=headFkCtrl+'_follow_invNode')
+        cmds.connectAttr(headFkCtrl+'.follow',followInv+'.ix')
+
+        headFollwChest=headFkCtrlGrp+'_follow_neck'
+        self.addFollowToGrp(headFollwChest,headFkCtrlGrp,'Neck')
+
+        headFollowWorld=headFkCtrlGrp+'_follow_world'
+        self.addFollowToGrp(headFollowWorld,headFkCtrlGrp,'World')
+
+        cmds.pointConstraint(headFollwChest,headFkCtrlGrp)
+        con=cmds.orientConstraint(headFollwChest,headFollowWorld,headFkCtrlGrp)[0]
+        cmds.connectAttr(headFkCtrl+'.follow',con+'.w0')
+        cmds.connectAttr(followInv+'.ox',con+'.w1')
+ 
+    def addFollowGrp(self,grpName,ctrlName):
+        grpName=cmds.group(em=1,n=grpName)
+        cmds.delete(cmds.parentConstraint(ctrlName,grpName))
+        cmds.parent(grpName,ctrlName)
+    def addFollowToGrp(self,grpName,conName,folName):
+        findDict={'World':'world_follow_grp','Body':'body_follow_grp','Hip':'hip_follow_grp','Chest':'chest_follow_grp','Neck':'neck_follow_grp','Head':'head_follow_grp'}
+        folName=findDict.get(folName,folName)
+
+        grpName=cmds.group(em=1,n=grpName)
+        cmds.delete(cmds.parentConstraint(conName,grpName))
+        cmds.parent(grpName,folName)
+
+    def addToSdkHandle(self,obj,typ='defult'):
+        sdkHandle='body_sdk_handle'
+        if(not cmds.objExists(sdkHandle)):
+            allCtrl='all_ctrl'
+            sdkHandle=cmds.group(em=1,n=sdkHandle)
+
+        ryAttr=obj+'_ry'
+        cmds.addAttr(sdkHandle,ln=ryAttr,at='float',k=1)
+        rzAttr=obj+'_rz'
+        cmds.addAttr(sdkHandle,ln=rzAttr,at='float',k=1)
+        if(typ=='defult'):
+            cmds.connectAttr(obj+'.ry',sdkHandle+'.'+ryAttr)
+            cmds.connectAttr(obj+'.rz',sdkHandle+'.'+rzAttr)
+
+    def buildRigging(self,*args):
+        # unlock
+        jntCtrl='Temp_Ctrl'
+        if(not cmds.objExists(jntCtrl)):
+            return
+        gls=cmds.getAttr(jntCtrl+'.sx')
+        attrStrList=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        sel=cmds.listRelatives(jntCtrl,c=1,typ='joint',ad=1)
+        for i in sel:
+            for attr in attrStrList:
+                cmds.setAttr(i+'.'+attr,l=0)
+        cmds.makeIdentity(jntCtrl,a=1,t=1,r=1,s=1,n=0,pn=1)
+        # root rig 
+        rigGrp=cmds.group(em=1,n='rig_grp')
+        cmds.addAttr(rigGrp,ln='TempScale',at='float',k=1,dv=gls)
+        ControlUtility.GlobalScale=gls
+
+        globalCtrl='global_ctrl'
+        globalCtrlZero=ControlUtility.createControl(globalCtrl,'Root',Mirror=False)
+        ControlUtility.scaleCV(globalCtrl,60)
+        cmds.parent(globalCtrlZero,rigGrp)
+ 
+
+        allCtrl='all_ctrl'
+        allCtrlZero=ControlUtility.createControl(allCtrl,'Root',S=True,Mirror=False)
+        ControlUtility.scaleCV(allCtrl,50)
+        cmds.parent(allCtrlZero,globalCtrl)
+        cmds.connectAttr(allCtrl+'.sx',allCtrl+'.sy')
+        cmds.connectAttr(allCtrl+'.sx',allCtrl+'.sz')
+        cmds.setAttr(allCtrl+'.sy',k=0)
+        cmds.setAttr(allCtrl+'.sz',k=0)
+        cmds.aliasAttr('globalScale',allCtrl+'.sx')
+        cmds.setAttr(allCtrl+'.v',k=0)
+
+        worldFollowGrp='world_follow_grp'
+        followWorldGrp=cmds.group(em=1,n=worldFollowGrp)
+        cmds.parent(followWorldGrp,allCtrl)
+
+        chestJnt='chest'
+        chestMidJnt='chect_mid'
+        hipJnt='Hips'
+        spineJntList=['spine_1','spine_2','spine_3','spine_4','spine_5']
+        self.spineRig(spineJntList,chestJnt,chestMidJnt,hipJnt)
+
+        neckJntList=['neck_1','neck_2','neck_3']
+        headJnt='head'
+        headEndJnt='head_end'
+        self.neckRig(neckJntList,headJnt,headEndJnt)
+
+        shoulderJnt='L_shoulder'
+        uparmJnt='L_arm'
+        lowarmJnt='L_lowarm'
+        handJnt='L_hand'
+        self.armRig(shoulderJnt,uparmJnt,lowarmJnt,handJnt)
+
+        shoulderJnt='R_shoulder'
+        uparmJnt='R_arm'
+        lowarmJnt='R_lowarm'
+        handJnt='R_hand'
+        self.armRig(shoulderJnt,uparmJnt,lowarmJnt,handJnt)
+
+        uplegJnt='L_leg'
+        lowlegJnt='L_lowleg'
+        footJnt='L_foot'
+        toebaseJnt='L_toebase'
+        toeendJnt='L_toeend'
+        toeinJnt='L_toein'
+        toeoutJnt='L_toeout'
+        heelJnt='L_heel'
+        self.legRig(uplegJnt,lowlegJnt,footJnt,toebaseJnt,toeendJnt,toeinJnt,toeoutJnt,heelJnt)
+
+        uplegJnt='R_leg'
+        lowlegJnt='R_lowleg'
+        footJnt='R_foot'
+        toebaseJnt='R_toebase'
+        toeendJnt='R_toeend'
+        toeinJnt='R_toein'
+        toeoutJnt='R_toeout'
+        heelJnt='R_heel'
+        self.legRig(uplegJnt,lowlegJnt,footJnt,toebaseJnt,toeendJnt,toeinJnt,toeoutJnt,heelJnt)
+
+    def outputJoint(self,*args):
+        typIdx=cmds.radioButtonGrp('outTypeRBG_br',q=1,sl=1)
+        jmap1=self.filesPath+'JMap/normal.jmap'
+        jmap2=self.filesPath+'JMap/mocap.jmap'
+        jmap3=self.filesPath+'JMap/mocap_sec1.jmap'
+        jmap4=self.filesPath+'JMap/mocap_sec3.jmap'
+        jmapList=[jmap1,jmap2,jmap3,jmap4]
+        filePath=jmapList[typIdx-1]
+        with open(filePath,'r') as fileHandle:
+            outJntData=OrderedDict(pickle.load(fileHandle))
+        
+        OutputJointGrp=cmds.group(em=1,n='joint_grp')
+        for i in outJntData:
+            if(outJntData[i]==None):
+                continue
+            drJnt=i
+            outJnt=outJntData[i]['outName']
+            offset=outJntData[i]['offset']
+            pObj=outJntData[i]['parent']
+            outJnt=cmds.duplicate(drJnt,n=outJnt,rr=1,po=1)[0]
+            cmds.parent(outJnt,OutputJointGrp)
+            cmds.rotate(offset[0],offset[1],offset[2],outJnt,r=1,os=1,fo=1)
+            cmds.makeIdentity(outJnt,a=1,t=1,r=1,s=1,n=0,pn=1)
+            if(pObj):
+                cmds.parent(outJnt,pObj)
+            cmds.parentConstraint(drJnt,outJnt,mo=1)
+            cmds.scaleConstraint(drJnt,outJnt,mo=1)
+        cmds.select(OutputJointGrp)
+    # sdk====================================================
+    def loadDriverCtrl(self,*args):
+        sel=cmds.ls(sl=1)
+        if(len(sel)==0):
+            return
+        cmds.textField('sdkDriverCtrlTF_br',e=1,tx=sel[0])
+        self.loadDirverAttr()
+    def loadDrivenCtrl(self,*args):
+        typ=args[0]
+        sel=cmds.ls(sl=1)
+        if(len(sel)==0):
+            return
+        if(typ=='Load'):
+            cmds.textScrollList('sdkDrivenListTSL_br',e=1,ra=1)
+        for i in sel:
+            cmds.textScrollList('sdkDrivenListTSL_br',e=1,a=i)
+        self.checkDrivenListSdkGrp()
+    def clearDrivenList(self,*args):
+        cmds.textScrollList('sdkDrivenListTSL_br',e=1,ra=1)
+    def checkDrivenListSdkGrp(self,*args):
+        allI=cmds.textScrollList('sdkDrivenListTSL_br',q=1,ai=1)
+        if(allI==None):
+            return
+        for i in allI:
+            GeneralUtility.createSdkGrp(i)
+    def resetDrivenListToZero(self,*args):
+        allI=cmds.textScrollList('sdkDrivenListTSL_br',q=1,ai=1)
+        if(allI==None):
+            return
+        for i in allI:
+            sdkGrp=GeneralUtility.createSdkGrp(i)
+
+            GeneralUtility.resetTransformAttr(sdkGrp)
+            GeneralUtility.resetTransformAttr(i)
+
+    def loadLRingerPref(self,*args):
+        cmds.textField('sdkDriverCtrlTF_br',e=1,tx='L_arm_switch_ctrl')
+        cmds.textScrollList('sdkDrivenListTSL_br',e=1,ra=1)
+        dnList=['L_thumbfinger_1_ctrl', 'L_thumbfinger_2_ctrl', 'L_thumbfinger_3_ctrl', 'L_indexfinger_1_ctrl', 'L_indexfinger_2_ctrl', 'L_indexfinger_3_ctrl', 'L_middlefinger_1_ctrl', 'L_middlefinger_2_ctrl', 'L_middlefinger_3_ctrl', 'L_ringfinger_1_ctrl', 'L_ringfinger_2_ctrl', 'L_ringfinger_3_ctrl', 'L_pinkyfinger_1_ctrl', 'L_pinkyfinger_2_ctrl', 'L_pinkyfinger_3_ctrl']
+        for i in dnList:
+            cmds.textScrollList('sdkDrivenListTSL_br',e=1,a=i)
+        self.loadDirverAttr()
+        self.checkDrivenListSdkGrp()
+    def loadRRingerPref(self,*args):
+        cmds.textField('sdkDriverCtrlTF_br',e=1,tx='R_arm_switch_ctrl')
+        cmds.textScrollList('sdkDrivenListTSL_br',e=1,ra=1)
+        dnList=['R_thumbfinger_1_ctrl', 'R_thumbfinger_2_ctrl', 'R_thumbfinger_3_ctrl', 'R_indexfinger_1_ctrl', 'R_indexfinger_2_ctrl', 'R_indexfinger_3_ctrl', 'R_middlefinger_1_ctrl', 'R_middlefinger_2_ctrl', 'R_middlefinger_3_ctrl', 'R_ringfinger_1_ctrl', 'R_ringfinger_2_ctrl', 'R_ringfinger_3_ctrl', 'R_pinkyfinger_1_ctrl', 'R_pinkyfinger_2_ctrl', 'R_pinkyfinger_3_ctrl']
+        for i in dnList:
+            cmds.textScrollList('sdkDrivenListTSL_br',e=1,a=i)
+        self.loadDirverAttr()
+        self.checkDrivenListSdkGrp()
+    def drivenListSelectChange(self,*args):
+        sel=cmds.textScrollList('sdkDrivenListTSL_br',q=1,si=1)
+        if(sel==None):
+            return
+        cmds.select(sel)
+    def loadDirverAttr(self,*args):
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        if(not cmds.objExists(drCtrl)):
+            return
+        showType=cmds.radioButtonGrp('sdkShowTypeRBG_br',q=1,sl=1)
+
+        if(showType==1):
+            attrList=cmds.listAttr(drCtrl,k=1)
+        else:
+            attrList=cmds.listAttr(drCtrl,k=1,ud=1)
+        isOnlyFloat=cmds.checkBox('sdkShowTypeCB_br',q=1,v=1)
+
+        cmds.treeView('sdkDriverAttrListTV_br',e=1,ra=1)
+        for i in attrList:
+            drAttr=drCtrl+'.'+i
+            typ=cmds.getAttr(drAttr,type=1)
+            if(isOnlyFloat):
+                if not(typ in ['float','double','doubleAngle','doubleLinear']):
+                    continue
+            cmds.treeView('sdkDriverAttrListTV_br',e=1,ai=[i,''])
+            val=cmds.getAttr(drAttr)
+            cmds.treeView('sdkDriverAttrListTV_br',e=1,dls=[i,' %s'%val])
+    def driverAttrSelectChange(self,*args):
+        selI=cmds.treeView('sdkDriverAttrListTV_br',q=1,si=1)
+        if(selI==None):
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        drAttr=drCtrl+'.'+selI[0]
+        maxV=self.getAttrMax(drCtrl,selI[0])
+        minV=self.getAttrMin(drCtrl,selI[0])
+        val=cmds.getAttr(drAttr)
+        cmds.floatSliderGrp('sdkDriverAttrValFSG_br',e=1,max=maxV,min=minV,v=val,pre=1 if(maxV>1) else 2)
+        cmds.button('sdkDefineB_br',e=1,en=len(selI)==1)
+
+    def getAttrMax(self,obj,attr):
+        if(cmds.attributeQuery(attr,node=obj,mxe=1)):
+            return cmds.attributeQuery(attr,node=obj,max=1)[0]
+        return 100
+    def getAttrMin(self,obj,attr):
+        if(cmds.attributeQuery(attr,node=obj,mne=1)):
+            return cmds.attributeQuery(attr,node=obj,min=1)[0]
+        return -100
+
+    def driverValueSelectChange(self,*args):
+        val=cmds.floatSliderGrp('sdkDriverAttrValFSG_br',q=1,v=1)
+        selI=cmds.treeView('sdkDriverAttrListTV_br',q=1,si=1)
+        if(selI==None):
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        for i in selI:
+            drAttr=drCtrl+'.'+i
+            try:
+                cmds.undoInfo(swf=0)
+                cmds.setAttr(drAttr,val)
+                cmds.treeView('sdkDriverAttrListTV_br',e=1,dls=[i,' %s'%val])
+            finally:
+                cmds.undoInfo(swf=1)
+
+    def resetDriverListToZero(self,*args):
+        selI=cmds.treeView('sdkDriverAttrListTV_br',q=1,ch=1)
+        if(selI==None):
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        for i in selI:
+            drAttr=drCtrl+'.'+i
+            try:
+                cmds.undoInfo(swf=0)
+                cmds.setAttr(drAttr,0)
+                cmds.treeView('sdkDriverAttrListTV_br',e=1,dls=[i,' %s'%0.0])
+            finally:
+                cmds.undoInfo(swf=1)
+        self.resetDrivenListToZero()
+    def deleteDriverAttr(self,*args):
+        selI=cmds.treeView('sdkDriverAttrListTV_br',q=1,si=1)
+        if(selI==None):
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        drAttr=drCtrl+'.'+selI[0]
+        ret=cmds.confirmDialog( t='Confirm', m='Are you sure Delete This?', b=['Yes','No'], db='No', cb='No', ds='No' )
+        if(ret!='Yes'):
+            return
+        cmds.deleteAttr(drAttr)
+        self.loadDirverAttr()
+
+    def newDriverAttr(self,*args):
+        cmds.layoutDialog(ui=self.newDriverAttrUI)
+        
+    def newDriverAttrUI(self):
+        form = cmds.setParent(q=True)
+        cmds.columnLayout('nDrAttrMainCL_br',adj=True)
+        cmds.textFieldGrp('nAttrNameTFG_br',cw=[[1, 50]],adj=2,l=u'Name:')
+        cmds.rowLayout(nc=4)
+        cmds.text(w=50,l=u'Mininum:',al=u'right')
+        cmds.floatField('nMinValFF_br',w=93,v=-10.0,pre=2)
+        cmds.text(w=50,l=u'Maxinum:',al=u'right')
+        cmds.floatField('nMaxValFF_br',w=93,v=10.0,pre=2)
+        cmds.button('nCreateB_br',p=form,l=u'New',c=self.newButtonProc)
+        cmds.button('nCancelB_br',p=form,l=u'Cancel',c=self.cancelButtonProc)
+        cmds.formLayout(form,e=1,af=[[u'nDrAttrMainCL_br', 'top', 5], [u'nDrAttrMainCL_br', 'left', 5], [u'nDrAttrMainCL_br', 'right', 5], [u'nCreateB_br', 'left', 5], [u'nCreateB_br', 'bottom', 5], [u'nCancelB_br', 'right', 5], [u'nCancelB_br', 'bottom', 5]],ac=[[u'nCancelB_br', 'left', 5, u'nCreateB_br']],ap=[[u'nCreateB_br', 'right', 5, 50]])
+    def newButtonProc(self,*args):
+        newName=cmds.textFieldGrp('nAttrNameTFG_br',q=1,tx=1)
+        maxV=cmds.floatField('nMinValFF_br',q=1,v=1)
+        minV=cmds.floatField('nMaxValFF_br',q=1,v=1)
+        nameRegex=re.compile('^[\w][\w]*$')
+        if(not nameRegex.match(newName)):
+            cmds.textFieldGrp('nAttrNameTFG_br',e=1,tx='')
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        if(not cmds.objExists(drCtrl)):
+            return
+        cmds.addAttr(drCtrl,ln=newName,at='float',k=1,max=maxV,min=minV)
+        self.loadDirverAttr()
+        cmds.layoutDialog(dis='OK')
+    def cancelButtonProc(self,*args):
+        cmds.layoutDialog(dis='Cancel')
+
+    def redefineSdk(self,*args):
+        selI=cmds.treeView('sdkDriverAttrListTV_br',q=1,si=1)
+        if(selI==None):
+            return
+        drCtrl=cmds.textField('sdkDriverCtrlTF_br',q=1,tx=1)
+        if(not cmds.objExists(drCtrl)):
+            return
+        dnCtrlList=cmds.textScrollList('sdkDrivenListTSL_br',q=1,ai=1)
+        if(dnCtrlList==None):
+            return
+        driverValue=cmds.floatSliderGrp('sdkDriverAttrValFSG_br',q=1,v=1)
+        if(driverValue==0):
+            return
+        isMirror=cmds.checkBox('sdkMirrorCB_br',q=1,v=1)
+        driverAttr=drCtrl+'.'+selI[0]
+
+        mirDrCtrl=self.getMirrorName(drCtrl)
+        if(mirDrCtrl==drCtrl):
+            isMirror=False
+        mirDriverAttr=mirDrCtrl+'.'+selI[0]
+
+        for dnCtrl in dnCtrlList:
+            GeneralUtility.transferSdkValueToCtrl(dnCtrl)
+
+        attrStrList=['tx','ty','tz','rx','ry','rz']
+        for dnCtrl in dnCtrlList:
+            sdkGrp=GeneralUtility.createSdkGrp(dnCtrl)
+            mirDnCtrl=self.getMirrorName(dnCtrl)
+            mirSdkGrp=GeneralUtility.createSdkGrp(mirDnCtrl)
+            
+            for attr in attrStrList:
+                isLock=cmds.getAttr(dnCtrl+'.'+attr,l=1)
+                if(isLock):
+                    continue
+                drivenValue=cmds.getAttr(dnCtrl+'.'+attr)
+                if(round(drivenValue,3)==0):
+                    continue
+
+                drivenAttr=sdkGrp+'.'+attr
+                cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=0,dv=0,itt='linear',ott='linear')
+                cmds.setDrivenKeyframe(drivenAttr,cd=driverAttr,v=drivenValue,dv=driverValue,itt='linear',ott='linear')
+                
+                if(not isMirror):
+                    continue
+                mirDrivenAttr=mirSdkGrp+'.'+attr
+                cmds.setDrivenKeyframe(mirDrivenAttr,cd=mirDriverAttr,v=0,dv=0,itt='linear',ott='linear')
+                cmds.setDrivenKeyframe(mirDrivenAttr,cd=mirDriverAttr,v=drivenValue,dv=driverValue,itt='linear',ott='linear')
+            
+        for dnCtrl in dnCtrlList:
+            GeneralUtility.resetTransformAttr(dnCtrl)
+        cmds.setAttr(driverAttr,0)
+
+    def transferSdk(self,*args):
+        dnCtrlList=cmds.textScrollList('sdkDrivenListTSL_br',q=1,ai=1)
+        if(dnCtrlList==None):
+            return
+        for dnCtrl in dnCtrlList:
+            GeneralUtility.transferSdkValueToCtrl(dnCtrl)
+
+
+BodyRiggingModule=BBodyRigging()
+self=BodyRiggingModule
+# self=br
+# br.buildRigging()
+
+

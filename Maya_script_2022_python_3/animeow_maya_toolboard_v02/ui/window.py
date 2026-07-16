@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -1780,6 +1780,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self.curve_group.hide()
                 except Exception:
                     pass
+            elif self.standalone_tab == "view_layer":
+                tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
+                self.tab_widget.addTab(tab_view_layer, "View Layer")
             elif self.standalone_tab == "quick_const":
                 qc_widget = QtWidgets.QWidget(self)
                 qc_layout = QtWidgets.QVBoxLayout(qc_widget)
@@ -2123,6 +2126,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.tab_widget.addTab(wrap_in_scroll(tab2), "Curve & Motion")
             self.tab_widget.addTab(wrap_in_scroll(tab3), "Rig & Mirror")
             self.tab_widget.addTab(wrap_in_scroll(tab4), "Output & Scene")
+            tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
+            self.tab_widget.addTab(tab_view_layer, "View Layer")
             self.tab_widget.addTab(wrap_in_scroll(tab5), "Launchers")
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -4770,6 +4775,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "fav_tools":
             ctrl_name = "AnimeowFavoriteToolsWorkspaceControl"
             win_title = "Favorite Tools"
+        elif standalone_tab == "view_layer":
+            ctrl_name = "AnimeowViewLayerWorkspaceControl"
+            win_title = "Animeow View Layer"
         else:
             ctrl_name = "AnimeowGenericWorkspaceControl"
             win_title = "Animeow Tool"

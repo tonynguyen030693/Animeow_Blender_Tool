@@ -1,0 +1,2114 @@
+
+
+global proc RS_YetiFriend()
+{
+if (`window -q -exists RS_YetiFriend_UI`)deleteUI RS_YetiFriend_UI;
+window -widthHeight 285 180  -maximizeButton 0 -mnb 1 -menuBar 0 -sizeable 0 -title "RS_YetiFriend" RS_YetiFriend_UI;
+
+string $col =`columnLayout -adjustableColumn 1  -rowSpacing 1`;
+
+rowColumnLayout -numberOfColumns 1 -cw 1 285;
+separator -h 5 -style "in";
+setParent $col;
+
+rowColumnLayout -numberOfColumns 5 -cw 1 85 -cw 2 5 -cw 3 90 -cw 4 5 -cw 5 90 ;
+button -l "Get GuideSet" -h 25 -w 75 -c "RS_YetiFriend_getCurveSET";
+separator -h 20 -w 5 -style "none";
+button -l "Get Shape" -h 20  -w 75 -c "RS_YetiFriend_getShapes";
+separator -h 20 -w 5 -style "none";
+text -l ": Curve to Groom" -h 20;
+
+setParent $col;
+
+rowColumnLayout -numberOfColumns 7 -cw 1 85 -cw 2 5 -cw 3 90 -cw 4 5 -cw 5 35 -cw 6 5 -cw 7 60 ;
+textField -h 30 -tx "" YetiSet;
+separator -h 30 -w 5 -style "none";
+textField -h 30 -tx "" YetiMesh;
+separator -h 30 -w 5 -style "none";
+floatField -v 0.2 -pre 2 YetiWith;
+separator -h 30 -w 5 -style "none";
+button -l "Run" -c "RS_YetiFriendCMD(1)";
+
+setParent $col;
+
+rowColumnLayout -numberOfColumns 1 -cw 1 285;
+separator -h 5 -style "in";
+setParent $col;
+
+rowColumnLayout -numberOfColumns 12 -cw 1 35 -cw 2 5  -cw 3 35 -cw 4 5 -cw 5 40 -cw 6 5 -cw 7 50 -cw 8 5 -cw 9 50 -cw 10 5 -cw 11 50;
+
+iconTextButton -image1 "pgYeti_icon.png" -width 32 -height 32 -command ("pgYetiCreateOnMesh();") -annotation ("Create Yeti Node On Selected Mesh") YTButton1;
+separator -h 30 -w 5 -style "none";
+
+iconTextButton -image1 "pgYeti_curl_mask.png" -width 32 -height 32 -command ("pgYetiCreateGroomOnMesh();") -annotation ("Create Yeti Groom On Selected Mesh") YTButton2;
+separator -h 30 -w 5 -style "none";
+
+button -l "Graph" -width 40 -height 32 -command ("pgYetiTearOffGraphPanel();") -annotation ("Yeti Node Window") YTButton3;
+separator -h 30 -w 35 -style "in";
+
+button -l "Ren=1" -width 50 -height 32 -command ("RS_YetiFriendCMD(3);") -annotation ("Render Density to 1") YTButton4;
+separator -h 30 -w 5 -style "out";
+
+button -l "Disp=0.1" -width 50 -height 32 -command ("RS_YetiFriendCMD(4);") -annotation ("Display Density to 0.1") YTButton5;
+separator -h 30 -w 5 -style "out";
+
+button -l "Output" -width 50 -height 32 -command ("RS_YetiFriendCMD(5);") -annotation ("Display X") YTButton6;
+separator -h 30 -w 5 -style "out";
+
+setParent $col;
+
+rowColumnLayout -numberOfColumns 1 -cw 1 285;
+separator -h 5 -style "in";
+setParent $col;
+
+rowColumnLayout -numberOfColumns 5 -cw 1 85 -cw 2 5 -cw 3 90 -cw 4 5 -cw 5 90 ;
+button -l "Get Yeti" -h 25 -c "RS_YetiFriend_getYeti";
+separator -h 20 -w 5 -style "none";
+button -l "Get Groom" -h 25 -c "RS_YetiFriend_getGroom";
+separator -h 20 -w 5 -style "none";
+text -l ": Yeti + Groom" -h 20;
+setParent $col;
+
+
+rowColumnLayout -numberOfColumns 5 -cw 1 85 -cw 2 5 -cw 3 90 -cw 4 45 -cw 5 60 ;
+textField -h 30 -tx "" YetiNode;
+separator -h 20 -w 5 -style "none";
+textField -h 30 -tx "" YetiGroom;
+separator -h 20 -style "out";
+button -l "Run" -c "RS_YetiFriendCMD(2)";
+
+setParent $col;
+
+
+rowColumnLayout -numberOfColumns 1 -cw 1 285;
+separator -h 5 -style "in";
+setParent $col;
+
+
+setParent ..;
+
+showWindow RS_YetiFriend_UI;
+pgYetiEnsurePluginLoaded(); 
+
+}
+
+
+//Get
+ global proc RS_YetiFriend_getCurveSET()
+{
+string $getC_SET[] = `ls -sl -fl`;    
+textField -e -tx $getC_SET[0] YetiSet;
+}
+
+global proc RS_YetiFriend_getShapes()
+{
+  //pickWalk -d down;
+  string $selectedShapes[] = `listRelatives -s`;
+  select $selectedShapes;   
+  textField -e -tx $selectedShapes YetiMesh; 
+}
+
+
+global proc RS_YetiFriend_getYeti()
+{
+  string $selectedShapes[] = `listRelatives -s`;
+  textField -e -tx $selectedShapes YetiNode; 
+}
+
+global proc RS_YetiFriend_getGroom()
+{
+
+  string $selectedShapes[] = `listRelatives -s`;
+  textField -e -tx $selectedShapes YetiGroom; 
+}
+
+//Run
+
+global proc RS_YetiFriendCMD(int $case)
+{
+  switch($case)
+  {
+    case 1 :
+        string $C_set = `textField -q -tx YetiSet`;        
+        string $M_Shape = `textField -q -tx YetiMesh`; 
+        pgYetiConvertGuideSetToGroom( $C_set, $M_Shape, "0.2" );   
+    break;
+    
+    case 2 :
+        string $Cur_Groom =`textField -q -tx YetiGroom`; 
+        string $My_Yeti =`textField -q -tx YetiNode`;
+        pgYetiAddGroom($Cur_Groom, $My_Yeti); 
+        textField -e -tx "연결완료" YetiGroom; 
+    break;
+    
+    case 3 :
+    string $My_Yeti1 =`textField -q -tx YetiNode`;
+    setAttr ($My_Yeti1 + ".renderDensity") 1;
+    break;
+
+    case 4 :
+    string $My_Yeti2 =`textField -q -tx YetiNode`;    
+      $chakeValue1 = `getAttr ($My_Yeti + ".viewportDensity")`;
+      if ($chakeValue1 == 1)
+      {
+      setAttr ($My_Yeti2 + ".viewportDensity") 0.1;       
+      }
+      else 
+      {
+          setAttr ($My_Yeti2 + ".viewportDensity") 1;   
+      }        
+    break;    
+
+    case 5 :
+    string $My_Yeti3 =`textField -q -tx YetiNode`;
+      $chakeValue = `getAttr ($My_Yeti + ".displayOutput")`;
+      if ($chakeValue == 1)
+      {
+      setAttr ($My_Yeti3 + ".displayOutput") 0;       
+      }
+      else 
+      {
+          setAttr ($My_Yeti3 + ".displayOutput") 1;   
+      } 
+    break;      
+  }   
+}
+
+
+
+
+
+/////////////////////////////////////////////////
+////////////ILY_Natalie
+/////////////////////////////////////////////////
+global proc ukrt_w1() 
+{
+    int $w_val =`checkBox -q -v  CanneleSize`;
+    if ($w_val==0) 
+      { 
+      window -e -w 175 -h 420  ILY_Natalie_UI;
+      checkBox -e -v 1  CanneleSize; 
+      } 
+    else 
+      {
+      window -e -w 175 -h 20 ILY_Natalie_UI; 
+      checkBox -e -v 0  CanneleSize;          
+      }
+}
+
+
+global proc longer() {frameLayout  -e  -cl 0 spuitFrame; frameLayout  -e  -cl 0 ukrt_Toolframe; window -e -w 175 -h 420 ILY_Natalie_UI; }
+global proc longer_i() {frameLayout  -e  -cl 1 spuitFrame; frameLayout  -e  -cl 1 ukrt_Toolframe;}
+global proc longer_2() {frameLayout  -e  -cl 0  polyFrame; window -e -w 175 -h 420 ILY_Natalie_UI; }
+global proc longer_2_i() {frameLayout  -e  -cl 1 polyFrame;}
+//
+
+
+global proc ILY_Natalie()
+{
+if (`window -q -exists ILY_Natalie_UI`) deleteUI ILY_Natalie_UI; 
+
+window -title "Cannele" -widthHeight 175 430 -tb 1 -toolbox 1 -mnb 1 -maximizeButton 0 -menuBar 0 -sizeable 0 ILY_Natalie_UI; 
+
+string $form = `formLayout`;
+string $tabs = `tabLayout -innerMarginWidth 5 -innerMarginHeight 5 -dcc "ukrt_w1" UKTAB`;
+formLayout -edit
+     -attachForm $tabs "top"    0
+     -attachForm $tabs "left"   0
+     -attachForm $tabs "bottom" 0
+     -attachForm $tabs "right"  0 $form;
+string $child0 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+
+
+string $child1_col_2 = `frameLayout  -label "Speed" -collapsable 1 -cl 0  ukrt_Toolframe`;
+string $child0_col_2_CL1 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child1_col_2_row_1 = ` rowColumnLayout -numberOfColumns 4 -cw 1 40 -cw 2 40 -cw 3 40 -cw 4 40`;
+
+
+
+		button 	-l "LOD"  -h 23 -c "vizXSC()" ;
+		button 	-l "PickUP" -w 40 -h 23 -c "pickWalkUp";
+		button 	-l "Note"  -w 40 -h 23 -c "kpNotez"; 
+		button 	-l "OUT"  -h 23-c "OutlinerPlus()" Pop_cmd_A;
+			popupMenu -mm 1 -parent Pop_cmd_A;
+				menuItem-rp "N"
+					-label "Hypergraph"
+					-c "HypergraphDGWindow";
+	        			menuItem-rp "S"
+					-label "HypershadeWindow"
+					-c "HypershadeWindow";
+				menuItem-rp "E"
+					-label "GraphEditor"
+					-c "GraphEditor";
+				menuItem-rp "W"
+					-label "OutlinerWindow"
+					-c "OutlinerWindow";
+
+separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+		
+	button -l "Align" -w 40 -h 23 -c "snap_cmd";
+	button -l "*/*"  -w 40 -h 23 -c "select -hi" -annotation "Select Hierarchy" ;
+	button -l "Import" -w 40 -h 23 -c "Import";	
+
+	button 	-l "-Node"  -h 23 -c "channelBoxCommand -deleteNode" Delpop;
+			popupMenu -mm 1 -parent Delpop;
+					menuItem
+					-label "Delete Object"
+					-c "cmddel";
+
+separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+
+         button -l "SG" -w 40 -h 23 -c "showShadingGroupAttrEditor";
+         button -l "*:Rmv"  -w 40 -h 23 -c "RmvNamespace()" -annotation "Remove Name Space";
+	button -l "Export"  -w 40 -h 23 -c "ExportSelection" Exportpop;
+			popupMenu -mm 1 -parent Exportpop;
+				menuItem
+					-label "UV-Shot"
+					-c "uv_shotCmd()";
+	button 	-l "chBox"  -h 23 -c "ChannelBox" cBOXpop;
+			popupMenu -mm 1 -parent cBOXpop;
+				menuItem
+					-label "UnLock"
+					-c "channelBoxCommand -unlock";
+				menuItem
+					-label "Break"
+					-c "channelBoxCommand -break";
+				menuItem
+					-label "Delete"
+					-c "channelBoxCommand -delete";
+
+
+	separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+
+
+	button -l "Ref-I" -w 40 -h 23 -c "Import_REF()" refbtt;
+			popupMenu -mm 1 -parent refbtt;
+					menuItem
+					-label "Reference Editor"
+					-c "ReferenceEditor";
+
+					menuItem
+					-label "Import Reference"
+					-c "referenceEdImportCB;";
+
+	button -label "Ref-X"   -h 23 -c "Remove_REF( )";
+	button -label "rePath"   -h 23 -c "FileTextureManager";
+	symbolButton -image "toolSettings.png" -h 23 -c "ToolSettingsWindow" SETting;
+				popupMenu -mm 1 -parent SETting;
+				menuItem
+					-label "Snap X"
+					-c "SnapXset";
+
+
+
+		setParent $child0_col_2_CL1;
+	setParent $child1_col_2;
+setParent $child0; 
+
+
+string $child0_fL_1 = `frameLayout  -label "Tools" -collapsable 1 -cl 0 `;
+string $child0_fL_1_col_1 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child0_fL_1_col_1_row_1 = `rowColumnLayout -numberOfColumns 4 -cw 1 40 -cw 2 40 -cw 3 40 -cw 4 40`; 
+
+	  		button -label "UVsMV"  -h 23 -c "UVTextureMover;TextureViewWindow;";
+			button -label "Spring"  -h 23 -c "spiral_curve" -ann "spiralCurve maker" ;
+	  		button -label "Tube"  -h 23 -c "crv2tube" -ann "curve to Tube";
+			button -label "mLOC"  -h 20 -c "componentCenterLocated" -ann "component Center Located"; 
+setParent $child0_fL_1;
+setParent $child0; 
+
+
+
+
+string $child0_fL_2 = `frameLayout  -label "Transfomation" -collapsable 1 -cl 0 `;
+string $child0_fL_2_col_1 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child0_fL_2_col_1_row_1 = `rowColumnLayout -numberOfColumns 5 -cw 1 32 -cw 2 32 -cw 3 32 -cw 4 32 -cw 5 32`; 
+
+	  		button -label "R"  -h 23 -c "makeIdentity -apply true -t 0 -r 1 -s 0 -n 0";
+	  		button -label "T"  -h 23 -c "makeIdentity -apply true -t 1 -r 0 -s 0 -n 0";
+	  		button -label "S"  -h 23 -c "makeIdentity -apply true -t 0 -r 0 -s 1 -n 0";
+	  		button -label "All"  -h 23 -c "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0";
+			button 	-l "*His"  -h 23 -c "DeleteHistory" ;
+
+setParent $child0_fL_2;
+setParent $child0; 
+
+
+string $child0_fL_3 = `frameLayout  -label "Modeling Driver" -collapsable 1 -cl 1   -cc "longer" -ec "longer_i" polyFrame` ;
+string $child0_fL_3_col_1 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child0_fL_3_col_1_row_1 = `rowColumnLayout -numberOfColumns 3 -cw 1 75 -cw 2 10 -cw 3 75`; 
+
+text -l "Object" ;separator -height 2 -style "none";separator -height 2 -style "none";
+
+	  		button -label "Random Sel"  -h 20 -c "SMO_RandomSelect";
+			separator -height 2 -style "in";
+			button -label "Sudv to Poly"  -h 20 -c "CreatePolyFromPreview";
+
+			button -label "smth-RenOnly"  -h 20 -c "render3_Smooth";
+			separator -height 2 -style "in";
+			button -label "Nurbs to Poly"  -h 20 -c "NtoP()";
+
+			button -label "Attach Object"  -h 20 -c "Attach_Object_OnEdge" -ann "오브젝트를 선택한 엗지에 갯수만큼 붙여줌";
+			separator -height 2 -style "in";
+			separator -height 2 -style "in";
+
+separator -height 2 -style "in";separator -height 2 -style "in";separator -height 2 -style "in";
+text -l "Normal" ;separator -height 2 -style "none";separator -height 2 -style "none";
+	  		button -label "DoubleSide"  -h 20 -c "Dside";
+			separator -height 2 -style "in";
+	  		button -label "Normal Chk"  -h 20 -c "normalChecker"; 
+
+	  		button -label "rvs-Normals"  -h 20 -c "ReversePolygonNormals";
+			separator -height 2 -style "in";
+			separator -height 2 -style "in";
+
+
+separator -height 2 -style "in";separator -height 2 -style "in";separator -height 2 -style "in";
+text -l "Component" ;separator -height 2 -style "none";separator -height 2 -style "none";
+	  		button -label "Punch"  -h 20 -c "modelTools"; 
+			separator -height 2 -style "in";
+			button -label "Rain Edge"  -h 20 -c "rainCurvesFromEdges" -ann "Curves from Edges"; 
+
+	  		button -label "Select Ring"  -h 20 -c "Select_Ring"; 
+			separator -height 2 -style "in";
+	  		button -label "Select Loop"  -h 20 -c "Select_Loop"; 
+
+			
+
+
+	setParent $child0_fL_3;
+setParent $child0; 
+
+
+//Spuit Tool UI
+string $child1_col_3 = `frameLayout  -label "Spuit"  -collapsable 1 -cl 0  -cc "longer_2" -ec "longer_2_i" spuitFrame`;
+string $child1_col_3_row_1 = `rowColumnLayout -numberOfColumns 2 
+	  
+				-cw 1 80 -cw 2 80`;
+
+	
+		button  -label "Get"  -h 20 -bgc 0.7 0.7 0.7
+			-annotation "Get shader"
+			-c "get";	
+ 		button  -label "Assign"   -h 20 -bgc 0.7 0.7 0.7 
+			-annotation "select shader in Scroll List"
+			-c "assign";	
+
+setParent $child1_col_3;
+
+string $child1_col_3_row_2 = `rowColumnLayout -numberOfColumns 1 
+	  
+				-cw 1 160`;
+
+		// Text scroll list for Get Material
+		string $msl= `textScrollList 
+				-height 80
+				-width 160
+				-allowMultiSelection 1
+				-annotation "list of Selection"				
+				mh_msl`;
+		// refresh popup menu
+			popupMenu -parent mh_msl;
+				menuItem 
+					-label "Remove"
+					-c "Remove()";
+				menuItem
+					-label "selete Objects"
+					-c "selobj()";
+				menuItem
+					-label "renderLayer"
+					-c "get_renderLayer()";
+
+			
+
+		setParent $child1_col_3;
+	setParent $child0; 
+setParent..;
+
+//Tabs 2
+
+
+string $child1 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+
+
+//string $scroll_RT = `scrollLayout -horizontalScrollBarThickness 16  -verticalScrollBarThickness 16  -childResizable 1`;
+
+
+string $child1_col_2_c = `frameLayout  -label "Toggle"  -collapsable 1 -cl 0 `;
+string $child1_col_2_c_row_1 = ` rowColumnLayout -numberOfColumns 7
+	  
+					-cw 1 37
+					-cw 2 5
+					-cw 3 37
+					-cw 4 5
+					-cw 5 37
+					-cw 6 5
+					-cw 7 37`;
+
+checkBox -l "Sel" -cc "filterUI()" -w 80 FilterMODE ; 
+ separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";
+
+	button -l "None"  -c "Filtering(7)" button_none;
+  separator -h 5 -st "none";
+  button -l "Mesh"  -c "Filtering(1)"	button_mesh;
+  separator -h 5 -st "none";  
+  button -l "Light" -c "Filtering(2)"	button_light;
+  separator -h 5 -st "none";  
+	button -l "Curve" -c "Filtering(3)"	button_curve;
+
+separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";
+
+  button -l "Cam" -c "Filtering(4)"	button_cam;
+  separator -h 5 -st "none";  
+  button -l "Loc" -c "Filtering(5)"	button_loc;
+  separator -h 5 -st "none";
+  button -l "Joint" -c "Filtering(6)"	button_joint;
+  separator -h 5 -st "none";
+  button -l "HIDE"  -align "center" -h 23 -c "xsiviva()" HideBut_popup;
+
+setParent $child1_col_2_c_row_1;
+setParent $child1_col_2_c;
+setParent $child1;
+
+string $child1_col_3_c = `frameLayout 	-label "Figure RenderLayer"  -collapsable 1			
+			rlm_frameManager`;
+      string $child0_col_3_c_row_1=`rowColumnLayout -numberOfColumns 5 -cw 1 37 -cw 2 5 -cw 3 55 -cw 4 11 -cw 5 55`;
+      separator -h 5 -st "none";separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";	
+			button	-label "{ + }" -h 25 -annotation "모든 레이어에 추가" -c "sbAll_AddCmd";
+      separator -h 5 -st "none";
+			iconTextButton -style "iconOnly" -image1 "setEdAddCmd.png" -annotation "레이어에 추가" -c "sbAddCmd";	
+			separator -height 2 -style "in";
+	 		iconTextButton -style "iconOnly" -image1 "setEdRemoveCmd.png" -annotation "레이어에 빼기" -c "sbRemCmd";
+      separator -h 5 -st "none";separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";		
+			button	-label "{ - }" -h 25  -c "sbAll_RemCmd";
+      separator -h 5 -st "none";
+			iconTextButton -style "iconOnly" -image1 "CloneTarget.png" -annotation "레이어 복사" -c "sbCopyCmd";
+			separator -height 2 -style "in";
+			iconTextButton -style "iconOnly" -image1 "deleteActive.png" -annotation "레이어 지우기"	-c "sbDelCmd";					
+      separator -h 5 -st "none";separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";		
+			button -label "{ X }" -w 20 -h 25 -annotation "모든 레이어 지우기"	-c "sbAll_DelCmd"	Pop_cmd_dDLayer;
+			popupMenu -parent Pop_cmd_dDLayer;
+				menuItem 
+					-label "Delete Display Layer"
+					-c "sbAll_dDelCmd";
+              
+      separator -h 5 -st "none";
+			iconTextButton -style "iconOnly" -image1 "selectByHierarchy.png" -annotation "select by hierarchy" -c "select -hi";	
+			separator -height 2 -style "in";
+			iconTextButton -style "iconOnly" -image1 "Erase.png" -annotation "레이어 비우기" -c "sbEmptyCmd";
+      separator -h 5 -st "none";separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none"; separator -h 5 -st "none";		
+
+setParent $child1_col_3_c;
+setParent $child1;
+
+
+  	string $child1_col_4 = `frameLayout 	-label "Override" -collapsable 1  rlm_frameOverride`;
+    string $child1_col_4_row = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+  	string $child1_col_4_row_1 = `rowColumnLayout  -numberOfColumns 3
+	  
+					-cw 1 80
+					-cw 2 50
+					-cw 3 30`;
+		
+
+		button -label "Start Frame:"  -w 80 -h 23 -al right -c "ILY_Natalie_overrideTime(1)";
+		floatField -s 1   -en 1  -v 101  -precision 0  ILY_Natalie_StartFrame; 						
+		button -label "Del"  -w 30 -h 23  -c "ILY_Natalie_overrideTime(2)";
+
+    separator -w 40 -h 5;
+    separator -w 40 -h 5;	
+    separator -w 40 -h 5;	
+
+		button -label "End Frame:"  -w 80 -h 23 -al right -c "ILY_Natalie_overrideTime(3)";
+
+		floatField -s 1   -en 1  -v 101  -precision 0  ILY_Natalie_EndFrame; 	
+
+		button -label "Del"  -w 30 -h 23  -c "ILY_Natalie_overrideTime(4)";
+
+
+    separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+
+		//text -l "Render Using:" -al right; button -label "Assign"  -w 50 -h 23 -al right -c "renderCmd";
+		//button -label "Del"  -w 30 -h 23 -al right -bgc 0.7 0.7 0.7 -c "delRenderCmd";
+		//separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+		text -l "File Path:" -al right;
+		button -label "Assign"  -w 50 -h 23 -al right  -c "filepathCmd";
+		button -label "Del"  -w 30 -h 23 -al right -c "delFilepathCmd";
+
+    separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;
+
+    setParent $child1_col_4_row;
+
+
+    string $child1_col_5_row_1 = `rowColumnLayout  -numberOfColumns 4 
+	  
+					-cw 1 40  -cw 2 40 -cw 3 40 -cw 4 40`;
+
+		symbolButton -image "RS_Priv.png"  -h 28  -c "RenderStats(2)";
+
+		symbolButton -image "RS_Privx.png"  -h 28  -c "RenderStats(1)";
+
+		symbolButton -image "RS_SdwX.png"  -h 28   -c "RenderStats(3)";
+
+		symbolButton -image "RS_Sdw.png"  -h 28 	-c "RenderStats(4)";	
+
+    separator -w 40 -h 5; separator -w 40 -h 5; separator -w 40 -h 5;separator -w 40 -h 5;
+
+    setParent $child1_col_4_row;
+
+
+string $child1_col_5_row_2 = `rowColumnLayout  -numberOfColumns 4 
+	  
+					-cw 1 30 -cs 1 0
+					-cw 2 50
+					-cw 3 50
+					-cw 4 30`;
+
+		button -label "{"  -w 30 -h 20  -c "PlayBlastFrame(2)";
+
+		floatField -s 1 -enterCommand "PlayBlastFrame(2)"  -v 101  -precision 0  sc_play_SF; 
+
+		floatField -s 1 -enterCommand "PlayBlastFrame(1)"  -v 201 -precision 0  sc_play_EF; 
+
+		button -label "}"  -w 30 -h 20  -c "PlayBlastFrame(1)";
+
+
+setParent $child1_col_4_row;
+setParent $child1_col_4;
+setParent $child1;   
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+
+  	//string $child1_col_55 = `frameLayout 	-label "Scene File Info" -collapsable 1  rlm_prefix`;
+	//string $child1_col_55_row = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+  	//string $child1_col_5_row_1 = `rowColumnLayout  -numberOfColumns 1 -cw 1 160  `; -cw 2 30
+
+		//string $sninfo = `file -q -namespace`;
+		//string $tex = $sninfo;
+		//textField -text  $tex -enable 1 -ed 1 -bgc 0.1 0.1 0.1 -font "smallBoldLabelFont" Scinfo; 
+		//popupMenu -parent Scinfo;menuItem  -label "원본 파일 열기" -c "INP(8)";menuItem  -label "작업 파일 돌아가기" -c "INP(9)";
+		//button -l "Load" -c "INP(6)" -h 25 -bgc 0.369 0.702 0.747;
+		//button -label "prefix"  -h 25  -bgc 0.369 0.702 0.747 -c "INP(3)";
+		//button -label "CAM"  -h 25  -bgc 0.1 0.1 0.1 -c "INP(5)" campre;
+	
+
+//setParent $child1_col_55_row;
+//setParent $child1_col_55;
+//setParent $child1;   
+
+
+
+
+
+setParent..;
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+/////Tabs 3
+
+
+string $child2 = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+
+string $child2_col_1 = `frameLayout  -label "Funtions"  -collapsable 1 -cl 0 `;
+string $child2_col_1_row_1 = ` rowColumnLayout -numberOfColumns 4 
+	  
+					-cw 1 40
+					-cw 2 40
+					-cw 3 40
+					-cw 4 40`;
+
+	button -l "ChCp" -w 40 -h 23 -c "ChCo";	
+	button -l "ChPa" -w 40 -h 23 -c "ChPa";	
+  text -l "";
+  checkBox -l "" -v 0 CanneleSize;
+
+	button -l "Pivot" -w 40 -h 23 -c "ctxEditMode";
+
+	button -l "BBOX" -annotation "Bounding Box" 
+                     -w 40
+                     -h 23
+                     -c "BBOX_O(1)" BBOX_popup;
+				popupMenu -parent BBOX_popup;
+				menuItem 
+					-label "On"
+					-c "BBOX_O(2)";
+				menuItem 
+					-label "Off"
+					-c "BBOX_O(3)";
+
+	button -l "2D-P" -w 40 -h 23 -c "PZ_P()";
+	button -l "2D-Z" -w 40 -h 23 -c "PZ_Z()";
+
+	symbolButton -image "create.png" -h 23 -c "CenterPivot" ;
+	text -l "";text -l "";text -l "";
+
+	separator -height 2 -style "in";separator -height 2 -style "in";separator -height 2 -style "in";separator -height 2 -style "in";
+
+	text -l "Mani : ";
+	checkBox -l "M" -enable 1 -v 0 -cc "AxisSEL(1)" AxisSEL1;
+	checkBox -l "R" -enable 1 -v 1 -cc "AxisSEL(2)" AxisSEL2;
+	checkBox -l "S" -enable 1 -v 0 -cc "AxisSEL(3)" AxisSEL3;
+
+	text -l "Axis : ";
+	button -l "Local" -c "manipAxis_Local()";
+	button -l "World" -c "manipAxis_World()";
+
+
+
+
+
+setParent $child2_col_1_row_1;
+setParent $child2_col_1;
+
+setParent $child2; 
+
+string $child2_col_2 = `frameLayout  -label "Invisible Face"  -collapsable 1 -cl 0 `;
+string $child2_col_2_row = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child2_col_2_row_1 = ` rowColumnLayout -numberOfColumns 2 
+	  
+					-cw 1 30 -cw 2 130`;
+
+	button -l "OX"  -c "ToggleHoleFaces" ;
+
+	button -l "Make Hole & ID"  -c "MakeHole()" ;
+
+setParent $child2_col_2_row;
+string $child2_col_2_row_2 = ` rowColumnLayout -numberOfColumns 1 
+	  
+					-cw 1 160`;
+
+	
+	button -l "Get Hole ID"  -c "GET_faceID()" ;
+
+		// Text scroll list for Get Invisible FACE
+		string $fsl= `textScrollList 
+				-height 80
+				-width 160
+				-allowMultiSelection 1
+				-annotation "list of Selection"				
+				invi_fsl`;
+		// refresh popup menu
+			popupMenu -parent invi_fsl;
+				menuItem 
+					-label "ReFresh"
+					-c "GET_faceID_Remove()";
+				menuItem -d 1;
+				menuItem
+					-label "Selete ID"
+					-c "GET_faceID_Sel()";
+
+				menuItem -d 1;
+				menuItem -l "" ;
+			
+				menuItem
+					-label "Delete ID"
+					-c "doDelete";
+
+
+
+
+
+setParent $child2_col_2_row;
+string $child2_col_2_row_3 = ` rowColumnLayout -numberOfColumns 2 
+	  
+					-cw 1 80 -cw 2 80`;
+
+	button -l "Assign"  -c "polyHole -ch 1 -assignHole 1";
+	button -l "Remove"  -c "polyHole -ch 1 -assignHole 0";
+
+
+setParent $child2_col_2_row;
+setParent $child2_col_2;
+setParent $child2; 
+
+string $child2_col_3 = `frameLayout  -label "NameTool"  -collapsable 1 -cl 0 `;
+string $child2_col_3_rowA = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child2_col_3_row_1 = ` rowColumnLayout -numberOfColumns 1 
+	  
+					-cw 1 160`;
+		string $prefix = "";		
+		textField -text $prefix -h 25 -enable 1 -ed 1   Naming; 
+
+
+setParent $child2_col_3_rowA;
+setParent $child2_col_3_row_1;
+
+string $child2_col_3_rowB = `columnLayout -adjustableColumn 1 -rowSpacing 1`;
+string $child2_col_3_row_2 = ` rowColumnLayout -numberOfColumns 4 
+	  
+					-cw 1 40 -cw 2 40 -cw 3 40-cw 4 40`;
+		button -l "[Add_]" -h 25 -c "NEWNEWNAME(1)";
+		button -l "[_Add]" -h 25 -c "NEWNEWNAME(2)";
+
+setParent $child2_col_3_rowB;
+setParent $child2_col_3_row_2;
+
+setParent $child2_col_3;
+setParent $child2; 
+
+
+
+
+setParent..;
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+tabLayout -edit 
+ -tabLabel $child0 "Handy"  
+ -tabLabel $child1 "Ren"
+ -tabLabel $child2 "Useful" 
+
+-ca 
+
+$tabs;
+
+
+
+//if (`dockControl -q -exists ILY_Natalie_UIdock`) deleteUI ILY_Natalie_UIdock; 
+//dockControl -area "right" -l "ILY_Natalie" -w 190 -content ILY_Natalie_UI -allowedArea "right" -allowedArea "left" ILY_Natalie_UIdock; 
+showWindow ILY_Natalie_UI;
+
+}//ILY_Natalie;
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+//*********************** COMMANDS **************************
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc ILY_Natalie_attachCommands()
+{
+
+    $ILY_NatalieOps = ls("defaultRenderGlobals");
+
+    if (size($ILY_NatalieOps) == 1 && $ILY_NatalieOps[0] == "defaultRenderGlobals")
+    {
+        if ( `attributeQuery -node defaultRenderGlobals -exists "endFrame"` )
+        {
+
+		connectControl sc_play_SF "defaultRenderGlobals.startFrame";
+		connectControl sc_play_EF "defaultRenderGlobals.endFrame";		
+
+
+        }
+    }
+	else
+    {
+warning "\n";
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc GetSCinfo()
+{
+
+string $sninfo = `file -q -namespace`;
+string $info = "info : "; 
+string $tex = $info + $sninfo;
+string $name=`textField -text  $tex -enable 1 -bgc 0.1 0.1 0.1 -font "boldLabelFont" -ed 0 Scinfo`; 
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc StoneColdKiller (int $cn)
+{
+string $Target1="*:defaultRenderLayer";
+string $Target2="*:*:defaultRenderLayer";
+string $Target3="*:*:*:defaultRenderLayer";
+
+switch ( $cn) {
+
+		case 1 :
+
+			select -r $Target1; select -add $Target2;
+			delete; 
+			break;
+
+		case 2:
+			select -r $Target3;
+			delete;
+			break;
+		}
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc xsiviva()
+{
+$rememberSelection=`ls -sl`;
+string $obj;
+int $hidden=1;		// assume all object are hidden
+for ( $obj in $rememberSelection ) {
+		// loops through all selected objects, if one is visible, break out
+	string $myattrib=$obj+".visibility";
+	int $objvis=`getAttr $myattrib`;
+	if ($objvis==1) {
+		$hidden=0;
+		break;
+	}
+}
+if ($hidden==0) {
+	hide $rememberSelection;
+}
+else {
+	showHidden $rememberSelection;
+}
+select $rememberSelection;
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc snap_cmd_X()
+{
+//position smap
+string $sel_trA[] = `ls -sl`;
+float $trA[] = `xform -q -ws -t $sel_trA[0]`;
+float $rpA[] = `xform -q -rp $sel_trA[1]`;
+float $rpB[] = `xform -q -rp $sel_trA[0]`;
+
+xform -ws -t 
+($trA[0] + $rpA[0] - $rpB[0]) 
+($trA[1] + $rpA[1] - $rpB[1]) 
+($trA[2] + $rpA[2] - $rpB[2]) $sel_trA[1];
+
+//rotate snap
+string $sel_rpA[] = `ls -sl`;
+float $rpA_r[] = `xform -q -ro $sel_rpA[0]`;
+float $rpB_r[] = `xform -q -ro $sel_rpA[1]`;
+
+xform -ro 
+($rpB_r[0] - $rpB_r[0] + $rpA_r[0]) 
+($rpB_r[1] - $rpB_r[1] + $rpA_r[1]) 
+($rpB_r[2] - $rpB_r[2] + $rpA_r[2]) $sel_rpA[1];
+}
+
+global proc snap_cmd()
+{
+//position smap
+string $sel_position[] = `ls -sl`;
+float $trA_ps[] = `xform -q -ws -t $sel_position[1]`;
+float $rpA_ps[] = `xform -q -rp $sel_position[1]`;
+float $rpB_ps[] = `xform -q -rp $sel_position[0]`;
+
+xform -ws -t 
+($trA_ps[0] + $rpA_ps[0] - $rpB_ps[0]) 
+($trA_ps[1] + $rpA_ps[1] - $rpB_ps[1]) 
+($trA_ps[2] + $rpA_ps[2] - $rpB_ps[2]) $sel_position[0];
+
+//rotate snap
+string $sel_rotate[] = `ls -sl`;
+float $rpA_rs[] = `xform -q -ro $sel_rotate[1]`;
+float $rpB_rs[] = `xform -q -ro $sel_rotate[0]`;
+
+xform -ro 
+($rpB_rs[0] - $rpB_rs[0] + $rpA_rs[0]) 
+($rpB_rs[1] - $rpB_rs[1] + $rpA_rs[1]) 
+($rpB_rs[2] - $rpB_rs[2] + $rpA_rs[2]) $sel_rotate[0];
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbAddCmd()
+{
+$xLayer=`editRenderLayerGlobals -q -crl`;
+  if ($xLayer=="defaultRenderLayer")
+  error "select a layer to add selected objects";
+  else
+  editRenderLayerMembers -noRecurse $xLayer `ls -sl`;
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbAll_AddCmd() 
+{
+string $RL_Node = "renderLayerManager";
+    string $xRenderLayerList[] = `listConnections $RL_Node`;   	
+    int $chNumber = size($xRenderLayerList);
+    string $selM[] = `ls -sl`;         
+	string $each;
+    for ($i=1;$i<$chNumber;$i++)
+	{
+	    for ($each in $selM)
+	    {    
+            editRenderLayerMembers -noRecurse $xRenderLayerList[$i] $each;  
+        }
+    }
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbRemCmd()
+
+{
+$xxLayer=`editRenderLayerGlobals -q -crl`;
+
+  if ($xxLayer=="defaultRenderLayer")
+  error "select a layer to add selected objects";
+  else
+  editRenderLayerMembers -remove -noRecurse $xxLayer `ls -sl`;
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbAll_RemCmd() 
+{
+string $RL_Node = "renderLayerManager";
+    string $xxRenderLayerList[] = `listConnections $RL_Node`;   	
+    int $chNumber = size($xxRenderLayerList);
+    string $selM[] = `ls -sl`;         
+	string $each;
+    for ($i=1;$i<$chNumber;$i++)
+	{
+	    for ($each in $selM)
+	    {    
+            editRenderLayerMembers -remove -noRecurse $xxRenderLayerList[$i] $each;        
+        }
+    }
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbDelCmd()
+{
+      $xThatit=`editRenderLayerGlobals -q -crl`;
+      renderLayerEditorDeleteLayer RenderLayerTab $xThatit;
+}
+
+
+global proc sbAll_DelCmd()
+{
+string $xrLayerNode = "defaultRenderLayer";
+string $xrLList[] = `listConnections $xrLayerNode`;
+$get = `listConnections $xrLList[0]`;   	
+select $get;
+delete ;
+}
+
+global proc sbAll_dDelCmd()
+{
+string $xLayerNode = "defaultLayer";
+string $xLList[] = `listConnections $xLayerNode`;
+$get = `listConnections $xLList[0]`;   	
+select $get;
+delete ;
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbCopyCmd()
+{
+      $xThat=`editRenderLayerGlobals -q -crl`;
+      renderLayerEditorCopyLayer RenderLayerTab $xThat;
+      string $newRL = $xThat+"1";  
+      $nThat=`editRenderLayerGlobals -crl $newRL`;
+      $GetnThat=`editRenderLayerGlobals -q -crl`;
+      string $post_fix=$xThat+"_1";
+      renderLayerEditorItemOnRename $GetnThat $post_fix;      
+      
+      renderLayerEditorRenderable RenderLayerEditor "defaultRenderLayer" "0";
+    }
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbEmptyCmd()
+{
+      $xThat=`editRenderLayerGlobals -q -crl`;
+      renderLayerEditorEmptyLayer RenderLayerTab $xThat;
+    }
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc sbDelEmptyCmd()
+{
+      $xThat=`lsType "renderLayer"`;
+      
+	for($They in $xThat)
+	{
+          $TheyMembers=`editRenderLayerMembers -q -nr $They`;
+	   if(size($TheyMembers)==1)renderLayerEditorDeleteLayer RenderLayerTab $They;
+ if(size($TheyMembers)==0)renderLayerEditorDeleteLayer RenderLayerTab $They;
+
+
+       }
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc crlCmd()
+{
+string $Cus;
+	{
+$Null=`promptDialog
+	-title "Custom Layer"
+	-message "Enter Nmae:"
+	-button "OK" 
+	-defaultButton "OK"
+	-dismissString "Cancel"`;
+
+if ($Null == "OK"){
+   $Cus =`promptDialog -q -text`;
+	$Ctn=$Cus;
+createRenderLayer -name $Ctn -noRecurse `ls -selection`;                  
+		    }
+	}  
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+
+global proc ILY_Natalie_overrideTime(int $case)
+{
+switch ($case)
+
+{
+case  1 : 
+editRenderLayerAdjustment "defaultRenderGlobals.startFrame";
+setAttr "defaultRenderGlobals.startFrame" `floatField -query -value ILY_Natalie_StartFrame`;
+break;
+
+
+case  2 :
+editRenderLayerAdjustment -remove "defaultRenderGlobals.startFrame";
+break;
+
+case  3 :
+editRenderLayerAdjustment "defaultRenderGlobals.endFrame";
+setAttr "defaultRenderGlobals.endFrame"  `floatField -query -value ILY_Natalie_EndFrame`;
+break;
+
+case  4 :
+editRenderLayerAdjustment -remove "defaultRenderGlobals.endFrame";
+break;
+}
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc PlayBlastFrame(int $case)
+{
+
+switch ($case)
+{
+
+case 1 :
+
+setAttr "defaultRenderGlobals.endFrame" `floatField  -query -value sc_play_EF`;
+playbackOptions -aet `floatField  -query -value sc_play_EF`;
+playbackOptions -min `getAttr "defaultRenderGlobals.startFrame"` 
+		-max `floatField  -query -value sc_play_EF`;
+currentTime `floatField  -query -value sc_play_SF`;
+break;
+
+case 2 :
+
+setAttr "defaultRenderGlobals.startFrame" `floatField  -query -value sc_play_SF`;
+playbackOptions -ast `floatField  -query -value sc_play_SF`;
+playbackOptions -max `getAttr "defaultRenderGlobals.endFrame"` 
+		-min `floatField  -query -value sc_play_SF`;
+currentTime `floatField  -query -value sc_play_SF`;
+break;
+
+}
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc renderCmd()
+{
+editRenderLayerAdjustment "defaultRenderGlobals.currentRenderer";
+}
+global proc delRenderCmd()
+{
+editRenderLayerAdjustment -remove "defaultRenderGlobals.currentRenderer";
+}
+global proc filepathCmd()
+{
+editRenderLayerAdjustment "defaultRenderGlobals.imageFilePrefix";
+}
+global proc delFilepathCmd()
+{
+editRenderLayerAdjustment -remove "defaultRenderGlobals.imageFilePrefix";
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc lazyCmd()
+
+{
+
+
+string $renderLayers[] = { 
+
+			"Matte",
+			"Passes", 
+ 			"OL",
+			"Cha",
+			"Bg_Depth",
+			"Bg_Occ",
+			"Bg"
+
+		};
+
+int $tasks[], $i = 0 ;
+
+string $listAll[] = `lsType "renderLayer"`;
+
+for ( $renderLayer in $renderLayers ) $tasks[$i++] = 1;
+
+$i = 0;
+
+for ( $renderLayer in $renderLayers ) {
+
+	for ( $chk in $listAll ) if ( $renderLayer == $chk ) $tasks[$i] = 0;
+
+	$i++;
+
+}
+print ("이미 다 만들었습니다 :D\n");
+$i = 0;
+
+for ( $apply in $tasks ) {
+
+	$i++;
+
+	if ( $apply == 1 ) startMakeRenderLayer $i;
+
+}
+
+}
+
+
+global proc startMakeRenderLayer ( int $commandNumbers ) {
+
+////Give Custom Name to 
+string $ma = "OL";
+string $mb = "Cha";
+string $mc = "Bg";
+string $md = "Bg_Occ";
+string $me = "Bg_Depth"; 
+string $mf = "Matte";
+string $mg = "Passes";
+ 
+switch ( $commandNumbers ) {
+
+		case 1 :
+		
+		createRenderLayer -name $ma  -noRecurse `ls -selection`;
+
+		break;
+
+
+		case 2 :
+		createRenderLayer -name $mb -noRecurse `ls -selection`;
+
+		break;
+
+
+		case 3 :
+		createRenderLayer -name $mc -noRecurse `ls -selection`;
+
+		break;
+
+		case 4 :
+
+		createRenderLayer -name $md -noRecurse `ls -selection`;
+		
+		break;
+
+
+
+		case 5 :
+
+		createRenderLayer -name $me -noRecurse `ls -selection`;
+		break;
+
+
+		case 6 :
+
+		createRenderLayer -name $mf -noRecurse `ls -selection`;
+		break;
+
+
+		case 7 :
+
+		createRenderLayer -name $mg -noRecurse `ls -selection`;
+		renderLayerEditorRenderable RenderLayerTab "defaultRenderLayer" 0;
+		break;
+		
+		
+
+}
+
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc Import_REF()
+{
+    string $objs[] = `ls -sl`;
+    for($i=0;$i < size($objs); $i++)
+    {
+            string $rNode = $objs[$i];
+			$referenceNode = `referenceQuery -rfn $rNode`;
+            file -importReference -referenceNode $referenceNode;   
+    }
+
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+global proc Remove_REF()
+{
+    string $objs_rmvref_2[] = `ls -sl`;
+    for($i=0;$i < size($objs_rmvref_2); $i++)
+    {
+            string $rNode = $objs_rmvref_2[$i];
+			$referenceNode = `referenceQuery -rfn $rNode`;
+            file -removeReference -referenceNode $referenceNode;   
+    }
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+proc changeName(string $parent){
+	string $buffer[];
+	string $children[];
+
+	// change name
+	if (!`referenceQuery -inr $parent`){//non-referenced file
+		if(`gmatch $parent "*:*"`){//use namespace
+			$numTokens = `tokenize $parent ":" $buffer`;
+			//print($parent + "=> " + $buffer[$numTokens-1] + "\n");
+			$newname = `rename $parent $buffer[$numTokens-1]`;
+
+			$children = `listRelatives -c -pa $newname`;
+		}
+		else
+			$children = `listRelatives -c -pa $parent`;
+	}
+	else 
+		$children = `listRelatives -c -pa $parent`;
+ 
+	// change the chilrend's names
+	if(size($children) == 0) return;
+	
+	for($i=0; $i < size($children); $i++){
+		changeName($children[$i]);
+	}
+
+	return;
+}
+
+global proc RmvNamespace(){
+	string $selected[] = `ls -selection`;
+	for($i=0; $i < size($selected); $i++)
+		changeName($selected[$i]);
+	
+	print ("dsRemovenamespace DONE!!!\n");
+select -cl  ;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc cmddel()
+{
+doDelete;
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc RenderableX()
+{
+//All-OFF
+$sel_RenderableX=`lsType "renderLayer"`;
+	for ($each in $sel_RenderableX)
+	{
+		if (`attributeQuery -node $each -exists "renderable"`)
+		{
+			setAttr ($each + ".renderable") 0;
+        }
+    }
+}
+
+global proc RenderableO()
+{
+//All-ON
+$sel_RenderableO=`lsType "renderLayer"`;
+	for ($each in $sel_RenderableO)
+	{
+		if (`attributeQuery -node $each -exists "renderable"`)
+		{
+			setAttr ($each + ".renderable") 1;
+        }
+    }
+}
+
+global proc Renderable_selX()
+{
+//sel-OFF
+string $sel_selX[] = `ls -sl -dag`;
+	for ($each in $sel_selX)
+	{
+		if (`attributeQuery -node $each -exists "renderable"`)
+		{
+			setAttr ($each + ".renderable") 0;
+        }
+    }
+}
+
+global proc Renderable_selO()
+{
+//sel-ON
+string $sel_selO[] = `ls -sl -dag`;
+	for ($each in $sel_selO)
+	{
+		if (`attributeQuery -node $each -exists "renderable"`)
+		{
+			setAttr ($each + ".renderable") 1;
+        }
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc OutlinerPlus()
+{
+python("import OutlinerPlus");
+python("OutlinerPlus.startAsDockableWindow()");
+}
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc RenderStats(int $type)
+{
+
+
+switch ($type)
+
+{
+	case 1:
+	string $sel_RenderStats_1[] = `ls -sl -dag`;
+	for ($each in $sel_RenderStats_1)
+	{
+		if (`attributeQuery -node $each -exists "primaryVisibility"`)
+		{
+			setAttr ($each + ".primaryVisibility") 0;
+			//setAttr ($each + ".receiveShadows") 0;
+        		}
+    	}
+	break;
+
+	case 2:
+	string $sel_RenderStats_2[] = `ls -sl -dag`;
+	for ($each in $sel_RenderStats_2)
+	{
+		if (`attributeQuery -node $each -exists "primaryVisibility"`)
+		{
+			setAttr ($each + ".primaryVisibility") 1;
+			//setAttr ($each + ".receiveShadows") 1;
+        		}
+    	}
+	break;
+
+
+	case 3:
+	string $sel_RenderStats_3[] = `ls -sl -dag`;
+	for ($each in $sel_RenderStats_3)
+	{
+		if (`attributeQuery -node $each -exists "primaryVisibility"`)
+		{
+			setAttr ($each + ".castsShadows") 0;
+        		}
+    	}
+	break;
+
+	case 4:
+	string $sel_RenderStats_4[] = `ls -sl -dag`;
+	for ($each in $sel_RenderStats_4)
+	{
+		if (`attributeQuery -node $each -exists "primaryVisibility"`)
+		{
+			setAttr ($each + ".castsShadows") 1;
+        		}
+    	}
+	break;
+
+
+
+
+}
+
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc get()
+{
+string $spuit= `hyperShade -smn`;
+string $get[]= `ls -sl -l`;
+
+
+	textScrollList -edit -removeAll mh_msl;
+
+	for ($i = 0; $i < size($get); $i++)
+	{
+		textScrollList
+			-si "selectm()"
+			-doubleClickCommand "showSGm"
+			-edit
+			-append $get[$i]
+			mh_msl;
+	} 
+
+}
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+global proc get_renderLayer()
+{
+
+string $get[]= `lsType "renderLayer"`;
+
+	textScrollList -edit -removeAll mh_msl;
+
+	for ($i = 0; $i < size($get); $i++)
+	{
+		textScrollList
+			-si 1
+			-di 1
+			-sc "selerenLay()"
+			-doubleClickCommand "ShowAttributeEditorOrChannelBox"			
+			-edit
+			-append $get[$i]
+			mh_msl;
+	} 
+
+
+}
+
+
+global proc assign()
+{
+string	$mem1[] = `textScrollList -query -selectItem mh_msl`;
+hyperShade -assign $mem1;
+
+}
+
+global proc selobj()
+{
+string	$mem2[] = `textScrollList -query -selectItem mh_msl`;
+hyperShade -objects	$mem2;
+
+}
+
+global proc selerenLay()
+{
+string	$mem3[] =`textScrollList -query -selectItem mh_msl`; 
+select -r $mem3;
+}
+
+global proc Remove()
+{
+textScrollList -edit -removeAll mh_msl;
+}
+
+
+
+
+//if select 
+
+global proc selectm()
+{
+string	$mem[] = `textScrollList -query -selectItem mh_msl`;
+select -r $mem;
+}
+
+
+global proc showSGm()
+{
+ShowAttributeEditorOrChannelBox;
+}
+
+
+
+global proc render3_Smooth()
+{
+
+string $sel_render3_Smooth[] = `ls -sl -dag`;	
+	string $each;	    
+	HighQualityDisplay;
+	setDisplaySmoothness 3;
+	displaySmoothness -divisionsU 3 -divisionsV 3 -pointsWire 16 -pointsShaded 4 -polygonObject 3;
+	subdivDisplaySmoothness -smoothness 3;
+	for ($each in $sel_render3_Smooth)
+	{
+		setAttr ($each + ".displaySubdComps") 0;
+		setAttr ($each + ".smoothLevel") 0;
+		setAttr ($each + ".useSmoothPreviewForRender ") 0; 
+		setAttr ($each + ".renderSmoothLevel ") 2; 
+
+	}	
+
+
+
+}
+
+global proc Dside()
+{
+string $sel_Dside[] = `ls -sl -g -s -dag`;	
+	for ($each in $sel_Dside)
+	{
+		$chk=`getAttr ($each+ ".doubleSided")`;
+		
+		if ($chk==1)
+			{ 
+		setAttr ($each + ".doubleSided") 0;
+			}
+		else
+		setAttr ($each + ".doubleSided") 1;
+	}	
+	select $sel_Dside;
+}
+
+
+
+
+global proc BBOX_O ( int $cmd ) 
+{
+
+
+switch ( $cmd ) {
+
+		case 1 :
+		
+/////////////toggle
+
+string $sel_BBOX_O[] = `ls -sl -g -s -dag`;	
+	for ($each in $sel_BBOX_O)
+	{
+		$chk=`getAttr ($each+ ".overrideEnabled")`;
+		
+		if ($chk==1)
+			{ 
+		setAttr ($each + ".overrideEnabled") 0;
+		setAttr ($each + ".overrideLevelOfDetail") 0;
+			}
+		else
+		setAttr ($each + ".overrideEnabled") 1;
+		setAttr ($each + ".overrideLevelOfDetail") 1;
+	}	
+	select $sel_BBOX_O;
+
+		break;
+
+
+		case 2 :
+/////////////BBox
+
+string $sel_BBOX[] = `ls -sl -g -s -dag`;	
+	for ($each in $sel_BBOX)
+	{
+
+		setAttr ($each + ".overrideEnabled") 1;
+		setAttr ($each + ".overrideLevelOfDetail") 1;
+	}	
+	select $sel_BBOX;	
+
+		break;
+
+
+		case 3 :
+/////////////BBox
+
+string $sel_BBOX3[] = `ls -sl -g -s -dag`;	
+	for ($each in $sel_BBOX3)
+	{
+
+		setAttr ($each + ".overrideEnabled") 0;
+		setAttr ($each + ".overrideLevelOfDetail") 0;
+	}	
+	select $sel_BBOX3;	
+
+		break;
+}
+}
+
+
+
+
+/////////////////////
+global proc MakeHole()
+{
+
+//Select Set FaceGrp
+string $sel_MakeHole[] = `ls -sl`;
+string $pick = $sel_MakeHole[0];
+string $array[];
+$array = stringToStringArray($pick, ".");
+string $name = $array[0];
+
+//Assign Invisible Face
+polyHole -assignHole 1;
+$createSetResult = `sets -name ($name+"_Invisible_FaceGrp")`;
+
+}
+
+global proc GET_faceID()
+{
+
+string $Target[]= `ls -sl`;
+string $pick = $Target[0];
+string $SetName = $pick+"_Invisible_FaceGrp";
+string $Grp = $SetName+"*";
+select -r -ne $Grp;
+
+string $get[] = `ls -sl`;
+
+	textScrollList -edit -removeAll invi_fsl;
+
+	for ($i = 0; $i < size($get); $i++)
+	{
+		textScrollList
+			-si "GET_faceID_Sel()"
+			-doubleClickCommand "GET_faceID_Sel2()"
+			-edit
+			-append $get[$i]
+			invi_fsl;
+	} 
+}
+
+
+global proc GET_faceID_Sel()
+{
+string	$FaceID[] = `textScrollList -query -selectItem invi_fsl`;
+select -r -ne $FaceID;
+}
+
+global proc GET_faceID_Sel2()
+{
+string	$FaceID2[] = `textScrollList -query -selectItem invi_fsl`;
+select -r $FaceID2;
+}
+
+
+global proc GET_faceID_Remove()
+{
+textScrollList -edit -removeAll invi_fsl;
+}
+
+
+global proc NtoP()
+{
+nurbsToPoly -mnd 1  -ch 1 -f 2 -pt 1 -pc 4848 -chr 0.9 -ft 0.01 -mel 0.001 -d 0.01 -ut 3 -un 5 -vt 3 -vn 5 -uch 1 -ucr 0 -cht 0.2 -es 0 -ntr 0 -mrt 0 -uss 1 ;
+
+}
+
+
+
+global proc filterUI()
+{
+	string $getck =`checkBox -q -v FilterMODE`;
+	if( $getck == 1)
+	{
+	button -e -bgc 0.2 0.2 0.2  button_mesh;
+	button -e -bgc 0.2 0.2 0.2  button_curve;
+	button -e -bgc 0.2 0.2 0.2  button_loc;
+	button -e -l "Nurbs" -bgc 0.2 0.2 0.2  button_light;
+	button -e -en 0 button_none;
+	button -e -en 0 button_cam;
+	button -e -en 0 button_joint;
+
+	}
+	else if ( $getck == 0)
+	{
+	button -e -bgc 0.4 0.4 0.4  button_mesh;
+	button -e -bgc 0.4 0.4 0.4  button_curve;
+	button -e -bgc 0.4 0.4 0.4  button_loc;
+	button -e -l "Light" -bgc 0.4 0.4 0.4  button_light;
+	button -e -en 1 button_none;
+	button -e -en 1 button_cam;
+	button -e -en 1 button_joint;
+
+	}
+
+}
+
+global proc Filtering(int $mask)
+{
+
+	switch ( $mask)
+	{
+
+		case 1 :
+		string $getck_c1 =`checkBox -q -v FilterMODE`; 
+		if( $getck_c1 == 1)
+		{
+			string $sel_Filtering_1[] = `ls -sl -l -fl`;
+			string $filter[] = `filterExpand -sm 12 $sel_Filtering_1`;
+			select -r $filter;
+		}
+		else if( $getck_c1 == 0)
+		{
+				$currentPanel_1 = `getPanel -withFocus`; 
+                string $panelType_filter_1 = `getPanel -to $currentPanel_1`; if ($panelType_filter_1 == "modelPanel") { 
+                modelEditor -e -polymeshes ( !`modelEditor -q -polymeshes $currentPanel_1` ) $currentPanel_1; };
+
+				$currentPanel_1_a = `getPanel -withFocus`; 
+                string $panelType_filter_1_a = `getPanel -to $currentPanel_1_a`; if ($panelType_filter_1_a == "modelPanel") { 
+                modelEditor -e -nurbsSurfaces ( !`modelEditor -q -nurbsSurfaces $currentPanel_1_a` ) $currentPanel_1_a; };
+		}
+		break;
+	
+
+		case 2 :
+		string $getck_c2 =`checkBox -q -v FilterMODE`; 
+		if( $getck_c2 == 1)
+		{
+			string $sel_Filtering_2[] = `ls -sl -l -fl`;
+			string $filter[] = `filterExpand -sm 10 $sel_Filtering_2`;		
+			select -r $filter;
+
+		}
+		else if( $getck_c2 == 0)
+		{
+			$currentPanel_2 = `getPanel -withFocus`; 
+			string $panelType_filter_2 = `getPanel -to $currentPanel_2`; if ($panelType_filter_2 == "modelPanel") { 
+                	modelEditor -e -lights ( !`modelEditor -q -lights $currentPanel_2` ) $currentPanel_2; };
+		}
+		break;
+	
+
+		case 3 :
+		string $getck_c3 =`checkBox -q -v FilterMODE`; 
+		if( $getck_c3 == 1)
+		{
+			string $sel_Filtering_3[] = `ls -sl -l -fl`;
+			string $filter[] = `filterExpand -sm 9 $sel_Filtering_3`;
+			select -r $filter;
+
+		}
+		else if( $getck_c3 == 0)
+		{
+			$currentPanel_3 = `getPanel -withFocus`; 
+	                string $panelType_filter_3 = `getPanel -to $currentPanel_3`; if ($panelType_filter_3 == "modelPanel") { 
+	                modelEditor -e -nurbsCurves  ( !`modelEditor -q -nurbsCurves  $currentPanel_3` ) $currentPanel_3; };
+		}
+		break;
+
+
+		case 4 :
+
+			$currentPanel_4 = `getPanel -withFocus`; 
+	                string $panelType_filter_4 = `getPanel -to $currentPanel_4`; if ($panelType_filter_4 == "modelPanel") { 
+	                modelEditor -e -cameras ( !`modelEditor -q -cameras $currentPanel_4` ) $currentPanel_4; };		
+		break;
+
+
+		case 5 :
+		string $getck_c5 =`checkBox -q -v FilterMODE`; 
+		if( $getck_c5 == 1)
+		{
+			string $sel_Filtering_5[] = `ls -sl -l -fl`;
+			string $filter[] = `filterExpand -sm 22 $sel_Filtering_5`;
+			select -r $filter;
+
+		}
+		else if( $getck_c5 == 0)
+		{
+			$currentPanel_5 = `getPanel -withFocus`; 
+	                string $panelType_filter_5 = `getPanel -to $currentPanel_5`; if ($panelType_filter_5 == "modelPanel") { 
+        	        modelEditor -e -locators ( !`modelEditor -q -locators $currentPanel_5` ) $currentPanel_5; };	
+		}
+		break;
+
+
+		case 6 :
+
+			$currentPanel_6 = `getPanel -withFocus`; 
+	                string $panelType_filter_6 = `getPanel -to $currentPanel_6`; if ($panelType_filter_6 == "modelPanel") { 
+        	        modelEditor -e -joints ( !`modelEditor -q -joints $currentPanel_6` ) $currentPanel_6; };	
+		break;
+
+
+		case 7 :
+		{
+		        string $currentPanel_7 = `getPanel -underPointer`;
+    if ("" == $currentPanel_7) {
+        $currentPanel_7 = `getPanel -withFocus`;
+    }
+    if ("" != $currentPanel_7) {
+        string $panelType_filter_7 = `getPanel -typeOf $currentPanel_7`;
+        if ($panelType_filter_7 ==  "modelPanel") {
+            modelEditor -edit -displayAppearance "smoothShaded" -displayTextures off 
+                -displayLights "default" $currentPanel_7;
+        } else if (`isTrue "MayaCreatorExists"` && `scriptedPanel -exists $currentPanel_7` 
+            && `scriptedPanel -query -type $currentPanel_7` == "dynPaintScriptedpanelType_filter_7") {
+            dynPaintEditor -edit -displayTextures 0 -displayAppearance "smoothShaded"
+                -displayLights "default" ;
+        } else if ($panelType_filter_7 ==  "scriptedPanel") {
+ 			  string $cmd = "modelEditor -edit -displayAppearance \"smoothShaded\" -displayTextures off -displayLights \"default\" "; 
+			  scriptedPanelRunTimeCmd( $cmd, $currentPanel_7 ); 
+        }
+    }
+
+
+		$currentPanel_7 = `getPanel -withFocus`; 
+                string $panelType_filter_7 = `getPanel -to $currentPanel_7`; if ($panelType_filter_7 == "modelPanel") { 
+                modelEditor -e -allObjects ( !`modelEditor -q -polymeshes $currentPanel_7` ) $currentPanel_7; };
+	}
+
+}
+
+}
+
+
+
+global proc PZ_P()
+{
+PanZoomTool;
+panZoomCtx -e -panMode PanZoomContext;
+}
+
+global proc PZ_Z()
+{
+PanZoomTool;
+panZoomCtx -e -zoomMode PanZoomContext;
+}
+global proc vizXSC()
+{
+string $sel_PZ_P[] = `ls -sl`;	
+
+	for ($each in $sel_PZ_P)
+	{
+		$chk=`getAttr ($each+ ".lodVisibility")`;
+		
+		if ($chk==1)
+			{ 
+		setAttr ($each + ".lodVisibility") 0;
+		
+			}
+		else
+		setAttr ($each + ".lodVisibility") 1;
+	}	
+}
+
+
+/////////////////////////////////////////////Poly Driver
+/// RING SELECT //////////
+global proc Select_Ring()
+{
+	string $selection[] = `filterExpand -sm 32`;
+		for ( $sel in $selection )
+		{
+		string $ringEdges[] = getRingEdges($sel);
+		select -add $ringEdges;
+		}
+}
+
+/// Loop SELECT ///////
+global proc Select_Loop()
+{
+	string $E[] = `filterExpand -sm 32`;
+		for ( $Ed in $E )
+		{
+		$Edge = $Ed;
+		string $EdgeList[];
+		string $loopVertex;
+		string $loopEdge;
+		int $i = 0;
+		int $a = 0;
+		string $Verts[] = edge2Vertex($Edge);
+		$loopEdge           = $Edge;
+		$loopVertex         = $Verts[1];
+		$EdgeList[$i++] = $loopEdge;
+		int $stop = 0;
+		while ( $stop != 1 )
+			{
+				string $AllFaces[] = vertex2Face($loopVertex);   
+				if ( size($AllFaces) != 4 ) { $stop = 1; break;}
+				$loopEdge   = getOppositeEdgeFromVertex( $loopEdge, $loopVertex );
+				$loopVertex = inverseVertexFromEdge( $loopVertex, $loopEdge );
+				if ($loopEdge == $Edge ) { $stop = 1; $a = 1; break; }
+
+				$EdgeList[$i++] = $loopEdge;
+
+			}
+		select -add $EdgeList;
+		string $EdgeList_invers[] = inverseArray($EdgeList_invers);
+		$loopEdge   = $Edge;
+		$loopVertex = $Verts[0];
+
+		$stop = 0;
+		while ( $stop != 1 )
+			{
+
+				if ( $a == 1 ) { $stop = 1; break; }
+
+				string $AllFaces[] = vertex2Face($loopVertex);   
+				if ( size($AllFaces) != 4 ) { $stop = 1; break; }
+
+				$loopEdge   = getOppositeEdgeFromVertex( $loopEdge, $loopVertex );
+				$loopVertex = inverseVertexFromEdge( $loopVertex, $loopEdge );
+
+				$EdgeList_invers[$i++] = $loopEdge;
+
+
+			}
+	select -add $EdgeList_invers;
+		}
+
+}
+
+
+global proc NEWNEWNAME(int $SelF)
+{
+
+	switch ( $SelF)
+	{
+		case 1 :
+		    string $objs[] = `ls -sl`;
+		    for($i=0;$i < size($objs); $i++)
+		    {
+		            string $old_Name = $objs[$i];
+		            string $prefix = `textField -q -text Naming`;
+		            $newName = $prefix + "_"+$old_Name;    
+		            rename $objs[$i] $newName;
+		    }
+		break;
+
+		case 2 :
+		    string $objs_2[] = `ls -sl`;
+		    for($i=0;$i < size($objs_2); $i++)
+		    {
+		            string $old_Name = $objs_2[$i];
+		            string $prefix = `textField -q -text Naming`;
+		            $newName = $old_Name + "_"+ $prefix;    
+		            rename $objs_2[$i] $newName;
+		    }
+		break;
+
+
+	}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+global proc AxisSEL(int $chk)
+{
+
+	switch ( $chk)
+	{
+
+		case 1 :
+			
+			string $val1 = `checkBox -q -v AxisSEL1`;
+			if ($val1 == 1)
+			{
+			checkBox -e -v 1 AxisSEL1;
+			checkBox -e -v 0 AxisSEL2;
+			checkBox -e -v 0 AxisSEL3;
+			buildTranslateMM;
+			}
+		break ;
+
+		case 2 :
+			string $val2 = `checkBox -q -v AxisSEL2`;
+			if ($val2 == 1)
+			{
+			checkBox -e -v 0 AxisSEL1;
+			checkBox -e -v 1 AxisSEL2;
+			checkBox -e -v 0 AxisSEL3;
+			buildRotateMM;
+			}
+		break ;
+
+		case 3 :
+			string $val3 = `checkBox -q -v AxisSEL3`;
+			if ($val3 == 1)
+			{
+			checkBox -e -v 0 AxisSEL1;
+			checkBox -e -v 0 AxisSEL2;
+			checkBox -e -v 1 AxisSEL3;
+			buildScaleMM;
+			}
+		break ;
+	}
+
+}
+
+global proc manipAxis_Local()
+{
+string $val1 = `checkBox -q -v AxisSEL1`;
+string $val2 = `checkBox -q -v AxisSEL2`;
+string $val3 = `checkBox -q -v AxisSEL3`;
+if ($val1 == 1)
+	{
+	manipMoveContext -e -mode 0 Move;
+	}
+	else if ($val2 == 1)
+	{
+	manipRotateContext -e -mode 0 Rotate;
+	}
+	else if ($val3 == 1)
+	{
+	manipScaleContext -e -mode 0 Scale;
+	}
+}
+
+global proc manipAxis_World()
+{
+string $val1 = `checkBox -q -v AxisSEL1`;
+string $val2 = `checkBox -q -v AxisSEL2`;
+string $val3 = `checkBox -q -v AxisSEL3`;
+
+if ($val1 == 1)
+	{
+	manipMoveContext -e -mode 2 Move;
+	}
+	else if ($val2 == 1)
+	{
+	manipRotateContext -e -mode 1 Rotate;
+	}
+	else if ($val3 == 1)
+	{
+	manipScaleContext -e -mode 2 Scale;
+	}
+}
+
+
+global proc SnapXset()
+{
+manipScaleContext -e -snap false Scale;
+manipMoveContext -e -snap false Move;
+manipRotateContext -e -snap false Rotate;
+
+}
+
+
+
+
+
+
+
+
+
+
+

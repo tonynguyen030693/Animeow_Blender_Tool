@@ -1,0 +1,361 @@
+////////////////////////////////////////////////////////////////////////////////////////
+global proc dgSaveDeleteUnknown()
+{
+    string $unknown[] = `ls -type "unknown"`;
+    if( size($unknown) ) { 
+        int $i; 
+        for($i=0; $i<size($unknown); $i++) {
+            if(!`objExists $unknown[$i]`)
+                continue;
+            if(!`referenceQuery -inr $unknown[$i]`)
+                lockNode -l off $unknown[$i];
+                delete $unknown[$i];
+        }
+    }   
+}
+
+global proc dgdeleteUnusedNodes()
+{
+hyperShadePanelMenuCommand("hyperShadePanel1", "deleteUnusedNodes");
+}
+
+global proc selRender(int $case)
+{
+  switch($case)
+  {
+  case 1 :
+  setCurrentRenderer arnold;
+  break;
+  
+  case 2 :
+  setCurrentRenderer vray;
+  break;
+  
+  }
+}
+
+global proc getDL_list()
+{
+string	$a[] = `ls -exactType "displayLayer"`;
+string	$c[] = `ls "*:defaultLayer*"`;
+string	$b[] = {"defaultLayer"};
+string	$layerAll[] = stringArrayRemove($b,$a);
+string	$layers[] = stringArrayRemove($c,$layerAll);
+sort($layers);
+textScrollList -edit -removeAll Croissants_Lit_List;
+        for ($i = 0; $i < size($layers); $i++)
+        {           
+        textScrollList   -ams 0 -sc "" -dcc "deleteDL(1);" -deleteKeyCommand "deleteDL(1);" -e -a $layers[$i] Croissants_Lit_List;
+        }
+}
+
+global proc deleteDL(int $case)
+{
+  string	$c_layer[] = `textScrollList -query -selectItem Croissants_Lit_List`;
+  switch ($case)
+  {
+    case 1: // Delete layers
+      if ($c_layer[0] != "")
+      {
+        delete $c_layer;        
+            }	
+            getDL_list;
+      break;
+    }
+}  
+
+
+global proc getVP()
+{
+  float $pos[] = `xform -q -ws -t`;
+  $vx = $pos[0];
+  $vy = $pos[1];
+  $vz = $pos[2];
+
+  floatField -e -v $vx vtx;
+  floatField -e -v $vy vty;
+  floatField -e -v $vz vtz;
+}
+
+global proc setVP(int $case)
+{
+  $vtxv =`floatField -q -v vtx`;
+  $vtyv =`floatField -q -v vty`;
+  $vtzv =`floatField -q -v vtz`;
+
+    switch($case)
+    {
+    case 1 :
+      move  -x $vtxv; //-ws
+    break;
+    
+    case 2 :
+      move -y $vtyv;
+    break;
+
+    case 3 :
+      move -z $vtzv;
+    break;
+
+    case 4 :
+    move -ws $vtxv $vtyv $vtzv ;
+    break;
+    }
+  
+}
+
+
+global proc AssignSHD()
+{
+  string $SHD[] =`ls -sl`;
+  hyperShade -assign $SHD[0];
+
+}
+
+global proc DirtyCam()
+{
+  select -hi;
+  string $selCam[] = `ls -sl -ca`;
+  for ($each in $selCam)
+  {
+    camera -e -startupCamera false $each; 
+  }
+  doDelete;
+}
+
+global proc Croissants_Cam_ReName()
+{
+      string $sels[] =`ls -sl`;
+      if(size($sels) == 0)
+      {
+          string $aleady_cam[] =`ls "_ShotCam"`;
+          if(size($aleady_cam) == 0)
+          {
+              camera -n "_rcam_" -centerOfInterest 5 -focalLength 35 -lensSqueezeRatio 1 -cameraScale 1 -horizontalFilmAperture 1.41732 -horizontalFilmOffset 0 -verticalFilmAperture 0.94488 -verticalFilmOffset 0 -filmFit Fill -overscan 1 -motionBlur 0 -shutterAngle 144 -nearClipPlane 0.1 -farClipPlane 10000 -orthographic 0 -orthographicWidth 30 -panZoomEnabled 0 -horizontalPan 0 -verticalPan 0 -zoom 1; 
+              rename "_rcam_1" "_ShotCam";
+              select -r _ShotCam persp ;
+              MatchTransform;
+              lookThroughModelPanel _ShotCam modelPanel4;
+              select -cl;
+           }
+           else 
+           {
+               print "Open your eyes wide!";
+           }   
+      }
+
+      else if (size($sels) == 1)
+      {
+        rename $sels[0] "_ShotCam";
+        print "The choice is yours";
+      }
+      else
+      {
+        print "Too Many of Object Selected";     
+      }
+}
+
+global proc Croissants_SGReName()
+{
+  //rename shading group
+  string $MTL_Nodes[] =`ls -sl`;
+
+  for ($i = 0; $i < size($MTL_Nodes); $i++)
+  {  
+    string $knob = $MTL_Nodes[$i]+".outColor";
+    string $N_SG_Name = $MTL_Nodes[$i]+"SG";
+    $SG_Nodsss = `listConnections -d 1 $knob`;
+    rename $SG_Nodsss $N_SG_Name;
+  }
+}
+
+global proc Croissants_MakeGrpFunc(int $case)
+{
+  switch($case)
+  {
+  case 1 :
+  string $grpName = `textField  -q -tx MakeGrp_NF`;
+    group -w -n $grpName;
+  break;
+  }
+}
+
+  
+global proc OpenScene_CTS(int $case)
+{
+    switch($case)
+    {
+      case 1 :
+        ContentBrowserWindow;contentBrowserSetContext("WindowsMenu", "projects", "Projects/02_Scenes/01_Modeling");
+      break;
+
+      case 2 :
+        ContentBrowserWindow;contentBrowserSetContext("WindowsMenu", "projects", "Projects/02_Scenes/_Assets");
+      break;
+
+      case 3 :
+        ContentBrowserWindow;contentBrowserSetContext("WindowsMenu", "projects", "Projects/02_Scenes/03_Animation");
+      break;
+
+      case 5 :
+        ContentBrowserWindow;contentBrowserSetContext("WindowsMenu", "projects", "Projects/02_Scenes/05_Lighting");
+      break;     
+    }
+}
+
+      
+global proc RemoveREF()
+{
+  string $objs[] = `ls -sl`;
+    for($i=0;$i < size($objs); $i++)
+    {
+      string $rNode = $objs[$i];
+      $referenceNode = `referenceQuery -rfn $rNode`;
+      file -removeReference -referenceNode $referenceNode;   
+    }
+}
+
+
+global proc NSEditor()
+{
+  $Path = `workspace -q -fn`;
+  string $init[]= `getFileList -folder $Path -filespec "*.ini"`;
+  string $ini_gets = $init[0]; 
+
+  string $filePath = $Path + "/" + $ini_gets;
+  $fileId_info = `fopen $filePath "r"` ;  
+  string $data = `fread $fileId_info $data` ; 
+
+  //get all data
+  string $dataArray[] ;  
+  $dataArray = stringToStringArray($data, "/"); 
+  $GetValue = $dataArray[1] ;
+
+  if($GetValue == 9)
+  {  
+    string $XName[] = `ls -l -sl`;
+    for ($i = 0; $i < size($XName); $i++)
+    {    
+    $refpath01 =`referenceQuery -f $XName[$i]`;
+    $nNS = stringToStringArray($XName[$i], ":");
+    int $X = `size $nNS[0]`;
+    string $A = `substring $nNS[0] 1 ($X - 9)`;
+    file -e -namespace $A $refpath01;
+    }
+   }
+  else
+  {  
+    string $XName[] = `ls -l -sl`;
+    for ($i = 0; $i < size($XName); $i++)
+    {    
+    $refpath01 =`referenceQuery -f $XName[$i]`;
+    $nNS = stringToStringArray($XName[$i], ":");
+    int $X = `size $nNS[0]`;
+    string $A = `substring $nNS[0] 1 ($X - 8)`;
+    file -e -namespace $A $refpath01;
+    }
+   }
+
+}
+
+global proc CtrlDL()
+{
+    string $RigGrp[] =`ls "RigGrp"`;
+    if(size($RigGrp) == 0)
+    {
+
+    textField -e -tx  "ERROR !! You have to Select anitihng..."  Croissants_msg;
+    }
+    else
+    {
+    select -r -ne $RigGrp[0];
+    textField -e -tx  "OK !!!"  Croissants_msg;    
+    createDisplayLayer -name "Ctrl" -number 1 -nr;
+    }
+    select -cl;
+}
+
+
+global proc XCtrl()
+{
+  string $sel[] = `ls "*:Ctrl"`;	
+  for ($each in $sel)
+  {
+    setAttr ($each + ".visibility") 0;
+  }
+}
+
+  global proc AssignMTL(int $case)
+  {
+      switch($case)
+      {
+          case 1 :
+          hyperShade -assign ____IDMaskR;
+          break;
+          
+          case 2 :
+          hyperShade -assign ____IDMaskG;
+          break;
+          
+          case 3 :
+          hyperShade -assign ____IDMaskB;
+          break;
+          
+          case 4 :
+          hyperShade -assign ____Toon_Basic;
+          break;                              
+      }
+}      
+
+      
+global proc img2Poly()
+{
+    string $imp[] =`ls -sl`;
+    float $ip_w = `getAttr ($imp[0] +".width")`;
+    float $ip_h = `getAttr ($imp[0] +".height")`;
+
+    $iplate = `polyPlane -n "Plate" -w $ip_w -h $ip_h -sx 10 -sy 10 -ax 0 0 1 -cuv 2 -ch 1`;
+
+    select -r $imp[0];
+    select -add $iplate ;
+    doCreateParentConstraintArgList 1 { "0","0","0","0","0","0","0","1","","1" };
+    doCreateScaleConstraintArgList 1 { "0","1","1","1","0","0","0","1","","1" };
+
+    select -cl;
+    select -r $iplate ;
+    polyNormalizeUV -normalizeType 1 -preserveAspectRatio off -centerOnTile on ;
+    select -cl;
+
+}    
+
+  global proc pyColorRen(int $case)
+  {
+      switch ($case)
+      {
+        case 1 :
+        string $cmd_pyCol_1 ="ColorRan.SET_colorG()";
+        python($cmd_pyCol_1);
+        break;
+
+        case 2 :
+        string $cmd_pyCol_2 ="ColorRan.SET_colorP()";
+        python($cmd_pyCol_2);
+        break;
+
+        case 3 :
+        string $cmd_pyCol_3 ="ColorRan.SET_colorR()";
+        python($cmd_pyCol_3);
+        break;
+
+        case 4 :
+        string $cmd_pyCol_4 ="ColorRan.SET_colorY()";
+        python($cmd_pyCol_4);
+        break;                
+
+        case 5 :
+        string $cmd_pyCol_5 ="ColorRan.SET_colorW()";
+        python($cmd_pyCol_5);
+        break;        
+       }
+  }
+

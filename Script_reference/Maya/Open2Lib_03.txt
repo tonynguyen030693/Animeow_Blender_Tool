@@ -1,0 +1,49 @@
+import sys
+import maya.cmds as cmds
+
+# Duong dan src Studio Library cua bro
+studio_lib_path = "C:/Users/Cuong/Documents/maya/2020/scripts/studiolibrary-2.13.2/src"
+
+if studio_lib_path not in sys.path:
+    sys.path.append(studio_lib_path)
+
+import studiolibrary
+
+# Luon reset bien cua so ngay tu dau de xoa sach cua so cu da tat
+studiolibrary._window = None
+
+# Kiem tra xem da tung luu duong dan chua
+path1_exists = cmds.optionVar(exists="stLibPath1")
+path2_exists = cmds.optionVar(exists="stLibPath2")
+
+if path1_exists and path2_exists:
+    # Neu da luu, luon lay truc tiep duong dan de mo thang
+    path1 = cmds.optionVar(q="stLibPath1")
+    path2 = cmds.optionVar(q="stLibPath2")
+else:
+    # Neu chua co data thi moi bat bang chon thu muc
+    f1 = cmds.fileDialog2(dialogStyle=2, fileMode=3, caption="Chon thu muc cho Library 1")
+    f2 = cmds.fileDialog2(dialogStyle=2, fileMode=3, caption="Chon thu muc cho Library 2")
+    
+    if f1 and f2:
+        path1 = f1[0]
+        path2 = f2[0]
+        # Sua lai cu phap luu optionVar chuan cua Maya de ghi nho lau dai
+        cmds.optionVar(stringValue=("stLibPath1", path1))
+        cmds.optionVar(stringValue=("stLibPath2", path2))
+    else:
+        path1 = None
+        path2 = None
+
+# Tien hanh mo lai hai cua so doc lap
+if path1 and path2:
+    # Mo cua so 1
+    win1 = studiolibrary.main(name="StudioLibrary_CuaSo_1", path=path1)
+
+    # Reset tiep de chuan bi mo cua so 2
+    studiolibrary._window = None
+
+    # Mo cua so 2
+    win2 = studiolibrary.main(name="StudioLibrary_CuaSo_2", path=path2)
+else:
+    cmds.warning("Thieu duong dan, khong the mo tou!")

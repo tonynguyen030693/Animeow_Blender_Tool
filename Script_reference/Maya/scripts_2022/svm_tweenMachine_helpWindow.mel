@@ -1,0 +1,31 @@
+// ----------------------------
+// WRITTEN BY STIJN VANDE MAELE
+// ----------------------------
+
+if (`objExists svm_tweenMachine_helpWindow`) delete svm_tweenMachine_helpWindow;
+global proc svm_tweenMachine_helpWindow()
+{
+	string $text = "CREATED BY STIJN VANDE MAELE\n\nFEATURES:\n * \tTween selected object(s) (only keyable, unlocked attributes) on the current frame.\n * \tTween selected key(s) in the graph editor on any frame (independent of each other).\n * \tTween the selected timeslider range as a group.\n * \tTween the combination of any of the previously illustrated examples.\n\nOPTIONS:\n * \tReset slider:\n\tClicking this will reset the slider to the center position.\n * \tSpecial tick color:\n\tIf enabled, the special tick color will be applied on the tweened key.\n\tIf disabled, the default key color will be applied.\n * \tOperate on:\n\t - \tKeys in graphEditor:\n\t\tIf keys are selected in the grapEditor then only those keys will be tweened.\n\t\tSelected keys get the highest priority.\n\t - \tKeys in graphEditor:\n\t\tIf channels are selected in the channelBox then only those channels will be tweened.\n\t\tSelected channels recieve priority after selected keys if enabled.\n * \tTween calculation:\n\tOnly relevant when selecting multiple keys on the same curve.\n\t - \tNeutral: \n\t\tFor each key, it will calculate the tween operation from their current/original values.\n\t - \tIncremental: \n\t\tIf you tween over 50%, it will first tween the key closest to the '100% key'.\n\t\tAfter it will tween the key to it's left,\n\t\trelevant to the new position of the key tweened before.\n\t\tIf you tween under 50%, it will first tween the key closest to the '0% key'.\n\t\tAfter it will tween the key to it's right,\n\t\trelevant to the new position of the key tweened before.\n * \tSlider:\n\t - \tTween on drag:\n\t\tEvaluates while you drag the control of the slider.\n\t\tNote: When selecting multiple keys on the same curve in the graph editor, \n   \t\t\t the overschoot will not work, instead it will just stop at 0% or 100%.\n\t\tNote: When selecting multiple keys on the same curve in the graph editor,\n\t\t\t keep in mind that because the evaluation is constantly happening\n\t\t\t while dragging, the results will slightly deviate from the result\n\t\t\t when using the buttons or not using the 'Tween on drag' option.\n\t - \tReset to center: \n\t\tResets the slider back to the center position when you release it.\n";
+	
+	if (`window -q -ex WIN_svm_tweenMachine_help` == true) deleteUI -window WIN_svm_tweenMachine_help;
+	window 	-title "svm_tweenMachine HELP"
+			-widthHeight 550 400
+			-sizeable false
+			-maximizeButton false
+			-parent WIN_svm_tweenMachine
+			WIN_svm_tweenMachine_help;
+            
+        columnLayout 	-adjustableColumn true 
+                        -rowSpacing 0
+                        -parent "WIN_svm_tweenMachine_help"
+                     	COL_tweenHelp0;
+        
+        scrollField 	-editable false 
+  						-h 400 
+  						-wordWrap true 
+          				-text $text
+  						-font "plainLabelFont"
+  						-parent COL_tweenHelp0;
+
+	showWindow WIN_svm_tweenMachine_help;
+}

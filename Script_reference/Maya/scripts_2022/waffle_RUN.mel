@@ -1,0 +1,7 @@
+global proc waffle_RUN()
+{
+
+  if (!(`pluginInfo -q -l Croissants`)) {catchQuiet(`loadPlugin Croissants`);}
+  eval ( "source \"waffle_GUI.mel\"" );
+  waffle_GUI();
+}

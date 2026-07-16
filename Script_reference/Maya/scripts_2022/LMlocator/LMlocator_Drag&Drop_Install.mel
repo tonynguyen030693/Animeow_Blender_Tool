@@ -1,0 +1,43 @@
+// LMlocator - install file
+// twitter: @luismiherrera
+
+string $srcWindows=`asInstallScriptLocation`;
+string $destWindows = `internalVar -userScriptDir`;
+string $scriptIconFile = "LMlocator_Icon.png";
+string $scriptFolder = "LMlocator/";
+
+
+global string $gShelfTopLevel;
+string $currentShelf = `tabLayout -query -selectTab $gShelfTopLevel`;
+setParent $currentShelf;
+string $icon=$destWindows+$scriptFolder+$scriptIconFile;
+
+sysFile -makeDir ($destWindows+$scriptFolder);
+sysFile -copy $icon ($srcWindows+$scriptIconFile);
+
+
+shelfButton
+        -annotation "LMB: Creates locator at selection. - RMB: Creates locator at selection and transfer animation to it."
+        -label "LMlocator"
+        -image $icon
+        -image1 $icon
+        -style "iconOnly"
+        -command "'''\n            LMlocator 1.6.18\nby Luismi Herrera. Twitter: @luismiherrera\n\n\n- Creates a locator at origin (if nothing selected).\n- If there is anything selected it will create locators with the same\n  transforms as the object(s) selected.\n- If there are vertices selected it will create a locator at the center of\n  the selected vertices bounding box.\n'''\n\n\nimport maya.cmds as cmds\n\n\ndef createLocatorAtSelection():\n    sel = cmds.ls(selection = True)\n    sel_verts = cmds.filterExpand(sm=31)\n\n\n    suffix = '_LOC' # or '_LOC#' if we want to add a number at the end in the firt locator too.\n\n\n    if (len(sel) == 0):\n        loc = cmds.spaceLocator()\n    elif (sel_verts != None):\n        locName = sel_verts[0].split('.')[0] + suffix\n        bb = cmds.exactWorldBoundingBox(sel_verts)\n        pos = ((bb[0] + bb[3]) / 2, (bb[1] + bb[4]) / 2, (bb[2] + bb[5]) / 2)\n        newLoc = cmds.spaceLocator(name=locName)\n        cmds.move(pos[0], pos[1], pos[2], newLoc)\n    else:\n        for i in range(len(sel)):\n            locName = sel[i] + suffix\n            loc = cmds.spaceLocator(name= locName)\n            tempConst = cmds.parentConstraint(sel[i], loc, mo=False)\n            cmds.delete(tempConst)\n\n\n    cmds.select(clear=True)\n\n\ncreateLocatorAtSelection()"
+        -sourceType "python"
+        -doubleClickCommand "'''\n            LMlocatorBakeAnimation\nby Luismi Herrera. Twitter: @luismiherrera\n\n\n- Creates a locator at origin (if nothing selected).\n- If there is anything selected it will create locators with the same\n  transforms as the object(s) selected.\n- If there are vertices selected it will create a locator at the center of\n  the selected vertices bounding box.\n- It will transfer the animation of the objects to the locators on world space coordinates\n- It will only transfer the animation of the selected attributes in the channel box (if nothing selected it will transfer everything)\n- It will only transfer the ainmation during the selected frame range in the timeline (if nothing selected it will bake the whole timeline)\n'''\n\n\nimport maya.cmds as cmds\nimport maya.mel as mel\nfrom functools import wraps\n\n\n# -----------------------------------------------------------------------------\n# Decorators\n# -----------------------------------------------------------------------------\ndef viewportOff( func ):\n    \"\"\"\n    Decorator - turn off Maya display while func is running.\n    if func will fail, the error will be raised after.\n    \"\"\"\n    @wraps(func)\n    def wrap( *args, **kwargs ):\n\n\n        # Turn $gMainPane Off:\n        mel.eval(\"paneLayout -e -manage false $gMainPane\")\n\n\n        # Decorator will try/except running the function.\n        # But it will always turn on the viewport at the end.\n        # In case the function failed, it will prevent leaving maya viewport off.\n        try:\n            return func( *args, **kwargs )\n        except Exception:\n            cmds.warning('Done!')#raise # will raise original error\n        finally:\n            mel.eval(\"paneLayout -e -manage true $gMainPane\")\n\n\n    return wrap\n\n\n#returns a list with the NOT selected attributes in the channel box\ndef selectedAttrs():\n    gChannelBoxName = mel.eval('$temp=$gChannelBoxName')\n    selChannels = cmds.channelBox(gChannelBoxName, query=True, sma=True)\n\n\n    trans = []\n    rot = []\n    scale = []\n\n\n    if(selChannels!=None):\n        trans = [\"tx\",\"ty\",\"tz\"]\n        rot = [\"rx\",\"ry\",\"rz\"]\n        scale = [\"sx\",\"sy\",\"sz\"]\n        for i in range(len(selChannels)):\n            if(selChannels[i] in trans):\n                trans.remove(selChannels[i])\n            elif(selChannels[i] in rot):\n                rot.remove(selChannels[i])\n            elif(selChannels[i] in scale):\n                scale.remove(selChannels[i])\n\n\n        trans = [s.replace('t', '') for s in trans]\n        rot = [s.replace('r', '') for s in rot]\n        scale = [s.replace('s', '') for s in scale]\n\n\n    return (trans, rot, scale)\n\n\n#returns the highlighted frame range in the time slider\ndef frameRange():\n    aPlayBackSliderPython = maya.mel.eval('$tmpVar=$gPlayBackSlider')\n    highlightRange = cmds.timeControl(aPlayBackSliderPython, query=True, rangeArray=True)\n\n\n    if((highlightRange[1]-highlightRange[0])>1):\n        minTime = highlightRange[0]\n        maxTime = highlightRange[1]\n    else:\n        minTime = cmds.playbackOptions(minTime=True, query=True)\n        maxTime = cmds.playbackOptions(maxTime=True, query=True)\n    return(minTime, maxTime)\n\n\n@viewportOff\ndef createLocatorAtSelectionAndBakeAnim():\n    framesSelected = frameRange()\n    channels = selectedAttrs()\n\n\n    sel = cmds.ls(selection = True)\n    sel_verts = cmds.filterExpand(sm=31)\n    locList = []\n    constList = []\n    suffix = '_LOC' # or '_LOC#' if we want to add a number at the end in the firt locator too.\n\n\n    if (len(sel) == 0):\n        loc = cmds.spaceLocator()\n    elif (sel_verts != None):\n        locName = sel_verts[0].split('.')[0] + suffix\n        bb = cmds.exactWorldBoundingBox(sel_verts)\n        pos = ((bb[0] + bb[3]) / 2, (bb[1] + bb[4]) / 2, (bb[2] + bb[5]) / 2)\n        newLoc = cmds.spaceLocator(name=locName)\n        cmds.move(pos[0], pos[1], pos[2], newLoc)\n    else:\n        for i in range(len(sel)):\n            locName = sel[i] + suffix\n            loc = cmds.spaceLocator(name= locName)\n            locList.append(loc)\n\n\n            #No attributes selected on the channel box\n            if(channels==None):\n                tempConst = cmds.parentConstraint(sel[i], loc, mo=False)\n                tempScaleConst = cmds.scaleConstraint(sel[i], loc, mo=False)\n            #Some attributes selected on the channel box\n            else:\n                print('attrs selected!')\n                tempConst = cmds.parentConstraint(sel[i], loc, st=channels[0], sr=channels[1], mo=False)\n                tempScaleConst = cmds.scaleConstraint(sel[i], loc, sk=channels[2], mo=False)\n            constList.append(tempConst)\n            constList.append(tempScaleConst)\n\n\n    cmds.select(clear=True)\n    for i in range(len(locList)):\n        cmds.select(locList[i],add=True)\n    locators = cmds.ls(selection=True)\n    cmds.bakeResults(locators, t=(framesSelected[0],framesSelected[1]), bol=False, preserveOutsideKeys = True, simulation=True)\n    cmds.select(clear=True)\n    for i in range(len(constList)):\n        cmds.delete(constList[i])\n\n\n    #create an error\n    #raise RuntimeError(\"raise an error in line 48\")\n\n\ncreateLocatorAtSelectionAndBakeAnim()" 
+        ;
+
+
+global proc asInstallScriptLocator(){}
+
+global proc string asInstallScriptLocation ()
+{
+string $whatIs=`whatIs asInstallScriptLocator`;
+string $fullPath=`substring $whatIs 25 999`;
+string $buffer[];
+int $numTok=`tokenize $fullPath "/" $buffer`;
+int $numLetters=size($fullPath);
+int $numLettersLastFolder=size($buffer[$numTok-1]);
+string $scriptLocation=`substring $fullPath 1 ($numLetters-$numLettersLastFolder)`;
+return $scriptLocation;
+}
