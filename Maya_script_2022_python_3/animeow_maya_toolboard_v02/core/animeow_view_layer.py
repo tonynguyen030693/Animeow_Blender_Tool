@@ -368,7 +368,7 @@ class AnimeowMeshGroupModel(object):
 
     @classmethod
     def grow_group_selection(cls, group_set):
-        """Mở rộng vùng chọn polygon faces trong Group"""
+        """Chỉ mở rộng vùng chọn polygon faces trên Viewport để người dùng chủ động làm việc"""
         if not cmds.objExists(group_set):
             return
             
@@ -384,21 +384,10 @@ class AnimeowMeshGroupModel(object):
                 cmds.GrowPolygonSelectionRegion()
             except AttributeError:
                 mel.eval("GrowPolygonSelectionRegion;")
-                
-            new_sel = cmds.ls(selection=True)
-            new_faces = cmds.filterExpand(new_sel, selectionMask=34) or []
-            
-            if new_faces:
-                cmds.sets(faces, remove=group_set)
-                cmds.sets(new_faces, edit=True, addElement=group_set)
-                
-                is_visible = cls.get_group_visibility(group_set)
-                if not is_visible:
-                    cls.set_items_visibility(new_faces, [], False)
 
     @classmethod
     def shrink_group_selection(cls, group_set):
-        """Thu hẹp vùng chọn polygon faces trong Group"""
+        """Chỉ thu hẹp vùng chọn polygon faces trên Viewport để người dùng chủ động làm việc"""
         if not cmds.objExists(group_set):
             return
             
@@ -414,21 +403,6 @@ class AnimeowMeshGroupModel(object):
                 cmds.ShrinkPolygonSelectionRegion()
             except AttributeError:
                 mel.eval("ShrinkPolygonSelectionRegion;")
-                
-            new_sel = cmds.ls(selection=True)
-            new_faces = cmds.filterExpand(new_sel, selectionMask=34) or []
-            
-            is_visible = cls.get_group_visibility(group_set)
-            if not is_visible:
-                # Hiện lại các face cũ trước để tránh 'lỗi kẹt hiển thị'
-                cls.set_items_visibility(faces, [], True)
-                
-            cmds.sets(faces, remove=group_set)
-            
-            if new_faces:
-                cmds.sets(new_faces, edit=True, addElement=group_set)
-                if not is_visible:
-                    cls.set_items_visibility(new_faces, [], False)
 
 
 # ---------------------------------------------------------------------------
