@@ -637,9 +637,9 @@ def create_shelf():
         },
         {
             "label": "Jitter",
-            "annotation": "Làm mượt / Khử rung các Keyframe đang chọn nhanh (Cường độ 1.0)",
+            "annotation": "Mở hộp công cụ khử rung Fix Jitter độc lập",
             "image": get_icon("jitter_icon.png", "commandButton.png"),
-            "command": common_path_init + "import animeow_maya_toolboard_v02.core.shelf as shelf; shelf.run_fix_jitter(1.0)"
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('animeow_maya_toolboard_v02'):\n        del sys.modules[m]\nimport animeow_maya_toolboard_v02\nanimeow_maya_toolboard_v02.show(standalone_tab='fix_jitter')"
         },
         {
             "label": "Hider",

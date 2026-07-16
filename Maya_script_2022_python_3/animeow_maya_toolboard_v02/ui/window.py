@@ -780,6 +780,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif standalone_tab == "round_tool":
                 self.WINDOW_TITLE = "Làm tròn số"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowRoundWorkspaceControl"
+            elif standalone_tab == "fix_jitter":
+                self.WINDOW_TITLE = "Fix Jitter"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowFixJitterWorkspaceControl"
                 
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
         self._is_tweening_drag = False
@@ -1819,6 +1822,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif self.standalone_tab == "view_layer":
                 tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
                 self.tab_widget.addTab(tab_view_layer, "View Layer")
+            elif self.standalone_tab == "fix_jitter":
+                fj_widget = QtWidgets.QWidget(self)
+                fj_layout = QtWidgets.QVBoxLayout(fj_widget)
+                fj_layout.setContentsMargins(10, 10, 10, 10)
+                fj_layout.setSpacing(8)
+                
+                # Jitter Slider Layout
+                jitter_layout = QtWidgets.QHBoxLayout()
+                jitter_lbl_title = QtWidgets.QLabel(u"Cường độ mượt:")
+                jitter_lbl_title.setStyleSheet("color: #888888;")
+                jitter_layout.addWidget(jitter_lbl_title)
+                
+                self.jitter_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+                self.jitter_slider.setRange(0, 100)
+                self.jitter_slider.setValue(100)
+                self.jitter_slider.setFixedHeight(20)
+                jitter_layout.addWidget(self.jitter_slider)
+                
+                self.jitter_lbl = QtWidgets.QLabel("1.00")
+                self.jitter_lbl.setFixedWidth(30)
+                self.jitter_lbl.setAlignment(QtCore.Qt.AlignCenter)
+                self.jitter_lbl.setStyleSheet("font-weight: bold; color: #00BCD4;")
+                jitter_layout.addWidget(self.jitter_lbl)
+                
+                fj_layout.addLayout(jitter_layout)
+                
+                self.jitter_slider.valueChanged.connect(lambda v: self.jitter_lbl.setText("%.2f" % (v / 100.0)))
+                
+                self.fix_jitter_btn = QtWidgets.QPushButton(u"Fix Jitter (Khử rung / Làm mượt curve)")
+                self.fix_jitter_btn.setIcon(AnimeowIcons.icon_tween())
+                self.fix_jitter_btn.setFixedHeight(28)
+                self.fix_jitter_btn.clicked.connect(self.on_fix_jitter)
+                fj_layout.addWidget(self.fix_jitter_btn)
+                
+                self.tab_widget.addTab(fj_widget, "Fix Jitter")
+                self.setMinimumWidth(280)
             elif self.standalone_tab == "quick_const":
                 qc_widget = QtWidgets.QWidget(self)
                 qc_layout = QtWidgets.QVBoxLayout(qc_widget)
@@ -4872,6 +4911,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "round_tool":
             ctrl_name = "AnimeowRoundWorkspaceControl"
             win_title = "Làm tròn số"
+        elif standalone_tab == "fix_jitter":
+            ctrl_name = "AnimeowFixJitterWorkspaceControl"
+            win_title = "Fix Jitter"
         elif standalone_tab == "fav_tools":
             ctrl_name = "AnimeowFavoriteToolsWorkspaceControl"
             win_title = "Favorite Tools"
@@ -4933,6 +4975,9 @@ def show_window(tab_index=None, standalone_tab=None):
         if standalone_tab == "quick_const":
             show_kwargs["width"] = 180
             show_kwargs["height"] = 200
+        elif standalone_tab == "fix_jitter":
+            show_kwargs["width"] = 280
+            show_kwargs["height"] = 120
         elif standalone_tab == "fav_tools":
             show_kwargs["width"] = 250
             show_kwargs["height"] = 300
