@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter, selection_sets
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -655,6 +655,23 @@ class AnimeowIcons:
     @staticmethod
     def icon_space_order(sz=18): return AnimeowIcons.make_icon(sz, AnimeowIcons._draw_space_order)
 
+    @staticmethod
+    def _draw_sets(p, r, c):
+        """Selection Sets icon: 3 items with bullet points"""
+        h = r.height() / 3.0
+        for i in range(3):
+            y = r.top() + i * h + h / 2.0
+            # Bullet point (circle)
+            p.setBrush(c)
+            p.drawEllipse(QtCore.QPointF(r.left() + 2, y), 2, 2)
+            p.setBrush(QtCore.Qt.NoBrush)
+            # Line
+            p.drawLine(QtCore.QPointF(r.left() + 7, y), QtCore.QPointF(r.right() - 2, y))
+
+    @staticmethod
+    def icon_sets(sz=18):
+        return AnimeowIcons.make_icon(sz, AnimeowIcons._draw_sets)
+
 def ensure_scripts_2022_path():
     # 1. Thử lấy đường dẫn động tương đối theo cấu trúc thư mục của git repo
     ui_dir = os.path.dirname(os.path.abspath(__file__))
@@ -783,6 +800,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif standalone_tab == "fix_jitter":
                 self.WINDOW_TITLE = "Fix Jitter"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowFixJitterWorkspaceControl"
+            elif standalone_tab == "selection_sets":
+                self.WINDOW_TITLE = "Selection Sets Manager"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowSelectionSetsWorkspaceControl"
                 
         super(AnimeowMayaToolboardUI, self).__init__(parent=parent)
         self._is_tweening_drag = False
@@ -853,6 +873,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             AnimeowIcons.icon_curve,
             AnimeowIcons.icon_mirror,
             AnimeowIcons.icon_play,
+            AnimeowIcons.icon_outliner,
+            AnimeowIcons.icon_sets,
             AnimeowIcons.icon_launch,
         ]
         compact_tooltips = [
@@ -860,6 +882,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             "Curve & Motion",
             "Rig & Mirror",
             "Output & Scene",
+            "View Layer",
+            "Selection Sets",
             "Launchers"
         ]
         self.compact_buttons = []
@@ -1822,6 +1846,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif self.standalone_tab == "view_layer":
                 tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
                 self.tab_widget.addTab(tab_view_layer, "View Layer")
+            elif self.standalone_tab == "selection_sets":
+                tab_selection_sets = selection_sets.SelectionSetsManagerUI()
+                self.tab_widget.addTab(tab_selection_sets, "Selection Sets")
             elif self.standalone_tab == "fix_jitter":
                 fj_widget = QtWidgets.QWidget(self)
                 fj_layout = QtWidgets.QVBoxLayout(fj_widget)
@@ -2239,6 +2266,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.tab_widget.addTab(wrap_in_scroll(tab4), "Output & Scene")
             tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
             self.tab_widget.addTab(tab_view_layer, "View Layer")
+            tab_selection_sets = selection_sets.SelectionSetsManagerUI()
+            self.tab_widget.addTab(tab_selection_sets, "Selection Sets")
             self.tab_widget.addTab(wrap_in_scroll(tab5), "Launchers")
     # --- HÀNH ĐỘNG DỮ LIỆU ---
 
@@ -4920,6 +4949,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "view_layer":
             ctrl_name = "AnimeowViewLayerWorkspaceControl"
             win_title = "Animeow View Layer"
+        elif standalone_tab == "selection_sets":
+            ctrl_name = "AnimeowSelectionSetsWorkspaceControl"
+            win_title = "Selection Sets Manager"
         else:
             ctrl_name = "AnimeowGenericWorkspaceControl"
             win_title = "Animeow Tool"
@@ -4981,6 +5013,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "fav_tools":
             show_kwargs["width"] = 250
             show_kwargs["height"] = 300
+        elif standalone_tab == "selection_sets":
+            show_kwargs["width"] = 280
+            show_kwargs["height"] = 400
         ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
@@ -4995,6 +5030,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "fav_tools":
             edit_kwargs["minimumWidth"] = 250
             edit_kwargs["initialWidth"] = 250
+        elif standalone_tab == "selection_sets":
+            edit_kwargs["minimumWidth"] = 240
+            edit_kwargs["initialWidth"] = 280
         cmds.workspaceControl(ctrl_name, **edit_kwargs)
         
     if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:
