@@ -746,6 +746,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_PB_MULTI_CAM = "AnimeowTbPbMultiCam"
     OP_PB_MULTI_CAMS_LIST = "AnimeowTbPbMultiCamsList"
     OP_PB_CUSTOM_DIR = "AnimeowTbPbCustomDir"
+    OP_PB_USE_RENDER_SETTINGS = "AnimeowTbPbUseRenderSettings"
     OP_AT_SHOW_TICKS = "AnimeowTbAtShowTicks"
     OP_AT_SHOW_KEYS = "AnimeowTbAtShowKeys"
     OP_AT_TICK_SIZE = "AnimeowTbAtTickSize"
@@ -1655,6 +1656,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_height_spin.setRange(128, 4096)
         self.pb_height_spin.setValue(1080)
         dim_layout.addWidget(self.pb_height_spin)
+        
+        self.pb_render_settings_cb = QtWidgets.QCheckBox("Render Settings")
+        self.pb_render_settings_cb.setToolTip("Sử dụng kích thước từ Render Settings của Maya")
+        self.pb_render_settings_cb.toggled.connect(self.on_toggle_render_settings)
+        dim_layout.addWidget(self.pb_render_settings_cb)
+        
         pb_layout.addLayout(dim_layout, 1, 1)
         
         pb_layout.addWidget(QtWidgets.QLabel("Tỉ lệ (Scale):"), 1, 2)
@@ -2306,6 +2313,12 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if cmds.optionVar(exists=self.OP_PB_OVERWRITE):
             self.pb_overwrite_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_OVERWRITE)))
             
+        if cmds.optionVar(exists=self.OP_PB_USE_RENDER_SETTINGS):
+            use_render = bool(cmds.optionVar(query=self.OP_PB_USE_RENDER_SETTINGS))
+            self.pb_render_settings_cb.setChecked(use_render)
+            self.pb_width_spin.setEnabled(not use_render)
+            self.pb_height_spin.setEnabled(not use_render)
+            
         if cmds.optionVar(exists=self.OP_PB_MULTI_CAM):
             self.multi_cam_cb.setChecked(bool(cmds.optionVar(query=self.OP_PB_MULTI_CAM)))
         if cmds.optionVar(exists=self.OP_PB_CUSTOM_DIR):
@@ -2393,6 +2406,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(floatValue=(self.OP_PB_SCALE, self.pb_scale_spin.value()))
         cmds.optionVar(intValue=(self.OP_PB_VIEWER, int(self.pb_viewer_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_OVERWRITE, int(self.pb_overwrite_cb.isChecked())))
+        cmds.optionVar(intValue=(self.OP_PB_USE_RENDER_SETTINGS, int(self.pb_render_settings_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_PB_MULTI_CAM, int(self.multi_cam_cb.isChecked())))
         cmds.optionVar(stringValue=(self.OP_PB_CUSTOM_DIR, self.pb_dir_edit.text().strip()))
         
@@ -2919,6 +2933,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             item.setCheckState(QtCore.Qt.Checked)
 
+    def on_toggle_render_settings(self, checked):
+        self.pb_width_spin.setEnabled(not checked)
+        self.pb_height_spin.setEnabled(not checked)
+        if checked:
+            try:
+                w = cmds.getAttr("defaultResolution.width")
+                h = cmds.getAttr("defaultResolution.height")
+                self.pb_width_spin.setValue(w)
+                self.pb_height_spin.setValue(h)
+            except Exception:
+                pass
+        self.save_settings()
+
     def on_browse_pb_dir(self):
         """Mở hộp thoại chọn thư mục lưu video"""
         dir_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn Thư mục lưu Playblast", self.pb_dir_edit.text())
@@ -2975,8 +3002,18 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         fmt_text = self.pb_format_combo.currentText()
         format_ext = "avi" if "avi" in fmt_text.lower() else "qt"
         
-        width = self.pb_width_spin.value()
-        height = self.pb_height_spin.value()
+        if self.pb_render_settings_cb.isChecked():
+            try:
+                width = cmds.getAttr("defaultResolution.width")
+                height = cmds.getAttr("defaultResolution.height")
+            except Exception as e:
+                print("Không lấy được kích thước Render Settings, dùng mặc định: %s" % e)
+                width = self.pb_width_spin.value()
+                height = self.pb_height_spin.value()
+        else:
+            width = self.pb_width_spin.value()
+            height = self.pb_height_spin.value()
+            
         percent = int(self.pb_scale_spin.value() * 100)
         viewer = self.pb_viewer_cb.isChecked()
         overwrite = self.pb_overwrite_cb.isChecked()
