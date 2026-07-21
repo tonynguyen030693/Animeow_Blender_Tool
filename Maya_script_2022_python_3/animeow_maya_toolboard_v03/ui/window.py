@@ -3521,7 +3521,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_fc_get_parent(self):
         sel_util = animeow_utilities.SelectionUtility()
         if not sel_util.is_empty():
-            self.fc_parent_txt.setText(sel_util.get_first_name())
+            self.fc_parent_txt.setText(sel_util.get_first())
             self.save_settings()
         else:
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Vật chủ (Parent)!")
@@ -3529,7 +3529,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_fc_get_child(self):
         sel_util = animeow_utilities.SelectionUtility()
         if not sel_util.is_empty():
-            self.fc_child_txt.setText(sel_util.get_first_name())
+            self.fc_child_txt.setText(sel_util.get_first())
             self.save_settings()
         else:
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Vật theo (Child)!")
