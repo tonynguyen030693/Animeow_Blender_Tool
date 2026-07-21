@@ -755,6 +755,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
     OP_WB_SMART_BAKE = "AnimeowTbWbSmartBake"
     OP_WB_OBJECTS = "AnimeowTbWbObjects"
+    OP_WB_NO_CONSTRAINT = "AnimeowTbWbNoConstraint"
     OP_FC_PARENT = "AnimeowFcParent"
     OP_FC_CHILD = "AnimeowFcChild"
     OP_FC_REF_FRAME = "AnimeowFcRefFrame"
@@ -1147,7 +1148,11 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.wb_threshold_spin.setRange(0.001, 2.0)
         self.wb_threshold_spin.setValue(0.05)
         self.wb_threshold_spin.setSingleStep(0.01)
-        wb_layout.addWidget(self.wb_threshold_spin, 3, 1, 1, 3)
+        wb_layout.addWidget(self.wb_threshold_spin, 3, 1)
+        
+        self.wb_no_constraint_cb = QtWidgets.QCheckBox("Không Constraint")
+        self.wb_no_constraint_cb.setChecked(False)
+        wb_layout.addWidget(self.wb_no_constraint_cb, 3, 2, 1, 2)
         
         wb_layout.addWidget(QtWidgets.QLabel("Bake Action:"), 4, 0)
         self.wb_bake_btn = QtWidgets.QPushButton("Bake sang Locator thế giới (Record)")
@@ -2473,6 +2478,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.wb_smart_clean_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_SMART_CLEAN)))
         if cmds.optionVar(exists=self.OP_WB_SMART_BAKE):
             self.wb_smart_bake_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_SMART_BAKE)))
+        if cmds.optionVar(exists=self.OP_WB_NO_CONSTRAINT):
+            self.wb_no_constraint_cb.setChecked(bool(cmds.optionVar(query=self.OP_WB_NO_CONSTRAINT)))
         if cmds.optionVar(exists=self.OP_WB_OBJECTS):
             self.wb_objects_txt.setText(cmds.optionVar(query=self.OP_WB_OBJECTS))
             
@@ -2578,6 +2585,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_WB_SMART_BAKE, int(self.wb_smart_bake_cb.isChecked())))
         cmds.optionVar(stringValue=(self.OP_WB_OBJECTS, self.wb_objects_txt.text().strip()))
+        cmds.optionVar(intValue=(self.OP_WB_NO_CONSTRAINT, int(self.wb_no_constraint_cb.isChecked())))
         
         # Fake Constraint Settings
         cmds.optionVar(stringValue=(self.OP_FC_PARENT, self.fc_parent_txt.text().strip()))
@@ -3473,7 +3481,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     smart_clean=smart_clean,
                     channels=channels,
                     smart_bake=smart_bake,
-                    custom_name=custom_name
+                    custom_name=custom_name,
+                    no_constraint=self.wb_no_constraint_cb.isChecked()
                 )
                 success_locs.append(loc)
                 

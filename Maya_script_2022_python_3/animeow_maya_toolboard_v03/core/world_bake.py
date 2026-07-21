@@ -235,7 +235,7 @@ class WorldBakeManager(object):
         """Kiểm tra xem vật thể đã được bake sang locator chưa"""
         return self.get_associated_locator(obj) is not None
 
-    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False, custom_name=None):
+    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False, custom_name=None, no_constraint=False):
         """Bake vật thể sang một locator ở không gian thế giới"""
         if not cmds.objExists(obj):
             raise RuntimeError("Vật thể %s không tồn tại!" % obj)
@@ -281,12 +281,13 @@ class WorldBakeManager(object):
                     pass
                     
         # 4. Tạo ràng buộc ngược lại từ locator sang vật thể gốc theo kênh được chọn
-        if channels == 'translate':
-            cmds.pointConstraint(loc, obj, maintainOffset=True)
-        elif channels == 'rotate':
-            cmds.orientConstraint(loc, obj, maintainOffset=True)
-        else: # both
-            cmds.parentConstraint(loc, obj, maintainOffset=True)
+        if not no_constraint:
+            if channels == 'translate':
+                cmds.pointConstraint(loc, obj, maintainOffset=True)
+            elif channels == 'rotate':
+                cmds.orientConstraint(loc, obj, maintainOffset=True)
+            else: # both
+                cmds.parentConstraint(loc, obj, maintainOffset=True)
             
         print("[WorldBake] Đã bake thành công %s sang locator %s." % (obj, loc))
         return loc
