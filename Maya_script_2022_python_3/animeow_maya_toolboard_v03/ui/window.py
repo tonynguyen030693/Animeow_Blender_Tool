@@ -3529,51 +3529,64 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def on_fc_get_child(self):
         sel_util = animeow_utilities.SelectionUtility()
         if not sel_util.is_empty():
-            self.fc_child_txt.setText(sel_util.get_first())
+            self.fc_child_txt.setText(", ".join(sel_util.get_names()))
             self.save_settings()
         else:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Vật theo (Child)!")
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn ít nhất một đối tượng làm Vật theo (Child)!")
 
     def on_fc_record_offset(self):
+        import json
         parent = self.fc_parent_txt.text().strip()
-        child = self.fc_child_txt.text().strip()
+        child_text = self.fc_child_txt.text().strip()
         
-        if not parent or not child:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo trước khi ghi nhớ!")
+        if not parent or not child_text:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và các Vật theo trước khi ghi nhớ!")
             return
             
-        if not cmds.objExists(parent) or not cmds.objExists(child):
-            QtWidgets.QMessageBox.critical(self, "Lỗi", "Vật thể chỉ định không tồn tại trong scene!")
+        if not cmds.objExists(parent):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Vật chủ chỉ định '%s' không tồn tại trong scene!" % parent)
+            return
+            
+        children = [c.strip() for c in child_text.split(",") if c.strip()]
+        valid_children = [c for c in children if cmds.objExists(c)]
+        
+        if not valid_children:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Không tìm thấy bất kỳ Vật theo nào tồn tại trong scene!")
             return
             
         self.save_settings()
         
         try:
-            offset = fake_constraint.get_relative_offset(parent, child)
+            offsets = fake_constraint.get_multi_offsets(parent, valid_children)
+            if not offsets:
+                QtWidgets.QMessageBox.critical(self, "Lỗi", "Không thể lấy ma trận offset cho bất kỳ đối tượng nào!")
+                return
+                
             # Lưu offset và ref frame vào OptionVars
             current_frame = int(cmds.currentTime(query=True))
             cmds.optionVar(intValue=(self.OP_FC_REF_FRAME, current_frame))
             
-            # Chuyển đổi offset thành string dạng số phân tách bằng dấu phẩy
-            offset_str = ",".join(map(str, offset))
-            cmds.optionVar(stringValue=(self.OP_FC_OFFSET, offset_str))
+            # Serialize thành JSON string
+            offsets_json = json.dumps(offsets)
+            cmds.optionVar(stringValue=(self.OP_FC_OFFSET, offsets_json))
             
             self.fc_ref_frame_lbl.setText("Đã ghi nhớ tại Frame %d" % current_frame)
             self.fc_ref_frame_lbl.setStyleSheet("color: #4CAF50; font-weight: bold;")
             
             QtWidgets.QMessageBox.information(
                 self, "Thành công",
-                "Đã ghi nhớ ma trận Offset thành công giữa '%s' và '%s' tại Frame %d!" % (child, parent, current_frame)
+                "Đã ghi nhớ ma trận Offset thành công cho %d vật thể theo sau tại Frame %d!" % (len(offsets), current_frame)
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi ghi nhớ Offset:\n%s" % str(e))
 
     def on_fc_match_frame(self):
+        import json
         parent = self.fc_parent_txt.text().strip()
-        child = self.fc_child_txt.text().strip()
+        child_text = self.fc_child_txt.text().strip()
         
-        if not parent or not child:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo!")
+        if not parent or not child_text:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và các Vật theo!")
             return
             
         if not cmds.optionVar(exists=self.OP_FC_OFFSET):
@@ -3582,26 +3595,42 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         self.save_settings()
         
+        children = [c.strip() for c in child_text.split(",") if c.strip()]
+        valid_children = [c for c in children if cmds.objExists(c)]
+        
+        if not valid_children:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy bất kỳ Vật theo nào tồn tại trong scene!")
+            return
+            
         try:
-            offset_str = cmds.optionVar(query=self.OP_FC_OFFSET)
-            offset = [float(x) for x in offset_str.split(",")]
+            offsets_json = cmds.optionVar(query=self.OP_FC_OFFSET)
+            offsets = json.loads(offsets_json)
             
+            # Lọc ra các offset hợp lệ cho danh sách con hiện tại
+            active_offsets = {c: offsets[c] for c in valid_children if c in offsets}
+            
+            if not active_offsets:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy dữ liệu offset đã ghi nhớ cho các đối tượng này!")
+                return
+                
             cmds.undoInfo(openChunk=True, chunkName="AnimeowFakeConstraintMatchFrame")
-            fake_constraint.apply_relative_offset(parent, child, offset)
-            cmds.setKeyframe(child, attribute=['translate', 'rotate'])
+            fake_constraint.apply_multi_offsets(parent, active_offsets)
+            for c in active_offsets.keys():
+                cmds.setKeyframe(c, attribute=['translate', 'rotate'])
             
-            print(u"[AnimeowTool] Đã match vị trí vật theo '%s' khớp theo vật chủ '%s'." % (child, parent))
+            print(u"[AnimeowTool] Đã match vị trí %d vật thể theo sau khớp theo vật chủ '%s'." % (len(active_offsets), parent))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khớp vị trí (Match):\n%s" % str(e))
         finally:
             cmds.undoInfo(closeChunk=True)
 
     def on_fc_bake_range(self):
+        import json
         parent = self.fc_parent_txt.text().strip()
-        child = self.fc_child_txt.text().strip()
+        child_text = self.fc_child_txt.text().strip()
         
-        if not parent or not child:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo!")
+        if not parent or not child_text:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và các Vật theo!")
             return
             
         if not cmds.optionVar(exists=self.OP_FC_OFFSET):
@@ -3610,6 +3639,13 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         self.save_settings()
         
+        children = [c.strip() for c in child_text.split(",") if c.strip()]
+        valid_children = [c for c in children if cmds.objExists(c)]
+        
+        if not valid_children:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy bất kỳ Vật theo nào tồn tại trong scene!")
+            return
+            
         start = self.fc_start_spin.value()
         end = self.fc_end_spin.value()
         
@@ -3618,14 +3654,21 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         try:
-            offset_str = cmds.optionVar(query=self.OP_FC_OFFSET)
-            offset = [float(x) for x in offset_str.split(",")]
+            offsets_json = cmds.optionVar(query=self.OP_FC_OFFSET)
+            offsets = json.loads(offsets_json)
             
-            fake_constraint.bake_fake_constraint(parent, child, offset, start, end, step=1)
+            # Lọc ra các offset hợp lệ cho danh sách con hiện tại
+            active_offsets = {c: offsets[c] for c in valid_children if c in offsets}
+            
+            if not active_offsets:
+                QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy dữ liệu offset đã ghi nhớ cho các đối tượng này!")
+                return
+                
+            fake_constraint.bake_multi_fake_constraints(parent, active_offsets, start, end, step=1)
             
             QtWidgets.QMessageBox.information(
                 self, "Thành công",
-                "Đã bake thành công Fake Constraint cho '%s' theo '%s' từ Frame %d đến %d!" % (child, parent, start, end)
+                "Đã bake thành công Fake Constraint cho %d vật thể theo sau từ Frame %d đến %d!" % (len(active_offsets), start, end)
             )
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi Bake Range:\n%s" % str(e))

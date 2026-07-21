@@ -63,3 +63,58 @@ def bake_fake_constraint(parent_obj, child_obj, offset_matrix_list, start_frame,
     finally:
         cmds.currentTime(original_time, edit=True)
         cmds.undoInfo(closeChunk=True)
+
+def get_multi_offsets(parent_obj, children_list):
+    """
+    Trả về dictionary lưu ma trận offset của từng child tương đối với parent.
+    {child_name: [16 floats]}
+    """
+    offsets = {}
+    for child in children_list:
+        if cmds.objExists(child):
+            try:
+                offset = get_relative_offset(parent_obj, child)
+                offsets[child] = offset
+            except Exception as e:
+                print(u"[AnimeowTool] Bỏ qua lỗi lấy offset cho '%s': %s" % (child, str(e)))
+    return offsets
+
+def apply_multi_offsets(parent_obj, children_offsets_dict):
+    """
+    Dịch chuyển các child theo parent dựa trên ma trận offset tương ứng.
+    """
+    for child, offset in children_offsets_dict.items():
+        if cmds.objExists(child):
+            try:
+                apply_relative_offset(parent_obj, child, offset)
+            except Exception as e:
+                print(u"[AnimeowTool] Bỏ qua lỗi áp offset cho '%s': %s" % (child, str(e)))
+
+def bake_multi_fake_constraints(parent_obj, children_offsets_dict, start_frame, end_frame, step=1):
+    """
+    Bake khớp chuyển động của nhiều child theo parent cùng lúc trong một khoảng thời gian.
+    """
+    if not cmds.objExists(parent_obj) or not children_offsets_dict:
+        raise ValueError(u"Thông tin vật chủ hoặc vật theo không hợp lệ!")
+        
+    cmds.undoInfo(openChunk=True, chunkName="AnimeowBakeMultiFakeConstraints")
+    original_time = cmds.currentTime(query=True)
+    
+    try:
+        current = float(start_frame)
+        end = float(end_frame)
+        
+        while current <= end:
+            cmds.currentTime(current, edit=True)
+            apply_multi_offsets(parent_obj, children_offsets_dict)
+            for child in children_offsets_dict.keys():
+                if cmds.objExists(child):
+                    cmds.setKeyframe(child, attribute=['translate', 'rotate'])
+            current += step
+            
+        print(u"[AnimeowTool] Đã bake thành công %d vật thể theo sau từ frame %d đến %d." % (len(children_offsets_dict), start_frame, end_frame))
+    except Exception as e:
+        raise e
+    finally:
+        cmds.currentTime(original_time, edit=True)
+        cmds.undoInfo(closeChunk=True)
