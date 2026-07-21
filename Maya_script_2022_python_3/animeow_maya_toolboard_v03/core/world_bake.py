@@ -235,13 +235,13 @@ class WorldBakeManager(object):
         """Kiểm tra xem vật thể đã được bake sang locator chưa"""
         return self.get_associated_locator(obj) is not None
 
-    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False):
+    def bake_to_locator(self, obj, start_frame, end_frame, step=1, smart_clean=True, channels='both', smart_bake=False, custom_name=None):
         """Bake vật thể sang một locator ở không gian thế giới"""
         if not cmds.objExists(obj):
             raise RuntimeError("Vật thể %s không tồn tại!" % obj)
             
         clean_name = self.get_clean_name(obj)
-        locator_name = "%s%s" % (self.PREFIX, clean_name)
+        locator_name = custom_name if custom_name else ("%s%s" % (self.PREFIX, clean_name))
         
         # Xóa locator trùng cũ nếu có
         old_locs = cmds.ls(locator_name, long=True) or []

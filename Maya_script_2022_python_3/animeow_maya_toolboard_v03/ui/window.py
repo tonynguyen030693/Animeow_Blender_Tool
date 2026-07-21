@@ -3431,16 +3431,40 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if wbm.is_already_baked(obj):
                 already_baked.append(obj)
                 
+        duplicate_mode = None
         if already_baked:
-            QtWidgets.QMessageBox.warning(
-                self, "Cảnh báo",
-                "Các vật thể sau đã được Bake ra Locator thế giới trước đó rồi:\n%s\n\nVui lòng thực hiện 'Bake ngược về Vật thể nguồn (Restore)' hoặc dọn dẹp các locator cũ trước khi tiến hành Bake lại!" % ", ".join(already_baked)
+            msg = (u"Các vật thể sau đã được Bake ra Locator thế giới trước đó rồi:\n%s\n\n"
+                   u"Bạn có muốn tạo thêm locator mới (không ghi đè) không?\n\n"
+                   u"- Chọn 'Yes': Tạo thêm locator mới (ví dụ: Anm_loc_bake_pCube1_02).\n"
+                   u"- Chọn 'No': Ghi đè lên locator cũ (xóa cũ để tạo lại).\n"
+                   u"- Chọn 'Cancel': Hủy thao tác Bake." % ", ".join(already_baked))
+            
+            res = QtWidgets.QMessageBox.question(
+                self, "Xác nhận trùng lặp", msg,
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Yes
             )
-            return
+            
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Yes:
+                duplicate_mode = 'increment'
+            else:
+                duplicate_mode = 'overwrite'
             
         success_locs = []
         try:
             for obj in sel:
+                custom_name = None
+                if duplicate_mode == 'increment' and wbm.is_already_baked(obj):
+                    clean_name = wbm.get_clean_name(obj)
+                    suffix = 2
+                    new_name = "%s%s_%02d" % (wbm.PREFIX, clean_name, suffix)
+                    while cmds.objExists(new_name) or cmds.objExists("Animeow_locator|" + new_name):
+                        suffix += 1
+                        new_name = "%s%s_%02d" % (wbm.PREFIX, clean_name, suffix)
+                    custom_name = new_name
+                
                 loc = wbm.bake_to_locator(
                     obj=obj,
                     start_frame=start_frame,
@@ -3448,7 +3472,8 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     step=step,
                     smart_clean=smart_clean,
                     channels=channels,
-                    smart_bake=smart_bake
+                    smart_bake=smart_bake,
+                    custom_name=custom_name
                 )
                 success_locs.append(loc)
                 
@@ -5176,6 +5201,35 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Không tìm thấy bất kỳ vật thể nào trong scene từ danh sách chỉ định!")
             return
             
+        # Kiểm tra xem có locator nào đã tồn tại trong scene chưa
+        already_exists = []
+        for obj in sel:
+            clean_name = obj.split("|")[-1].replace(":", "_")
+            loc_name = "Anm_loc_match_" + clean_name
+            if cmds.objExists(loc_name) or cmds.objExists("Animeow_locator|" + loc_name):
+                already_exists.append(obj)
+                
+        duplicate_mode = None
+        if already_exists:
+            msg = (u"Locator cho các vật thể sau đã tồn tại trong scene:\n%s\n\n"
+                   u"Bạn có muốn tạo thêm locator mới (không ghi đè) không?\n\n"
+                   u"- Chọn 'Yes': Tạo thêm locator mới (ví dụ: Anm_loc_match_pCube1_02).\n"
+                   u"- Chọn 'No': Ghi đè (xóa các locator cũ để tạo lại).\n"
+                   u"- Chọn 'Cancel': Hủy thao tác." % ", ".join(already_exists))
+                   
+            res = QtWidgets.QMessageBox.question(
+                self, "Xác nhận trùng lặp", msg,
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Yes
+            )
+            
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Yes:
+                duplicate_mode = 'increment'
+            else:
+                duplicate_mode = 'overwrite'
+                
         cmds.undoInfo(openChunk=True, chunkName="AnimeowCreateLocatorAtSelectedOnly")
         created_locators = []
         try:
@@ -5183,14 +5237,22 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 clean_name = obj.split("|")[-1].replace(":", "_")
                 loc_name = "Anm_loc_match_" + clean_name
                 
-                # Tìm và xóa các locator trùng tên cũ để tránh trùng lặp và lỗi đổi tên khi parent
-                old_locs = cmds.ls(loc_name, long=True) or []
-                for old in old_locs:
-                    if cmds.objExists(old):
-                        try:
-                            cmds.delete(old)
-                        except Exception:
-                            pass
+                if duplicate_mode == 'increment' and (cmds.objExists(loc_name) or cmds.objExists("Animeow_locator|" + loc_name)):
+                    suffix = 2
+                    new_name = "Anm_loc_match_%s_%02d" % (clean_name, suffix)
+                    while cmds.objExists(new_name) or cmds.objExists("Animeow_locator|" + new_name):
+                        suffix += 1
+                        new_name = "Anm_loc_match_%s_%02d" % (clean_name, suffix)
+                    loc_name = new_name
+                else:
+                    # Ghi đè hoặc không trùng: Xóa các locator trùng cũ để tránh lỗi đổi tên khi parent
+                    old_locs = cmds.ls(loc_name, long=True) or []
+                    for old in old_locs:
+                        if cmds.objExists(old):
+                            try:
+                                cmds.delete(old)
+                            except Exception:
+                                pass
                             
                 # Tạo locator mới
                 loc = cmds.spaceLocator(name=loc_name)[0]
