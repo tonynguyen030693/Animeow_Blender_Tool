@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter, selection_sets, animeow_utilities
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter, selection_sets, animeow_utilities, fake_constraint
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -755,6 +755,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     OP_WB_SMART_CLEAN = "AnimeowTbWbSmartClean"
     OP_WB_SMART_BAKE = "AnimeowTbWbSmartBake"
     OP_WB_OBJECTS = "AnimeowTbWbObjects"
+    OP_FC_PARENT = "AnimeowFcParent"
+    OP_FC_CHILD = "AnimeowFcChild"
+    OP_FC_REF_FRAME = "AnimeowFcRefFrame"
+    OP_FC_OFFSET = "AnimeowFcOffset"
     OP_RT_PRECISION = "AnimeowTbRtPrecision"
     OP_RT_TARGET = "AnimeowTbRtTarget"
     
@@ -782,6 +786,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif standalone_tab == "world_bake":
                 self.WINDOW_TITLE = "Smart World Bake"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowSmartWorldBakeWorkspaceControl"
+            elif standalone_tab == "fake_constraint":
+                self.WINDOW_TITLE = "Fake Constraint"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowFakeConstraintWorkspaceControl"
             elif standalone_tab == 1:
                 self.WINDOW_TITLE = "Curve & Motion"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowCurveWorkspaceControl"
@@ -1252,6 +1259,77 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         so_layout.addLayout(space_row)
         
         tab1_layout.addWidget(so_group)
+        
+        # GroupBox: Fake Constraint (Giả lập Ràng buộc)
+        fc_group = QtWidgets.QGroupBox("Fake Constraint (Giả lập Ràng buộc)")
+        fc_layout = QtWidgets.QGridLayout(fc_group)
+        fc_layout.setContentsMargins(8, 12, 8, 8)
+        fc_layout.setSpacing(8)
+        
+        # Hàng 0: Vật chủ (Parent)
+        fc_layout.addWidget(QtWidgets.QLabel("Vật chủ (Leader/Parent):"), 0, 0)
+        self.fc_parent_txt = QtWidgets.QLineEdit()
+        self.fc_parent_txt.setPlaceholderText("Vật chủ dẫn đường...")
+        fc_layout.addWidget(self.fc_parent_txt, 0, 1, 1, 2)
+        self.fc_get_parent_btn = QtWidgets.QPushButton("Lấy chọn")
+        self.fc_get_parent_btn.clicked.connect(self.on_fc_get_parent)
+        fc_layout.addWidget(self.fc_get_parent_btn, 0, 3)
+        
+        # Hàng 1: Vật theo (Child)
+        fc_layout.addWidget(QtWidgets.QLabel("Vật theo (Follower/Child):"), 1, 0)
+        self.fc_child_txt = QtWidgets.QLineEdit()
+        self.fc_child_txt.setPlaceholderText("Vật thể theo sau...")
+        fc_layout.addWidget(self.fc_child_txt, 1, 1, 1, 2)
+        self.fc_get_child_btn = QtWidgets.QPushButton("Lấy chọn")
+        self.fc_get_child_btn.clicked.connect(self.on_fc_get_child)
+        fc_layout.addWidget(self.fc_get_child_btn, 1, 3)
+        
+        # Hàng 2: Frame tham chiếu ghi nhớ Offset
+        fc_layout.addWidget(QtWidgets.QLabel("Frame ghi nhớ Offset:"), 2, 0)
+        self.fc_ref_frame_lbl = QtWidgets.QLabel("Chưa ghi nhớ")
+        self.fc_ref_frame_lbl.setStyleSheet("color: #FFA726; font-weight: bold;")
+        fc_layout.addWidget(self.fc_ref_frame_lbl, 2, 1, 1, 3)
+        
+        # Hàng 3: Các nút chức năng
+        self.fc_record_btn = QtWidgets.QPushButton("1. Ghi nhớ Offset tại Frame hiện tại")
+        self.fc_record_btn.setIcon(AnimeowIcons.icon_world())
+        self.fc_record_btn.setFixedHeight(26)
+        self.fc_record_btn.clicked.connect(self.on_fc_record_offset)
+        fc_layout.addWidget(self.fc_record_btn, 3, 1, 1, 3)
+        
+        self.fc_match_btn = QtWidgets.QPushButton("2. Match tới Frame hiện tại")
+        self.fc_match_btn.setIcon(AnimeowIcons.icon_reset())
+        self.fc_match_btn.setFixedHeight(26)
+        self.fc_match_btn.clicked.connect(self.on_fc_match_frame)
+        fc_layout.addWidget(self.fc_match_btn, 4, 1, 1, 3)
+        
+        # Hàng 4: Bake khoảng thời gian
+        bake_row = QtWidgets.QHBoxLayout()
+        bake_row.addWidget(QtWidgets.QLabel("Từ:"))
+        self.fc_start_spin = QtWidgets.QSpinBox()
+        self.fc_start_spin.setRange(-999999, 999999)
+        self.fc_start_spin.setValue(1)
+        bake_row.addWidget(self.fc_start_spin)
+        
+        bake_row.addWidget(QtWidgets.QLabel("Đến:"))
+        self.fc_end_spin = QtWidgets.QSpinBox()
+        self.fc_end_spin.setRange(-999999, 999999)
+        self.fc_end_spin.setValue(120)
+        bake_row.addWidget(self.fc_end_spin)
+        
+        self.fc_bake_btn = QtWidgets.QPushButton("3. Bake Range")
+        self.fc_bake_btn.setIcon(AnimeowIcons.icon_bake())
+        self.fc_bake_btn.setFixedHeight(26)
+        self.fc_bake_btn.clicked.connect(self.on_fc_bake_range)
+        
+        fc_layout.addLayout(bake_row, 5, 1, 1, 2)
+        fc_layout.addWidget(self.fc_bake_btn, 5, 3)
+        
+        tab1_layout.addWidget(fc_group)
+        
+        if self.standalone_tab != "fake_constraint":
+            fc_group.hide()
+            
         tab1_layout.addStretch()
 
         # =========================================================================
@@ -1839,6 +1917,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     ns_group.hide()
                     tp_group.hide()
                     so_group.hide()
+                    fc_group.hide()
                 except Exception:
                     pass
             elif self.standalone_tab == "world_bake":
@@ -1847,6 +1926,19 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     t1_title.hide()
                     link_group.hide()
                     qc_group.hide()
+                    ns_group.hide()
+                    tp_group.hide()
+                    so_group.hide()
+                    fc_group.hide()
+                except Exception:
+                    pass
+            elif self.standalone_tab == "fake_constraint":
+                self.tab_widget.addTab(wrap_in_scroll(tab1), "Fake Constraint")
+                try:
+                    t1_title.hide()
+                    link_group.hide()
+                    qc_group.hide()
+                    wb_group.hide()
                     ns_group.hide()
                     tp_group.hide()
                     so_group.hide()
@@ -2393,6 +2485,25 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             sel_util = animeow_utilities.SelectionUtility()
             if not sel_util.is_empty():
                 self.wb_objects_txt.setText(", ".join(sel_util.get_names()))
+                
+        # Fake Constraint Settings
+        if cmds.optionVar(exists=self.OP_FC_PARENT):
+            self.fc_parent_txt.setText(cmds.optionVar(query=self.OP_FC_PARENT))
+        if cmds.optionVar(exists=self.OP_FC_CHILD):
+            self.fc_child_txt.setText(cmds.optionVar(query=self.OP_FC_CHILD))
+        if cmds.optionVar(exists=self.OP_FC_REF_FRAME):
+            ref_frame = cmds.optionVar(query=self.OP_FC_REF_FRAME)
+            self.fc_ref_frame_lbl.setText("Đã ghi nhớ tại Frame %d" % ref_frame)
+            self.fc_ref_frame_lbl.setStyleSheet("color: #4CAF50; font-weight: bold;")
+        else:
+            self.fc_ref_frame_lbl.setText("Chưa ghi nhớ")
+            self.fc_ref_frame_lbl.setStyleSheet("color: #FFA726; font-weight: bold;")
+            
+        try:
+            self.fc_start_spin.setValue(int(cmds.playbackOptions(q=True, minTime=True)))
+            self.fc_end_spin.setValue(int(cmds.playbackOptions(q=True, maxTime=True)))
+        except Exception:
+            pass
             
         # Round Tool Settings
         if cmds.optionVar(exists=self.OP_RT_PRECISION):
@@ -2472,6 +2583,10 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.optionVar(intValue=(self.OP_WB_SMART_CLEAN, int(self.wb_smart_clean_cb.isChecked())))
         cmds.optionVar(intValue=(self.OP_WB_SMART_BAKE, int(self.wb_smart_bake_cb.isChecked())))
         cmds.optionVar(stringValue=(self.OP_WB_OBJECTS, self.wb_objects_txt.text().strip()))
+        
+        # Fake Constraint Settings
+        cmds.optionVar(stringValue=(self.OP_FC_PARENT, self.fc_parent_txt.text().strip()))
+        cmds.optionVar(stringValue=(self.OP_FC_CHILD, self.fc_child_txt.text().strip()))
         
         # Round Tool Settings
         if hasattr(self, 'round_precision_combo'):
@@ -3402,6 +3517,118 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self, "Lỗi World Bake",
                 "Lỗi xảy ra khi Bake ngược trở về:\n%s" % world_bake.exception_to_unicode(e)
             )
+
+    def on_fc_get_parent(self):
+        sel_util = animeow_utilities.SelectionUtility()
+        if not sel_util.is_empty():
+            self.fc_parent_txt.setText(sel_util.get_first_name())
+            self.save_settings()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Vật chủ (Parent)!")
+
+    def on_fc_get_child(self):
+        sel_util = animeow_utilities.SelectionUtility()
+        if not sel_util.is_empty():
+            self.fc_child_txt.setText(sel_util.get_first_name())
+            self.save_settings()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Hãy chọn một đối tượng làm Vật theo (Child)!")
+
+    def on_fc_record_offset(self):
+        parent = self.fc_parent_txt.text().strip()
+        child = self.fc_child_txt.text().strip()
+        
+        if not parent or not child:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo trước khi ghi nhớ!")
+            return
+            
+        if not cmds.objExists(parent) or not cmds.objExists(child):
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Vật thể chỉ định không tồn tại trong scene!")
+            return
+            
+        self.save_settings()
+        
+        try:
+            offset = fake_constraint.get_relative_offset(parent, child)
+            # Lưu offset và ref frame vào OptionVars
+            current_frame = int(cmds.currentTime(query=True))
+            cmds.optionVar(intValue=(self.OP_FC_REF_FRAME, current_frame))
+            
+            # Chuyển đổi offset thành string dạng số phân tách bằng dấu phẩy
+            offset_str = ",".join(map(str, offset))
+            cmds.optionVar(stringValue=(self.OP_FC_OFFSET, offset_str))
+            
+            self.fc_ref_frame_lbl.setText("Đã ghi nhớ tại Frame %d" % current_frame)
+            self.fc_ref_frame_lbl.setStyleSheet("color: #4CAF50; font-weight: bold;")
+            
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã ghi nhớ ma trận Offset thành công giữa '%s' và '%s' tại Frame %d!" % (child, parent, current_frame)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi ghi nhớ Offset:\n%s" % str(e))
+
+    def on_fc_match_frame(self):
+        parent = self.fc_parent_txt.text().strip()
+        child = self.fc_child_txt.text().strip()
+        
+        if not parent or not child:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo!")
+            return
+            
+        if not cmds.optionVar(exists=self.OP_FC_OFFSET):
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Bạn chưa ghi nhớ ma trận Offset. Vui lòng bấm nút 'Ghi nhớ Offset' trước!")
+            return
+            
+        self.save_settings()
+        
+        try:
+            offset_str = cmds.optionVar(query=self.OP_FC_OFFSET)
+            offset = [float(x) for x in offset_str.split(",")]
+            
+            cmds.undoInfo(openChunk=True, chunkName="AnimeowFakeConstraintMatchFrame")
+            fake_constraint.apply_relative_offset(parent, child, offset)
+            cmds.setKeyframe(child, attribute=['translate', 'rotate'])
+            
+            print(u"[AnimeowTool] Đã match vị trí vật theo '%s' khớp theo vật chủ '%s'." % (child, parent))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi khớp vị trí (Match):\n%s" % str(e))
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    def on_fc_bake_range(self):
+        parent = self.fc_parent_txt.text().strip()
+        child = self.fc_child_txt.text().strip()
+        
+        if not parent or not child:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Vui lòng chỉ định cả Vật chủ và Vật theo!")
+            return
+            
+        if not cmds.optionVar(exists=self.OP_FC_OFFSET):
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Bạn chưa ghi nhớ ma trận Offset. Vui lòng bấm nút 'Ghi nhớ Offset' trước!")
+            return
+            
+        self.save_settings()
+        
+        start = self.fc_start_spin.value()
+        end = self.fc_end_spin.value()
+        
+        if start > end:
+            QtWidgets.QMessageBox.warning(self, "Cảnh báo", "Frame bắt đầu phải nhỏ hơn hoặc bằng Frame kết thúc!")
+            return
+            
+        try:
+            offset_str = cmds.optionVar(query=self.OP_FC_OFFSET)
+            offset = [float(x) for x in offset_str.split(",")]
+            
+            fake_constraint.bake_fake_constraint(parent, child, offset, start, end, step=1)
+            
+            QtWidgets.QMessageBox.information(
+                self, "Thành công",
+                "Đã bake thành công Fake Constraint cho '%s' theo '%s' từ Frame %d đến %d!" % (child, parent, start, end)
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Lỗi", "Lỗi Bake Range:\n%s" % str(e))
 
     def on_create_custom_shelf(self):
         """Khởi tạo hoặc cập nhật thanh công cụ nhanh Shelf Animeow"""
@@ -5127,6 +5354,14 @@ def show_window(tab_index=None, standalone_tab=None):
                     cmds.windowPref(ctrl_name, remove=True)
             except Exception:
                 pass
+        elif standalone_tab == "fake_constraint":
+            ctrl_name = "AnimeowFakeConstraintWorkspaceControl"
+            win_title = "Fake Constraint"
+            try:
+                if cmds.windowPref(ctrl_name, exists=True):
+                    cmds.windowPref(ctrl_name, remove=True)
+            except Exception:
+                pass
         elif standalone_tab == 1:
             ctrl_name = "AnimeowCurveWorkspaceControl"
             win_title = "Curve & Motion"
@@ -5224,6 +5459,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "world_bake":
             show_kwargs["width"] = 350
             show_kwargs["height"] = 285
+        elif standalone_tab == "fake_constraint":
+            show_kwargs["width"] = 350
+            show_kwargs["height"] = 250
         ui_instance.show(**show_kwargs)
     
     # 6. Cập nhật tiêu đề hiển thị cho tab trong Maya
@@ -5246,6 +5484,11 @@ def show_window(tab_index=None, standalone_tab=None):
             edit_kwargs["initialWidth"] = 350
             edit_kwargs["minimumHeight"] = 200
             edit_kwargs["initialHeight"] = 285
+        elif standalone_tab == "fake_constraint":
+            edit_kwargs["minimumWidth"] = 300
+            edit_kwargs["initialWidth"] = 350
+            edit_kwargs["minimumHeight"] = 200
+            edit_kwargs["initialHeight"] = 250
         cmds.workspaceControl(ctrl_name, **edit_kwargs)
         
     if tab_index is not None and is_ui_alive(ui_instance) and standalone_tab is None:

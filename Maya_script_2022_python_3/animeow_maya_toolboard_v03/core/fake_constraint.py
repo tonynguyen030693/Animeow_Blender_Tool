@@ -1,0 +1,65 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function, absolute_import, division
+import maya.cmds as cmds
+import maya.api.OpenMaya as om
+
+def get_relative_offset(parent_obj, child_obj):
+    """
+    Tính toán và trả về ma trận offset của child_obj tương đối với parent_obj
+    dưới dạng danh sách 16 số thực.
+    """
+    if not cmds.objExists(parent_obj) or not cmds.objExists(child_obj):
+        raise ValueError(u"Vật thể không tồn tại trong Scene!")
+        
+    parent_mat_list = cmds.xform(parent_obj, query=True, worldSpace=True, matrix=True)
+    child_mat_list = cmds.xform(child_obj, query=True, worldSpace=True, matrix=True)
+    
+    parent_mat = om.MMatrix(parent_mat_list)
+    child_mat = om.MMatrix(child_mat_list)
+    
+    # L = W_child * W_parent.inverse()
+    offset_mat = child_mat * parent_mat.inverse()
+    return list(offset_mat)
+
+def apply_relative_offset(parent_obj, child_obj, offset_matrix_list):
+    """
+    Dịch chuyển child_obj theo parent_obj sử dụng ma trận offset đã lưu.
+    """
+    if not cmds.objExists(parent_obj) or not cmds.objExists(child_obj):
+        return
+        
+    parent_mat_list = cmds.xform(parent_obj, query=True, worldSpace=True, matrix=True)
+    parent_mat = om.MMatrix(parent_mat_list)
+    offset_mat = om.MMatrix(offset_matrix_list)
+    
+    # W_child_new = L * W_parent_new
+    new_child_mat = offset_mat * parent_mat
+    
+    cmds.xform(child_obj, worldSpace=True, matrix=list(new_child_mat))
+
+def bake_fake_constraint(parent_obj, child_obj, offset_matrix_list, start_frame, end_frame, step=1):
+    """
+    Bake khớp chuyển động của child_obj theo parent_obj trong một khoảng thời gian.
+    """
+    if not cmds.objExists(parent_obj) or not cmds.objExists(child_obj):
+        raise ValueError(u"Vật thể không tồn tại!")
+        
+    cmds.undoInfo(openChunk=True, chunkName="AnimeowBakeFakeConstraint")
+    original_time = cmds.currentTime(query=True)
+    
+    try:
+        current = float(start_frame)
+        end = float(end_frame)
+        
+        while current <= end:
+            cmds.currentTime(current, edit=True)
+            apply_relative_offset(parent_obj, child_obj, offset_matrix_list)
+            cmds.setKeyframe(child_obj, attribute=['translate', 'rotate'])
+            current += step
+            
+        print(u"[AnimeowTool] Đã bake Fake Constraint thành công từ frame %d đến %d." % (start_frame, end_frame))
+    except Exception as e:
+        raise e
+    finally:
+        cmds.currentTime(original_time, edit=True)
+        cmds.undoInfo(closeChunk=True)

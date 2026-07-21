@@ -601,6 +601,12 @@ def create_shelf():
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='world_bake')".format(pkg=package_name)
         },
         {
+            "label": "FakeConst",
+            "annotation": "Mở cửa sổ Fake Constraint độc lập",
+            "image": get_icon("fake_const_icon.png", "parentConstraint.png"),
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='fake_constraint')".format(pkg=package_name)
+        },
+        {
             "label": "Curve",
             "annotation": "Mở cửa sổ Curve & Motion độc lập",
             "image": get_icon("curve_icon.png", "menuIconWindow.png"),
