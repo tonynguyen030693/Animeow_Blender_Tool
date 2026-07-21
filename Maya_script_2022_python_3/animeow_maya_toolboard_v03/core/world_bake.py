@@ -23,7 +23,9 @@ def parent_to_animeow_group(node_name):
     
     current_parent = cmds.listRelatives(node_name, parent=True)
     if not current_parent or current_parent[0] != grp:
-        cmds.parent(node_name, grp)
+        new_nodes = cmds.parent(node_name, grp)
+        return new_nodes[0] if new_nodes else node_name
+    return node_name
 
 def clean_empty_animeow_group():
     """Xóa group Animeow_locator nếu nó trống rỗng"""
@@ -242,11 +244,13 @@ class WorldBakeManager(object):
         locator_name = "%s%s" % (self.PREFIX, clean_name)
         
         # Xóa locator trùng cũ nếu có
-        if cmds.objExists(locator_name):
-            try:
-                cmds.delete(locator_name)
-            except Exception:
-                pass
+        old_locs = cmds.ls(locator_name, long=True) or []
+        for old in old_locs:
+            if cmds.objExists(old):
+                try:
+                    cmds.delete(old)
+                except Exception:
+                    pass
                 
         # 1. Tạo locator mới tại vị trí vật thể
         loc = cmds.spaceLocator(name=locator_name)[0]
@@ -257,7 +261,7 @@ class WorldBakeManager(object):
             cmds.setAttr(loc + ".localScale" + axis, 1.5)
             
         # Đưa vào group quản lý chung
-        parent_to_animeow_group(loc)
+        loc = parent_to_animeow_group(loc)
         
         # Ghi nhận kết nối
         cmds.addAttr(loc, longName='animeow_bakeSource', attributeType='message')

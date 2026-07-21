@@ -5180,9 +5180,20 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         created_locators = []
         try:
             for obj in sel:
-                # Tạo locator mới
                 clean_name = obj.split("|")[-1].replace(":", "_")
-                loc = cmds.spaceLocator(name="Anm_loc_match_" + clean_name)[0]
+                loc_name = "Anm_loc_match_" + clean_name
+                
+                # Tìm và xóa các locator trùng tên cũ để tránh trùng lặp và lỗi đổi tên khi parent
+                old_locs = cmds.ls(loc_name, long=True) or []
+                for old in old_locs:
+                    if cmds.objExists(old):
+                        try:
+                            cmds.delete(old)
+                        except Exception:
+                            pass
+                            
+                # Tạo locator mới
+                loc = cmds.spaceLocator(name=loc_name)[0]
                 
                 # Match vị trí và hướng xoay của vật thể gốc
                 cmds.matchTransform(loc, obj, pos=True, rot=True)
@@ -5193,7 +5204,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 # Đưa vào group quản lý chung Animeow_locator
                 try:
                     from ..core import smart_link
-                    smart_link.parent_to_animeow_group(loc)
+                    loc = smart_link.parent_to_animeow_group(loc)
                 except Exception:
                     pass
                     
