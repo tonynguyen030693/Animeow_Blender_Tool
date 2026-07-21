@@ -655,6 +655,12 @@ def create_shelf():
             "command": common_path_init + "import maya.mel as mel; import os; f=os.path.join('{parent}', '{pkg}', 'mel', 'motionTrailToCurve.mel').replace('\\\\','/'); mel.eval('source \"'+f+'\";'); mel.eval('motionTrailToCurve();')".format(parent=parent_dir, pkg=package_name)
         },
         {
+            "label": "L.Scale",
+            "annotation": "Mở hộp công cụ Curve Local Scale (NP_curveLocalScale)",
+            "image": "autoTangent.png",
+            "command": common_path_init + "import maya.mel as mel; import os; f=os.path.join('{parent}', '{pkg}', 'mel', 'NP_curveLocalScale.mel').replace('\\\\','/'); mel.eval('source \"'+f+'\";')".format(parent=parent_dir, pkg=package_name)
+        },
+        {
             "label": "Hider",
             "annotation": "Khởi chạy ANM Hider (Ẩn/Hiện bộ phận nhân vật)",
             "image": get_icon(os.path.join("Icons_Hider", "Hider_Icon.png"), "commandButton.png"),
