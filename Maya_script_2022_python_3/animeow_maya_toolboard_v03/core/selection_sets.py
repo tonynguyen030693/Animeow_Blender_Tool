@@ -307,6 +307,25 @@ class SelectionSetsManagerUI(QtWidgets.QWidget):
         
         return item
 
+    def is_under_animeow_sets(self, set_node):
+        """Kiểm tra đệ quy xem set_node có được chứa trong group Animeow_sets hay không"""
+        curr = set_node
+        visited = set()
+        while curr:
+            if curr in visited:
+                break
+            visited.add(curr)
+            parents = cmds.listConnections(curr + ".message", destination=True, source=False, type="objectSet") or []
+            if "Animeow_sets" in parents:
+                return True
+            next_parent = None
+            for p in parents:
+                if p != curr:
+                    next_parent = p
+                    break
+            curr = next_parent
+        return False
+
     def refresh_sets(self):
         """Lọc và tải danh sách Selection Sets phân cấp trong scene hiện tại"""
         # Lưu các set đang được chọn để khôi phục lại sau khi làm mới
@@ -331,6 +350,18 @@ class SelectionSetsManagerUI(QtWidgets.QWidget):
             # Đảm bảo node type chính xác là objectSet (loại trừ character, partition kế thừa từ objectSet)
             if cmds.nodeType(s) != "objectSet":
                 continue
+                
+            # LỌC CHỈ NHẬN DIỆN SET CỦA ANIMEOW:
+            # 1. Có tên cơ bản bắt đầu bằng ANM_ (bỏ qua Namespace)
+            base_name = s.split(":")[-1]
+            is_anm = base_name.upper().startswith("ANM_")
+            
+            # 2. Hoặc được chứa trong group cha Animeow_sets
+            is_nested = self.is_under_animeow_sets(s)
+            
+            if not is_anm and not is_nested:
+                continue
+                
             self.sets_list.append(s)
 
         # Xây dựng mối quan hệ cha-con dựa trên kết nối connection trong Maya
