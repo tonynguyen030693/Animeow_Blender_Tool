@@ -684,12 +684,7 @@ def create_shelf():
             "image": "parentConstraint.png",
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='quick_const')".format(pkg=package_name)
         },
-        {
-            "label": "ViewL",
-            "annotation": "Mở hộp công cụ Animeow View Layer độc lập",
-            "image": "polyMesh.png",
-            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='view_layer')".format(pkg=package_name)
-        },
+
         {
             "label": "Sets",
             "annotation": "Mở hộp công cụ Selection Sets độc lập",

@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, animeow_view_layer, fix_jitter, selection_sets, animeow_utilities, fake_constraint
+from ..core import smart_link, playblast, arc_tracker, world_bake, round_tool, space_order_tool, retarget_tool, mirror_tool, temp_pivot, shelf, tween_machine, fix_jitter, selection_sets, animeow_utilities, fake_constraint
 
 # ---------------------------------------------------------------------------
 # AnimBot-inspired Professional Color Palette
@@ -1977,9 +1977,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     self.curve_group.hide()
                 except Exception:
                     pass
-            elif self.standalone_tab == "view_layer":
-                tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
-                self.tab_widget.addTab(tab_view_layer, "View Layer")
             elif self.standalone_tab == "selection_sets":
                 tab_selection_sets = selection_sets.SelectionSetsManagerUI()
                 self.tab_widget.addTab(tab_selection_sets, "Selection Sets")
@@ -2398,8 +2395,6 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.tab_widget.addTab(wrap_in_scroll(tab2), "Curve & Motion")
             self.tab_widget.addTab(wrap_in_scroll(tab3), "Rig & Mirror")
             self.tab_widget.addTab(wrap_in_scroll(tab4), "Output & Scene")
-            tab_view_layer = animeow_view_layer.AnimeowViewLayerUI()
-            self.tab_widget.addTab(tab_view_layer, "View Layer")
             tab_selection_sets = selection_sets.SelectionSetsManagerUI()
             self.tab_widget.addTab(tab_selection_sets, "Selection Sets")
             self.tab_widget.addTab(wrap_in_scroll(tab5), "Launchers")
@@ -5429,9 +5424,6 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "fav_tools":
             ctrl_name = "AnimeowFavoriteToolsWorkspaceControl"
             win_title = "Favorite Tools"
-        elif standalone_tab == "view_layer":
-            ctrl_name = "AnimeowViewLayerWorkspaceControl"
-            win_title = "Animeow View Layer"
         elif standalone_tab == "selection_sets":
             ctrl_name = "AnimeowSelectionSetsWorkspaceControl"
             win_title = "Selection Sets Manager"
