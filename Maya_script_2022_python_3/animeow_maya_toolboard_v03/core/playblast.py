@@ -118,9 +118,23 @@ class PlayblastManager(object):
             if cmds.timeControl(g_slider, exists=True):
                 active_sound = cmds.timeControl(g_slider, query=True, sound=True)
         except Exception:
+            pass
+            
+        # Dự phòng: Nếu không lấy được qua timeControl (hoặc rỗng), lấy audio node đầu tiên trong scene
+        if not active_sound:
             sounds = cmds.ls(type="audio")
             if sounds:
                 active_sound = sounds[0]
+                
+        # Kiểm tra xem audio node có bị mute không và unmute để đảm bảo phát ra tiếng
+        if active_sound and cmds.objExists(active_sound):
+            try:
+                if cmds.getAttr(active_sound + ".mute"):
+                    cmds.setAttr(active_sound + ".mute", False)
+                    print(u"[Playblast] Phát hiện audio node '%s' bị mute, đã tự động unmute để xuất video." % active_sound)
+            except Exception:
+                pass
+                
         return active_sound
 
     def get_playblast_path(self):
