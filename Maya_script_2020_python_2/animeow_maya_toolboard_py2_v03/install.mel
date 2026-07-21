@@ -1,0 +1,74 @@
+// -*- mode: mel -*-
+// Animeow Maya Toolboard Drag-and-Drop Installer
+// Drag and drop this file into Maya viewport to install the toolboard shelf button.
+
+global proc string animeow_tb_get_installer_path() {
+    string $whatIs = `whatIs animeow_tb_get_installer_path`;
+    string $prefix = "Mel procedure found in: ";
+    string $path = "";
+    if (`gmatch $whatIs ($prefix + "*")`) {
+        $path = `substring $whatIs (size($prefix) + 1) (size($whatIs))`;
+    }
+    return $path;
+}
+
+global proc animeow_tb_install() {
+    string $filePath = `animeow_tb_get_installer_path`;
+    if ($filePath == "") {
+        error "Khong the tu dong tim thay duong dan installer. Vui long cai dat thu cong.";
+        return;
+    }
+    
+    // Chuan hoa duong dan
+    $filePath = `substituteAllString $filePath "\\" "/"`;
+    
+    // Lay thu muc cha cua installer
+    string $installDir = `match "^.*/" $filePath`;
+    
+    // Bo ky tu "/" cuoi cung
+    string $cleanPath = `substring $installDir 1 (size($installDir) - 1)`;
+    // Lay ten thu muc hien tai (vi du: animeow_maya_toolboard_py2_v03)
+    string $folderName = `match "[^/]+$" $cleanPath`;
+    // Lay thu muc cha (vi du: E:/AI_Work/Blender_Maya_Script/Maya_script_2020_python_2/)
+    string $parentDir = `substitute ($folderName + "/") $installDir ""`;
+    
+    // Tao script Python de khoi chay
+    string $pyCmd = "import sys\n";
+    $pyCmd += "path = '" + $parentDir + "'\n";
+    $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
+    $pyCmd += "for m in list(sys.modules.keys()):\n";
+    $pyCmd += "    if m.startswith('" + $folderName + "'):\n";
+    $pyCmd += "        del sys.modules[m]\n";
+    $pyCmd += "import " + $folderName + "\n";
+    $pyCmd += "import " + $folderName + ".menu as menu\n";
+    $pyCmd += "menu.create_menu()\n";
+    $pyCmd += "import " + $folderName + "\n";
+    $pyCmd += $folderName + ".show()\n";
+    
+    // Tim Shelf hien tai de them nut
+    global string $gShelfTopLevel;
+    if (`tabLayout -exists $gShelfTopLevel`) {
+        string $currentShelf = `tabLayout -q -selectTab $gShelfTopLevel`;
+        setParent $currentShelf;
+        
+        // Tao nut bam moi tren Shelf
+        shelfButton
+            -label "Animeow Toolboard"
+            -annotation "Mo bo cong cu Smart Link (Double Locator System) Animeow Toolboard"
+            -image1 "fileOpen.png"
+            -command $pyCmd
+            -sourceType "python"
+            -style "iconOnly"
+            -imageOverlayLabel "ATB";
+            
+        confirmDialog 
+            -title "Thanh Cong" 
+            -message "Da tao nut bam 'ATB' (Smart Link) thanh cong tren Shelf hien hanh va dang ky vao menu Animeow!" 
+            -button "Tuyet voi";
+    } else {
+        error "Khong tim thay thanh Shelf hien hanh. Vui long chay thu cong bang ma Python.";
+    }
+}
+
+// Thuc thi cai dat
+animeow_tb_install();
