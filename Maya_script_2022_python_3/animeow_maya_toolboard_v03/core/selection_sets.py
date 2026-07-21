@@ -654,8 +654,21 @@ class SelectionSetsManagerUI(QtWidgets.QWidget):
             return
 
         set_name = text.strip()
-        sel = cmds.ls(selection=True) or []
         
+        # Đảm bảo tên Set do tool tạo ra luôn có tiền tố ANM_ (sau Namespace nếu có)
+        if ":" in set_name:
+            parts = set_name.rsplit(":", 1)
+            ns = parts[0] + ":"
+            base = parts[1]
+        else:
+            ns = ""
+            base = set_name
+            
+        if not base.upper().startswith("ANM_"):
+            base = "ANM_" + base
+        set_name = ns + base
+
+        sel = cmds.ls(selection=True) or []
         selected_sets = self.get_selected_sets()
         
         with MayaUndoChunk():
@@ -697,6 +710,20 @@ class SelectionSetsManagerUI(QtWidgets.QWidget):
             return
 
         new_name = text.strip()
+        
+        # Đảm bảo tên Set đổi mới luôn có tiền tố ANM_
+        if ":" in new_name:
+            parts = new_name.rsplit(":", 1)
+            ns = parts[0] + ":"
+            base = parts[1]
+        else:
+            ns = ""
+            base = new_name
+            
+        if not base.upper().startswith("ANM_"):
+            base = "ANM_" + base
+        new_name = ns + base
+
         with MayaUndoChunk():
             renamed = cmds.rename(old_name, new_name)
         
@@ -885,6 +912,19 @@ class SelectionSetsManagerUI(QtWidgets.QWidget):
                 # Áp namespace hiện tại đang chọn
                 if current_namespace:
                     target_set = current_namespace + target_set
+                    
+                # Đảm bảo tên Set luôn có tiền tố ANM_ (sau Namespace nếu có)
+                if ":" in target_set:
+                    parts = target_set.rsplit(":", 1)
+                    ns = parts[0] + ":"
+                    base = parts[1]
+                else:
+                    ns = ""
+                    base = target_set
+                    
+                if not base.upper().startswith("ANM_"):
+                    base = "ANM_" + base
+                target_set = ns + base
                 
                 # Tạo set nếu chưa tồn tại trong scene
                 if not cmds.objExists(target_set):
