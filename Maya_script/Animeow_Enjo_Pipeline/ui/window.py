@@ -2442,27 +2442,57 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         scroll_layout.addWidget(combine_group)
 
-        # ---- KHU VUC 3: Tien ich ----
-        util_group = QtWidgets.QGroupBox(u"Tien ich")
-        util_layout = QtWidgets.QHBoxLayout(util_group)
-        util_layout.setContentsMargins(8, 12, 8, 8)
+        # ---- KHU VUC 3: Tien ich & Thu vien ----
+        util_group = QtWidgets.QGroupBox(u"Tien ich & Thu vien Studio Library")
+        util_layout = QtWidgets.QVBoxLayout(util_group)
+        util_layout.setContentsMargins(10, 12, 10, 10)
         util_layout.setSpacing(8)
 
-        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Mo Studio Library UI")
-        self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library cua Du an hien tai.\nChuot phai: Chon mo nhanh Kidsong, Lolo hoac Manager.")
+        # Hang 1: 2 Nut mo nhanh Studio Library cho Kidsong va Lolo (Enjo)
+        stlib_btn_row = QtWidgets.QHBoxLayout()
+        stlib_btn_row.setSpacing(8)
+
+        self.sm_kidsong_stlib_btn = QtWidgets.QPushButton(u"🎵 Studio Library Kidsong")
+        self.sm_kidsong_stlib_btn.setObjectName("accent_btn")
+        self.sm_kidsong_stlib_btn.setToolTip(u"Mo thu vien Studio Library Kidsong:\nZ:\\Animeow_Production\\Enjo_Library\\Kidsong")
+        self.sm_kidsong_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\Kidsong",
+            library_name="Kidsong Studio Library"
+        ))
+
+        self.sm_lolo_stlib_btn = QtWidgets.QPushButton(u"🦁 Studio Library Lolo (Enjo)")
+        self.sm_lolo_stlib_btn.setObjectName("accent_btn")
+        self.sm_lolo_stlib_btn.setToolTip(u"Mo thu vien Studio Library Lolo / Enjo:\nZ:\\Animeow_Production\\Enjo_Library\\Lolo")
+        self.sm_lolo_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\Lolo",
+            library_name="Lolo (Enjo) Studio Library"
+        ))
+
+        stlib_btn_row.addWidget(self.sm_kidsong_stlib_btn)
+        stlib_btn_row.addWidget(self.sm_lolo_stlib_btn)
+        util_layout.addLayout(stlib_btn_row)
+
+        # Hang 2: Cac nut tien ich va quan ly thu vien
+        other_util_row = QtWidgets.QHBoxLayout()
+        other_util_row.setSpacing(8)
+
+        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Studio Library Du An")
+        self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library cua Du an dang chon.\nChuot phai: Chon mo nhanh hoac Quan ly.")
         self.sm_open_stlib_btn.clicked.connect(lambda: self.on_open_studio_library())
         self.sm_open_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.sm_open_stlib_btn.customContextMenuRequested.connect(self.show_studiolibrary_context_menu)
-        util_layout.addWidget(self.sm_open_stlib_btn)
+        other_util_row.addWidget(self.sm_open_stlib_btn)
 
         self.sm_manage_stlib_btn = QtWidgets.QPushButton(u"⚙️ Studio Library Manager")
         self.sm_manage_stlib_btn.setToolTip(u"Quan ly danh sach cac Thu vien Studio Library cua du an")
         self.sm_manage_stlib_btn.clicked.connect(self.on_open_studiolibrary_manager)
-        util_layout.addWidget(self.sm_manage_stlib_btn)
+        other_util_row.addWidget(self.sm_manage_stlib_btn)
 
-        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat Bookmarks ra CSV")
+        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat CSV Bookmarks")
         self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
-        util_layout.addWidget(self.sm_export_csv_btn)
+        other_util_row.addWidget(self.sm_export_csv_btn)
+
+        util_layout.addLayout(other_util_row)
 
         scroll_layout.addWidget(util_group)
         scroll_layout.addStretch()
