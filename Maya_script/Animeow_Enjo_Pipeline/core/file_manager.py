@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division
+from __future__ import print_function, division
 
 import os
 import re
@@ -797,12 +797,6 @@ class FileManager(object):
         combine_dir = os.path.join(self.project_root, project, episode, "Published", "Combine_File")
         return os.path.normpath(combine_dir)
 
-    def get_project_studiolibrary_dir(self, project):
-        """
-        Tra ve duong dan thu muc Studio Library dung chung cua Du an.
-        Mac dinh:
-          - KidSong -> Z:\Animeow_Production\Enjo_Library\Kidsong
-          - Lolo / Enjo -> Z:\Animeow_Production\Enjo_Library\Lolo
     def get_project_studiolibrary_dir(self, project=None):
         """Lay duong dan Thu vien Studio Library tong (Z:\Animeow_Production\Enjo_Library) dung chung cho tat ca du an"""
         library_root = os.path.join(os.path.dirname(self.project_root), "Enjo_Library")
