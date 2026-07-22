@@ -31,12 +31,14 @@ global proc animeow_toolkit_install() {
     
     // Tao script Python de khoi chay
     string $pyCmd = "import sys\n";
+    $pyCmd += "for m in list(sys.modules.keys()):\n";
+    $pyCmd += "    if 'Animeow_Enjo_Pipeline' in m:\n";
+    $pyCmd += "        try: del sys.modules[m]\n";
+    $pyCmd += "        except: pass\n";
     $pyCmd += "path = '" + $parentDir + "'\n";
     $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
     $pyCmd += "import Animeow_Enjo_Pipeline\n";
     $pyCmd += "import Animeow_Enjo_Pipeline.menu as menu\n";
-    $pyCmd += "try: reload(Animeow_Enjo_Pipeline); reload(menu)\n";
-    $pyCmd += "except: pass\n";
     $pyCmd += "menu.create_menu()\n";
     $pyCmd += "Animeow_Enjo_Pipeline.show()\n";
     
