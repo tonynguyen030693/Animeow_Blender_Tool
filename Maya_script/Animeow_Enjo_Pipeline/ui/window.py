@@ -7,7 +7,7 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from ..core import file_manager, playblast_manager
+from Animeow_Enjo_Pipeline.core import file_manager, playblast_manager
 
 # --- Tu dong them duong dan thirdparty/studiolibrary/src vao sys.path ---
 _THIRDPARTY_SRC = os.path.normpath(
