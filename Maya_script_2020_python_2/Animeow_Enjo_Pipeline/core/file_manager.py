@@ -904,9 +904,9 @@ class FileManager(object):
         filename = "%s_Shot_%02d-%02d.ma" % (ep_abbrev, int(start_shot), int(end_shot))
         return os.path.normpath(os.path.join(combine_dir, filename))
 
-    def organize_studio_library(self, project):
-        """Tu dong don dep, dua con vat ra ngoai va danh so toan bo thu muc trong Studio Library"""
-        lib_dir = self.get_project_studiolibrary_dir(project)
+    def organize_studio_library(self, project=None):
+        """Tu dong don dep, chuyen nhan vat chinh ve 01_Characters va danh so toan bo Studio Library"""
+        lib_dir = self.get_project_studiolibrary_dir()
         if not lib_dir or not os.path.exists(lib_dir):
             return False, u"Thu muc Studio Library khong ton tai: %s" % lib_dir
 
@@ -954,7 +954,9 @@ class FileManager(object):
                 "conkien": "Con_Kien", "conmuoi": "Con_Muoi", "conngua": "Con_Ngua",
                 "consau": "Con_Sau", "contho": "Con_Tho", "conchuot": "Con_Chuot",
                 "conmeo": "Con_Meo", "convit": "Con_Vit", "canhcut": "Canh_Cut",
-                "khunglong": "Khung_Long",
+                "khunglong": "Khung_Long", "babyleo": "Baby_Leo", "lillybunny": "Lilly_Bunny",
+                "sammybear": "Sammy_Bear", "tobymonkey": "Toby_Monkey", "woofinwolf": "Woofin_Wolf",
+                "animalsother": "Animals_Other"
             }
             key = cleaned.lower().replace("_", "").replace(" ", "")
             if key in custom_fixes:
@@ -973,67 +975,25 @@ class FileManager(object):
                 and os.path.isdir(os.path.join(parent, d))
                 and not d.endswith(('.anim', '.pose', '.mirror', '.selection'))
             ]
-            subdirs.sort(key=lambda s: s.lower())
+            subdirs.sort(key=lambda s: clean_name(s).lower())
             for idx, old_name in enumerate(subdirs, 1):
                 c_name = clean_name(old_name)
                 new_name = "%02d_%s" % (idx, c_name)
                 safe_move(os.path.join(parent, old_name), os.path.join(parent, new_name))
 
-        proj_lower = project.lower()
-        if "kidsong" in proj_lower:
-            mapping = {
-                "Baby": "01_Characters/Baby", "Mom": "01_Characters/Mom", "Dad": "01_Characters/Dad",
-                "Sister": "01_Characters/Sister", "Brother": "01_Characters/Brother", "Donal": "01_Characters/Donal",
-                "Animal": "02_Animals/Animal", "Monkey": "02_Animals/Monkey", "Mouse": "02_Animals/Mouse", "Woofin": "02_Animals/Woofin",
-                "Car": "03_Props_Vehicles/Car",
-                "Hand": "04_Common_Library/Hand", "Balloon_Facial": "04_Common_Library/Balloon_Facial",
-                "- Mirror": "04_Common_Library/Mirror", "00. Custom": "04_Common_Library/Custom",
-                "Library Learn": "04_Common_Library/Library_Learn", "Other": "04_Common_Library/Other",
-                "User": "05_User_Scratch/User",
-                "LoLo": "99_Archive_Trash/Cross_Projects/LoLo",
-                "Library Leo": "99_Archive_Trash/Cross_Projects/Library_Leo",
-                "Library_ELEMENTIES": "99_Archive_Trash/Cross_Projects/Library_ELEMENTIES",
-                "Trash": "99_Archive_Trash/Trash", "Old": "99_Archive_Trash/Old",
-            }
-            count = 0
-            for src_name, dst_rel in mapping.items():
-                if safe_move(os.path.join(lib_dir, src_name), os.path.join(lib_dir, dst_rel)):
-                    count += 1
+        # Direct main characters from 02_Animals to 01_Characters
+        main_char_targets = ["Sammy_Bear", "Toby_Monkey", "Woofin", "Woofin_Wolf", "Lilly_Bunny"]
+        anim_dir = os.path.join(lib_dir, "02_Animals")
+        char_dir = os.path.join(lib_dir, "01_Characters")
 
-            # Unnest Animal folder inside 02_Animals if exists
-            animal_nested = os.path.join(lib_dir, "02_Animals", "Animal")
-            if os.path.exists(animal_nested):
-                for item in os.listdir(animal_nested):
-                    if not item.startswith('.'):
-                        safe_move(os.path.join(animal_nested, item), os.path.join(lib_dir, "02_Animals", item))
-                try:
-                    os.rmdir(animal_nested)
-                except Exception:
-                    pass
+        if os.path.exists(anim_dir):
+            for item in os.listdir(anim_dir):
+                cn = clean_name(item)
+                if cn in main_char_targets:
+                    safe_move(os.path.join(anim_dir, item), os.path.join(char_dir, cn))
 
-            for cat in ["01_Characters", "02_Animals", "03_Props_Vehicles", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
-                number_subfolders(os.path.join(lib_dir, cat))
+        for cat in ["01_Characters", "02_Animals", "03_Props_Vehicles", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
+            number_subfolders(os.path.join(lib_dir, cat))
 
-            return True, u"Da tu dong dua cac con vat ra ngoai 02_Animals va danh so toan bo thu muc cho Kidsong!"
-
-        elif "lolo" in proj_lower:
-            mapping = {
-                "BABY LEO": "01_Characters/Baby_Leo", "LILLY THE BUNNY": "02_Animals/Lilly_Bunny",
-                "SAMMY THE BEAR": "02_Animals/Sammy_Bear", "TOBY MONKEY NEW": "02_Animals/Toby_Monkey",
-                "WOOFIN THE WOLF": "02_Animals/Woofin_Wolf", "Animals": "02_Animals/Animals_Other",
-                "User": "05_User_Scratch/User", "Thien": "05_User_Scratch/User/Thien",
-                "Trash": "99_Archive_Trash/Trash",
-            }
-            count = 0
-            for src_name, dst_rel in mapping.items():
-                if safe_move(os.path.join(lib_dir, src_name), os.path.join(lib_dir, dst_rel)):
-                    count += 1
-
-            for cat in ["01_Characters", "02_Animals", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
-                number_subfolders(os.path.join(lib_dir, cat))
-
-            return True, u"Da tu dong sap xep va danh so toan bo thu muc cho Lolo!"
-
-        else:
-            return False, u"Chua co cau hinh chuan hoa cho du an %s" % project
+        return True, u"Da tu dong chuyen cac Nhan vat chinh ve 01_Characters va danh so lai toan bo Studio Library!"
 
