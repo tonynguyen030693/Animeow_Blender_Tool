@@ -962,7 +962,21 @@ class FileManager(object):
 
         def clean_name(name):
             cleaned = re.sub(r'^\d+[\._\-\s]*', '', name).strip()
-            words = [w.capitalize() for w in re.split(r'[\s_\-]+', cleaned) if w]
+            custom_fixes = {
+                "conheo": "Con_Heo", "conbo": "Con_Bo", "conca": "Con_Ca",
+                "conchim": "Con_Chim", "concoc": "Con_Coc", "concuu": "Con_Cuu",
+                "conech": "Con_Ech", "conga": "Con_Ga", "conho": "Con_Ho",
+                "conkien": "Con_Kien", "conmuoi": "Con_Muoi", "conngua": "Con_Ngua",
+                "consau": "Con_Sau", "contho": "Con_Tho", "conchuot": "Con_Chuot",
+                "conmeo": "Con_Meo", "convit": "Con_Vit", "canhcut": "Canh_Cut",
+                "khunglong": "Khung_Long",
+            }
+            key = cleaned.lower().replace("_", "").replace(" ", "")
+            if key in custom_fixes:
+                return custom_fixes[key]
+
+            s = re.sub(r'([a-z])([A-Z])', r'\1_\2', cleaned)
+            words = [w.capitalize() for w in re.split(r'[\s_\-]+', s) if w]
             return "_".join(words)
 
         def number_subfolders(parent):
