@@ -73,22 +73,28 @@ def toggle_outliner():
         print("[AnimeowShelf] Da mo Outliner.")
 
 def run_anti_virus():
-    """Khoi chay quet va diet virus trong scene"""
+    """Khoi chay quet va diet virus trong scene va he thong"""
     pkg_name = __name__.split('.')[0]
     clean_virus = __import__(pkg_name + ".core.clean_virus", fromlist=["clean_virus"])
     cleaned = clean_virus.clean_virus()
     if cleaned:
+        display_items = cleaned[:10]
+        msg_details = "\n".join("- " + item for item in display_items)
+        if len(cleaned) > 10:
+            msg_details += "\n... va %d phan tu khac." % (len(cleaned) - 10)
+            
         cmds.confirmDialog(
             title="Ket qua diet Virus",
-            message="Da tim thay va tieu diet thanh cong %d node virus doc hai:\n%s" % (len(cleaned), ", ".join(cleaned)),
+            message="Da tim thay va tieu diet thanh cong %d phan tu doc hai:\n\n%s" % (len(cleaned), msg_details),
             button=["Tuyet voi"]
         )
     else:
         cmds.confirmDialog(
             title="Ket qua diet Virus",
-            message="Chuc mung! Scene cua ban hoan toan sach se, khong phat hien virus nao.",
+            message="Chuc mung! Scene va he thong cua ban hoan toan sach se, khong phat hien virus nao.",
             button=["Tuyet voi"]
         )
+
 
 def create_parent_constraint(mo=True, skip_translate="none", skip_rotate="none"):
     """Tao Parent Constraint co tuy chon Maintain Offset va Skip Truc rieng cho Translate va Rotate"""

@@ -9,7 +9,7 @@ from PySide2 import QtWidgets, QtCore, QtGui
 
 from ..core import file_manager, playblast_manager
 
-# --- Tự động thêm đường dẫn thirdparty/studiolibrary/src vào sys.path ---
+# --- Tu dong them duong dan thirdparty/studiolibrary/src vao sys.path ---
 _THIRDPARTY_SRC = os.path.normpath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "thirdparty", "studiolibrary", "src")
 )
@@ -38,7 +38,7 @@ def exception_to_unicode(e):
         try:
             return str(e).decode('utf-8', errors='replace')
         except Exception:
-            return u"Lỗi ngoại lệ hệ thống"
+            return u"Loi ngoai le he thong"
 
 QSS_STYLE = """
 QWidget {
@@ -134,50 +134,50 @@ class CreateEpisodeDialog(QtWidgets.QDialog):
         super(CreateEpisodeDialog, self).__init__(parent=parent)
         self.project = project
         self.file_manager = file_manager
-        self.setWindowTitle(u"Tạo Tập Phim Mới")
+        self.setWindowTitle(u"Tao Tap Phim Moi")
         self.setFixedWidth(420)
         
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(12)
         
-        # Tự động tính toán tiền tố dự án (ví dụ KS, LL, EL)
+        # Tu dong tinh toan tien to du an (vi du KS, LL, EL)
         proj_prefix = self.file_manager.get_episode_abbreviation(self.project, "Sample").split("_")[0]
         
-        # Hướng dẫn quy chuẩn đặt tên
-        guide_box = QtWidgets.QGroupBox(u"Quy ước đặt tên Tập phim")
+        # Huong dan quy chuan dat ten
+        guide_box = QtWidgets.QGroupBox(u"Quy uoc dat ten Tap phim")
         guide_layout = QtWidgets.QVBoxLayout(guide_box)
         guide_label = QtWidgets.QLabel(
-            u"<b>Quy tắc đặt tên Tập phim:</b><br>"
-            u"- Viết đầy đủ tên tập tiếng Anh, dùng dấu gạch dưới thay khoảng trắng.<br>"
-            u"- Tên thư mục trên Server: Viết hoa chữ cái đầu nối bằng dấu gạch dưới.<br>"
-            u"- Mã file Maya: Viết tắt chữ cái đầu + version V02.<br>"
-            u"- Ví dụ: <i>Elevator_Safety_Song_V2</i> &rarr;<br>"
-            u"  &bull; Thư mục: <b>Elevator_Safety_Song_V02</b><br>"
-            u"  &bull; Mã file: <b>%s_ESS_V02</b>" % proj_prefix
+            u"<b>Quy tac dat ten Tap phim:</b><br>"
+            u"- Viet day du ten tap tieng Anh, dung dau gach duoi thay khoang trang.<br>"
+            u"- Ten thu muc tren Server: Viet hoa chu cai dau noi bang dau gach duoi.<br>"
+            u"- Ma file Maya: Viet tat chu cai dau + version V02.<br>"
+            u"- Vi du: <i>Elevator_Safety_Song_V2</i> &rarr;<br>"
+            u"  &bull; Thu muc: <b>Elevator_Safety_Song_V02</b><br>"
+            u"  &bull; Ma file: <b>%s_ESS_V02</b>" % proj_prefix
         )
         guide_label.setStyleSheet("color: #FF9800;")
         guide_layout.addWidget(guide_label)
         layout.addWidget(guide_box)
         
-        # Nhập tên đầy đủ
-        layout.addWidget(QtWidgets.QLabel(u"Nhập tên đầy đủ của tập phim (không dùng dấu cách):"))
+        # Nhap ten day du
+        layout.addWidget(QtWidgets.QLabel(u"Nhap ten day du cua tap phim (khong dung dau cach):"))
         self.name_input = QtWidgets.QLineEdit()
-        self.name_input.setPlaceholderText("Elevator_Safety_Song_V2 hoặc AAA_25")
+        self.name_input.setPlaceholderText("Elevator_Safety_Song_V2 hoac AAA_25")
         self.name_input.textChanged.connect(self.update_preview)
         layout.addWidget(self.name_input)
         
-        # Ô nhập Tên thư mục Server (Cho phép custom)
-        layout.addWidget(QtWidgets.QLabel(u"Tên thư mục sẽ tạo trên Server (Có thể sửa tay):"))
+        # O nhap Ten thu muc Server (Cho phep custom)
+        layout.addWidget(QtWidgets.QLabel(u"Ten thu muc se tao tren Server (Co the sua tay):"))
         self.folder_input = QtWidgets.QLineEdit()
         layout.addWidget(self.folder_input)
         
-        # Ô nhập Mã viết tắt file Maya (Cho phép custom)
-        layout.addWidget(QtWidgets.QLabel(u"Mã viết tắt của file Maya (Có thể sửa tay):"))
+        # O nhap Ma viet tat file Maya (Cho phep custom)
+        layout.addWidget(QtWidgets.QLabel(u"Ma viet tat cua file Maya (Co the sua tay):"))
         self.abbrev_input = QtWidgets.QLineEdit()
         self.abbrev_input.setStyleSheet("font-weight: bold; color: #4CAF50; font-size: 13px;")
         layout.addWidget(self.abbrev_input)
         
-        # Nút bấm
+        # Nut bam
         btn_layout = QtWidgets.QHBoxLayout()
         self.ok_btn = QtWidgets.QPushButton("OK")
         self.ok_btn.clicked.connect(self.accept)
@@ -187,9 +187,9 @@ class CreateEpisodeDialog(QtWidgets.QDialog):
         btn_layout.addWidget(self.cancel_btn)
         layout.addLayout(btn_layout)
         
-        # Hiển thị Preview mặc định
+        # Hien thi Preview mac dinh
         self.update_preview("")
-        
+
     def update_preview(self, text):
         sample_text = text.strip() if text.strip() else "Elevator_Safety_Song_V2"
         folder_name = self.file_manager.get_episode_folder_name(self.project, sample_text)
@@ -204,32 +204,32 @@ class CreateEpisodeDialog(QtWidgets.QDialog):
 class DebugReportDialog(QtWidgets.QDialog):
     def __init__(self, filepath, report, parent=None):
         super(DebugReportDialog, self).__init__(parent=parent)
-        self.setWindowTitle(u"Báo Cáo Hiệu Năng Mở Cảnh - %s" % os.path.basename(filepath))
+        self.setWindowTitle(u"Bao Cao Hieu Nang Mo Canh - %s" % os.path.basename(filepath))
         self.resize(650, 500)
         
         layout = QtWidgets.QVBoxLayout(self)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
         
-        # 1. Thông tin tổng quan
-        summary_group = QtWidgets.QGroupBox(u"Tổng quan thời gian nạp")
+        # 1. Thong tin tong quan
+        summary_group = QtWidgets.QGroupBox(u"Tong quan thoi gian nap")
         summary_layout = QtWidgets.QVBoxLayout(summary_group)
         summary_layout.setSpacing(6)
         
-        summary_layout.addWidget(QtWidgets.QLabel(u"<b>Tổng thời gian mở cảnh:</b> %.2f giây" % report["total_time"]))
-        summary_layout.addWidget(QtWidgets.QLabel(u"<b>File cảnh gốc (Không Reference):</b> %.2f giây" % report["base_scene_time"]))
-        summary_layout.addWidget(QtWidgets.QLabel(u"<b>Số lượng Reference:</b> %d" % len(report["references"])))
-        summary_layout.addWidget(QtWidgets.QLabel(u"<b>Số lượng Script Nodes:</b> %d" % len(report["script_nodes"])))
+        summary_layout.addWidget(QtWidgets.QLabel(u"<b>Tong thoi gian mo canh:</b> %.2f giay" % report["total_time"]))
+        summary_layout.addWidget(QtWidgets.QLabel(u"<b>File canh goc (Khong Reference):</b> %.2f giay" % report["base_scene_time"]))
+        summary_layout.addWidget(QtWidgets.QLabel(u"<b>So luong Reference:</b> %d" % len(report["references"])))
+        summary_layout.addWidget(QtWidgets.QLabel(u"<b>So luong Script Nodes:</b> %d" % len(report["script_nodes"])))
         
         layout.addWidget(summary_group)
         
-        # 2. Chi tiết các Reference
-        ref_group = QtWidgets.QGroupBox(u"Chi tiết thời gian nạp từng Reference")
+        # 2. Chi tiet cac Reference
+        ref_group = QtWidgets.QGroupBox(u"Chi tiet thoi gian nap tung Reference")
         ref_layout = QtWidgets.QVBoxLayout(ref_group)
         
         self.ref_table = QtWidgets.QTableWidget()
         self.ref_table.setColumnCount(3)
-        self.ref_table.setHorizontalHeaderLabels([u"Tên Node / File", u"Thời gian", u"Trạng thái"])
+        self.ref_table.setHorizontalHeaderLabels([u"Ten Node / File", u"Thoi gian", u"Trang thai"])
         self.ref_table.horizontalHeader().setStretchLastSection(True)
         
         self.ref_table.setRowCount(len(report["references"]))
@@ -238,7 +238,7 @@ class DebugReportDialog(QtWidgets.QDialog):
             time_item = QtWidgets.QTableWidgetItem("%.2fs" % ref["time"])
             status_item = QtWidgets.QTableWidgetItem(ref["status"])
             
-            # Tô màu đỏ nếu load lâu (> 5.0 giây)
+            # To mau do neu load lau (> 5.0 giay)
             if ref["time"] > 5.0:
                 time_item.setForeground(QtGui.QColor("#FF1744"))
                 time_item.setFont(QtGui.QFont("", -1, QtGui.QFont.Bold))
@@ -253,9 +253,9 @@ class DebugReportDialog(QtWidgets.QDialog):
         ref_layout.addWidget(self.ref_table)
         layout.addWidget(ref_group)
         
-        # 3. Chi tiết các Script Nodes
+        # 3. Chi tiet cac Script Nodes
         if report["script_nodes"]:
-            script_group = QtWidgets.QGroupBox(u"Danh sách Script Nodes trong Scene (Cảnh báo Virus/Script chạy ngầm)")
+            script_group = QtWidgets.QGroupBox(u"Danh sach Script Nodes trong Scene (Canh bao Virus/Script chay ngam)")
             script_layout = QtWidgets.QVBoxLayout(script_group)
             
             self.script_list = QtWidgets.QListWidget()
@@ -266,8 +266,8 @@ class DebugReportDialog(QtWidgets.QDialog):
             script_layout.addWidget(self.script_list)
             layout.addWidget(script_group)
             
-        # Nút đóng
-        close_btn = QtWidgets.QPushButton(u"Đóng")
+        # Nut dong
+        close_btn = QtWidgets.QPushButton(u"Dong")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
 
@@ -289,7 +289,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.project_root = "Z:\\Animeow_Production"
         self.current_work_files = []
         
-        # Khởi tạo class quản lý
+        # Khoi tao class quan ly
         self.file_manager = file_manager.FileManager(project_root=self.project_root)
         self.playblast_manager = playblast_manager.PlayblastManager()
         
@@ -298,7 +298,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def build_ui(self):
         # ========================================================
-        # Tab chính: Quản lý File & Playblast (Tab 1) + Split/Merge (Tab 2)
+        # Tab chinh: Quan ly File & Playblast (Tab 1) + Split/Merge (Tab 2)
         # ========================================================
         self.tab_widget = QtWidgets.QTabWidget()
         self.tab_widget.setStyleSheet("""
@@ -319,38 +319,38 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """)
         self.main_layout.addWidget(self.tab_widget)
 
-        # --- TAB 1: Quản Lý File & Playblast ---
+        # --- TAB 1: Quan Ly File & Playblast ---
         tab1_widget = QtWidgets.QWidget()
         tab1_layout = QtWidgets.QVBoxLayout(tab1_widget)
         tab1_layout.setContentsMargins(5, 5, 5, 5)
         tab1_layout.setSpacing(10)
-        self.tab_widget.addTab(tab1_widget, u"📂 Quản Lý File & Playblast")
+        self.tab_widget.addTab(tab1_widget, u"📂 Quan Ly File & Playblast")
         self._build_tab1_contents(tab1_layout)
 
-        # --- TAB 2: Tách / Gộp Cảnh ---
+        # --- TAB 2: Tach / Gop Canh ---
         tab2_widget = QtWidgets.QWidget()
         tab2_layout = QtWidgets.QVBoxLayout(tab2_widget)
         tab2_layout.setContentsMargins(5, 5, 5, 5)
         tab2_layout.setSpacing(10)
-        self.tab_widget.addTab(tab2_widget, u"✂️ Tách / Gộp Cảnh")
+        self.tab_widget.addTab(tab2_widget, u"✂️ Tach / Gop Canh")
         self._build_tab2_split_merge(tab2_layout)
 
     def _build_tab1_contents(self, parent_layout):
-        """Xây dựng nội dung Tab 1 - Quản Lý File & Playblast (giữ nguyên giao diện cũ)"""
-        # 1. Khối Dự Án & File nháp
+        """Xay dung noi dung Tab 1 - Quan Ly File & Playblast (giu nguyen giao dien cu)"""
+        # 1. Khoi Du An & File nhap
         shot_group = QtWidgets.QGroupBox()
         shot_layout = QtWidgets.QGridLayout(shot_group)
         shot_layout.setContentsMargins(8, 8, 8, 8)
         shot_layout.setSpacing(8)
         
-        # Hàng 0: Header giả lập với nút Refresh ở góc phải
+        # Hang 0: Header gia lap voi nut Refresh o goc phai
         header_layout = QtWidgets.QHBoxLayout()
-        header_label = QtWidgets.QLabel(u"Quản Lý File (Pipeline)")
+        header_label = QtWidgets.QLabel(u"Quan Ly File (Pipeline)")
         header_label.setStyleSheet("font-weight: bold; color: #FF9800; font-size: 12px;")
         header_layout.addWidget(header_label)
         
-        self.refresh_btn = QtWidgets.QPushButton(u"🔄 Làm mới")
-        self.refresh_btn.setToolTip("Làm mới danh sách file từ Server")
+        self.refresh_btn = QtWidgets.QPushButton(u"🔄 Lam moi")
+        self.refresh_btn.setToolTip("Lam moi danh sach file tu Server")
         self.refresh_btn.setFixedWidth(110)
         self.refresh_btn.setFixedHeight(26)
         self.refresh_btn.clicked.connect(self.on_refresh)
@@ -358,54 +358,54 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         shot_layout.addLayout(header_layout, 0, 0, 1, 3)
         
-        # Hàng 1: Project
+        # Hang 1: Project
         shot_layout.addWidget(QtWidgets.QLabel("Project:"), 1, 0)
         self.proj_combo = QtWidgets.QComboBox()
         self.proj_combo.currentIndexChanged.connect(self.on_proj_changed)
         shot_layout.addWidget(self.proj_combo, 1, 1, 1, 2)
         
-        # Hàng 2: Episode
+        # Hang 2: Episode
         shot_layout.addWidget(QtWidgets.QLabel("Episode:"), 2, 0)
         self.ep_combo = QtWidgets.QComboBox()
         self.ep_combo.currentIndexChanged.connect(self.on_ep_changed)
         shot_layout.addWidget(self.ep_combo, 2, 1)
         
-        self.create_ep_btn = QtWidgets.QPushButton("➕ Tập")
-        self.create_ep_btn.setToolTip("Tạo tập phim mới (Dành cho Leader)")
+        self.create_ep_btn = QtWidgets.QPushButton("➕ Tap")
+        self.create_ep_btn.setToolTip("Tao tap phim moi (Danh cho Leader)")
         self.create_ep_btn.clicked.connect(self.on_create_episode)
         shot_layout.addWidget(self.create_ep_btn, 2, 2)
         
-        # Nhãn cảnh báo quy chuẩn tên Episode (Hàng 3)
+        # Nhan canh bao quy chuan ten Episode (Hang 3)
         self.ep_warning_label = QtWidgets.QLabel("")
         self.ep_warning_label.setStyleSheet("color: #FF9800; font-weight: bold; margin-left: 5px;")
         self.ep_warning_label.setVisible(False)
         shot_layout.addWidget(self.ep_warning_label, 3, 0, 1, 3)
         
-        # Hàng 4: Task (Khâu)
+        # Hang 4: Task (Khau)
         shot_layout.addWidget(QtWidgets.QLabel("Task:"), 4, 0)
         self.task_combo = QtWidgets.QComboBox()
         self.task_combo.addItems(["Layout", "Animation"])
         self.task_combo.currentIndexChanged.connect(self.on_task_changed)
         shot_layout.addWidget(self.task_combo, 4, 1)
         
-        self.create_file_btn = QtWidgets.QPushButton("➕ Tạo File")
-        self.create_file_btn.setToolTip("Tạo file nháp mới cho Khâu hiện tại")
+        self.create_file_btn = QtWidgets.QPushButton("➕ Tao File")
+        self.create_file_btn.setToolTip("Tao file nhap moi cho Khau hien tai")
         self.create_file_btn.clicked.connect(self.on_create_file)
         shot_layout.addWidget(self.create_file_btn, 4, 2)
         
-        # Hàng 5: Label Danh sách file & Dropdown tuỳ chọn nạp Reference
+        # Hang 5: Label Danh sach file & Dropdown tuy chon nap Reference
         files_label_layout = QtWidgets.QHBoxLayout()
-        files_label_layout.addWidget(QtWidgets.QLabel("Working Files (Đúp click để Mở):"))
+        files_label_layout.addWidget(QtWidgets.QLabel("Working Files (Dup click de Mo):"))
         
         self.ref_load_combo = QtWidgets.QComboBox()
         self.ref_load_combo.addItems([
-            u"⚡ Mở nhanh (Không load Ref)",
-            u"👤 Nạp Nhân vật & Camera (Characters & Cameras)",
-            u"📋 Tự chọn Ref (Selective Preload)",
-            u"🔝 Chỉ nạp Ref cấp 1 (Top Level)",
-            u"🔄 Mở bình thường (Nạp tất cả)"
+            u"⚡ Mo nhanh (Khong load Ref)",
+            u"👤 Nap Nhan vat & Camera (Characters & Cameras)",
+            u"📋 Tu chon Ref (Selective Preload)",
+            u"🔝 Chi nap Ref cap 1 (Top Level)",
+            u"🔄 Mo binh thuong (Nap tat ca)"
         ])
-        self.ref_load_combo.setToolTip(u"Chế độ tải Reference khi mở file Maya.")
+        self.ref_load_combo.setToolTip(u"Che do tai Reference khi mo file Maya.")
         self.ref_load_combo.setStyleSheet("color: #FF9800; font-weight: bold;")
         self.ref_load_combo.setFixedWidth(240)
         self.ref_load_combo.currentIndexChanged.connect(self.save_ref_load_setting)
@@ -413,25 +413,27 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         shot_layout.addLayout(files_label_layout, 5, 0, 1, 3)
         
-        # Hàng 6: Bố cục 3 bảng (Shot bên trái, Maya Version ở giữa, Playblast Videos bên phải)
+        # Hang 6: Bo cuc 3 bang (Shot ben trai, Maya Version o giua, Playblast Videos ben phai)
         list_container_layout = QtWidgets.QHBoxLayout()
         list_container_layout.setSpacing(6)
         
-        # Bảng bên trái: Shot List
+        # Bang ben trai: Shot List
         shot_list_widget = QtWidgets.QWidget()
         shot_list_layout = QtWidgets.QVBoxLayout(shot_list_widget)
         shot_list_layout.setContentsMargins(0, 0, 0, 0)
-        shot_list_layout.addWidget(QtWidgets.QLabel(u"🎬 Danh sách Shot:"))
+        shot_list_layout.addWidget(QtWidgets.QLabel(u"🎬 Danh sach Shot:"))
         
         self.shot_list = QtWidgets.QListWidget()
         self.shot_list.itemSelectionChanged.connect(self.on_shot_selection_changed)
+        self.shot_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.shot_list.customContextMenuRequested.connect(self.show_shot_list_context_menu)
         shot_list_layout.addWidget(self.shot_list)
         
-        # Bảng ở giữa: Maya File Version List
+        # Bang o giua: Maya File Version List
         version_list_widget = QtWidgets.QWidget()
         version_list_layout = QtWidgets.QVBoxLayout(version_list_widget)
         version_list_layout.setContentsMargins(0, 0, 0, 0)
-        version_list_layout.addWidget(QtWidgets.QLabel(u"📂 File Maya (Đúp click mở):"))
+        version_list_layout.addWidget(QtWidgets.QLabel(u"📂 File Maya (Dup click mo):"))
         
         self.files_list = QtWidgets.QListWidget()
         self.files_list.itemDoubleClicked.connect(self.on_open_file)
@@ -440,11 +442,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.files_list.itemSelectionChanged.connect(self.update_playblast_count)
         version_list_layout.addWidget(self.files_list)
         
-        # Bảng bên phải: Playblast Videos List
+        # Bang ben phai: Playblast Videos List
         pb_list_widget = QtWidgets.QWidget()
         pb_list_layout = QtWidgets.QVBoxLayout(pb_list_widget)
         pb_list_layout.setContentsMargins(0, 0, 0, 0)
-        pb_list_layout.addWidget(QtWidgets.QLabel(u"🎥 Playblasts (Đúp click xem):"))
+        pb_list_layout.addWidget(QtWidgets.QLabel(u"🎥 Playblasts (Dup click xem):"))
         
         self.pb_list = QtWidgets.QListWidget()
         self.pb_list.itemDoubleClicked.connect(self.on_open_playblast_file)
@@ -452,30 +454,30 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_list.customContextMenuRequested.connect(self.show_pb_list_context_menu)
         pb_list_layout.addWidget(self.pb_list)
         
-        list_container_layout.addWidget(shot_list_widget, 3) # Chiếm 30% chiều rộng
-        list_container_layout.addWidget(version_list_widget, 4) # Chiếm 40% chiều rộng
-        list_container_layout.addWidget(pb_list_widget, 3) # Chiếm 30% chiều rộng
+        list_container_layout.addWidget(shot_list_widget, 3) # Chiem 30% chieu rong
+        list_container_layout.addWidget(version_list_widget, 4) # Chiem 40% chieu rong
+        list_container_layout.addWidget(pb_list_widget, 3) # Chiem 30% chieu rong
         
         shot_layout.addLayout(list_container_layout, 6, 0, 1, 3)
         
-        # Hàng 7: Nút mở nhanh thư mục
+        # Hang 7: Nut mo nhanh thu muc
         folder_btn_layout = QtWidgets.QHBoxLayout()
         folder_btn_layout.setSpacing(6)
         
-        self.open_ep_dir_btn = QtWidgets.QPushButton(u"📂 Tập phim")
-        self.open_ep_dir_btn.setToolTip("Mở thư mục gốc của Tập phim trên Server")
+        self.open_ep_dir_btn = QtWidgets.QPushButton(u"📂 Tap phim")
+        self.open_ep_dir_btn.setToolTip("Mo thu muc goc cua Tap phim tren Server")
         self.open_ep_dir_btn.clicked.connect(self.on_open_ep_dir)
         
-        self.open_work_dir_btn = QtWidgets.QPushButton(u"📂 Khâu làm việc")
-        self.open_work_dir_btn.setToolTip("Mở thư mục chứa file Maya làm việc của khâu hiện tại")
+        self.open_work_dir_btn = QtWidgets.QPushButton(u"📂 Khau lam viec")
+        self.open_work_dir_btn.setToolTip("Mo thu muc chua file Maya lam viec cua khau hien tai")
         self.open_work_dir_btn.clicked.connect(self.on_open_work_dir)
         
-        self.open_pub_dir_btn = QtWidgets.QPushButton(u"📂 Xuất bản")
-        self.open_pub_dir_btn.setToolTip("Mở thư mục chứa file đã Publish của khâu hiện tại")
+        self.open_pub_dir_btn = QtWidgets.QPushButton(u"📂 Xuan ban")
+        self.open_pub_dir_btn.setToolTip("Mo thu muc chua file da Publish cua khau hien tai")
         self.open_pub_dir_btn.clicked.connect(self.on_open_pub_dir)
         
         self.open_mov_dir_btn = QtWidgets.QPushButton(u"📂 Playblast")
-        self.open_mov_dir_btn.setToolTip("Mở thư mục chứa video Playblast nháp của khâu hiện tại")
+        self.open_mov_dir_btn.setToolTip("Mo thu muc chua video Playblast nhap cua khau hien tai")
         self.open_mov_dir_btn.clicked.connect(self.on_open_mov_dir)
         
         folder_btn_layout.addWidget(self.open_ep_dir_btn)
@@ -485,27 +487,32 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         shot_layout.addLayout(folder_btn_layout, 7, 0, 1, 3)
         
-        # Hàng 8: Các nút bấm lưu/publish
+        # Hang 8: Cac nut bam luu/publish
         btn_layout = QtWidgets.QHBoxLayout()
         btn_layout.setSpacing(6)
         
-        self.save_version_btn = QtWidgets.QPushButton("Lưu Phiên Bản Mới (+1)")
+        self.save_version_btn = QtWidgets.QPushButton("Luu Phien Ban Moi (+1)")
         self.save_version_btn.setObjectName("accent_btn")
         self.save_version_btn.clicked.connect(self.on_increment_save)
         btn_layout.addWidget(self.save_version_btn)
+
+        self.save_current_btn = QtWidgets.QPushButton(u"💾 Luu Canh Vao Pipeline")
+        self.save_current_btn.setToolTip(u"Luu file Maya dang mo hien tai vao kho du an (Project -> Episode -> Task -> Shot)")
+        self.save_current_btn.clicked.connect(self.on_save_current_scene_to_pipeline)
+        btn_layout.addWidget(self.save_current_btn)
         
         shot_layout.addLayout(btn_layout, 8, 0, 1, 3)
         
-        # Hàng 9: Nút Kiểm tra quy chuẩn
-        self.check_naming_btn = QtWidgets.QPushButton("🔍 Kiểm tra quy chuẩn tên File")
-        self.check_naming_btn.setToolTip("Quét toàn bộ tập phim và tự động sửa các file đặt tên sai quy chuẩn")
+        # Hang 9: Nut Kiem tra quy chuan
+        self.check_naming_btn = QtWidgets.QPushButton("🔍 Kiem tra quy chuan ten File")
+        self.check_naming_btn.setToolTip("Quet toan bo tap phim va tu dong sua cac file dat ten sai quy chuan")
         self.check_naming_btn.clicked.connect(self.on_check_filenames)
         shot_layout.addWidget(self.check_naming_btn, 9, 0, 1, 3)
         
         parent_layout.addWidget(shot_group)
         
-        # 2. Khối Playblast
-        playblast_group = QtWidgets.QGroupBox("Auto Playblast Nháp")
+        # 2. Khoi Playblast
+        playblast_group = QtWidgets.QGroupBox("Auto Playblast Nhap")
         playblast_layout = QtWidgets.QGridLayout(playblast_group)
         playblast_layout.setContentsMargins(8, 8, 8, 8)
         playblast_layout.setSpacing(8)
@@ -520,18 +527,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pb_res_combo.addItems(["1920x1080 (HD 1080)", "1280x720 (HD 720)", "640x360"])
         playblast_layout.addWidget(self.pb_res_combo, 1, 1)
         
-        # Thêm cấu hình Camera
+        # Them cau hinh Camera
         playblast_layout.addWidget(QtWidgets.QLabel("Camera:"), 2, 0)
         self.pb_cam_mode_combo = QtWidgets.QComboBox()
         self.pb_cam_mode_combo.addItems([
-            u"Camera hiện hành (Active)", 
-            u"Tùy chọn 1 Camera", 
-            u"Xuất nhiều Camera (Batch)"
+            u"Camera hien hanh (Active)", 
+            u"Tuy chon 1 Camera", 
+            u"Xuat nhieu Camera (Batch)"
         ])
         self.pb_cam_mode_combo.currentIndexChanged.connect(self.on_pb_cam_mode_changed)
         playblast_layout.addWidget(self.pb_cam_mode_combo, 2, 1)
         
-        # Cấu hình chọn 1 camera (Single)
+        # Cau hinh chon 1 camera (Single)
         self.pb_single_cam_widget = QtWidgets.QWidget()
         single_cam_layout = QtWidgets.QHBoxLayout(self.pb_single_cam_widget)
         single_cam_layout.setContentsMargins(0, 0, 0, 0)
@@ -541,7 +548,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         single_cam_layout.addWidget(self.pb_single_cam_combo)
         
         self.pb_refresh_cams_btn = QtWidgets.QPushButton(u"🔄")
-        self.pb_refresh_cams_btn.setToolTip(u"Làm mới danh sách camera trong scene")
+        self.pb_refresh_cams_btn.setToolTip(u"Lam moi danh sach camera trong scene")
         self.pb_refresh_cams_btn.setFixedWidth(30)
         self.pb_refresh_cams_btn.setFixedHeight(24)
         self.pb_refresh_cams_btn.clicked.connect(self.refresh_camera_list)
@@ -549,23 +556,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         playblast_layout.addWidget(self.pb_single_cam_widget, 3, 0, 1, 2)
         
-        # Cấu hình chọn nhiều camera (Multi)
+        # Cau hinh chon nhieu camera (Multi)
         self.pb_multi_cam_list = QtWidgets.QListWidget()
         self.pb_multi_cam_list.setFixedHeight(100)
         playblast_layout.addWidget(self.pb_multi_cam_list, 4, 0, 1, 2)
         
-        # Checkbox Đè lên bản cũ
-        self.pb_overwrite_checkbox = QtWidgets.QCheckBox(u"Đè lên bản cũ (Không lưu Old)")
-        self.pb_overwrite_checkbox.setToolTip(u"Nếu tích chọn, video mới sẽ ghi đè trực tiếp lên video cũ.\nNếu không tích, bản cũ sẽ được di chuyển vào thư mục Old.")
+        # Checkbox De len ban cu
+        self.pb_overwrite_checkbox = QtWidgets.QCheckBox(u"De len ban cu (Khong luu Old)")
+        self.pb_overwrite_checkbox.setToolTip(u"Neu tich chon, video moi se ghi de truc tiep len video cu.\nNeu khong tich, ban cu se duoc di chuyen vao thu muc Old.")
         self.pb_overwrite_checkbox.setStyleSheet("margin-left: 2px;")
         playblast_layout.addWidget(self.pb_overwrite_checkbox, 5, 0, 1, 2)
         
-        # Nhãn hiển thị trạng thái Playblast
-        self.pb_count_label = QtWidgets.QLabel(u"Trạng thái Playblast: Chưa kiểm tra")
+        # Nhan hien thi trang thai Playblast
+        self.pb_count_label = QtWidgets.QLabel(u"Trang thai Playblast: Chua kiem tra")
         self.pb_count_label.setStyleSheet("color: #4CAF50; font-weight: bold; margin-left: 2px;")
         playblast_layout.addWidget(self.pb_count_label, 6, 0, 1, 2)
         
-        # Hàng nút: Chạy Playblast và Mở thư mục
+        # Hang nut: Chay Playblast va Mo thu muc
         pb_buttons_layout = QtWidgets.QHBoxLayout()
         pb_buttons_layout.setSpacing(6)
         
@@ -581,7 +588,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         playblast_layout.addLayout(pb_buttons_layout, 7, 0, 1, 2)
         
-        # Trạng thái ẩn/hiện ban đầu
+        # Trang thai an/hien ban dau
         self.pb_single_cam_widget.setVisible(False)
         self.pb_multi_cam_list.setVisible(False)
         
@@ -589,14 +596,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         parent_layout.addStretch()
 
-    # --- SỰ KIỆN & LOGIC ---
+    # --- SU KIEN & LOGIC ---
     
     def is_character_reference(self, ref_path):
-        """Kiểm tra xem file reference có phải là nhân vật/rig hoặc camera dựa trên đường dẫn hoặc tên file hay không"""
+        """Kiem tra xem file reference co phai la nhan vat/rig hoac camera dua tren duong dan hoac ten file hay khong"""
         if not ref_path:
             return False
             
-        # Nếu ref_path là list/tuple do Maya query trả về
+        # Neu ref_path la list/tuple do Maya query tra ve
         if isinstance(ref_path, (list, tuple)):
             if not ref_path:
                 return False
@@ -605,12 +612,12 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         path_lower = ref_path.replace("\\", "/").lower()
         filename = os.path.basename(path_lower)
         
-        # 0. Nhận diện Camera trước tiên (Ưu tiên nạp kèm với nhân vật)
+        # 0. Nhan dien Camera truoc tien (Uu tien nap kem voi nhan vat)
         camera_keywords = ["cam_rig", "camera_rig", "camera", "shot_cam"]
         if "camera" in filename or filename.startswith("cam_") or any(ck in filename for ck in camera_keywords):
             return True
         
-        # 1. BỘ LỌC LOẠI TRỪ (EXCLUDE): Loại bỏ các thư mục và file thuộc về bối cảnh (BG), đạo cụ (Props), map...
+        # 1. BO LOC LOAI TRU (EXCLUDE): Loai bo cac thu muc va file thuoc ve boi canh (BG), dao cu (Props), map...
         exclude_path_keywords = [
             "/asset rig/", "/asset_rig/", "/bg_rig/", "/bg_rigs/", 
             "/bg/", "/set/", "/prop/", "/props/", "/environment/", 
@@ -629,8 +636,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if kw in filename:
                 return False
 
-        # 2. BỘ LỌC CHẤP NHẬN (INCLUDE): Nhận diện thư mục hoặc từ khóa nhân vật
-        # 2.1 Kiểm tra đường dẫn thư mục chứa nhân vật
+        # 2. BO LOC CHAP NHAN (INCLUDE): Nhan dien thu muc hoac tu khoa nhan vat
+        # 2.1 Kiem tra duong dan thu muc chua nhan vat
         include_path_keywords = [
             "/character rig/", "/character_rig/", "/character model/", 
             "/character/", "/animal_rig/", "/animal/"
@@ -639,7 +646,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if kw in path_lower:
                 return True
                 
-        # 2.2 Kiểm tra tên file khớp từ khóa nhân vật
+        # 2.2 Kiem tra ten file khop tu khoa nhan vat
         char_keywords = [
             "baby", "mom", "sister", "brother", "dad", 
             "mac_donald", "tourist", "guide",
@@ -654,11 +661,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         return False
 
     def save_ref_load_setting(self, index):
-        """Lưu chỉ số chế độ tải Reference được chọn vào cấu hình Maya"""
+        """Luu chi so che do tai Reference duoc chon vao cau hinh Maya"""
         cmds.optionVar(iv=(self.OPTION_VAR_REF_MODE, index))
 
     def load_settings(self):
-        """Tải cấu hình dự án mặc định và tự động đồng bộ file đang mở"""
+        """Tai cau hinh du an mac dinh va tu dong dong bo file dang mo"""
         if cmds.optionVar(exists=self.OPTION_VAR_PROJ):
             saved_root = cmds.optionVar(q=self.OPTION_VAR_PROJ)
             if os.path.exists(saved_root):
@@ -666,16 +673,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
         self.file_manager.project_root = self.project_root
         
-        # Nạp cấu hình chế độ tải Reference
+        # Nap cau hinh che do tai Reference
         if cmds.optionVar(exists=self.OPTION_VAR_REF_MODE):
             saved_mode = cmds.optionVar(q=self.OPTION_VAR_REF_MODE)
             self.ref_load_combo.setCurrentIndex(saved_mode)
         else:
-            self.ref_load_combo.setCurrentIndex(0) # Mặc định mở nhanh
+            self.ref_load_combo.setCurrentIndex(0) # Mac dinh mo nhanh
 
         self.populate_projects()
         
-        # Tự động nhận diện và đồng bộ file đang mở trong scene khi khởi động UI
+        # Tu dong nhan dien va dong bo file dang mo trong scene khi khoi dong UI
         current_filepath = cmds.file(q=True, sceneName=True)
         if current_filepath:
             self.refresh_dropdowns_to_match_current(current_filepath)
@@ -713,7 +720,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.refresh_files_list()
 
     def validate_episode_naming(self):
-        """Kiểm tra xem tên thư mục tập phim hiện tại có đúng quy chuẩn hay không và hiển thị cảnh báo"""
+        """Kiem tra xem ten thu muc tap phim hien tai co dung quy chuan hay khong va hien thi canh bao"""
         current_ep = self.ep_combo.currentText()
         if not current_ep:
             self.ep_warning_label.setVisible(False)
@@ -722,7 +729,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         current_proj = self.proj_combo.currentText()
         standard_ep = self.file_manager.get_episode_folder_name(current_proj, current_ep)
         if current_ep != standard_ep:
-            self.ep_warning_label.setText(u"⚠️ Thư mục không chuẩn! Khuyên dùng: %s" % standard_ep)
+            self.ep_warning_label.setText(u"⚠️ Thu muc khong chuan! Khuyen dung: %s" % standard_ep)
             self.ep_warning_label.setVisible(True)
         else:
             self.ep_warning_label.setVisible(False)
@@ -746,13 +753,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         files_info = self.file_manager.get_work_files(current_proj, current_ep, current_task)
         self.current_work_files = files_info
         
-        # Nhớ shot đang chọn trước đó để khôi phục
+        # Nho shot dang chon truoc do de khoi phuc
         previous_selected_shot = ""
         selected_items = self.shot_list.selectedItems()
         if selected_items:
             previous_selected_shot = selected_items[0].text()
             
-        # Gom nhóm file theo tên shot
+        # Gom nhom file theo ten shot
         for info in files_info:
             filename = info["filename"]
             parsed = self.file_manager.parse_scene_name(filename)
@@ -769,13 +776,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.shot_map[prefix] = []
             self.shot_map[prefix].append(info)
             
-        # Nạp tên shot lên bảng bên trái
+        # Nap ten shot len bang ben trai
         sorted_shots = sorted(self.shot_map.keys())
         for shot in sorted_shots:
             item = QtWidgets.QListWidgetItem(shot)
             self.shot_list.addItem(item)
             
-        # Khôi phục lựa chọn
+        # Khoi phuc lua chon
         if previous_selected_shot:
             items = self.shot_list.findItems(previous_selected_shot, QtCore.Qt.MatchExactly)
             if items:
@@ -797,32 +804,46 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         selected_shot = selected_items[0].text()
         shot_files = self.shot_map.get(selected_shot, [])
         
-        # Sắp xếp version từ cao xuống thấp (mới nhất lên trên)
+        # Sap xep version tu cao xuong thap (moi nhat len tren)
         sorted_files = sorted(shot_files, key=lambda x: x["version"], reverse=True)
         
+        # Dem so lan xuat hien cua moi filename
+        filename_counts = {}
         for info in sorted_files:
-            item_text = "[v%02d] %s  (%s | %s)" % (
+            fn = info["filename"]
+            filename_counts[fn] = filename_counts.get(fn, 0) + 1
+            
+        for info in sorted_files:
+            fn = info["filename"]
+            location_tag = ""
+            if filename_counts[fn] > 1:
+                parent_dir = os.path.basename(os.path.dirname(info["filepath"]))
+                location_tag = " [%s]" % parent_dir
+                
+            item_text = "[v%02d] %s%s  (%s | %s)" % (
                 info["version"], 
                 info["filename"], 
+                location_tag,
                 info["time"], 
                 info["size"]
             )
             item = QtWidgets.QListWidgetItem(item_text)
             item.setData(QtCore.Qt.UserRole, info["filepath"])
+            item.setToolTip(os.path.normpath(info["filepath"]))
             self.files_list.addItem(item)
             
         self.update_playblast_count()
 
     def on_open_file(self, item):
-        """Mở file được chọn sau khi xác nhận cảnh báo an toàn"""
+        """Mo file duoc chon sau khi xac nhan canh bao an toan"""
         filepath = item.data(QtCore.Qt.UserRole)
         if not filepath or not os.path.exists(filepath):
             return
             
         if cmds.file(query=True, modified=True):
             res = QtWidgets.QMessageBox.question(
-                self, u"Xác nhận mở file",
-                u"Cảnh hiện tại có thay đổi chưa lưu. Bạn có chắc muốn mở file mới?",
+                self, u"Xac nhan mo file",
+                u"Canh hien tai co thay doi chua luu. Ban co chac muon mo file moi?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
             if res == QtWidgets.QMessageBox.No:
@@ -832,23 +853,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             kwargs = {"open": True, "force": True}
             mode = self.ref_load_combo.currentIndex()
             
-            if mode == 0:  # Mở nhanh (Không load Ref)
+            if mode == 0:  # Mo nhanh (Khong load Ref)
                 kwargs["loadReferenceDepth"] = "none"
-            elif mode in [1, 2]:  # Chọn nạp nhân vật hoặc Tự chọn đều dùng trì hoãn nạp settings
+            elif mode in [1, 2]:  # Chon nap nhan vat hoac Tu chon deu dung tri hoan nap settings
                 kwargs["buildLoadSettings"] = True
-            elif mode == 3:  # Chỉ nạp Ref cấp 1
+            elif mode == 3:  # Chi nap Ref cap 1
                 kwargs["loadReferenceDepth"] = "topOnly"
-            # mode == 4 là Mở bình thường (nạp tất cả)
+            # mode == 4 la Mo binh thuong (nap tat ca)
             
-            # Gán optionVar của Maya để Preload Reference Editor mở đúng file hiện tại
+            # Gan optionVar cua Maya de Preload Reference Editor mo dung file hien tai
             normalized_path = os.path.normpath(filepath).replace("\\", "/")
             cmds.optionVar(stringValue=("preloadRefEdTopLevelFile", normalized_path))
                 
             cmds.file(to_sys_path(filepath), **kwargs)
             
             if mode == 1:
-                # Quét và tích chọn sẵn các Rig nhân vật & camera trong cấu hình tải
-                print(u"Đang quét các Reference để tích chọn sẵn nhân vật & camera...")
+                # Quet va tich chon san cac Rig nhan vat & camera trong cau hinh tai
+                print(u"Dang quet cac Reference de tich chon san nhan vat & camera...")
                 num_settings = cmds.selLoadSettings(q=True, numSettings=True) or 0
                 char_count = 0
                 
@@ -857,33 +878,33 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     ref_path = ref_path_raw[0] if isinstance(ref_path_raw, (list, tuple)) and ref_path_raw else ref_path_raw
                     
                     if self.is_character_reference(ref_path):
-                        cmds.selLoadSettings(str(i), edit=True, deferReference=0)  # Tích chọn (Load)
+                        cmds.selLoadSettings(str(i), edit=True, deferReference=0)  # Tich chon (Load)
                         char_count += 1
-                        print(u"-> Đã tích chọn Rig/Camera: %s" % os.path.basename(ref_path))
+                        print(u"-> Da tich chon Rig/Camera: %s" % os.path.basename(ref_path))
                     else:
-                        cmds.selLoadSettings(str(i), edit=True, deferReference=1)  # Bỏ chọn (Defer)
+                        cmds.selLoadSettings(str(i), edit=True, deferReference=1)  # Bo chon (Defer)
                         
-                print(u"Đã chuẩn bị xong cấu hình nạp. Tự động tích chọn %d nhân vật & camera." % char_count)
+                print(u"Da chuan bi xong cau hinh nap. Tu dong tich chon %d nhan vat & camera." % char_count)
                 
-                # Hiển thị bảng Preload Reference Editor của Maya để user xem và nhấn nạp
+                # Hien thi bang Preload Reference Editor cua Maya de user xem va nhan nap
                 import maya.mel as mel
                 mel.eval("PreloadReferenceEditor;")
                 
             elif mode == 2:
-                # Hiển thị cửa sổ Preload Reference Editor gốc của Maya để người dùng chọn
+                # Hien thi cua so Preload Reference Editor goc cua Maya de nguoi dung chon
                 import maya.mel as mel
                 mel.eval("PreloadReferenceEditor;")
                 
             cmds.workspace(to_sys_path(self.project_root), openWorkspace=True)
-            print(u"Đã mở file thành công: %s" % filepath)
+            print(u"Da mo file thanh cong: %s" % filepath)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể mở file: %s" % exception_to_unicode(e))
+            QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the mo file: %s" % exception_to_unicode(e))
 
     def on_create_episode(self):
-        """Tạo tập phim mới (Dành cho Leader)"""
+        """Tao tap phim moi (Danh cho Leader)"""
         current_proj = self.proj_combo.currentText()
         if not current_proj:
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn Dự án trước.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon Du an truoc.")
             return
             
         dialog = CreateEpisodeDialog(current_proj, self.file_manager, parent=self)
@@ -910,31 +931,31 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
                 self.on_ep_changed()
                 QtWidgets.QMessageBox.information(
-                    self, u"Thành công", 
-                    u"Đã tạo cấu trúc tập phim mới thành công trên Server:\n%s" % ep_folder_name
+                    self, u"Thanh cong", 
+                    u"Da tao cau truc tap phim moi thanh cong tren Server:\n%s" % ep_folder_name
                 )
 
     def on_create_file(self):
-        """Tạo file nháp mới trực tiếp trong WorkingFile/[Task]/"""
+        """Tao file nhap moi truc tiep trong WorkingFile/[Task]/"""
         current_proj = self.proj_combo.currentText()
         current_ep = self.ep_combo.currentText()
         current_task = self.task_combo.currentText()
         
         if not current_proj or not current_ep or not current_task:
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du Du an va Tap phim.")
             return
             
         if current_task == "Layout":
-            # Gợi ý nhập dải shot
+            # Goi y nhap dai shot
             text, ok = QtWidgets.QInputDialog.getText(
-                self, u"Tạo File Layout mới", 
-                u"Nhập dải Shot cho Layout (ví dụ: 01-30 hoặc 30-60):"
+                self, u"Tao File Layout moi", 
+                u"Nhap dai Shot cho Layout (vi du: 01-30 hoac 30-60):"
             )
         else:
-            # Nhập số shot đơn
+            # Nhap so shot don
             text, ok = QtWidgets.QInputDialog.getText(
-                self, u"Tạo File Animation mới", 
-                u"Nhập số Shot cho Animation (ví dụ: 01 hoặc 02):"
+                self, u"Tao File Animation moi", 
+                u"Nhap so Shot cho Animation (vi du: 01 hoac 02):"
             )
             
         if not (ok and text.strip()):
@@ -945,36 +966,113 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if filepath:
             self.refresh_files_list()
             QtWidgets.QMessageBox.information(
-                self, u"Thành công", 
-                u"Đã khởi tạo file nháp mới thành công trên Server:\n%s" % os.path.basename(filepath)
+                self, u"Thanh cong", 
+                u"Da khoi tao file nhap moi thanh cong tren Server:\n%s" % os.path.basename(filepath)
             )
 
     def on_increment_save(self):
-        """Lưu phiên bản mới (+1)"""
+        """Luu phien ban moi (+1)"""
         current_task = self.task_combo.currentText()
         new_filepath = self.file_manager.increment_save(current_task)
         if new_filepath:
             self.refresh_files_list()
             self.refresh_dropdowns_to_match_current(new_filepath)
 
+    def show_shot_list_context_menu(self, pos):
+        """Menu ngu canh khi nhap chuot phai vao danh sach Shot"""
+        item = self.shot_list.itemAt(pos)
+        shot_name = item.text() if item else ""
+        
+        menu = QtWidgets.QMenu(self)
+        
+        if shot_name:
+            action_save_layout = menu.addAction(u"💾 Luu canh hien tai vao Layout (Shot %s)" % shot_name)
+            action_save_anim = menu.addAction(u"💾 Luu canh hien tai vao Animation (Shot %s)" % shot_name)
+            menu.addSeparator()
+            action_convert_anim = menu.addAction(u"🔄 Chuyen file hien tai sang khau Animation (Shot %s)" % shot_name)
+        else:
+            action_save_layout = menu.addAction(u"💾 Luu canh hien tai vao Layout...")
+            action_save_anim = menu.addAction(u"💾 Luu canh hien tai vao Animation...")
+            action_convert_anim = None
+            
+        action = menu.exec_(self.shot_list.mapToGlobal(pos))
+        if not action:
+            return
+            
+        if action == action_save_layout:
+            self.save_current_to_shot_with_task(shot_name=shot_name, target_task="Layout")
+        elif action == action_save_anim:
+            self.save_current_to_shot_with_task(shot_name=shot_name, target_task="Animation")
+        elif action_convert_anim and action == action_convert_anim:
+            self.save_current_to_shot_with_task(shot_name=shot_name, target_task="Animation")
+
+    def on_save_current_scene_to_pipeline(self):
+        """Luu file Maya hien tai vao Pipeline theo thong tin dang chon tren UI"""
+        selected_items = self.shot_list.selectedItems()
+        shot_name = selected_items[0].text() if selected_items else ""
+        self.save_current_to_shot_with_task(shot_name=shot_name, target_task=None)
+
+    def save_current_to_shot_with_task(self, shot_name="", target_task=None):
+        """Xu ly luu file hien tai vao Pipeline cho Shot va Task chi dinh"""
+        current_proj = self.proj_combo.currentText()
+        current_ep = self.ep_combo.currentText()
+        current_task = target_task if target_task else self.task_combo.currentText()
+        
+        if not current_proj or not current_ep or not current_task:
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du Du an va Tap phim.")
+            return
+            
+        if not shot_name:
+            prompt_msg = u"Nhap dai Shot cho Layout (vi du: 01-30 hoac 30-60):" if current_task == "Layout" else u"Nhap so Shot cho Animation (vi du: 01 hoac 02):"
+            text, ok = QtWidgets.QInputDialog.getText(
+                self, u"Luu Canh Vao Pipeline (%s)" % current_task, 
+                prompt_msg
+            )
+            if not (ok and text.strip()):
+                return
+            shot_name = text.strip()
+            
+        # Rut gon va lam sach prefix Shot (vi du LL_BGOTL_V01_Shot_01_Anim -> 01)
+        ep_abbrev = self.file_manager.get_episode_abbreviation(current_proj, current_ep)
+        shot_code = self.file_manager.clean_shot_code(ep_abbrev, shot_name)
+            
+        new_filepath = self.file_manager.save_current_scene_to_pipeline(
+            current_proj, current_ep, current_task, shot_code
+        )
+        
+        if new_filepath:
+            if target_task and target_task != self.task_combo.currentText():
+                idx = self.task_combo.findText(target_task)
+                if idx != -1:
+                    self.task_combo.blockSignals(True)
+                    self.task_combo.setCurrentIndex(idx)
+                    self.task_combo.blockSignals(False)
+                    
+            self.refresh_files_list()
+            self.refresh_dropdowns_to_match_current(new_filepath)
+            QtWidgets.QMessageBox.information(
+                self, u"Thanh cong", 
+                u"Da luu canh hien tai vao Pipeline thanh cong:\n%s" % os.path.basename(new_filepath)
+            )
+
     def refresh_dropdowns_to_match_current(self, filepath):
-        """Tự động đồng bộ dropdown UI khớp với file đang mở"""
+        """Tu dong dong bo dropdown UI khop voi file dang mo"""
         if not filepath or not self.project_root:
             return
             
-        # Chuẩn hóa đường dẫn dạng Windows/Linux không phân biệt hoa thường
+        # Chuan hoa duong dan dang Windows/Linux khong phan biet hoa thuong
         norm_filepath = os.path.normpath(filepath)
         norm_root = os.path.normpath(self.project_root)
         
-        # So sánh không phân biệt hoa thường (tránh lỗi viết hoa ổ đĩa trên Windows)
+        # So sanh khong phan biet hoa thuong (tranh loi viet hoa o dia tren Windows)
         if not norm_filepath.lower().startswith(norm_root.lower()):
             return
             
-        # Tính toán đường dẫn tương đối từ project_root chuẩn hóa
+        # Tinh toan duong dan tuong doi tu project_root chuan hoa
         rel_path = norm_filepath[len(norm_root):].lstrip(os.sep)
         parts = rel_path.split(os.sep)
         
-        # Cấu trúc phẳng: [Project]/[Episode]/WorkingFile/[Task]/File.ma
+        # Cau truc phang: [Project]/[Episode]/WorkingFile/[Task]/File.ma
         if len(parts) >= 5 and parts[2] == "WorkingFile":
             proj = parts[0]
             ep = parts[1]
@@ -1005,7 +1103,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
             self.refresh_files_list()
             
-            # Phân tích file hiện tại thuộc Shot nào để tự động select Shot đó trên bảng bên trái
+            # Phan tich file hien tai thuoc Shot nao de tu dong select Shot do tren bang ben trai
             current_filename = os.path.basename(norm_filepath)
             current_parsed = self.file_manager.parse_scene_name(current_filename)
             if current_parsed:
@@ -1014,7 +1112,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 parts = current_filename.split("_v")
                 current_prefix = parts[0] if len(parts) > 1 else os.path.splitext(current_filename)[0]
                 
-            # Chọn shot trên shot_list
+            # Chon shot tren shot_list
             shot_items = self.shot_list.findItems(current_prefix, QtCore.Qt.MatchExactly)
             if shot_items:
                 self.shot_list.blockSignals(True)
@@ -1022,7 +1120,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.shot_list.blockSignals(False)
                 self.on_shot_selection_changed()
                 
-            # Tự động chọn (highlight) file hiện tại trong QListWidget bên phải
+            # Tu dong chon (highlight) file hien tai trong QListWidget ben phai
             for i in range(self.files_list.count()):
                 item = self.files_list.item(i)
                 item_path = item.data(QtCore.Qt.UserRole)
@@ -1031,7 +1129,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     break
 
     def update_playblast_count(self):
-        """Kiểm tra và hiển thị danh sách video Playblast nháp hiện có cho file Maya đang chọn"""
+        """Kiem tra va hien thi danh sach video Playblast nhap hien co cho file Maya dang chon"""
         self.pb_list.clear()
         selected_items = self.files_list.selectedItems()
         if not selected_items:
@@ -1040,7 +1138,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 filepath = current_filepath
                 filename = os.path.basename(current_filepath)
             else:
-                self.pb_count_label.setText(u"Trạng thái Playblast: Không có file hoạt động")
+                self.pb_count_label.setText(u"Trang thai Playblast: Khong co file hoat dong")
                 self.pb_count_label.setStyleSheet("color: gray; font-weight: bold; margin-left: 2px;")
                 self.pb_count_label.setToolTip("")
                 return
@@ -1050,15 +1148,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         filename_no_ext, _ = os.path.splitext(filename)
         
-        # Gọi playblast_manager để lấy đúng thư mục playblast nháp của file này
+        # Goi playblast_manager de lay dung thu muc playblast nhap cua file nay
         playblast_dir, _ = self.playblast_manager.get_playblast_path(scene_filepath=filepath)
         if not playblast_dir:
-            self.pb_count_label.setText(u"Trạng thái Playblast: Chưa kiểm tra")
+            self.pb_count_label.setText(u"Trang thai Playblast: Chua kiem tra")
             self.pb_count_label.setStyleSheet("color: gray; font-weight: bold; margin-left: 2px;")
             self.pb_count_label.setToolTip("")
             return
             
-        # 1. Tìm toàn bộ video trong thư mục chính bắt đầu bằng filename_no_ext
+        # 1. Tim toan bo video trong thu muc chinh bat dau bang filename_no_ext
         found_active_videos = []
         try:
             if os.path.exists(playblast_dir):
@@ -1068,10 +1166,10 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception:
             pass
             
-        # Sắp xếp các video active theo bảng chữ cái
+        # Sap xep cac video active theo bang chu cai
         found_active_videos = sorted(found_active_videos, key=lambda x: x[0])
                 
-        # 2. Tìm các video phiên bản cũ trong thư mục Old
+        # 2. Tim cac video phien ban cu trong thu muc Old
         found_old_videos = []
         old_dir = os.path.join(playblast_dir, "Old")
         if os.path.exists(old_dir) and os.path.isdir(old_dir):
@@ -1082,35 +1180,35 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             except Exception:
                 pass
                 
-        # Sắp xếp các video cũ theo bảng chữ cái/số version tăng dần
+        # Sap xep cac video cu theo bang chu cai/so version tang dan
         found_old_videos = sorted(found_old_videos, key=lambda x: x[0])
         
-        # 3. Nạp dữ liệu lên self.pb_list
+        # 3. Nap du lieu len self.pb_list
         if found_active_videos:
             for name, path in found_active_videos:
                 item = QtWidgets.QListWidgetItem(u"🟢 [Active] " + name)
                 item.setData(QtCore.Qt.UserRole, path)
-                item.setForeground(QtGui.QColor("#4CAF50")) # Chữ xanh lá
+                item.setForeground(QtGui.QColor("#4CAF50")) # Chu xanh la
                 self.pb_list.addItem(item)
             
-            # Cập nhật nhãn trạng thái lấy file video đầu tiên tìm được
+            # Cap nhat nhan trang thai lay file video dau tien tim duoc
             first_name = found_active_videos[0][0]
-            self.pb_count_label.setText(u"🎬 Đã có Playblast (%s)" % first_name)
+            self.pb_count_label.setText(u"🎬 Da co Playblast (%s)" % first_name)
             self.pb_count_label.setStyleSheet("color: #4CAF50; font-weight: bold; margin-left: 2px;")
             self.pb_count_label.setToolTip(os.path.normpath(found_active_videos[0][1]))
         else:
-            self.pb_count_label.setText(u"❌ Chưa có Playblast")
+            self.pb_count_label.setText(u"❌ Chua co Playblast")
             self.pb_count_label.setStyleSheet("color: #F44336; font-weight: bold; margin-left: 2px;")
             self.pb_count_label.setToolTip("")
             
         for name, path in found_old_videos:
             item = QtWidgets.QListWidgetItem(u"⚪ [Old] " + name)
             item.setData(QtCore.Qt.UserRole, path)
-            item.setForeground(QtGui.QColor("#9E9E9E")) # Chữ xám nhạt
+            item.setForeground(QtGui.QColor("#9E9E9E")) # Chu xam nhat
             self.pb_list.addItem(item)
 
     def on_open_playblast_file(self, item):
-        """Mở file video playblast bằng trình phát mặc định của hệ thống"""
+        """Mo file video playblast bang trinh phat mac dinh cua he thong"""
         import os
         filepath = item.data(QtCore.Qt.UserRole)
         if not filepath or not os.path.exists(filepath):
@@ -1118,12 +1216,12 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         try:
             os.startfile(os.path.normpath(filepath))
-            print(u"Đã mở video playblast bằng trình phát mặc định: %s" % filepath)
+            print(u"Da mo video playblast bang trinh phat mac dinh: %s" % filepath)
         except Exception as e:
-            cmds.warning(u"Không thể mở video playblast: %s" % str(e))
+            cmds.warning(u"Khong the mo video playblast: %s" % str(e))
 
     def get_scene_cameras(self):
-        """Lấy danh sách các camera transform trong scene, lọc camera mặc định và xếp camera custom lên trước"""
+        """Lay danh sach cac camera transform trong scene, loc camera mac dinh va xep camera custom len truoc"""
         cam_shapes = cmds.ls(cameras=True) or []
         cams = []
         for shape in cam_shapes:
@@ -1138,16 +1236,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         return sorted(custom_cams) + sorted(default_cams)
 
     def refresh_camera_list(self):
-        """Làm mới danh sách camera trên giao diện"""
+        """Lam moi danh sach camera tren giao dien"""
         cams = self.get_scene_cameras()
         
-        # Cập nhật single combo
+        # Cap nhat single combo
         self.pb_single_cam_combo.blockSignals(True)
         self.pb_single_cam_combo.clear()
         self.pb_single_cam_combo.addItems(cams)
         self.pb_single_cam_combo.blockSignals(False)
         
-        # Cập nhật multi check list
+        # Cap nhat multi check list
         self.pb_multi_cam_list.clear()
         for cam in cams:
             item = QtWidgets.QListWidgetItem(cam)
@@ -1156,22 +1254,22 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.pb_multi_cam_list.addItem(item)
 
     def on_pb_cam_mode_changed(self, index):
-        """Thay đổi chế độ camera hiển thị trên giao diện"""
+        """Thay doi che do camera hien thi tren giao dien"""
         mode = self.pb_cam_mode_combo.currentText()
-        if mode == u"Tùy chọn 1 Camera":
+        if mode == u"Tuy chon 1 Camera":
             self.pb_single_cam_widget.setVisible(True)
             self.pb_multi_cam_list.setVisible(False)
             self.refresh_camera_list()
-        elif mode == u"Xuất nhiều Camera (Batch)":
+        elif mode == u"Xuat nhieu Camera (Batch)":
             self.pb_single_cam_widget.setVisible(False)
             self.pb_multi_cam_list.setVisible(True)
             self.refresh_camera_list()
-        else: # Camera hiện hành (Active)
+        else: # Camera hien hanh (Active)
             self.pb_single_cam_widget.setVisible(False)
             self.pb_multi_cam_list.setVisible(False)
 
     def on_run_playblast(self):
-        """Chạy playblast nháp hàng ngày"""
+        """Chay playblast nhap hang ngay"""
         format_text = self.pb_format_combo.currentText()
         format_ext = "qt" if "QuickTime" in format_text else "avi"
         
@@ -1187,7 +1285,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         overwrite = self.pb_overwrite_checkbox.isChecked()
         
         try:
-            if cam_mode == u"Camera hiện hành (Active)":
+            if cam_mode == u"Camera hien hanh (Active)":
                 output_path = self.playblast_manager.run_playblast(
                     format_ext=format_ext,
                     percent=100,
@@ -1207,7 +1305,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     if res == "Open Folder":
                         self.open_folder_explorer(os.path.dirname(output_path))
                     
-            elif cam_mode == u"Tùy chọn 1 Camera":
+            elif cam_mode == u"Tuy chon 1 Camera":
                 camera = self.pb_single_cam_combo.currentText()
                 if not camera:
                     QtWidgets.QMessageBox.warning(self, "Missing Info", "Please select a camera to export.")
@@ -1233,7 +1331,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     if res == "Open Folder":
                         self.open_folder_explorer(os.path.dirname(output_path))
                     
-            elif cam_mode == u"Xuất nhiều Camera (Batch)":
+            elif cam_mode == u"Xuat nhieu Camera (Batch)":
                 selected_cams = []
                 for i in range(self.pb_multi_cam_list.count()):
                     item = self.pb_multi_cam_list.item(i)
@@ -1278,7 +1376,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         
                 progress.setValue(len(selected_cams))
                 
-                # Hiển thị báo cáo kết quả
+                # Hien thi bao cao ket qua
                 msg = "Batch Playblast process finished!\n\n"
                 if success_paths:
                     msg += "Success (%d videos):\n" % len(success_paths)
@@ -1311,18 +1409,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             )
 
     def on_publish_file(self):
-        """Xuất bản file sạch và tự động chạy playblast chính thức kèm theo"""
+        """Xuat ban file sach va tu dong chay playblast chinh thuc kem theo"""
         current_proj = self.proj_combo.currentText()
         current_ep = self.ep_combo.currentText()
         current_task = self.task_combo.currentText()
         
         if not (current_proj and current_ep and current_task):
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ thông tin để Publish.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du thong tin de Publish.")
             return
             
         res = QtWidgets.QMessageBox.question(
-            self, u"Xác nhận Publish",
-            u"Bạn có chắc chắn muốn Publish file hiện tại cho khâu %s không?\nHành động này sẽ dọn dẹp file và xuất playblast chính thức." % current_task,
+            self, u"Xac nhan Publish",
+            u"Ban co chac chan muon Publish file hien tai cho khau %s khong?\nHanh dong nay se don dep file va xuat playblast chinh thuc." % current_task,
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
         if res == QtWidgets.QMessageBox.No:
@@ -1330,7 +1428,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         pub_filepath = self.file_manager.publish_file(current_proj, current_ep, current_task)
         if not pub_filepath:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể Publish file Maya. Vui lòng kiểm tra log.")
+            QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the Publish file Maya. Vui long kiem tra log.")
             return
             
         pub_video_path = os.path.splitext(pub_filepath)[0] + ".mov"
@@ -1338,7 +1436,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         try:
             cmds.file(to_sys_path(pub_filepath), open=True, force=True)
-            print(u"Đang chạy Playblast chính thức cho file Publish...")
+            print(u"Dang chay Playblast chinh thuc cho file Publish...")
             self.playblast_manager.run_playblast(
                 format_ext="qt",
                 percent=100,
@@ -1347,14 +1445,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 custom_path=pub_video_path
             )
         except Exception as e:
-            print(u"Lỗi khi chạy Playblast Publish: %s" % exception_to_unicode(e))
+            print(u"Loi khi chay Playblast Publish: %s" % exception_to_unicode(e))
         finally:
             if current_filepath and os.path.exists(current_filepath):
                 cmds.file(to_sys_path(current_filepath), open=True, force=True)
                 
         QtWidgets.QMessageBox.information(
-            self, u"Publish Thành Công",
-            u"Đã xuất bản sạch sẽ file Maya và video Playblast lên Server:\n\nFile: %s\nVideo: %s" % (
+            self, u"Publish Thanh Cong",
+            u"Da xuat ban sach se file Maya va video Playblast len Server:\n\nFile: %s\nVideo: %s" % (
                 os.path.basename(pub_filepath), 
                 os.path.basename(pub_video_path)
             )
@@ -1362,27 +1460,27 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.refresh_files_list()
 
     def on_check_filenames(self):
-        """Quét tìm file sai quy chuẩn thực tế trong tập phim, hỏi ý kiến user để tự động sửa toàn bộ"""
+        """Quet tim file sai quy chuan thuc te trong tap phim, hoi y kien user de tu dong sua toan bo"""
         current_proj = self.proj_combo.currentText()
         current_ep = self.ep_combo.currentText()
         
         if not (current_proj and current_ep):
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim trước.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du Du an va Tap phim truoc.")
             return
 
-        # 1. Kiểm tra quy chuẩn của thư mục Episode trước
+        # 1. Kiem tra quy chuan cua thu muc Episode truoc
         standard_ep = self.file_manager.get_episode_folder_name(current_proj, current_ep)
         if current_ep != standard_ep:
             msg = (
-                u"Thư mục tập phim hiện tại chưa đúng quy chuẩn:\n"
-                u"  - Hiện tại: %s\n"
-                u"  - Đúng chuẩn: %s\n\n"
-                u"Bạn có muốn đổi tên thư mục này trên Server về đúng quy chuẩn không?\n"
-                u"(Lưu ý: Chỉ thực hiện khi không có ai đang mở hoặc khóa file trong thư mục này)."
+                u"Thu muc tap phim hien tai chua dung quy chuan:\n"
+                u"  - Hien tai: %s\n"
+                u"  - Dung chuan: %s\n\n"
+                u"Ban co muon doi ten thu muc nay tren Server ve dung quy chuan khong?\n"
+                u"(Luu y: Chi thuc hien khi khong co ai dang mo hoac khoa file trong thu muc nay)."
             ) % (current_ep, standard_ep)
             
             res = QtWidgets.QMessageBox.question(
-                self, u"Chuẩn hóa tên thư mục Tập phim",
+                self, u"Chuan hoa ten thu muc Tap phim",
                 msg,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel
             )
@@ -1392,7 +1490,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif res == QtWidgets.QMessageBox.Yes:
                 success = self.file_manager.rename_episode_folder(current_proj, current_ep, standard_ep)
                 if success:
-                    # Cập nhật lại dropdown Episode
+                    # Cap nhat lai dropdown Episode
                     self.ep_combo.blockSignals(True)
                     self.ep_combo.clear()
                     episodes = self.file_manager.get_episodes(current_proj)
@@ -1405,30 +1503,30 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     current_ep = standard_ep
                     self.validate_episode_naming()
                     QtWidgets.QMessageBox.information(
-                        self, u"Thành công",
-                        u"Đã đổi tên thư mục tập phim thành: %s" % standard_ep
+                        self, u"Thanh cong",
+                        u"Da doi ten thu muc tap phim thanh: %s" % standard_ep
                     )
                 else:
                     QtWidgets.QMessageBox.critical(
-                        self, u"Lỗi",
-                        u"Không thể đổi tên thư mục tập phim. Thư mục hoặc file bên trong có thể đang bị khóa bởi Windows Explorer hoặc tiến trình khác."
+                        self, u"Loi",
+                        u"Khong the doi ten thu muc tap phim. Thu muc hoac file ben trong co the dang bi khoa bai Windows Explorer hoac tien trinh khac."
                     )
-                    # Hỏi xem có tiếp tục kiểm tra file bên trong thư mục cũ không
+                    # Hoi xem co tiep tuc kiem tra file ben trong thu muc cu khong
                     cont_res = QtWidgets.QMessageBox.question(
-                        self, u"Tiếp tục kiểm tra?",
-                        u"Bạn có muốn tiếp tục quét và chuẩn hóa các file bên trong thư mục hiện tại (%s) không?" % current_ep,
+                        self, u"Tiep tuc kiem tra?",
+                        u"Ban co muon tiep tuc quet va chuan hoa cac file ben trong thu muc hien tai (%s) khong?" % current_ep,
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
                     )
                     if cont_res == QtWidgets.QMessageBox.No:
                         return
 
-        # 2. Quét tìm file sai quy chuẩn thực tế trong tập phim
+        # 2. Quet tim file sai quy chuan thuc te trong tap phim
         incorrect_files = self.file_manager.check_episode_filenames_naming(current_proj, current_ep)
         
         if not incorrect_files:
             QtWidgets.QMessageBox.information(
-                self, u"Kết quả kiểm tra", 
-                u"Tuyệt vời! Toàn bộ file làm việc trong tập phim đều đúng quy chuẩn!"
+                self, u"Ket qua kiem tra", 
+                u"Tuyet voi! Toan bo file lam viec trong tap phim deu dung quy chuan!"
             )
             return
             
@@ -1440,18 +1538,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     return unicode(s)
             return s
             
-        msg = u"Phát hiện %d file đặt tên sai quy chuẩn. Ví dụ:\n\n" % len(incorrect_files)
+        msg = u"Phat hien %d file dat ten sai quy chuan. Vi du:\n\n" % len(incorrect_files)
         for i, f_info in enumerate(incorrect_files[:5]):
             old_f = to_unicode(f_info["old_filename"])
             new_f = to_unicode(f_info["new_filename"])
             task_d = to_unicode(f_info["task_dir"])
             msg += u"  - [%s] %s -> %s\n" % (task_d, old_f, new_f)
         if len(incorrect_files) > 5:
-            msg += u"  - và %d file khác...\n" % (len(incorrect_files) - 5)
-        msg += u"\nBạn có muốn đổi tên toàn bộ các file này về đúng quy chuẩn không?"
+            msg += u"  - va %d file khac...\n" % (len(incorrect_files) - 5)
+        msg += u"\nBan co muon doi ten toan bo cac file nay ve dung quy chuan khong?"
         
         res = QtWidgets.QMessageBox.question(
-            self, u"Xác nhận chuẩn hóa tên file làm việc",
+            self, u"Xac nhan chuan hoa ten file lam viec",
             msg,
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         )
@@ -1461,19 +1559,19 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if success:
                 self.refresh_files_list()
                 QtWidgets.QMessageBox.information(
-                    self, u"Thành công", 
-                    u"Đã hoàn thành chuẩn hóa tên các file làm việc!"
+                    self, u"Thanh cong", 
+                    u"Da hoan thanh chuan hoa ten cac file lam viec!"
                 )
             else:
                 QtWidgets.QMessageBox.critical(
-                    self, u"Lỗi chuẩn hoá", 
-                    u"Có lỗi xảy ra trong quá trình đổi tên!\n\n"
-                    u"Nguyên nhân phổ biến: File cần đổi tên đang bị khóa (có thể đang mở trong phần mềm khác).\n\n"
-                    u"Vui lòng đóng các file liên quan và thử lại!"
+                    self, u"Loi chuan hoa", 
+                    u"Co loi xay ra trong qua trinh doi ten!\n\n"
+                    u"Nguyen nhan pho bien: File can doi ten dang bi khoa (co the dang mo trong phan mem khac).\n\n"
+                    u"Vui long dong cac file lien quan va thu lai!"
                 )
 
     def on_refresh(self):
-        """Làm mới toàn bộ danh sách dự án, tập phim và file từ Server"""
+        """Lam moi toan bo danh sach du an, tap phim va file tu Server"""
         current_proj = self.proj_combo.currentText()
         current_ep = self.ep_combo.currentText()
         current_task = self.task_combo.currentText()
@@ -1507,23 +1605,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         
         self.refresh_files_list()
         
-        # Tự động nhận diện và đồng bộ file đang mở sau khi làm mới
+        # Tu dong nhan dien va dong bo file dang mo sau khi lam moi
         current_filepath = cmds.file(q=True, sceneName=True)
         if current_filepath:
             self.refresh_dropdowns_to_match_current(current_filepath)
         print("Da lam moi danh sach tu Server.")
 
     def open_folder_explorer(self, folder_path):
-        """Mở thư mục trong Windows Explorer"""
+        """Mo thu muc trong Windows Explorer"""
         if not folder_path or not os.path.exists(folder_path):
-            cmds.warning(u"Thư mục không tồn tại: %s" % folder_path)
+            cmds.warning(u"Thu muc khong ton tai: %s" % folder_path)
             return
         try:
-            # Chuẩn hóa đường dẫn dạng Windows
+            # Chuan hoa duong dan dang Windows
             folder_path = os.path.normpath(folder_path)
             os.startfile(to_sys_path(folder_path))
         except Exception as e:
-            cmds.warning(u"Không thể mở thư mục: %s" % exception_to_unicode(e))
+            cmds.warning(u"Khong the mo thu muc: %s" % exception_to_unicode(e))
 
     def on_open_ep_dir(self):
         current_proj = self.proj_combo.currentText()
@@ -1577,8 +1675,8 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
         task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
         
-        # Nếu là Layout, Published có thư mục con của từng shot
-        # Tìm shot đang chọn để mở đúng thư mục published của shot đó
+        # Neu la Layout, Published co thu muc con cua tung shot
+        # Tim shot dang chon de mo dung thu muc published cua shot do
         selected_items = self.shot_list.selectedItems() if hasattr(self, 'shot_list') else []
         if selected_items and task_dir_name == "Layout":
             shot_name = selected_items[0].text()
@@ -1606,19 +1704,19 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         menu = QtWidgets.QMenu(self)
         
-        action_open_folder = menu.addAction(u"Mở thư mục chứa file")
-        action_copy_path = menu.addAction(u"Sao chép đường dẫn file")
-        action_debug_open = menu.addAction(u"Mở và Debug hiệu năng (Đo thời gian tải)")
+        action_open_folder = menu.addAction(u"Mo thu muc chua file")
+        action_copy_path = menu.addAction(u"Sao chep duong dan file")
+        action_debug_open = menu.addAction(u"Mo va Debug hieu nang (Do thoi gian tai)")
         menu.addSeparator()
         
-        # Thêm action Publish file này offline
-        action_publish = menu.addAction(u"🚀 Publish File này (Copy nhanh)")
+        # Them action Publish file nay offline
+        action_publish = menu.addAction(u"🚀 Publish File nay (Copy nhanh)")
         
-        # Tìm video playblast nháp tương ứng (quét động theo shot cho cả Layout)
+        # Tim video playblast nhap tuong ung (quet dong theo shot cho ca Layout)
         filename = os.path.basename(filepath)
         filename_no_ext = os.path.splitext(filename)[0]
         
-        # Gọi playblast_manager để lấy đúng thư mục playblast nháp của file này
+        # Goi playblast_manager de lay dung thu muc playblast nhap cua file nay
         playblast_dir, _ = self.playblast_manager.get_playblast_path(scene_filepath=filepath)
         
         active_video_path = None
@@ -1633,9 +1731,12 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 
         action_open_video = None
         if active_video_path:
-            action_open_video = menu.addAction(u"Xem video Playblast nháp")
+            action_open_video = menu.addAction(u"Xem video Playblast nhap")
             
-        # Thực thi menu
+        menu.addSeparator()
+        action_delete_file = menu.addAction(u"🗑️ Xoa file Maya nay (Delete)")
+            
+        # Thuc thi menu
         action = menu.exec_(self.files_list.mapToGlobal(pos))
         
         if action == action_open_folder:
@@ -1643,20 +1744,33 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         elif action == action_copy_path:
             clipboard = QtWidgets.QApplication.clipboard()
             clipboard.setText(os.path.normpath(filepath))
-            print("Đã sao chép đường dẫn file vào Clipboard: %s" % filepath)
+            print("Da sao chep duong dan file vao Clipboard: %s" % filepath)
+        elif action == action_delete_file:
+            res = QtWidgets.QMessageBox.question(
+                self, u"Xac nhan xoa file",
+                u"Ban co chac chan muon xoa vinh vien file Maya nay khong?\n\n%s" % os.path.normpath(filepath),
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
+            if res == QtWidgets.QMessageBox.Yes:
+                try:
+                    os.remove(filepath)
+                    self.refresh_files_list()
+                    print(u"Da xoa file: %s" % filepath)
+                except Exception as e:
+                    QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the xoa file:\n%s" % str(e))
         elif action == action_publish:
             self.on_publish_file_offline(filepath)
         elif action == action_debug_open:
             res = QtWidgets.QMessageBox.question(
-                self, u"Xác nhận Debug mở file",
-                u"Hành động này sẽ mở file cảnh và tải từng Reference một để đo lường chi tiết.\n"
-                u"Bạn có chắc muốn tiến hành không?",
+                self, u"Xac nhan Debug mo file",
+                u"Hanh dong nay se mo file canh va tai tung Reference mot de do luong chi tiet.\n"
+                u"Ban co chac muon tien hanh khong?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             )
             if res == QtWidgets.QMessageBox.No:
                 return
                 
-            progress = QtWidgets.QProgressDialog(u"Đang đo lường hiệu năng mở file...", u"Hủy", 0, 100, self)
+            progress = QtWidgets.QProgressDialog(u"Dang do luong hieu nang mo file...", u"Huy", 0, 100, self)
             progress.setWindowModality(QtCore.Qt.WindowModal)
             progress.setAutoClose(True)
             progress.setValue(10)
@@ -1666,23 +1780,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 report = self.file_manager.debug_open_file(filepath)
                 progress.setValue(100)
                 
-                # Hiển thị báo cáo kết quả
+                # Hien thi bao cao ket qua
                 self.show_debug_report_dialog(filepath, report)
             except Exception as e:
                 progress.close()
-                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Lỗi khi debug mở file: %s" % exception_to_unicode(e))
+                QtWidgets.QMessageBox.critical(self, u"Loi", u"Loi khi debug mo file: %s" % exception_to_unicode(e))
         elif action_open_video and action == action_open_video:
             try:
                 os.startfile(to_sys_path(os.path.normpath(active_video_path)))
             except Exception as e:
-                cmds.warning(u"Không thể mở video Playblast: %s" % exception_to_unicode(e))
+                cmds.warning(u"Khong the mo video Playblast: %s" % exception_to_unicode(e))
 
     def show_debug_report_dialog(self, filepath, report):
         dialog = DebugReportDialog(filepath, report, parent=self)
         dialog.exec_()
 
     def on_publish_file_offline(self, filepath):
-        """Publish nhanh file Maya và video playblast nháp tương ứng bằng cách copy offline (tốc độ dưới 1 giây)"""
+        """Publish nhanh file Maya va video playblast nhap tuong ung bang cach copy offline (toc do duoi 1 giay)"""
         if not filepath or not os.path.exists(filepath):
             return
             
@@ -1691,20 +1805,20 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         current_task = self.task_combo.currentText()
         
         if not (current_proj and current_ep and current_task):
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du Du an va Tap phim.")
             return
             
         filename = os.path.basename(filepath)
         parsed = self.file_manager.parse_scene_name(filename)
         if not parsed:
-            QtWidgets.QMessageBox.warning(self, u"Lỗi tên file", u"Tên file không đúng quy chuẩn, không thể Publish.")
+            QtWidgets.QMessageBox.warning(self, u"Loi ten file", u"Ten file khong dung quy chuan, khong the Publish.")
             return
             
         prefix, file_task, ver, padding, ext = parsed
         task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
-        # Xác định thư mục published
+        # Xac dinh thu muc published
         published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
         if task_short == "Lay":
             published_dir = os.path.join(published_dir, prefix)
@@ -1724,28 +1838,28 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if current_scene:
             is_current_scene = (os.path.normpath(current_scene).lower() == os.path.normpath(filepath).lower())
             
-        # Tiến hành copy file Maya
+        # Tien hanh copy file Maya
         import shutil
         try:
             shutil.copy2(filepath, published_filepath)
-            print(u"[PUBLISH OFFLINE] Đã copy file Maya sang Published: %s" % published_filepath)
+            print(u"[PUBLISH OFFLINE] Da copy file Maya sang Published: %s" % published_filepath)
             
-            # Tự động xuất anim sang Studio Library nếu là file đang mở
+            # Tu dong xuat anim sang Studio Library neu la file dang mo
             anim_msg = ""
             if is_current_scene:
                 try:
                     self.export_current_scene_anim(current_proj, current_ep, filename)
-                    anim_msg = u"✅ Đã tự động xuất dữ liệu Anim sang thư viện Studio Library chuẩn bị cho khâu Gộp Cảnh.\n\n"
+                    anim_msg = u"✅ Da tu dong xuat du lieu Anim sang thu vien Studio Library chuan bi cho khau Gop Canh.\n\n"
                 except Exception as ex:
-                    anim_msg = u"❌ Gặp lỗi khi xuất dữ liệu Anim: %s\n\n" % exception_to_unicode(ex)
+                    anim_msg = u"❌ Gap loi khi xuat du lieu Anim: %s\n\n" % exception_to_unicode(ex)
             else:
-                anim_msg = u"⚠️ Chú ý: Bạn đang publish offline một tệp không phải scene đang mở hiện tại, vì vậy hệ thống không thể xuất dữ liệu anim cho khâu Gộp Cảnh. Vui lòng mở file và publish để xuất anim.\n\n"
+                anim_msg = u"⚠️ Chu y: Ban dang publish offline mot tep khong phai scene dang mo hien tai, vi vay he thong khong the xuat du lieu anim cho khau Gop Canh. Vui long mo file va publish de xuat anim.\n\n"
 
-            # Thông báo thành công
-            msg = u"Đã xuất bản (Publish) thành công thành file sạch trên server!\n\n"
+            # Thong bao thanh cong
+            msg = u"Da xuat ban (Publish) thanh cong thanh file sach tren server!\n\n"
             msg += anim_msg
             msg += u"📁 File Maya: %s\n\n" % os.path.basename(published_filepath)
-            msg += u"💡 Gợi ý: Nhấp chuột phải vào video ở cột thứ 3 và chọn 'Publish Video này' nếu bạn muốn đẩy video playblast tương ứng lên server.\n"
+            msg += u"💡 Goi y: Nhap chuot phai vao video o cot thu 3 va chon 'Publish Video nay' neu ban muon day video playblast tuong ung len server.\n"
                 
             res = cmds.confirmDialog(
                 title="Publish Success",
@@ -1758,7 +1872,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.open_folder_explorer(published_dir)
                 
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy file lên server:\n%s" % str(e))
+            QtWidgets.QMessageBox.critical(self, u"Loi Publish", u"Khong the copy file len server:\n%s" % str(e))
 
     def show_pb_list_context_menu(self, pos):
         item = self.pb_list.itemAt(pos)
@@ -1772,9 +1886,9 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         
         action_open_video = menu.addAction(u"Xem video Playblast")
-        action_open_folder = menu.addAction(u"Mở thư mục chứa video")
+        action_open_folder = menu.addAction(u"Mo thu muc chua video")
         menu.addSeparator()
-        action_publish_video = menu.addAction(u"🚀 Publish Video này")
+        action_publish_video = menu.addAction(u"🚀 Publish Video nay")
         
         action = menu.exec_(self.pb_list.mapToGlobal(pos))
         if action == action_open_video:
@@ -1785,7 +1899,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.on_publish_video_offline(filepath)
 
     def on_publish_video_offline(self, filepath):
-        """Publish nhanh video playblast được chọn lên server Published (offline copy)"""
+        """Publish nhanh video playblast duoc chon len server Published (offline copy)"""
         if not filepath or not os.path.exists(filepath):
             return
             
@@ -1794,15 +1908,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         current_task = self.task_combo.currentText()
         
         if not (current_proj and current_ep and current_task):
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn đầy đủ Dự án và Tập phim.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon day du Du an va Tap phim.")
             return
             
-        # Lấy định danh của file Maya đang chọn ở cột 2
+        # Lay dinh danh cua file Maya dang chon o cot 2
         selected_items = self.files_list.selectedItems()
         if not selected_items:
             current_filepath = cmds.file(q=True, sceneName=True)
             if not current_filepath:
-                QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Vui lòng chọn file Maya tương ứng ở cột 2 để xác định tên Publish.")
+                QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Vui long chon file Maya tuong ung o cot 2 de xac dinh ten Publish.")
                 return
             maya_filename = os.path.basename(current_filepath)
         else:
@@ -1810,14 +1924,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             
         parsed = self.file_manager.parse_scene_name(maya_filename)
         if not parsed:
-            QtWidgets.QMessageBox.warning(self, u"Lỗi tên file", u"Tên file Maya không hợp lệ, không thể xác định tên Publish.")
+            QtWidgets.QMessageBox.warning(self, u"Loi ten file", u"Ten file Maya khong hop le, khong the xac dinh ten Publish.")
             return
             
         prefix, file_task, ver, padding, ext = parsed
         task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
-        # Xác định thư mục published video
+        # Xac dinh thu muc published video
         published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
         if task_short == "Lay":
             published_dir = os.path.join(published_dir, prefix)
@@ -1829,20 +1943,20 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             except Exception:
                 pass
                 
-        # Lấy đuôi file video nguồn (.mov hoặc .avi)
+        # Lay duoi file video nguon (.mov hoac .avi)
         mov_ext = os.path.splitext(filepath)[1]
         dest_mov_filename = "%s_%s_pub%s" % (prefix, task_short, mov_ext)
         dest_mov_path = os.path.normpath(os.path.join(dest_mov_dir, dest_mov_filename))
         
-        # Thực hiện copy offline
+        # Thuc hien copy offline
         import shutil
         try:
             shutil.copy2(filepath, dest_mov_path)
-            print(u"[PUBLISH VIDEO] Đã copy video playblast sang Published: %s" % dest_mov_path)
+            print(u"[PUBLISH VIDEO] Da copy video playblast sang Published: %s" % dest_mov_path)
             
             res = cmds.confirmDialog(
                 title="Publish Video Success",
-                message=u"Đã xuất bản (Publish) video playblast thành công lên server!\n\n"
+                message=u"Da xuat ban (Publish) video playblast thanh cong len server!\n\n"
                         u"🎬 Video: %s" % os.path.basename(dest_mov_path),
                 button=["OK", "Open Published Folder"],
                 defaultButton="OK",
@@ -1851,10 +1965,10 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if res == "Open Published Folder":
                 self.open_folder_explorer(published_dir)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi Publish", u"Không thể copy video lên server:\n%s" % str(e))
+            QtWidgets.QMessageBox.critical(self, u"Loi Publish", u"Khong the copy video len server:\n%s" % str(e))
 
     def export_current_scene_anim(self, project, episode, filename):
-        """Tự động xuất anim của scene hiện tại thành file Studio Library .anim cho quy trình Gộp Cảnh"""
+        """Tu dong xuat anim cua scene hien tai thanh file Studio Library .anim cho quy trinh Gop Canh"""
         parsed = self.file_manager.parse_scene_name(filename)
         if not parsed:
             return
@@ -1865,11 +1979,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         import re
         shot_match = re.search(r'Shot_(\d+)', prefix, re.IGNORECASE)
         if not shot_match:
-            print(u"[StudioLibrary] Không tìm thấy số Shot hợp lệ từ tiền tố: %s" % prefix)
+            print(u"[StudioLibrary] Khong tim thay so Shot hap le tu tien to: %s" % prefix)
             return
         shot_num = shot_match.group(1)
         
-        # Xây đường dẫn thư mục Studio Library cho shot
+        # Xay duong dan thu muc Studio Library cho shot
         shot_stlib_dir = self.file_manager.build_studiolibrary_shot_dir(project, episode, shot_num)
         if not shot_stlib_dir:
             return
@@ -1878,13 +1992,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             try:
                 os.makedirs(shot_stlib_dir)
             except Exception as e:
-                print(u"[StudioLibrary] Lỗi tạo thư mục Studio Library: %s" % str(e))
+                print(u"[StudioLibrary] Loi tao thu muc Studio Library: %s" % str(e))
                 return
                 
-        # Lấy danh sách các node có keyframe
+        # Lay danh sach cac node co keyframe
         saved_selection = self.get_smart_selection()
         if not saved_selection:
-            print(u"[StudioLibrary] Không tìm thấy control nào có keyframe để xuất anim.")
+            print(u"[StudioLibrary] Khong tim thay control nao co keyframe de xuat anim.")
             return
             
         s_time = int(cmds.playbackOptions(q=True, minTime=True))
@@ -1893,7 +2007,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         import mutils
         import shutil
         
-        # 1. Xuất file gộp all_assets.anim
+        # 1. Xuat file gop all_assets.anim
         all_assets_path = os.path.normpath(os.path.join(shot_stlib_dir, "all_assets.anim")).replace('\\', '/')
         if os.path.exists(all_assets_path):
             try:
@@ -1907,11 +2021,11 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 time=(s_time, e_time),
                 bakeConnected=True
             )
-            print(u"[StudioLibrary] Đã tự động xuất anim gộp thành công: %s" % all_assets_path)
+            print(u"[StudioLibrary] Da tu dong xuat anim gop thanh cong: %s" % all_assets_path)
         except Exception as e:
-            print(u"[StudioLibrary] Lỗi khi tự động xuất anim gộp: %s" % exception_to_unicode(e))
+            print(u"[StudioLibrary] Loi khi tu dong xuat anim gop: %s" % exception_to_unicode(e))
             
-        # 2. Phân nhóm đối tượng theo namespace và xuất anim lẻ cho từng Rig
+        # 2. Phan nhom doi tuong theo namespace va xuat anim le cho tung Rig
         namespace_groups = {}
         for obj in saved_selection:
             if ":" in obj:
@@ -1938,16 +2052,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     time=(s_time, e_time),
                     bakeConnected=True
                 )
-                print(u"[StudioLibrary] Đã xuất anim cho namespace %s: %s" % (ns, ns_anim_path))
+                print(u"[StudioLibrary] Da xuat anim cho namespace %s: %s" % (ns, ns_anim_path))
             except Exception as e:
-                print(u"[StudioLibrary] Lỗi khi xuất anim cho namespace %s: %s" % (ns, exception_to_unicode(e)))
+                print(u"[StudioLibrary] Loi khi xuat anim cho namespace %s: %s" % (ns, exception_to_unicode(e)))
 
     # ================================================================
-    # TAB 2: Tách / Gộp Cảnh (Split & Merge)
+    # TAB 2: Tach / Gop Canh (Split & Merge)
     # ================================================================
 
     def _build_tab2_split_merge(self, parent_layout):
-        """Xây dựng nội dung Tab 2 - Tách / Gộp Cảnh (Đã căn chỉnh UI thẳng hàng dọc chuyên nghiệp)"""
+        """Xay dung noi dung Tab 2 - Tach / Gop Canh"""
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -1960,21 +2074,21 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         LABEL_WIDTH = 160
 
-        # ---- KHU VỰC 1: Tách Shot Layout Tổng ----
-        split_group = QtWidgets.QGroupBox(u"Tách Shot Layout Tổng (Split)")
+        # ---- KHU VUC 1: Tach Shot Layout Tong ----
+        split_group = QtWidgets.QGroupBox(u"Tach Shot Layout Tong (Split)")
         split_group_layout = QtWidgets.QVBoxLayout(split_group)
         split_group_layout.setContentsMargins(12, 16, 12, 12)
         split_group_layout.setSpacing(10)
 
-        # Hàng 1: Nút Quét Bookmarks từ Scene hiện tại
-        self.sm_scan_btn = QtWidgets.QPushButton(u"🔍 Quét Bookmarks từ Scene hiện tại")
-        self.sm_scan_btn.setToolTip(u"Quét toàn bộ các timeSliderBookmark đánh số từ scene Maya đang mở")
+        # Hang 1: Nut Quet Bookmarks tu Scene hien tai
+        self.sm_scan_btn = QtWidgets.QPushButton(u"🔍 Quet Bookmarks tu Scene hien tai")
+        self.sm_scan_btn.setToolTip(u"Quet toan bo cac timeSliderBookmark danh so tu scene Maya dang mo")
         self.sm_scan_btn.clicked.connect(self.on_scan_bookmarks)
         split_group_layout.addWidget(self.sm_scan_btn)
 
-        # Hàng 2: Danh sách bookmark
+        # Hang 2: Danh sach bookmark
         list_label_row = QtWidgets.QHBoxLayout()
-        lbl_list = QtWidgets.QLabel(u"Bookmarks tìm thấy:")
+        lbl_list = QtWidgets.QLabel(u"Bookmarks tim thay:")
         lbl_list.setFixedWidth(LABEL_WIDTH)
         list_label_row.addWidget(lbl_list)
         
@@ -1995,34 +2109,34 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         list_row.addWidget(self.sm_bookmark_list)
         split_group_layout.addLayout(list_row)
 
-        # Hàng 3: Lọc khoảng shot
+        # Hang 3: Loc khoang shot
         filter_row = QtWidgets.QHBoxLayout()
-        lbl_filter = QtWidgets.QLabel(u"Lọc khoảng shot (tuỳ chọn):")
+        lbl_filter = QtWidgets.QLabel(u"Loc khoang shot (tuy chon):")
         lbl_filter.setFixedWidth(LABEL_WIDTH)
         filter_row.addWidget(lbl_filter)
 
         self.sm_split_start = QtWidgets.QSpinBox()
         self.sm_split_start.setRange(0, 999)
         self.sm_split_start.setValue(0)
-        self.sm_split_start.setToolTip(u"Bắt đầu từ shot số (0 = không lọc)")
+        self.sm_split_start.setToolTip(u"Bat dau tu shot so (0 = khong loc)")
         self.sm_split_start.setFixedWidth(80)
 
         self.sm_split_end = QtWidgets.QSpinBox()
         self.sm_split_end.setRange(0, 999)
         self.sm_split_end.setValue(0)
-        self.sm_split_end.setToolTip(u"Đến shot số (0 = không lọc)")
+        self.sm_split_end.setToolTip(u"Den shot so (0 = khong loc)")
         self.sm_split_end.setFixedWidth(80)
 
-        filter_row.addWidget(QtWidgets.QLabel(u"Từ:"))
+        filter_row.addWidget(QtWidgets.QLabel(u"Tu:"))
         filter_row.addWidget(self.sm_split_start)
-        filter_row.addWidget(QtWidgets.QLabel(u" Đến:"))
+        filter_row.addWidget(QtWidgets.QLabel(u" Den:"))
         filter_row.addWidget(self.sm_split_end)
         filter_row.addStretch()
         split_group_layout.addLayout(filter_row)
 
-        # Hàng 4: Frame Padding
+        # Hang 4: Frame Padding
         padding_row = QtWidgets.QHBoxLayout()
-        lbl_padding = QtWidgets.QLabel(u"Frame đệm (Padding):")
+        lbl_padding = QtWidgets.QLabel(u"Frame dem (Padding):")
         lbl_padding.setFixedWidth(LABEL_WIDTH)
         padding_row.addWidget(lbl_padding)
 
@@ -2030,22 +2144,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.sm_padding_spin.setRange(0, 50)
         self.sm_padding_spin.setValue(5)
         self.sm_padding_spin.setFixedWidth(80)
-        self.sm_padding_spin.setToolTip(u"Số frame mở rộng trước/sau bookmark khi cắt key")
+        self.sm_padding_spin.setToolTip(u"So frame mo rong truoc/sau bookmark khi cat key")
         padding_row.addWidget(self.sm_padding_spin)
         padding_row.addStretch()
         split_group_layout.addLayout(padding_row)
 
-
-
-
-
-        # Hàng 7: Nút Bắt đầu Tách
+        # Hang 7: Nut Bat dau Tach
         btn_row = QtWidgets.QHBoxLayout()
         lbl_btn_spacer = QtWidgets.QWidget()
         lbl_btn_spacer.setFixedWidth(LABEL_WIDTH)
         btn_row.addWidget(lbl_btn_spacer)
 
-        self.sm_split_btn = QtWidgets.QPushButton(u"🚀 Bắt đầu Tách Shot vào Pipeline")
+        self.sm_split_btn = QtWidgets.QPushButton(u"🚀 Bat dau Tach Shot vao Pipeline")
         self.sm_split_btn.setObjectName("accent_btn")
         self.sm_split_btn.clicked.connect(self.on_split_layout)
         btn_row.addWidget(self.sm_split_btn)
@@ -2053,15 +2163,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         scroll_layout.addWidget(split_group)
 
-        # ---- KHU VỰC 2: Gộp Animation Cảnh Tổng ----
-        combine_group = QtWidgets.QGroupBox(u"Gộp Animation Cảnh Tổng (Combine)")
+        # ---- KHU VUC 2: Gop Animation Canh Tong ----
+        combine_group = QtWidgets.QGroupBox(u"Gop Animation Canh Tong (Combine)")
         combine_group_layout = QtWidgets.QVBoxLayout(combine_group)
         combine_group_layout.setContentsMargins(12, 16, 12, 12)
         combine_group_layout.setSpacing(10)
 
-        # Hàng 0: Khoảng shot cần gộp
+        # Hang 0: Khoang shot can gop
         c_range_row = QtWidgets.QHBoxLayout()
-        lbl_crange = QtWidgets.QLabel(u"Khoảng shot cần gộp:")
+        lbl_crange = QtWidgets.QLabel(u"Khoang shot can gop:")
         lbl_crange.setFixedWidth(LABEL_WIDTH)
         c_range_row.addWidget(lbl_crange)
 
@@ -2075,38 +2185,38 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.sm_combine_end.setValue(30)
         self.sm_combine_end.setFixedWidth(80)
 
-        c_range_row.addWidget(QtWidgets.QLabel(u"Từ:"))
+        c_range_row.addWidget(QtWidgets.QLabel(u"Tu:"))
         c_range_row.addWidget(self.sm_combine_start)
-        c_range_row.addWidget(QtWidgets.QLabel(u" Đến:"))
+        c_range_row.addWidget(QtWidgets.QLabel(u" Den:"))
         c_range_row.addWidget(self.sm_combine_end)
         c_range_row.addStretch()
         combine_group_layout.addLayout(c_range_row)
 
-        # Hàng 1: Checkbox Bake Constraints
+        # Hang 1: Checkbox Bake Constraints
         c_bake_row = QtWidgets.QHBoxLayout()
         lbl_cbake_spacer = QtWidgets.QWidget()
         lbl_cbake_spacer.setFixedWidth(LABEL_WIDTH)
         c_bake_row.addWidget(lbl_cbake_spacer)
 
-        self.sm_bake_constraints_cb = QtWidgets.QCheckBox(u"Tự động Bake Constraints (Locator/Rig)")
+        self.sm_bake_constraints_cb = QtWidgets.QCheckBox(u"Tu dong Bake Constraints (Locator/Rig)")
         self.sm_bake_constraints_cb.setChecked(True)
         c_bake_row.addWidget(self.sm_bake_constraints_cb)
         c_bake_row.addStretch()
         combine_group_layout.addLayout(c_bake_row)
 
-        # Hàng 2: Checkbox Smart Bake
+        # Hang 2: Checkbox Smart Bake
         c_sbake_row = QtWidgets.QHBoxLayout()
         lbl_csbake_spacer = QtWidgets.QWidget()
         lbl_csbake_spacer.setFixedWidth(LABEL_WIDTH)
         c_sbake_row.addWidget(lbl_csbake_spacer)
 
-        self.sm_smart_bake_cb = QtWidgets.QCheckBox(u"Smart Bake (Bake thưa giữ key cực trị)")
+        self.sm_smart_bake_cb = QtWidgets.QCheckBox(u"Smart Bake (Bake thua giu key cuc tri)")
         self.sm_smart_bake_cb.setChecked(True)
         c_sbake_row.addWidget(self.sm_smart_bake_cb)
         c_sbake_row.addStretch()
         combine_group_layout.addLayout(c_sbake_row)
 
-        # Hàng 3: Key Reducer Threshold
+        # Hang 3: Key Reducer Threshold
         threshold_row = QtWidgets.QHBoxLayout()
         lbl_threshold = QtWidgets.QLabel(u"Key Reducer Threshold:")
         lbl_threshold.setFixedWidth(LABEL_WIDTH)
@@ -2117,14 +2227,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.sm_threshold_spin.setValue(0.1)
         self.sm_threshold_spin.setSingleStep(0.05)
         self.sm_threshold_spin.setFixedWidth(80)
-        self.sm_threshold_spin.setToolTip(u"Ngưỡng cho bộ lọc keyReducer (nhỏ hơn = giữ nhiều key hơn)")
+        self.sm_threshold_spin.setToolTip(u"Nguong cho bo loc keyReducer (nho hon = giu nhieu key hon)")
         threshold_row.addWidget(self.sm_threshold_spin)
         threshold_row.addStretch()
         combine_group_layout.addLayout(threshold_row)
 
-        # Hàng 4: Frame Padding cho gộp
+        # Hang 4: Frame Padding cho gop
         c_padding_row = QtWidgets.QHBoxLayout()
-        lbl_cpadding = QtWidgets.QLabel(u"Frame đệm khi xuất/nhập:")
+        lbl_cpadding = QtWidgets.QLabel(u"Frame dem khi xuat/nhap:")
         lbl_cpadding.setFixedWidth(LABEL_WIDTH)
         c_padding_row.addWidget(lbl_cpadding)
 
@@ -2136,13 +2246,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         c_padding_row.addStretch()
         combine_group_layout.addLayout(c_padding_row)
 
-        # Hàng 5: Nút Gộp Cảnh
+        # Hang 5: Nut Gop Canh
         c_btn_row = QtWidgets.QHBoxLayout()
         lbl_cbtn_spacer = QtWidgets.QWidget()
         lbl_cbtn_spacer.setFixedWidth(LABEL_WIDTH)
         c_btn_row.addWidget(lbl_cbtn_spacer)
 
-        self.sm_combine_btn = QtWidgets.QPushButton(u"📦 Tiến hành Gộp Cảnh & Xuất File Cụm")
+        self.sm_combine_btn = QtWidgets.QPushButton(u"📦 Tien hanh Gop Canh & Xuat File Cum")
         self.sm_combine_btn.setObjectName("accent_btn")
         self.sm_combine_btn.clicked.connect(self.on_combine_shots)
         c_btn_row.addWidget(self.sm_combine_btn)
@@ -2150,17 +2260,23 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         scroll_layout.addWidget(combine_group)
 
-        # ---- KHU VỰC 3: Tiện ích ----
-        util_group = QtWidgets.QGroupBox(u"Tiện ích")
+        # ---- KHU VUC 3: Tien ich ----
+        util_group = QtWidgets.QGroupBox(u"Tien ich")
         util_layout = QtWidgets.QHBoxLayout(util_group)
         util_layout.setContentsMargins(8, 12, 8, 8)
         util_layout.setSpacing(8)
 
-        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Mở Studio Library UI")
+        # ---- KHU VUC 3: Tien ich ----
+        util_group = QtWidgets.QGroupBox(u"Tien ich")
+        util_layout = QtWidgets.QHBoxLayout(util_group)
+        util_layout.setContentsMargins(8, 12, 8, 8)
+        util_layout.setSpacing(8)
+
+        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Mo Studio Library UI")
         self.sm_open_stlib_btn.clicked.connect(self.on_open_studio_library)
         util_layout.addWidget(self.sm_open_stlib_btn)
 
-        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuất Bookmarks ra CSV")
+        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat Bookmarks ra CSV")
         self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
         util_layout.addWidget(self.sm_export_csv_btn)
 
@@ -2168,26 +2284,24 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         scroll_layout.addStretch()
 
     # ================================================================
-    # SỰ KIỆN & LOGIC - Tab 2: Tách / Gộp Cảnh
+    # SU KIEN & LOGIC - Tab 2: Tach / Gop Canh
     # ================================================================
 
-
-
     def on_scan_bookmarks(self):
-        """Quét toàn bộ timeSliderBookmark dạng số từ scene hiện tại"""
+        """Quet toan bo timeSliderBookmark dang so tu scene hien tai"""
         self.sm_bookmark_list.clear()
 
-        # Đảm bảo plugin timeSliderBookmark được nạp
+        # Dam bao plugin timeSliderBookmark duoc nap
         if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
             try:
                 cmds.loadPlugin('timeSliderBookmark')
             except Exception:
-                QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Không thể nạp plugin timeSliderBookmark.")
+                QtWidgets.QMessageBox.warning(self, u"Loi", u"Khong the nap plugin timeSliderBookmark.")
                 return
 
         bookmarks = cmds.ls(type='timeSliderBookmark') or []
         if not bookmarks:
-            QtWidgets.QMessageBox.information(self, u"Thông báo", u"Không tìm thấy Bookmark nào trong scene.")
+            QtWidgets.QMessageBox.information(self, u"Thong bao", u"Khong tim thay Bookmark nao trong scene.")
             return
 
         valid_items = []
@@ -2197,7 +2311,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             except Exception:
                 b_name = bm
 
-            # Chỉ lấy các bookmark được đặt tên dạng số
+            # Chi lay cac bookmark duoc dat ten dang so
             try:
                 bm_num = int(b_name)
             except ValueError:
@@ -2207,7 +2321,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             end_f = cmds.getAttr(bm + ".timeRangeStop")
             valid_items.append((bm_num, b_name, start_f, end_f, bm))
 
-        # Sắp xếp theo số thứ tự
+        # Sap xep theo so thu tu
         valid_items.sort(key=lambda x: x[0])
 
         for bm_num, b_name, start_f, end_f, bm_node in valid_items:
@@ -2218,28 +2332,28 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 "start": start_f, "end": end_f, "node": bm_node
             })
             self.sm_bookmark_list.addItem(item)
-            item.setSelected(True)  # Tự động tích chọn hết
+            item.setSelected(True)  # Tu dong tich chon het
 
-        self.sm_bookmark_count_lbl.setText(u"(Tìm thấy %d)" % len(valid_items))
+        self.sm_bookmark_count_lbl.setText(u"(Tim thay %d)" % len(valid_items))
         QtWidgets.QMessageBox.information(
-            self, u"Kết quả",
-            u"Tìm thấy %d bookmark hợp lệ (dạng số)." % len(valid_items)
+            self, u"Ket qua",
+            u"Tim thay %d bookmark hop le (dang so)." % len(valid_items)
         )
 
     def get_smart_selection(self):
         """
-        Lấy danh sách các đối tượng cần giữ key:
-        1. Ưu tiên lấy trực tiếp vùng chọn hiện tại của người dùng.
-        2. Nếu không có vùng chọn, tự động quét toàn bộ anim curves hoạt động trong scene,
-           tìm các node đích đang kết nối và loại trừ camera rig, camera transform.
+        Lay danh sach cac doi tuong can giu key:
+        1. Uu tien lay truc tiep vung chon hien tai cua nguoi dung.
+        2. Neu khong co vung chon, tu dong quet toan bo anim curves hoat dong trong scene,
+           tim cac node dich dang ket noi va loai tru camera rig, camera transform.
         """
         selection = cmds.ls(sl=True) or []
         if selection:
             return selection
 
-        print(u"[Pipeline] Không có vùng chọn thủ công. Đang tự động quét toàn bộ control có keyframe trong scene...")
+        print(u"[Pipeline] Khong co vung chon thu cong. Dang tu dong quet toan bo control co keyframe trong scene...")
 
-        # Tìm tất cả anim curves đang tồn tại
+        # Tim tat ca anim curves dang ton tai
         anim_curves = cmds.ls(type=['animCurveTL', 'animCurveTA', 'animCurveTU', 'animCurveTT']) or []
         if not anim_curves:
             return []
@@ -2253,7 +2367,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         keyed_nodes = list(set(keyed_nodes))
 
-        # Định danh các node camera cần bảo hộ
+        # Dinh danh cac node camera can bao ho
         cameras = cmds.ls(type='camera') or []
         camera_transforms = []
         for cam in cameras:
@@ -2261,7 +2375,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             if parents:
                 camera_transforms.append(parents[0])
 
-        # Lọc bỏ camera
+        # Loc bo camera
         final_selection = []
         for node in keyed_nodes:
             if node in camera_transforms:
@@ -2271,44 +2385,44 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 continue
             final_selection.append(node)
 
-        print(u"[Pipeline] Tự động quét thành công %d control có keyframe (đã bảo vệ các node camera)." % len(final_selection))
+        print(u"[Pipeline] Tu dong quet thanh cong %d control co keyframe (da bao ve cac node camera)." % len(final_selection))
         return final_selection
 
     def on_split_layout(self):
-        """Tách file Layout tổng thành các file shot lẻ dựa trên bookmarks đã quét"""
+        """Tach file Layout tong thanh cac file shot le dua tren bookmarks da quet"""
         import os as _os
         import json as _json
         import tempfile as _tempfile
 
-        # 1. Kiểm tra đầu vào
+        # 1. Kiem tra dau vao
         selected_items = self.sm_bookmark_list.selectedItems()
         if not selected_items:
-            QtWidgets.QMessageBox.warning(self, u"Thiếu dữ liệu", u"Chưa có bookmark nào được chọn.\nHãy nhấn 'Quét Bookmarks' trước.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu du lieu", u"Chua co bookmark nao duoc chon.\nHay nhan 'Quet Bookmarks' truoc.")
             return
 
-        # Xác định file nguồn
+        # Xac dinh file nguon
         scene_name = cmds.file(q=True, sn=True)
         if not scene_name:
-            QtWidgets.QMessageBox.warning(self, u"Chưa lưu file", u"Hãy SAVE file Maya hiện tại trước khi tách shot!")
+            QtWidgets.QMessageBox.warning(self, u"Chua luu file", u"Hay SAVE file Maya hien tai truoc khi tach shot!")
             return
         scene_name = scene_name.replace('\\', '/')
 
         saved_selection = self.get_smart_selection()
         if not saved_selection:
             QtWidgets.QMessageBox.warning(
-                self, u"Thiếu Selection",
-                u"Không tìm thấy Control/Object nào có keyframe trong scene và không có vùng chọn thủ công để thực hiện cắt key!"
+                self, u"Thieu Selection",
+                u"Khong tim thay Control/Object nao co keyframe trong scene va khong co vung chon thu cong de thuc hien cat key!"
             )
             return
 
-        # 2. Lấy thông tin project/episode hiện tại từ Tab 1
+        # 2. Lay thong tin project/episode hien tai tu Tab 1
         project = self.proj_combo.currentText()
         episode = self.ep_combo.currentText()
         if not project or not episode:
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Hãy chọn Project và Episode ở Tab 'Quản Lý File' trước.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Hay chon Project va Episode o Tab 'Quan Ly File' truoc.")
             return
 
-        # 3. Lọc theo khoảng filter (nếu có)
+        # 3. Loc theo khoang filter (neu co)
         start_filter = self.sm_split_start.value()
         end_filter = self.sm_split_end.value()
         padding = self.sm_padding_spin.value()
@@ -2324,36 +2438,36 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             bookmarks_data.append(data)
 
         if not bookmarks_data:
-            QtWidgets.QMessageBox.warning(self, u"Không khớp", u"Không có bookmark nào khớp với khoảng lọc đã nhập.")
+            QtWidgets.QMessageBox.warning(self, u"Khong khop", u"Khong co bookmark nao khop voi khoang loc da nhap.")
             return
 
-        # 4. Xác nhận
-        msg = u"Sẽ tách %d shot từ file Layout đang mở vào Pipeline.\n" % len(bookmarks_data)
+        # 4. Xac nhan
+        msg = u"Se tach %d shot tu file Layout dang mo vao Pipeline.\n" % len(bookmarks_data)
         msg += u"Project: %s\nEpisode: %s\n" % (project, episode)
         msg += u"Frame Padding: ±%d frames\n" % padding
-        msg += u"Chế độ: Trực tiếp (Có progress bar chống treo đơ Maya)\n"
-        msg += u"\nBạn có chắc chắn?"
+        msg += u"Che do: Truc tiep (Co progress bar chong treo do Maya)\n"
+        msg += u"\nBan co chac chan?"
 
-        reply = QtWidgets.QMessageBox.question(self, u"Xác nhận Tách Shot", msg,
+        reply = QtWidgets.QMessageBox.question(self, u"Xac nhan Tach Shot", msg,
                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if reply != QtWidgets.QMessageBox.Yes:
             return
 
-        # 5. Lưu file hiện tại trước khi thao tác (chỉ lưu nếu scene hiện tại đã được đặt tên/được lưu trước đó)
+        # 5. Luu file hien tai truoc khi thao tac (chi luu neu scene hien tai da duoc dat ten/duoc luu truoc do)
         current_scene = cmds.file(q=True, sn=True)
         if current_scene:
             try:
                 cmds.file(save=True, force=True)
             except Exception as e:
-                QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể lưu file hiện tại:\n%s" % str(e))
+                QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the luu file hien tai:\n%s" % str(e))
                 return
 
 
 
         # ============================================================
-        # CHẾ ĐỘ CHẠY TRỰC TIẾP (FOREGROUND)
+        # CHE DO CHAY TRUC TIEP (FOREGROUND)
         # ============================================================
-        # 6. Chuyển sang DG mode để tránh lỗi parallel evaluation
+        # 6. Chuyen sang DG mode de tranh loi parallel evaluation
         original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
         if original_eval_mode != 'off':
             cmds.evaluationManager(mode='off')
@@ -2362,12 +2476,12 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         _, ext = _os.path.splitext(base_name)
         file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
 
-        # Khởi tạo progress dialog cho chế độ trực tiếp để tránh đơ giao diện
+        # Khoi tao progress dialog cho che do truc tiep de tranh do giao dien
         progress = QtWidgets.QProgressDialog(
-            u"Đang tách shot trực tiếp trong Maya...",
-            u"Hủy bỏ", 0, len(bookmarks_data), self
+            u"Dang tach shot truc tiep trong Maya...",
+            u"Huy bo", 0, len(bookmarks_data), self
         )
-        progress.setWindowTitle(u"Đang Tách Shot (Foreground)")
+        progress.setWindowTitle(u"Dang Tach Shot (Foreground)")
         progress.setWindowModality(QtCore.Qt.WindowModal)
         progress.show()
 
@@ -2375,50 +2489,50 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         try:
             for i, data in enumerate(bookmarks_data):
                 if progress.wasCanceled():
-                    print(u"[Split] Người dùng đã hủy bỏ tiến trình.")
+                    print(u"[Split] Nguoi dung da huy bo tien trinh.")
                     break
 
-                # Cập nhật progress bar và vẽ lại GUI để tránh freeze
+                # Cap nhat progress bar va ve lai GUI de tranh freeze
                 progress.setValue(i)
-                progress.setLabelText(u"Đang xử lý Shot %02d (%d/%d)..." % (data["num"], i + 1, len(bookmarks_data)))
+                progress.setLabelText(u"Dang xu ly Shot %02d (%d/%d)..." % (data["num"], i + 1, len(bookmarks_data)))
                 QtWidgets.QApplication.processEvents()
 
                 bm_num = data["num"]
                 start_f = data["start"]
                 end_f = data["end"]
 
-                # Xây đường dẫn lưu file shot lẻ
+                # Xay duong dan luu file shot le
                 filepath, shot_dir = self.file_manager.build_split_shot_path(
                     project, episode, bm_num, task="Anim"
                 )
                 if not filepath:
-                    print(u"[Split] Không thể xây đường dẫn cho shot %d" % bm_num)
+                    print(u"[Split] Khong the xay duong dan cho shot %d" % bm_num)
                     continue
 
-                # Kiểm tra trùng file để chống ghi đè dữ liệu hoạt hình của artist
+                # Kiem tra trung file de chong ghi de du lieu hoat hinh cua artist
                 if _os.path.exists(filepath):
                     confirm = cmds.confirmDialog(
-                        title=u"File đã tồn tại",
-                        message=u"File hoạt hình lẻ đã tồn tại:\n%s\n\nBạn có muốn ghi đè (làm mất keyframe anim cũ của shot này) không?" % _os.path.basename(filepath),
-                        button=[u"Ghi đè (Overwrite)", u"Bỏ qua (Skip)", u"Hủy toàn bộ (Cancel)"],
-                        defaultButton=u"Bỏ qua (Skip)",
-                        cancelButton=u"Bỏ qua (Skip)"
+                        title=u"File da ton tai",
+                        message=u"File hoat hinh le da ton tai:\n%s\n\nBan co muon ghi de (lam mat keyframe anim cu cua shot nay) khong?" % _os.path.basename(filepath),
+                        button=[u"Ghi de (Overwrite)", u"Bo qua (Skip)", u"Huy toan bo (Cancel)"],
+                        defaultButton=u"Bo qua (Skip)",
+                        cancelButton=u"Bo qua (Skip)"
                     )
-                    if confirm == u"Bỏ qua (Skip)":
-                        print(u"[Split] Đã bỏ qua shot %d để bảo vệ file Anim cũ." % bm_num)
+                    if confirm == u"Bo qua (Skip)":
+                        print(u"[Split] Da bo qua shot %d de bao ve file Anim cu." % bm_num)
                         continue
-                    elif confirm == u"Hủy toàn bộ (Cancel)":
-                        print(u"[Split] Đã hủy tiến trình tách theo yêu cầu.")
+                    elif confirm == u"Huy toan bo (Cancel)":
+                        print(u"[Split] Da huy tien trinh tach theo yeu cau.")
                         break
 
-                # Tạo thư mục nếu chưa có
+                # Tao thu muc neu chua co
                 if not _os.path.exists(shot_dir):
                     _os.makedirs(shot_dir)
 
-                # Thao tác trong undo chunk
+                # Thao tac trong undo chunk
                 cmds.undoInfo(openChunk=True)
                 try:
-                    # Xóa bookmark khác
+                    # Xoa bookmark khac
                     all_bms = cmds.ls(type='timeSliderBookmark') or []
                     for b in all_bms:
                         try:
@@ -2431,13 +2545,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                             except Exception:
                                 pass
 
-                    # Truy quét toàn bộ anim curves trong scene để dọn sạch keyframe thừa 100% (bao gồm cả camera shape, custom attributes, v.v.)
+                    # Truy quet toan bo anim curves trong scene de don sach keyframe thua 100% (bao gom ca camera shape, custom attributes, v.v.)
                     try:
                         anim_curves = cmds.ls(type='animCurve') or []
                     except Exception:
                         anim_curves = []
 
-                    # Cắt key trên từng curve
+                    # Cat key tren tung curve
                     for curve in anim_curves:
                         try:
                             cmds.cutKey(curve, time=(-9999999, start_f - padding - 0.01), option="keys", clear=True)
@@ -2448,32 +2562,32 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         except Exception:
                             pass
 
-                    # Thiết lập timeline
+                    # Thiet lap timeline
                     cmds.playbackOptions(
                         min=start_f, max=end_f,
                         animationStartTime=start_f, animationEndTime=end_f
                     )
                 except Exception as e:
-                    print(u"[Split] Lỗi xử lý shot %d: %s" % (bm_num, str(e)))
+                    print(u"[Split] Loi xu ly shot %d: %s" % (bm_num, str(e)))
                 finally:
                     cmds.undoInfo(closeChunk=True)
 
-                # Lưu file shot lẻ
+                # Luu file shot le
                 cmds.file(rename=filepath.replace('\\', '/'))
                 try:
                     cmds.file(save=True, force=True, type=file_type)
-                    print(u"==> Đã xuất shot lẻ thành công: %s" % _os.path.basename(filepath))
+                    print(u"==> Da xuat shot le thanh cong: %s" % _os.path.basename(filepath))
                     success_count += 1
                 except Exception as e:
-                    print(u"[Split] Lỗi lưu file shot %d: %s" % (bm_num, str(e)))
+                    print(u"[Split] Loi luu file shot %d: %s" % (bm_num, str(e)))
 
-                # Undo để trả scene về trạng thái ban đầu
+                # Undo de tra scene ve trang thai ban dau
                 cmds.undo()
 
             progress.setValue(len(bookmarks_data))
 
         finally:
-            # Phục hồi trạng thái ban đầu
+            # Phuc hoi trang thai ban dau
             cmds.file(rename=scene_name)
             if original_eval_mode != 'off':
                 cmds.evaluationManager(mode=original_eval_mode)
@@ -2484,43 +2598,43 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     pass
 
         QtWidgets.QMessageBox.information(
-            self, u"Hoàn tất",
-            u"Đã tách thành công %d/%d shot!" % (success_count, len(bookmarks_data))
+            self, u"Hoan tat",
+            u"Da tach thanh cong %d/%d shot!" % (success_count, len(bookmarks_data))
         )
-        # Làm mới danh sách file ở Tab 1
+        # Lam moi danh sach file o Tab 1
         self.refresh_files_list()
 
 
 
     def on_combine_shots(self):
-        """Gộp Animation shot lẻ từ file Layout tổng bằng cách cắt key theo bookmark"""
+        """Gop Animation shot le tu file Layout tong bang cach cat key theo bookmark"""
         import os as _os
 
-        # 1. Kiểm tra đầu vào
+        # 1. Kiem tra dau vao
         saved_selection = self.get_smart_selection()
         if not saved_selection:
             QtWidgets.QMessageBox.warning(
-                self, u"Thiếu Selection",
-                u"Không tìm thấy Control/Object nào có keyframe trong scene và không có vùng chọn thủ công để thực hiện gộp!"
+                self, u"Thieu Selection",
+                u"Khong tim thay Control/Object nao co keyframe trong scene va khong co vung chon thu cong de thuc hien gop!"
             )
             return
 
         scene_name = cmds.file(q=True, sn=True)
         if not scene_name:
-            QtWidgets.QMessageBox.warning(self, u"Chưa lưu file", u"Hãy SAVE file Maya hiện tại trước khi gộp shot!")
+            QtWidgets.QMessageBox.warning(self, u"Chua luu file", u"Hay SAVE file Maya hien tai truoc khi gop shot!")
             return
         scene_name = scene_name.replace('\\', '/')
 
         project = self.proj_combo.currentText()
         episode = self.ep_combo.currentText()
         if not project or not episode:
-            QtWidgets.QMessageBox.warning(self, u"Thiếu thông tin", u"Hãy chọn Project và Episode ở Tab 'Quản Lý File' trước.")
+            QtWidgets.QMessageBox.warning(self, u"Thieu thong tin", u"Hay chon Project va Episode o Tab 'Quan Ly File' truoc.")
             return
 
         start_shot = self.sm_combine_start.value()
         end_shot = self.sm_combine_end.value()
         if start_shot > end_shot:
-            QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Khoảng shot không hợp lệ (Start > End).")
+            QtWidgets.QMessageBox.warning(self, u"Loi", u"Khoang shot khong hop le (Start > End).")
             return
 
         padding = self.sm_combine_padding_spin.value()
@@ -2528,7 +2642,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         do_smart_bake = self.sm_smart_bake_cb.isChecked()
         threshold = self.sm_threshold_spin.value()
 
-        # 2. Quét bookmarks trong scene để lấy khoảng thời gian
+        # 2. Quet bookmarks trong scene de lay khoang thoi gian
         if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
             try:
                 cmds.loadPlugin('timeSliderBookmark')
@@ -2562,40 +2676,40 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         if not valid_bookmarks:
             QtWidgets.QMessageBox.warning(
-                self, u"Không khớp",
-                u"Không tìm thấy bookmark nào trong khoảng %d - %d." % (start_shot, end_shot)
+                self, u"Khong khop",
+                u"Khong tim thay bookmark nao trong khoang %d - %d." % (start_shot, end_shot)
             )
             return
 
-        # 3. Xây đường dẫn file gộp
+        # 3. Xay duong dan file gop
         combine_path = self.file_manager.build_combine_file_path(project, episode, start_shot, end_shot)
         if not combine_path:
-            QtWidgets.QMessageBox.warning(self, u"Lỗi", u"Không thể xây đường dẫn file gộp.")
+            QtWidgets.QMessageBox.warning(self, u"Loi", u"Khong the xay duong dan file gop.")
             return
 
         combine_dir = _os.path.dirname(combine_path)
 
-        # 4. Xác nhận
-        msg = u"Sẽ gộp shot từ %d đến %d thành file cụm tổng:\n%s\n\n" % (
+        # 4. Xac nhan
+        msg = u"Se gop shot tu %d den %d thanh file cum tong:\n%s\n\n" % (
             start_shot, end_shot, _os.path.basename(combine_path))
         if do_bake:
-            msg += u"✅ Tự động Bake Constraints\n"
+            msg += u"✅ Tu dong Bake Constraints\n"
         if do_smart_bake:
             msg += u"✅ Smart Bake (threshold=%.2f)\n" % threshold
-        msg += u"\nBạn có chắc chắn?"
-        reply = QtWidgets.QMessageBox.question(self, u"Xác nhận Gộp Shot", msg,
+        msg += u"\nBan co chac chan?"
+        reply = QtWidgets.QMessageBox.question(self, u"Xac nhan Gop Shot", msg,
                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if reply != QtWidgets.QMessageBox.Yes:
             return
 
-        # 5. Lưu file hiện tại
+        # 5. Luu file hien tai
         try:
             cmds.file(save=True, force=True)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể lưu file:\n%s" % str(e))
+            QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the luu file:\n%s" % str(e))
             return
 
-        # 6. Chuyển sang DG mode
+        # 6. Chuyen sang DG mode
         original_eval_mode = cmds.evaluationManager(q=True, mode=True)[0]
         if original_eval_mode != 'off':
             cmds.evaluationManager(mode='off')
@@ -2609,20 +2723,20 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         file_type = "mayaAscii" if ext.lower() == ".ma" else "mayaBinary"
 
         try:
-            # 7. Bake Constraints nếu được chọn
+            # 7. Bake Constraints neu duoc chon
             if do_bake:
-                print(u"[Combine] Đang Bake Constraints...")
+                print(u"[Combine] Dang Bake Constraints...")
                 self.bake_and_clean_constraints(saved_selection)
 
-            # 8. Smart Bake nếu được chọn
+            # 8. Smart Bake neu duoc chon
             if do_smart_bake:
-                print(u"[Combine] Đang áp dụng Smart Bake...")
+                print(u"[Combine] Dang ap dung Smart Bake...")
                 self.apply_smart_bake_filter(saved_selection, threshold)
 
-            # 9. Thực hiện gộp trong undo chunk
+            # 9. Thuc hien gop trong undo chunk
             cmds.undoInfo(openChunk=True)
             try:
-                # Xóa bookmarks không thuộc khoảng gộp
+                # Xoa bookmarks khong thuoc khoang gop
                 all_bms = cmds.ls(type='timeSliderBookmark') or []
                 for b in all_bms:
                     if b not in valid_bookmarks:
@@ -2631,13 +2745,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         except Exception:
                             pass
 
-                # Truy quét toàn bộ anim curves trong scene để dọn sạch keyframe thừa 100%
+                # Truy quet toan bo anim curves trong scene de don sach keyframe thua 100%
                 try:
                     anim_curves = cmds.ls(type='animCurve') or []
                 except Exception:
                     anim_curves = []
 
-                # Cắt key trên từng curve
+                # Cat key tren tung curve
                 for curve in anim_curves:
                     try:
                         cmds.cutKey(curve, time=(-9999999, global_start - padding - 0.01), option="keys", clear=True)
@@ -2648,28 +2762,28 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     except Exception:
                         pass
 
-                # Thiết lập timeline
+                # Thiet lap timeline
                 cmds.playbackOptions(
                     min=global_start, max=global_end,
                     animationStartTime=global_start, animationEndTime=global_end
                 )
             except Exception as e:
-                print(u"[Combine] Lỗi: %s" % str(e))
+                print(u"[Combine] Loi: %s" % str(e))
             finally:
                 cmds.undoInfo(closeChunk=True)
 
-            # 10. Tạo thư mục và lưu file gộp
+            # 10. Tao thu muc va luu file gop
             if not _os.path.exists(combine_dir):
                 _os.makedirs(combine_dir)
 
             cmds.file(rename=combine_path.replace('\\', '/'))
             try:
                 cmds.file(save=True, force=True, type=file_type)
-                print(u"==> Đã xuất file gộp cụm thành công: %s" % _os.path.basename(combine_path))
+                print(u"==> Da xuat file gop cum thanh cong: %s" % _os.path.basename(combine_path))
             except Exception as e:
-                print(u"[Combine] Lỗi lưu file: %s" % str(e))
+                print(u"[Combine] Loi luu file: %s" % str(e))
 
-            # Undo để trả scene về trạng thái ban đầu
+            # Undo de tra scene ve trang thai ban dau
             cmds.undo()
 
         finally:
@@ -2685,15 +2799,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     pass
 
         QtWidgets.QMessageBox.information(
-            self, u"Hoàn tất",
-            u"Đã gộp cụm shot %d-%d thành công!\n\nFile: %s" % (
+            self, u"Hoan tat",
+            u"Da gop cum shot %d-%d thanh cong!\n\nFile: %s" % (
                 start_shot, end_shot, _os.path.basename(combine_path))
         )
 
     def bake_and_clean_constraints(self, selection):
         """
-        Tự động phát hiện constraint trên các đối tượng đã chọn,
-        thực hiện Bake Simulation rồi xóa constraint.
+        Tu dong phat hien constraint tren cac doi tuong da chon,
+        thuc hien Bake Simulation roi xoa constraint.
         """
         constraint_types = [
             'parentConstraint', 'pointConstraint', 'orientConstraint',
@@ -2715,13 +2829,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 objects_to_bake.append(obj)
 
         if not objects_to_bake:
-            print(u"[Bake] Không tìm thấy control nào bị constraint trong vùng chọn.")
+            print(u"[Bake] Khong tim thay control nao bi constraint trong vung chon.")
             return
 
         s_time = cmds.playbackOptions(q=True, minTime=True)
         e_time = cmds.playbackOptions(q=True, maxTime=True)
 
-        print(u"[Bake] Đang bake cho %d objects có constraint..." % len(objects_to_bake))
+        print(u"[Bake] Dang bake cho %d objects co constraint..." % len(objects_to_bake))
 
         cmds.bakeResults(
             objects_to_bake,
@@ -2737,50 +2851,50 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if constraints_to_delete:
             constraints_to_delete = list(set(constraints_to_delete))
             cmds.delete(constraints_to_delete)
-            print(u"[Bake] Đã dọn dẹp xong %d constraints." % len(constraints_to_delete))
+            print(u"[Bake] Da don dep xong %d constraints." % len(constraints_to_delete))
 
     def apply_smart_bake_filter(self, selection, threshold=0.1):
         """
-        Áp dụng Smart Bake: bake thưa rồi giảm keyframe bằng keyReducer.
+        Ap dung Smart Bake: bake thua roi giam keyframe bang keyReducer.
         """
-        # 1. Lấy tất cả anim curves từ các objects được chọn
+        # 1. Lay tat ca anim curves tu cac objects duoc chon
         anim_curves = cmds.keyframe(selection, q=True, name=True) or []
         if not anim_curves:
-            print(u"[SmartBake] Không tìm thấy anim curve nào.")
+            print(u"[SmartBake] Khong tim thay anim curve nao.")
             return
 
         anim_curves = list(set(anim_curves))
 
-        # 2. Áp dụng bộ lọc keyReducer
+        # 2. Ap dung bo loc keyReducer
         try:
             cmds.filterCurve(anim_curves, filter="keyReducer", precisionMode=0, precision=threshold)
-            print(u"[SmartBake] Đã áp dụng keyReducer (threshold=%.2f) cho %d anim curves." % (
+            print(u"[SmartBake] Da ap dung keyReducer (threshold=%.2f) cho %d anim curves." % (
                 threshold, len(anim_curves)))
         except Exception as e:
-            print(u"[SmartBake] Lỗi: %s" % str(e))
+            print(u"[SmartBake] Loi: %s" % str(e))
 
     def on_open_studio_library(self):
-        """Mở giao diện Studio Library UI"""
+        """Mo giao dien Studio Library UI"""
         try:
             import studiolibrary
-            # Reset biến cửa sổ để tránh xung đột với cửa sổ cũ đã đóng
+            # Reset bien cua so de tranh xung dot voi cua so cu da dong
             studiolibrary._window = None
             studiolibrary.main()
-            print(u"[StudioLibrary] Đã mở Studio Library UI.")
+            print(u"[StudioLibrary] Da mo Studio Library UI.")
         except ImportError:
             QtWidgets.QMessageBox.warning(
-                self, u"Lỗi Import",
-                u"Không thể import Studio Library.\n"
-                u"Kiểm tra thư mục: thirdparty/studiolibrary/src/"
+                self, u"Loi Import",
+                u"Khong the import Studio Library.\n"
+                u"Kiem tra thu muc: thirdparty/studiolibrary/src/"
             )
         except Exception as e:
             QtWidgets.QMessageBox.warning(
-                self, u"Lỗi",
-                u"Lỗi khi mở Studio Library UI:\n%s" % str(e)
+                self, u"Loi",
+                u"Loi khi mo Studio Library UI:\n%s" % str(e)
             )
 
     def on_export_bookmarks_csv(self):
-        """Xuất danh sách Bookmarks ra file CSV"""
+        """Xuat danh sach Bookmarks ra file CSV"""
         import csv
 
         if not cmds.pluginInfo('timeSliderBookmark', q=True, loaded=True):
@@ -2791,7 +2905,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         bookmarks = cmds.ls(type='timeSliderBookmark') or []
         if not bookmarks:
-            QtWidgets.QMessageBox.information(self, u"Thông báo", u"Không tìm thấy Bookmark nào.")
+            QtWidgets.QMessageBox.information(self, u"Thong bao", u"Khong tim thay Bookmark nao.")
             return
 
         path = cmds.fileDialog2(ff="CSV Files (*.csv)", ds=2, fm=0, cap="Save Bookmark Data")
@@ -2815,15 +2929,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             else:
                 with open(path[0], 'w', newline='', encoding='utf-8') as f:
                     csv.writer(f).writerows(data)
-            QtWidgets.QMessageBox.information(self, u"Thành công", u"Đã xuất bookmarks ra CSV thành công!")
+            QtWidgets.QMessageBox.information(self, u"Thanh cong", u"Da xuat bookmarks ra CSV thanh cong!")
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, u"Lỗi", u"Không thể ghi file CSV:\n%s" % str(e))
+            QtWidgets.QMessageBox.critical(self, u"Loi", u"Khong the ghi file CSV:\n%s" % str(e))
 
 
 def show_window():
     import sys
     
-    # 1. Đóng và giải phóng bộ nhớ của giao diện cũ từ sys module
+    # 1. Dong va giai phong bo nho cua giao dien cu tu sys module
     old_ui = getattr(sys, "_animeow_enjo_pipeline_ui", None)
     if old_ui is not None:
         try:
@@ -2833,7 +2947,7 @@ def show_window():
             pass
         sys._animeow_enjo_pipeline_ui = None
         
-    # 2. Xóa các workspace control cũ của cả phiên bản cũ và mới
+    # 2. Xoa cac workspace control cu cua ca phien ban cu va moi
     old_controls = ["AnimeowAnimToolkitWorkspaceControl", "AnimeowEnjoPipelineWorkspaceControl"]
     for ctrl in old_controls:
         if cmds.workspaceControl(ctrl, exists=True):
@@ -2842,11 +2956,11 @@ def show_window():
             except Exception:
                 pass
             
-    # 3. Tạo instance mới và lưu tham chiếu vào sys module
+    # 3. Tao instance moi va luu tham chieu vao sys module
     ui_instance = AnimeowMayaToolkitUI()
     sys._animeow_enjo_pipeline_ui = ui_instance
     
-    # 4. Hiển thị dưới dạng dockable panel
+    # 4. Hien thi duoi dang dockable panel
     ui_instance.show(
         dockable=True,
         workspaceControlName=AnimeowMayaToolkitUI.WORKSPACE_CONTROL_NAME,
@@ -2855,7 +2969,7 @@ def show_window():
         allowedArea="left|right"
     )
     
-    # 5. Cập nhật tiêu đề hiển thị cho tab trong Maya
+    # 5. Cap nhat tieu de hien thi cho tab trong Maya
     if cmds.workspaceControl(AnimeowMayaToolkitUI.WORKSPACE_CONTROL_NAME, exists=True):
         cmds.workspaceControl(
             AnimeowMayaToolkitUI.WORKSPACE_CONTROL_NAME, 

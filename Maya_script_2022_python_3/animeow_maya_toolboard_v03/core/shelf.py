@@ -601,6 +601,12 @@ def create_shelf():
             "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='world_bake')".format(pkg=package_name)
         },
         {
+            "label": "BPO",
+            "annotation": "Mở độc lập: Bake theo bước, Tâm xoay tạm thời & Rotate Order",
+            "image": get_icon("bpo_icon.png", "save.png"),
+            "command": common_path_init + "for m in list(sys.modules.keys()):\n    if m.startswith('{pkg}'):\n        del sys.modules[m]\nimport {pkg}\n{pkg}.show(standalone_tab='bake_pivot_order')".format(pkg=package_name)
+        },
+        {
             "label": "FakeConst",
             "annotation": "Mở cửa sổ Fake Constraint độc lập",
             "image": get_icon("fake_const_icon.png", "parentConstraint.png"),

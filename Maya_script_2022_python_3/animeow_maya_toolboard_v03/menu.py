@@ -29,7 +29,7 @@ def create_menu():
     for item in menu_items:
         try:
             lbl = cmds.menuItem(item, query=True, label=True)
-            if lbl in ["Anim Combiner Toolboard", "Animeow Toolboard"]:
+            if lbl in ["Anim Combiner Toolboard", "Animeow Toolboard", "Bake / Pivot / Rotate Order"]:
                 cmds.deleteUI(item, menuItem=True)
         except Exception:
             pass
@@ -48,4 +48,10 @@ def create_menu():
         image="fileOpen.png",
         parent=MENU_NAME
     )
-    print("Đã đăng ký 'Animeow Toolboard' vào menu '%s'." % MENU_LABEL)
+    cmds.menuItem(
+        label="Bake / Pivot / Rotate Order",
+        command="import sys\nfor m in list(sys.modules.keys()):\n    if m.startswith('{0}'):\n        del sys.modules[m]\nimport {0}\n{0}.show(standalone_tab='bake_pivot_order')".format(pkg_name),
+        image="save.png",
+        parent=MENU_NAME
+    )
+    print("Đã đăng ký 'Animeow Toolboard' và 'Bake / Pivot / Rotate Order' vào menu '%s'." % MENU_LABEL)

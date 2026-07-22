@@ -787,6 +787,9 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             elif standalone_tab == "world_bake":
                 self.WINDOW_TITLE = "Smart World Bake"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowSmartWorldBakeWorkspaceControl"
+            elif standalone_tab == "bake_pivot_order":
+                self.WINDOW_TITLE = "Bake & Pivot & Rotate Order"
+                self.WORKSPACE_CONTROL_NAME = "AnimeowBakePivotOrderWorkspaceControl"
             elif standalone_tab == "fake_constraint":
                 self.WINDOW_TITLE = "Fake Constraint"
                 self.WORKSPACE_CONTROL_NAME = "AnimeowFakeConstraintWorkspaceControl"
@@ -1937,6 +1940,16 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     fc_group.hide()
                 except Exception:
                     pass
+            elif self.standalone_tab == "bake_pivot_order":
+                self.tab_widget.addTab(wrap_in_scroll(tab1), "Bake / Pivot / Rotate Order")
+                try:
+                    t1_title.hide()
+                    link_group.hide()
+                    qc_group.hide()
+                    wb_group.hide()
+                    fc_group.hide()
+                except Exception:
+                    pass
             elif self.standalone_tab == "fake_constraint":
                 self.tab_widget.addTab(wrap_in_scroll(tab1), "Fake Constraint")
                 try:
@@ -2141,172 +2154,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 self.fav_clean_subframe_btn.clicked.connect(self.on_clean_subframe_keys)
                 ck_lay.addWidget(self.fav_clean_subframe_btn)
                 
-                # Cụm Smooth Keys & Slider trong Favorites
-                fav_smooth_row = QtWidgets.QHBoxLayout()
-                self.fav_smooth_btn = QtWidgets.QPushButton("Smooth Keys")
-                self.fav_smooth_btn.setIcon(AnimeowIcons.icon_clean())
-                self.fav_smooth_btn.setFixedHeight(24)
-                self.fav_smooth_btn.setToolTip("Làm mịn 100% các keyframe được chọn trong Graph Editor")
-                self.fav_smooth_btn.clicked.connect(self.on_smooth_btn_clicked)
-                fav_smooth_row.addWidget(self.fav_smooth_btn)
-                
-                self.fav_smooth_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-                self.fav_smooth_slider.setRange(0, 100)
-                self.fav_smooth_slider.setValue(0)
-                self.fav_smooth_slider.setFixedHeight(20)
-                self.fav_smooth_slider.setToolTip("Kéo trượt để làm mịn keyframe tương tác từ 0% đến 100%")
-                self.fav_smooth_slider.setStyleSheet("""
-                    QSlider::groove:horizontal {
-                        background: #3A3A3A;
-                        height: 4px;
-                        border-radius: 2px;
-                    }
-                    QSlider::handle:horizontal {
-                        background: #00BCD4;
-                        width: 12px;
-                        height: 12px;
-                        margin: -4px 0;
-                        border-radius: 6px;
-                    }
-                """)
-                fav_smooth_row.addWidget(self.fav_smooth_slider)
-                
-                self.fav_smooth_pct_label = QtWidgets.QLabel("0%")
-                self.fav_smooth_pct_label.setFixedWidth(30)
-                self.fav_smooth_pct_label.setAlignment(QtCore.Qt.AlignCenter)
-                self.fav_smooth_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4;")
-                fav_smooth_row.addWidget(self.fav_smooth_pct_label)
-                ck_lay.addLayout(fav_smooth_row)
-                
-                self.fav_smooth_slider.sliderPressed.connect(self.on_smooth_slider_pressed)
-                self.fav_smooth_slider.valueChanged.connect(self.on_smooth_slider_changed)
-                self.fav_smooth_slider.sliderReleased.connect(self.on_smooth_slider_released)
-                
                 fav_layout.addWidget(ck_group)
-                
-                # GroupBox 1b: Curve Utilities (Favorites)
-                fav_curve_group = QtWidgets.QGroupBox("Curve Utilities (Tinh chỉnh đường cong)")
-                fav_curve_layout = QtWidgets.QVBoxLayout(fav_curve_group)
-                fav_curve_layout.setContentsMargins(8, 10, 8, 8)
-                fav_curve_layout.setSpacing(6)
-                
-                self.fav_local_scale_btn = QtWidgets.QPushButton("Local Scale (Co dãn keyframe cục bộ)")
-                self.fav_local_scale_btn.setIcon(AnimeowIcons.icon_tween())
-                self.fav_local_scale_btn.setFixedHeight(28)
-                self.fav_local_scale_btn.clicked.connect(self.on_local_scale_tool)
-                fav_curve_layout.addWidget(self.fav_local_scale_btn)
-                
-                # Phân cách ngang
-                fav_sep = QtWidgets.QFrame()
-                fav_sep.setFrameShape(QtWidgets.QFrame.HLine)
-                fav_sep.setFrameShadow(QtWidgets.QFrame.Sunken)
-                fav_curve_layout.addWidget(fav_sep)
-                
-                # Jitter Slider Layout cho Favorites
-                fav_jitter_layout = QtWidgets.QHBoxLayout()
-                fav_jitter_lbl_title = QtWidgets.QLabel(u"Cường độ mượt:")
-                fav_jitter_lbl_title.setStyleSheet("color: #888888;")
-                fav_jitter_layout.addWidget(fav_jitter_lbl_title)
-                
-                self.fav_jitter_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-                self.fav_jitter_slider.setRange(0, 100)
-                self.fav_jitter_slider.setValue(100)
-                self.fav_jitter_slider.setFixedHeight(20)
-                fav_jitter_layout.addWidget(self.fav_jitter_slider)
-                
-                self.fav_jitter_lbl = QtWidgets.QLabel("1.00")
-                self.fav_jitter_lbl.setFixedWidth(30)
-                self.fav_jitter_lbl.setAlignment(QtCore.Qt.AlignCenter)
-                self.fav_jitter_lbl.setStyleSheet("font-weight: bold; color: #00BCD4;")
-                fav_jitter_layout.addWidget(self.fav_jitter_lbl)
-                
-                fav_curve_layout.addLayout(fav_jitter_layout)
-                
-                # Kết nối slider cập nhật label
-                self.fav_jitter_slider.valueChanged.connect(lambda v: self.fav_jitter_lbl.setText("%.2f" % (v / 100.0)))
-                
-                # Nút bấm Fix Jitter cho Favorites
-                self.fav_fix_jitter_btn = QtWidgets.QPushButton(u"Fix Jitter (Khử rung / Làm mượt curve)")
-                self.fav_fix_jitter_btn.setIcon(AnimeowIcons.icon_tween())
-                self.fav_fix_jitter_btn.setFixedHeight(26)
-                self.fav_fix_jitter_btn.clicked.connect(self.on_fav_fix_jitter)
-                fav_curve_layout.addWidget(self.fav_fix_jitter_btn)
-                
-                fav_layout.addWidget(fav_curve_group)
-                
-                # GroupBox 2: Tween Machine (Favorites)
-                fav_tween_group = QtWidgets.QGroupBox("Tween Machine (Nội suy Keyframe)")
-                fav_tween_layout = QtWidgets.QVBoxLayout(fav_tween_group)
-                fav_tween_layout.setContentsMargins(8, 10, 8, 8)
-                fav_tween_layout.setSpacing(6)
-                
-                fav_tween_row = QtWidgets.QHBoxLayout()
-                fav_tween_row.addWidget(QtWidgets.QLabel("Prev"))
-                self.fav_tween_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-                self.fav_tween_slider.setRange(0, 100)
-                self.fav_tween_slider.setValue(50)
-                self.fav_tween_slider.setFixedHeight(24)
-                self.fav_tween_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
-                self.fav_tween_slider.setTickInterval(25)
-                self.fav_tween_slider.setStyleSheet("""
-                    QSlider::groove:horizontal {
-                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                            stop:0 #FF6B35, stop:0.5 #00BCD4, stop:1 #4CAF50);
-                        height: 6px;
-                        border-radius: 3px;
-                    }
-                    QSlider::handle:horizontal {
-                        background: #FFFFFF;
-                        border: 2px solid #00BCD4;
-                        width: 14px;
-                        height: 14px;
-                        margin: -5px 0;
-                        border-radius: 8px;
-                    }
-                    QSlider::handle:horizontal:hover {
-                        background: #00BCD4;
-                        border: 2px solid #FFFFFF;
-                    }
-                """)
-                fav_tween_row.addWidget(self.fav_tween_slider)
-                fav_tween_row.addWidget(QtWidgets.QLabel("Next"))
-                
-                self.fav_tween_pct_label = QtWidgets.QLabel("50%")
-                self.fav_tween_pct_label.setFixedWidth(35)
-                self.fav_tween_pct_label.setAlignment(QtCore.Qt.AlignCenter)
-                self.fav_tween_pct_label.setStyleSheet("font-weight: bold; color: #00BCD4; font-size: 11px;")
-                fav_tween_row.addWidget(self.fav_tween_pct_label)
-                fav_tween_layout.addLayout(fav_tween_row)
-                
-                # Preset row cho Favorites
-                fav_preset_row = QtWidgets.QHBoxLayout()
-                from functools import partial
-                for pct in [0, 25, 50, 75, 100]:
-                    btn = QtWidgets.QPushButton("%d%%" % pct)
-                    btn.setFixedHeight(20)
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background: #3A3A3A;
-                            border: 1px solid #555;
-                            border-radius: 4px;
-                            color: #E0E0E0;
-                            font-size: 10px;
-                        }
-                        QPushButton:hover {
-                            background: #00BCD4;
-                            color: #FFFFFF;
-                            border-color: #00BCD4;
-                        }
-                    """)
-                    btn.clicked.connect(partial(self.on_tween_preset, pct))
-                    fav_preset_row.addWidget(btn)
-                fav_tween_layout.addLayout(fav_preset_row)
-                
-                self.fav_tween_slider.sliderPressed.connect(self.on_tween_slider_pressed)
-                self.fav_tween_slider.valueChanged.connect(self.on_tween_slider_changed)
-                self.fav_tween_slider.sliderReleased.connect(self.on_tween_slider_released)
-                
-                fav_layout.addWidget(fav_tween_group)
                 
                 # GroupBox 3: Timing & Inbetweens (Favorites)
                 fav_time_group = QtWidgets.QGroupBox("Timing & Inbetweens (Timing & Diễn hoạt)")
@@ -4891,21 +4739,7 @@ class AnimeowMayaToolboardUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
 
-    def on_fav_fix_jitter(self):
-        """Khởi chạy công cụ làm mượt curve (Fix Jitter) từ favorites"""
-        try:
-            from ..core import fix_jitter
-        except ImportError:
-            import importlib
-            pkg = __package__.split('.')[0] if __package__ else "animeow_maya_toolboard_v03"
-            fix_jitter = importlib.import_module(pkg + ".core.fix_jitter")
-            
-        strength = self.fav_jitter_slider.value() / 100.0
-        success, msg = fix_jitter.smooth_anim_curves(strength)
-        if success:
-            print("[AnimeowTool] %s" % msg)
-        else:
-            QtWidgets.QMessageBox.warning(self, "Cảnh báo", msg)
+
 
     def on_motion_trail_to_curve(self):
         """Khởi chạy công cụ chuyển Motion Trail thành Curve"""
@@ -5474,6 +5308,14 @@ def show_window(tab_index=None, standalone_tab=None):
                     cmds.windowPref(ctrl_name, remove=True)
             except Exception:
                 pass
+        elif standalone_tab == "bake_pivot_order":
+            ctrl_name = "AnimeowBakePivotOrderWorkspaceControl"
+            win_title = "Bake & Pivot & Rotate Order"
+            try:
+                if cmds.windowPref(ctrl_name, exists=True):
+                    cmds.windowPref(ctrl_name, remove=True)
+            except Exception:
+                pass
         elif standalone_tab == "fake_constraint":
             ctrl_name = "AnimeowFakeConstraintWorkspaceControl"
             win_title = "Fake Constraint"
@@ -5576,6 +5418,9 @@ def show_window(tab_index=None, standalone_tab=None):
         elif standalone_tab == "world_bake":
             show_kwargs["width"] = 350
             show_kwargs["height"] = 285
+        elif standalone_tab == "bake_pivot_order":
+            show_kwargs["width"] = 350
+            show_kwargs["height"] = 380
         elif standalone_tab == "fake_constraint":
             show_kwargs["width"] = 350
             show_kwargs["height"] = 250
@@ -5601,6 +5446,11 @@ def show_window(tab_index=None, standalone_tab=None):
             edit_kwargs["initialWidth"] = 350
             edit_kwargs["minimumHeight"] = 200
             edit_kwargs["initialHeight"] = 285
+        elif standalone_tab == "bake_pivot_order":
+            edit_kwargs["minimumWidth"] = 300
+            edit_kwargs["initialWidth"] = 350
+            edit_kwargs["minimumHeight"] = 280
+            edit_kwargs["initialHeight"] = 380
         elif standalone_tab == "fake_constraint":
             edit_kwargs["minimumWidth"] = 300
             edit_kwargs["initialWidth"] = 350

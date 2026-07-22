@@ -19,35 +19,37 @@ global proc animeow_toolkit_install() {
         return;
     }
     
-    // Chuẩn hoá đường dẫn
+    // Chuan hoa duong dan
     $filePath = `substituteAllString $filePath "\\" "/"`;
     
-    // Lấy thư mục cha của installer (ví dụ: E:/AI_Work/Blender/Maya_script/Animeow_Enjo_Pipeline/)
+    // Lay thu muc cha cua installer (vi du: E:/AI_Work/Blender/Maya_script/Animeow_Enjo_Pipeline/)
     string $installDir = `match "^.*/" $filePath`;
     
-    // Thư mục chứa gói python (thư mục cha của Animeow_Enjo_Pipeline, tức là E:/AI_Work/Blender/Maya_script/)
-    // Ta cắt bỏ "Animeow_Enjo_Pipeline/" ở cuối
+    // Thu muc chua goi python (thu muc cha cua Animeow_Enjo_Pipeline, tuc la E:/AI_Work/Blender/Maya_script/)
+    // Ta cat bo "Animeow_Enjo_Pipeline/" o cuoi
     string $parentDir = `substitute "Animeow_Enjo_Pipeline/" $installDir ""`;
     
-    // Tạo script Python để khởi chạy
+    // Tao script Python de khoi chay
     string $pyCmd = "import sys\n";
     $pyCmd += "path = '" + $parentDir + "'\n";
     $pyCmd += "if path not in sys.path: sys.path.insert(0, path)\n";
     $pyCmd += "import Animeow_Enjo_Pipeline\n";
     $pyCmd += "import Animeow_Enjo_Pipeline.menu as menu\n";
+    $pyCmd += "try: reload(Animeow_Enjo_Pipeline); reload(menu)\n";
+    $pyCmd += "except: pass\n";
     $pyCmd += "menu.create_menu()\n";
     $pyCmd += "Animeow_Enjo_Pipeline.show()\n";
     
-    // Tìm Shelf hiện tại để thêm nút
+    // Tim Shelf hien tai de them nut
     global string $gShelfTopLevel;
     if (`tabLayout -exists $gShelfTopLevel`) {
         string $currentShelf = `tabLayout -q -selectTab $gShelfTopLevel`;
         setParent $currentShelf;
         
-        // Tạo nút bấm mới trên Shelf
+        // Tao nut bam moi tren Shelf
         shelfButton
             -label "Animeow Pipeline"
-            -annotation "Mở bộ công cụ quản lý File & Playblast Animeow"
+            -annotation "Mo bo cong cu quan ly File & Playblast Animeow"
             -image1 "fileOpen.png"
             -command $pyCmd
             -sourceType "python"
@@ -63,5 +65,5 @@ global proc animeow_toolkit_install() {
     }
 }
 
-// Thực thi cài đặt
+// Thuc thi cai dat
 animeow_toolkit_install();
