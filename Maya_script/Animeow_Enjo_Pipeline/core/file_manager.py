@@ -918,3 +918,70 @@ class FileManager(object):
 
         filename = "%s_Shot_%02d-%02d.ma" % (ep_abbrev, int(start_shot), int(end_shot))
         return os.path.normpath(os.path.join(combine_dir, filename))
+
+    def organize_studio_library(self, project):
+        """Tu dong don dep va chuan hoa cau truc thu muc Studio Library cua du an"""
+        lib_dir = self.get_project_studiolibrary_dir(project)
+        if not lib_dir or not os.path.exists(lib_dir):
+            return False, u"Thu muc Studio Library khong ton tai: %s" % lib_dir
+
+        import shutil
+        
+        def safe_move(src, dst):
+            if not os.path.exists(src):
+                return False
+            dst_dir = os.path.dirname(dst)
+            if not os.path.exists(dst_dir):
+                os.makedirs(dst_dir)
+            if os.path.exists(dst):
+                if os.path.isdir(src) and os.path.isdir(dst):
+                    for item in os.listdir(src):
+                        safe_move(os.path.join(src, item), os.path.join(dst, item))
+                    try:
+                        os.rmdir(src)
+                    except Exception:
+                        pass
+                    return True
+                return False
+            try:
+                shutil.move(src, dst)
+                return True
+            except Exception:
+                return False
+
+        proj_lower = project.lower()
+        if "kidsong" in proj_lower:
+            mapping = {
+                "Baby": "01_Characters/Baby", "Mom": "01_Characters/Mom", "Dad": "01_Characters/Dad",
+                "Sister": "01_Characters/Sister", "Brother": "01_Characters/Brother", "Donal": "01_Characters/Donal",
+                "Animal": "02_Animals/Animal", "Monkey": "02_Animals/Monkey", "Mouse": "02_Animals/Mouse", "Woofin": "02_Animals/Woofin",
+                "Car": "03_Props_Vehicles/Car",
+                "Hand": "04_Common_Library/Hand", "Balloon_Facial": "04_Common_Library/Balloon_Facial",
+                "- Mirror": "04_Common_Library/Mirror", "00. Custom": "04_Common_Library/Custom",
+                "Library Learn": "04_Common_Library/Library_Learn", "Other": "04_Common_Library/Other",
+                "User": "05_User_Scratch/User",
+                "LoLo": "99_Archive_Trash/Cross_Projects/LoLo",
+                "Library Leo": "99_Archive_Trash/Cross_Projects/Library_Leo",
+                "Library_ELEMENTIES": "99_Archive_Trash/Cross_Projects/Library_ELEMENTIES",
+                "Trash": "99_Archive_Trash/Trash", "Old": "99_Archive_Trash/Old",
+            }
+        elif "lolo" in proj_lower:
+            mapping = {
+                "BABY LEO": "01_Characters/Baby_Leo", "LILLY THE BUNNY": "02_Animals/Lilly_Bunny",
+                "SAMMY THE BEAR": "02_Animals/Sammy_Bear", "TOBY MONKEY NEW": "02_Animals/Toby_Monkey",
+                "WOOFIN THE WOLF": "02_Animals/Woofin_Wolf", "Animals": "02_Animals/Animals_Other",
+                "User": "05_User_Scratch/User", "Thien": "05_User_Scratch/User/Thien",
+                "Trash": "99_Archive_Trash/Trash",
+            }
+        else:
+            return False, u"Chua co cau hinh chuan hoa cho du an %s" % project
+
+        count = 0
+        for src_name, dst_rel in mapping.items():
+            s = os.path.join(lib_dir, src_name)
+            d = os.path.join(lib_dir, dst_rel)
+            if safe_move(s, d):
+                count += 1
+
+        return True, u"Da tu dong sap xep chuan hoa xong %d thu muc cho %s!" % (count, project)
+

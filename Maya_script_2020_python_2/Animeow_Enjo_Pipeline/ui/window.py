@@ -330,6 +330,11 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
         self.add_custom_btn.clicked.connect(self.on_add_custom)
         btn_layout.addWidget(self.add_custom_btn)
         
+        self.organize_btn = QtWidgets.QPushButton(u"🧹 Sap Xep Chuan Hoa Folder")
+        self.organize_btn.setToolTip(u"Tu dong gom va sap xep cac folder trong Thu vien duoc chon ve dung cau truc chuan (01_Characters, 02_Animals...)")
+        self.organize_btn.clicked.connect(self.on_organize_selected)
+        btn_layout.addWidget(self.organize_btn)
+        
         layout.addLayout(btn_layout)
         
     def populate_table(self):
@@ -377,6 +382,21 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
             
         self.libraries.append({"name": name.strip(), "path": path})
         self.populate_table()
+
+    def on_organize_selected(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.libraries):
+            row = 0
+        lib = self.libraries[row]
+        proj_name = "KidSong" if "kidsong" in lib["name"].lower() else "Lolo"
+        
+        ok, msg = self.main_ui.file_manager.organize_studio_library(proj_name)
+        if ok:
+            QtWidgets.QMessageBox.information(self, u"Chuan hoa Thanh Cong", msg)
+            self.populate_table()
+        else:
+            QtWidgets.QMessageBox.warning(self, u"Thong bao", msg)
+
 
 class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     WINDOW_TITLE = "Animeow Enjo Pipeline"
