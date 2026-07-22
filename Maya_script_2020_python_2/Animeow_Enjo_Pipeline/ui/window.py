@@ -297,8 +297,7 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
         
         # Danh sach thu vien mac dinh cua du an
         self.libraries = [
-            {"name": "Kidsong Studio Library", "path": "Z:\\Animeow_Production\\Enjo_Library\\Kidsong"},
-            {"name": "Lolo (Enjo) Studio Library", "path": "Z:\\Animeow_Production\\Enjo_Library\\Lolo"},
+            {"name": u"🎬 Studio Master Library (Kidsong & Lolo)", "path": "Z:\\Animeow_Production\\Enjo_Library\\Master_Library"},
         ]
         
         # Them Thu vien cua Shot hien tai neu co
@@ -2468,28 +2467,19 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         util_layout.setContentsMargins(10, 12, 10, 10)
         util_layout.setSpacing(8)
 
-        # Hang 1: 2 Nut mo nhanh Studio Library cho Kidsong va Lolo (Enjo)
+        # Hang 1: Nut mo nhanh Master Studio Library
         stlib_btn_row = QtWidgets.QHBoxLayout()
         stlib_btn_row.setSpacing(8)
 
-        self.sm_kidsong_stlib_btn = QtWidgets.QPushButton(u"🎵 Studio Library Kidsong")
-        self.sm_kidsong_stlib_btn.setObjectName("accent_btn")
-        self.sm_kidsong_stlib_btn.setToolTip(u"Mo thu vien Studio Library Kidsong:\nZ:\\Animeow_Production\\Enjo_Library\\Kidsong")
-        self.sm_kidsong_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
-            library_path=r"Z:\Animeow_Production\Enjo_Library\Kidsong",
-            library_name="Kidsong Studio Library"
+        self.sm_master_stlib_btn = QtWidgets.QPushButton(u"🎬 Mo Studio Master Library (Gop Kidsong & Lolo)")
+        self.sm_master_stlib_btn.setObjectName("accent_btn")
+        self.sm_master_stlib_btn.setToolTip(u"Mo Thu vien Studio Library tong gop tat ca nhan vat, dong vat va pose cua Kidsong & Lolo:\nZ:\\Animeow_Production\\Enjo_Library\\Master_Library")
+        self.sm_master_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\Master_Library",
+            library_name=u"Studio Master Library"
         ))
 
-        self.sm_lolo_stlib_btn = QtWidgets.QPushButton(u"🦁 Studio Library Lolo (Enjo)")
-        self.sm_lolo_stlib_btn.setObjectName("accent_btn")
-        self.sm_lolo_stlib_btn.setToolTip(u"Mo thu vien Studio Library Lolo / Enjo:\nZ:\\Animeow_Production\\Enjo_Library\\Lolo")
-        self.sm_lolo_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
-            library_path=r"Z:\Animeow_Production\Enjo_Library\Lolo",
-            library_name="Lolo (Enjo) Studio Library"
-        ))
-
-        stlib_btn_row.addWidget(self.sm_kidsong_stlib_btn)
-        stlib_btn_row.addWidget(self.sm_lolo_stlib_btn)
+        stlib_btn_row.addWidget(self.sm_master_stlib_btn)
         util_layout.addLayout(stlib_btn_row)
 
         # Hang 2: Cac nut tien ich va quan ly thu vien
