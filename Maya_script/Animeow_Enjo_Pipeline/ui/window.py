@@ -271,6 +271,113 @@ class DebugReportDialog(QtWidgets.QDialog):
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
 
+class StudioLibraryManagerDialog(QtWidgets.QDialog):
+    """Cua so Quan ly cac Thu vien Studio Library cua cac du an"""
+    def __init__(self, main_ui, parent=None):
+        super(StudioLibraryManagerDialog, self).__init__(parent=parent)
+        self.main_ui = main_ui
+        self.setWindowTitle(u"Studio Library Manager - Quan Ly Thu Vien Du An")
+        self.setMinimumSize(600, 380)
+        
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(12, 12, 12, 12)
+        
+        header_lbl = QtWidgets.QLabel(u"<b>Danh sach cac Thu vien Studio Library dang quan ly:</b>")
+        layout.addWidget(header_lbl)
+        
+        self.table = QtWidgets.QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels([u"Ten Thu Vien", u"Duong dan (Path)", u"Trang thai"])
+        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        layout.addWidget(self.table)
+        
+        # Danh sach thu vien mac dinh cua du an
+        self.libraries = [
+            {"name": "Kidsong Studio Library", "path": "Z:\\Animeow_Production\\Enjo_Library\\Kidsong"},
+            {"name": "Lolo (Enjo) Studio Library", "path": "Z:\\Animeow_Production\\Enjo_Library\\Lolo"},
+        ]
+        
+        # Them Thu vien cua Shot hien tai neu co
+        current_proj = self.main_ui.proj_combo.currentText() if hasattr(self.main_ui, 'proj_combo') else ""
+        current_ep = self.main_ui.ep_combo.currentText() if hasattr(self.main_ui, 'ep_combo') else ""
+        if current_proj and current_ep:
+            shot_sl_dir = self.main_ui.file_manager.get_studiolibrary_dir(current_proj, current_ep)
+            if shot_sl_dir:
+                self.libraries.append({
+                    "name": u"Shot Library (%s)" % current_ep,
+                    "path": shot_sl_dir
+                })
+                
+        self.populate_table()
+        
+        # Hang nut thao tac
+        btn_layout = QtWidgets.QHBoxLayout()
+        
+        self.open_btn = QtWidgets.QPushButton(u"🚀 Mo Thu Vien Duoc Chon")
+        self.open_btn.setObjectName("accent_btn")
+        self.open_btn.clicked.connect(self.on_open_selected)
+        btn_layout.addWidget(self.open_btn)
+        
+        self.explore_btn = QtWidgets.QPushButton(u"📂 Mo Folder Explorer")
+        self.explore_btn.clicked.connect(self.on_explore_selected)
+        btn_layout.addWidget(self.explore_btn)
+        
+        self.add_custom_btn = QtWidgets.QPushButton(u"➕ Them Thu Vien Custom...")
+        self.add_custom_btn.clicked.connect(self.on_add_custom)
+        btn_layout.addWidget(self.add_custom_btn)
+        
+        layout.addLayout(btn_layout)
+        
+    def populate_table(self):
+        self.table.setRowCount(len(self.libraries))
+        for i, lib in enumerate(self.libraries):
+            name_item = QtWidgets.QTableWidgetItem(lib["name"])
+            name_item.setFont(QtGui.QFont("", -1, QtGui.QFont.Bold))
+            path_item = QtWidgets.QTableWidgetItem(lib["path"])
+            
+            exists = os.path.exists(lib["path"])
+            status_str = u"🟢 San sang" if exists else u"🟡 Tu khoi tao"
+            status_item = QtWidgets.QTableWidgetItem(status_str)
+            if exists:
+                status_item.setForeground(QtGui.QColor("#4CAF50"))
+            else:
+                status_item.setForeground(QtGui.QColor("#FF9800"))
+                
+            self.table.setItem(i, 0, name_item)
+            self.table.setItem(i, 1, path_item)
+            self.table.setItem(i, 2, status_item)
+            
+    def on_open_selected(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.libraries):
+            row = 0
+        lib = self.libraries[row]
+        self.accept()
+        self.main_ui.on_open_studio_library(library_path=lib["path"], library_name=lib["name"])
+        
+    def on_explore_selected(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.libraries):
+            return
+        lib = self.libraries[row]
+        self.main_ui.open_folder_explorer(lib["path"])
+        
+    def on_add_custom(self):
+        path = QtWidgets.QFileDialog.getExistingDirectory(self, u"Chon thu muc Studio Library Custom")
+        if not path:
+            return
+        path = os.path.normpath(path)
+        name, ok = QtWidgets.QInputDialog.getText(self, u"Ten Thu Vien", u"Nhap ten hien thi cho Thu vien:")
+        if not (ok and name.strip()):
+            name = os.path.basename(path)
+            
+        self.libraries.append({"name": name.strip(), "path": path})
+        self.populate_table()
+
 class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     WINDOW_TITLE = "Animeow Enjo Pipeline"
     WORKSPACE_CONTROL_NAME = "AnimeowEnjoPipelineWorkspaceControl"
@@ -1894,7 +2001,9 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
         # Xac dinh thu muc published
-        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name, prefix)
+        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+        if task_short == "Lay":
+            published_dir = os.path.join(published_dir, prefix)
             
         if not os.path.exists(published_dir):
             try:
@@ -2005,7 +2114,9 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
         # Xac dinh thu muc published video
-        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name, prefix)
+        published_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name)
+        if task_short == "Lay":
+            published_dir = os.path.join(published_dir, prefix)
             
         dest_mov_dir = os.path.join(published_dir, "mov")
         if not os.path.exists(dest_mov_dir):
@@ -2338,8 +2449,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         util_layout.setSpacing(8)
 
         self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Mo Studio Library UI")
-        self.sm_open_stlib_btn.clicked.connect(self.on_open_studio_library)
+        self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library cua Du an hien tai.\nChuot phai: Chon mo nhanh Kidsong, Lolo hoac Manager.")
+        self.sm_open_stlib_btn.clicked.connect(lambda: self.on_open_studio_library())
+        self.sm_open_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.sm_open_stlib_btn.customContextMenuRequested.connect(self.show_studiolibrary_context_menu)
         util_layout.addWidget(self.sm_open_stlib_btn)
+
+        self.sm_manage_stlib_btn = QtWidgets.QPushButton(u"⚙️ Studio Library Manager")
+        self.sm_manage_stlib_btn.setToolTip(u"Quan ly danh sach cac Thu vien Studio Library cua du an")
+        self.sm_manage_stlib_btn.clicked.connect(self.on_open_studiolibrary_manager)
+        util_layout.addWidget(self.sm_manage_stlib_btn)
 
         self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat Bookmarks ra CSV")
         self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
@@ -2934,14 +3053,35 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             print(u"[SmartBake] Loi: %s" % str(e))
 
-    def on_open_studio_library(self):
-        """Mo giao dien Studio Library UI"""
+    def on_open_studio_library(self, library_path=None, library_name=None):
+        """
+        Mo giao dien Studio Library UI voi duong dan va ten thu vien chi dinh.
+        Neu khong truyen tham so, tu dong mo thu vien dung chung theo Project dang chon (Kidsong hoac Lolo).
+        """
+        if not library_path:
+            current_proj = self.proj_combo.currentText() if hasattr(self, 'proj_combo') else ""
+            if current_proj:
+                library_path = self.file_manager.get_project_studiolibrary_dir(current_proj)
+                library_name = u"Studio Library (%s)" % current_proj
+            else:
+                library_path = r"Z:\Animeow_Production\Enjo_Library\Kidsong"
+                library_name = "Kidsong Studio Library"
+                
+        if not library_name:
+            library_name = os.path.basename(library_path)
+            
+        if not os.path.exists(library_path):
+            try:
+                os.makedirs(library_path)
+            except Exception:
+                pass
+
         try:
             import studiolibrary
             # Reset bien cua so de tranh xung dot voi cua so cu da dong
             studiolibrary._window = None
-            studiolibrary.main()
-            print(u"[StudioLibrary] Da mo Studio Library UI.")
+            studiolibrary.main(name=library_name, path=library_path)
+            print(u"[StudioLibrary] Da mo Studio Library UI: %s (%s)" % (library_name, library_path))
         except ImportError:
             QtWidgets.QMessageBox.warning(
                 self, u"Loi Import",
@@ -2951,8 +3091,40 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.warning(
                 self, u"Loi",
-                u"Loi khi mo Studio Library UI:\n%s" % str(e)
+                u"Loi khi mo Studio Library UI:\n%s" % exception_to_unicode(e)
             )
+
+    def show_studiolibrary_context_menu(self, pos):
+        """Menu ngu canh cho nut Studio Library"""
+        menu = QtWidgets.QMenu(self)
+        
+        act_auto = menu.addAction(u"🔄 Mo Thu vien cua Du an hien tai")
+        menu.addSeparator()
+        act_kidsong = menu.addAction(u"🎵 Mo Kidsong Studio Library (Z:\\Animeow_Production\\Enjo_Library\\Kidsong)")
+        act_lolo = menu.addAction(u"🦁 Mo Lolo (Enjo) Studio Library (Z:\\Animeow_Production\\Enjo_Library\\Lolo)")
+        menu.addSeparator()
+        act_manage = menu.addAction(u"⚙️ Mo Cua So Studio Library Manager...")
+        
+        action = menu.exec_(self.sm_open_stlib_btn.mapToGlobal(pos))
+        if action == act_auto:
+            self.on_open_studio_library()
+        elif action == act_kidsong:
+            self.on_open_studio_library(
+                library_path=r"Z:\Animeow_Production\Enjo_Library\Kidsong",
+                library_name="Kidsong Studio Library"
+            )
+        elif action == act_lolo:
+            self.on_open_studio_library(
+                library_path=r"Z:\Animeow_Production\Enjo_Library\Lolo",
+                library_name="Lolo (Enjo) Studio Library"
+            )
+        elif action == act_manage:
+            self.on_open_studiolibrary_manager()
+
+    def on_open_studiolibrary_manager(self):
+        """Mo cua so Studio Library Manager"""
+        dialog = StudioLibraryManagerDialog(main_ui=self, parent=self)
+        dialog.exec_()
 
     def on_export_bookmarks_csv(self):
         """Xuat danh sach Bookmarks ra file CSV"""
