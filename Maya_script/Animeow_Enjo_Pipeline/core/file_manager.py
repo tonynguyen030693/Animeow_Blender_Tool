@@ -803,24 +803,13 @@ class FileManager(object):
         Mac dinh:
           - KidSong -> Z:\Animeow_Production\Enjo_Library\Kidsong
           - Lolo / Enjo -> Z:\Animeow_Production\Enjo_Library\Lolo
-        Cac du an khac: Z:\Animeow_Production\Enjo_Library\[Project]
-        """
-        if not project:
-            return None
-        
-        proj_lower = project.lower()
+    def get_project_studiolibrary_dir(self, project=None):
+        """Lay duong dan Thu vien Studio Library tong (Z:\Animeow_Production\Enjo_Library) dung chung cho tat ca du an"""
         library_root = os.path.join(os.path.dirname(self.project_root), "Enjo_Library")
         if not os.path.exists(library_root):
             library_root = os.path.join(self.project_root, "Enjo_Library")
             
-        if "kidsong" in proj_lower:
-            lib_dir = os.path.join(library_root, "Kidsong")
-        elif "lolo" in proj_lower:
-            lib_dir = os.path.join(library_root, "Lolo")
-        else:
-            lib_dir = os.path.join(library_root, project)
-            
-        lib_dir = os.path.normpath(lib_dir)
+        lib_dir = os.path.normpath(library_root)
         if not os.path.exists(lib_dir):
             try:
                 os.makedirs(lib_dir)

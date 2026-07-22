@@ -800,13 +800,12 @@ class FileManager(object):
     def get_project_studiolibrary_dir(self, project):
         """
     def get_project_studiolibrary_dir(self, project=None):
-        """Lay duong dan Thu vien Studio Library tong (Master Library) dung chung cho tat ca du an"""
+        """Lay duong dan Thu vien Studio Library tong (Z:\\Animeow_Production\\Enjo_Library) dung chung cho tat ca du an"""
         library_root = os.path.join(os.path.dirname(self.project_root), "Enjo_Library")
         if not os.path.exists(library_root):
             library_root = os.path.join(self.project_root, "Enjo_Library")
             
-        lib_dir = os.path.join(library_root, "Master_Library")
-        lib_dir = os.path.normpath(lib_dir)
+        lib_dir = os.path.normpath(library_root)
         if not os.path.exists(lib_dir):
             try:
                 os.makedirs(lib_dir)
