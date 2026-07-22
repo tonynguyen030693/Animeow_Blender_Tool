@@ -297,7 +297,12 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
         
         # Danh sach thu vien mac dinh cua du an
         self.libraries = [
-            {"name": u"🎬 Studio Library (Enjo_Library)", "path": "Z:\\Animeow_Production\\Enjo_Library"},
+            {"name": u"🎬 Studio Library Tong", "path": "Z:\\Animeow_Production\\Enjo_Library"},
+            {"name": u"👤 01_Characters", "path": "Z:\\Animeow_Production\\Enjo_Library\\01_Characters"},
+            {"name": u"🐾 02_Animals", "path": "Z:\\Animeow_Production\\Enjo_Library\\02_Animals"},
+            {"name": u"🚗 03_Props_Vehicles", "path": "Z:\\Animeow_Production\\Enjo_Library\\03_Props_Vehicles"},
+            {"name": u"✋ 04_Common_Library", "path": "Z:\\Animeow_Production\\Enjo_Library\\04_Common_Library"},
+            {"name": u"🎨 05_User_Scratch", "path": "Z:\\Animeow_Production\\Enjo_Library\\05_User_Scratch"},
         ]
         
         # Them Thu vien cua Shot hien tai neu co
@@ -2471,24 +2476,58 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         stlib_btn_row = QtWidgets.QHBoxLayout()
         stlib_btn_row.setSpacing(8)
 
-        self.sm_master_stlib_btn = QtWidgets.QPushButton(u"📖 Mo Studio Library UI")
-        self.sm_master_stlib_btn.setObjectName("accent_btn")
-        self.sm_master_stlib_btn.setToolTip(u"Mo Thu vien Studio Library tong:\nZ:\\Animeow_Production\\Enjo_Library")
-        self.sm_master_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
-            library_path=r"Z:\Animeow_Production\Enjo_Library",
-            library_name=u"Studio Library"
+        # Hang 1: Cac nut mo nhanh theo Danh muc (Characters, Animals, Props, Common)
+        cat_btn_row = QtWidgets.QHBoxLayout()
+        cat_btn_row.setSpacing(6)
+
+        self.sm_chars_stlib_btn = QtWidgets.QPushButton(u"👤 Characters")
+        self.sm_chars_stlib_btn.setObjectName("accent_btn")
+        self.sm_chars_stlib_btn.setToolTip(u"Mo thu vien Nhan Vat:\nZ:\\Animeow_Production\\Enjo_Library\\01_Characters")
+        self.sm_chars_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\01_Characters",
+            library_name=u"Characters Library"
         ))
 
-        stlib_btn_row.addWidget(self.sm_master_stlib_btn)
-        util_layout.addLayout(stlib_btn_row)
+        self.sm_anim_stlib_btn = QtWidgets.QPushButton(u"🐾 Animals")
+        self.sm_anim_stlib_btn.setObjectName("accent_btn")
+        self.sm_anim_stlib_btn.setToolTip(u"Mo thu vien Dong Vat:\nZ:\\Animeow_Production\\Enjo_Library\\02_Animals")
+        self.sm_anim_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\02_Animals",
+            library_name=u"Animals Library"
+        ))
+
+        self.sm_props_stlib_btn = QtWidgets.QPushButton(u"🚗 Props & Vehicles")
+        self.sm_props_stlib_btn.setObjectName("accent_btn")
+        self.sm_props_stlib_btn.setToolTip(u"Mo thu vien Dao Cu & Xe Co:\nZ:\\Animeow_Production\\Enjo_Library\\03_Props_Vehicles")
+        self.sm_props_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles",
+            library_name=u"Props & Vehicles Library"
+        ))
+
+        self.sm_common_stlib_btn = QtWidgets.QPushButton(u"✋ Common Poses")
+        self.sm_common_stlib_btn.setObjectName("accent_btn")
+        self.sm_common_stlib_btn.setToolTip(u"Mo thu vien Dangs & Biieu Cam Dung Chung:\nZ:\\Animeow_Production\\Enjo_Library\\04_Common_Library")
+        self.sm_common_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\04_Common_Library",
+            library_name=u"Common Library"
+        ))
+
+        cat_btn_row.addWidget(self.sm_chars_stlib_btn)
+        cat_btn_row.addWidget(self.sm_anim_stlib_btn)
+        cat_btn_row.addWidget(self.sm_props_stlib_btn)
+        cat_btn_row.addWidget(self.sm_common_stlib_btn)
+        util_layout.addLayout(cat_btn_row)
 
         # Hang 2: Cac nut tien ich va quan ly thu vien
         other_util_row = QtWidgets.QHBoxLayout()
-        other_util_row.setSpacing(8)
+        other_util_row.setSpacing(6)
 
-        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Studio Library Du An")
-        self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library cua Du an dang chon.\nChuot phai: Chon mo nhanh hoac Quan ly.")
-        self.sm_open_stlib_btn.clicked.connect(lambda: self.on_open_studio_library())
+        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Studio Library Tong")
+        self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library Tong (Enjo_Library).\nChuot phai: Chon nhanh danh muc hoac Manager.")
+        self.sm_open_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library",
+            library_name=u"Studio Library"
+        ))
         self.sm_open_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.sm_open_stlib_btn.customContextMenuRequested.connect(self.show_studiolibrary_context_menu)
         other_util_row.addWidget(self.sm_open_stlib_btn)
@@ -3138,26 +3177,30 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         """Menu ngu canh cho nut Studio Library"""
         menu = QtWidgets.QMenu(self)
         
-        act_auto = menu.addAction(u"🔄 Mo Thu vien cua Du an hien tai")
+        act_root = menu.addAction(u"🎬 Mo Studio Library Tong (Enjo_Library)")
         menu.addSeparator()
-        act_kidsong = menu.addAction(u"🎵 Mo Kidsong Studio Library (Z:\\Animeow_Production\\Enjo_Library\\Kidsong)")
-        act_lolo = menu.addAction(u"🦁 Mo Lolo (Enjo) Studio Library (Z:\\Animeow_Production\\Enjo_Library\\Lolo)")
+        act_chars = menu.addAction(u"👤 Mo Library Characters (01_Characters)")
+        act_anim = menu.addAction(u"🐾 Mo Library Animals (02_Animals)")
+        act_props = menu.addAction(u"🚗 Mo Library Props & Vehicles (03_Props_Vehicles)")
+        act_common = menu.addAction(u"✋ Mo Library Common Poses (04_Common_Library)")
+        act_user = menu.addAction(u"🎨 Mo Library User Scratch (05_User_Scratch)")
         menu.addSeparator()
         act_manage = menu.addAction(u"⚙️ Mo Cua So Studio Library Manager...")
         
-        action = menu.exec_(self.sm_open_stlib_btn.mapToGlobal(pos))
-        if action == act_auto:
-            self.on_open_studio_library()
-        elif action == act_kidsong:
-            self.on_open_studio_library(
-                library_path=r"Z:\Animeow_Production\Enjo_Library\Kidsong",
-                library_name="Kidsong Studio Library"
-            )
-        elif action == act_lolo:
-            self.on_open_studio_library(
-                library_path=r"Z:\Animeow_Production\Enjo_Library\Lolo",
-                library_name="Lolo (Enjo) Studio Library"
-            )
+        sender_btn = self.sender() if hasattr(self, 'sender') and self.sender() else self.sm_open_stlib_btn
+        action = menu.exec_(sender_btn.mapToGlobal(pos))
+        if action == act_root:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library", library_name="Studio Library")
+        elif action == act_chars:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\01_Characters", library_name="Characters Library")
+        elif action == act_anim:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\02_Animals", library_name="Animals Library")
+        elif action == act_props:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles", library_name="Props & Vehicles Library")
+        elif action == act_common:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\04_Common_Library", library_name="Common Library")
+        elif action == act_user:
+            self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\05_User_Scratch", library_name="User Scratch Library")
         elif action == act_manage:
             self.on_open_studiolibrary_manager()
 
