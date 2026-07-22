@@ -946,16 +946,16 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         if current_task == "Layout":
-            # Goi y nhap dai shot
+            # Goi y nhap so shot hoac dai shot
             text, ok = QtWidgets.QInputDialog.getText(
                 self, u"Tao File Layout moi", 
-                u"Nhap dai Shot cho Layout (vi du: 01-30 hoac 30-60):"
+                u"Nhap so Shot hoac dai Shot cho Layout (vi du: 03 hoac 01-30):"
             )
         else:
-            # Nhap so shot don
+            # Nhap so shot don hoac dai shot
             text, ok = QtWidgets.QInputDialog.getText(
                 self, u"Tao File Animation moi", 
-                u"Nhap so Shot cho Animation (vi du: 01 hoac 02):"
+                u"Nhap so Shot hoac dai Shot cho Animation (vi du: 03 hoac 03-10):"
             )
             
         if not (ok and text.strip()):
@@ -990,10 +990,13 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             action_save_anim = menu.addAction(u"💾 Luu canh hien tai vao Animation (Shot %s)" % shot_name)
             menu.addSeparator()
             action_convert_anim = menu.addAction(u"🔄 Chuyen file hien tai sang khau Animation (Shot %s)" % shot_name)
+            menu.addSeparator()
+            action_delete_shot = menu.addAction(u"🗑️ Xoa toan bo Shot %s va cac file Maya" % shot_name)
         else:
             action_save_layout = menu.addAction(u"💾 Luu canh hien tai vao Layout...")
             action_save_anim = menu.addAction(u"💾 Luu canh hien tai vao Animation...")
             action_convert_anim = None
+            action_delete_shot = None
             
         action = menu.exec_(self.shot_list.mapToGlobal(pos))
         if not action:
@@ -1005,6 +1008,78 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.save_current_to_shot_with_task(shot_name=shot_name, target_task="Animation")
         elif action_convert_anim and action == action_convert_anim:
             self.save_current_to_shot_with_task(shot_name=shot_name, target_task="Animation")
+        elif action_delete_shot and action == action_delete_shot:
+            self.on_delete_shot(shot_name)
+
+    def on_delete_shot(self, shot_name):
+        """Xoa toan bo Shot va tat ca cac phien ban file Maya tuong ung tren disk"""
+        if not shot_name:
+            return
+            
+        shot_files = self.shot_map.get(shot_name, [])
+        current_task = self.task_combo.currentText()
+        
+        msg = u"Ban co chac chan muon XOA TOAN BO Shot '%s' khong?\n\n" % shot_name
+        msg += u"Hanh dong nay se xoa vinh vien %d file Maya trong khau %s:" % (len(shot_files), current_task)
+        
+        for info in shot_files[:5]:
+            msg += u"\n  - %s" % info["filename"]
+        if len(shot_files) > 5:
+            msg += u"\n  - va %d file khac..." % (len(shot_files) - 5)
+            
+        msg += u"\n\nLuu y: Hanh dong nay KHONG THE HOAN TAC!"
+        
+        res = QtWidgets.QMessageBox.question(
+            self, u"Xac nhan XOA SHOT", msg,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        )
+        if res != QtWidgets.QMessageBox.Yes:
+            return
+            
+        deleted_count = 0
+        error_count = 0
+        current_scene = cmds.file(q=True, sceneName=True)
+        if current_scene:
+            current_scene = os.path.normpath(current_scene).lower()
+            
+        subfolders_to_clean = set()
+        
+        for info in shot_files:
+            fp = os.path.normpath(info["filepath"])
+            if current_scene and current_scene == fp.lower():
+                QtWidgets.QMessageBox.warning(
+                    self, u"Canh bao",
+                    u"File %s dang mo trong Maya. Vui long tao/mo file khac truoc khi xoa!" % info["filename"]
+                )
+                continue
+                
+            try:
+                if os.path.exists(fp):
+                    os.remove(fp)
+                    deleted_count += 1
+                    
+                parent_d = os.path.dirname(fp)
+                subfolders_to_clean.add(parent_d)
+                grandparent_d = os.path.dirname(parent_d)
+                subfolders_to_clean.add(grandparent_d)
+            except Exception as e:
+                print(u"Loi khi xoa file %s: %s" % (fp, str(e)))
+                error_count += 1
+                
+        # Don dep thu muc rong neu thuoc WorkingFile
+        for d in sorted(subfolders_to_clean, key=lambda x: len(x), reverse=True):
+            if os.path.exists(d) and os.path.isdir(d):
+                try:
+                    if not os.listdir(d):
+                        os.rmdir(d)
+                except Exception:
+                    pass
+                    
+        self.refresh_files_list()
+        QtWidgets.QMessageBox.information(
+            self, u"Hoan tat",
+            u"Da xoa thanh cong %d file cua Shot '%s'." % (deleted_count, shot_name)
+        )
 
     def on_save_current_scene_to_pipeline(self):
         """Luu file Maya hien tai vao Pipeline theo thong tin dang chon tren UI"""
@@ -1023,7 +1098,7 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
             
         if not shot_name:
-            prompt_msg = u"Nhap dai Shot cho Layout (vi du: 01-30 hoac 30-60):" if current_task == "Layout" else u"Nhap so Shot cho Animation (vi du: 01 hoac 02):"
+            prompt_msg = u"Nhap so Shot hoac dai Shot (vi du: 03 hoac 03-10):"
             text, ok = QtWidgets.QInputDialog.getText(
                 self, u"Luu Canh Vao Pipeline (%s)" % current_task, 
                 prompt_msg

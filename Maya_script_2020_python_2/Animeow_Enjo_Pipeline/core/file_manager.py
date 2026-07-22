@@ -47,7 +47,7 @@ class FileManager(object):
         self.project_root = project_root
 
     def clean_shot_code(self, ep_abbrev, shot_input):
-        """Lam sach shot input de tranh trung lap tien to va hau to task (vi du LL_BGOTL_V01_Shot_01_Anim -> 01)"""
+        """Lam sach shot input de tranh trung lap tien to va hau to task (vi du LL_BGOTL_V01_Shot_01_Anim -> 01 hoac 03-10)"""
         if not shot_input:
             return ""
         s = str(shot_input).strip()
@@ -59,6 +59,18 @@ class FileManager(object):
             idx = s.lower().find("shot_")
             s = s[idx + 5:]
         s = re.sub(r'_(Anim|Lay|anim|lay).*$', '', s)
+        
+        # Chuan hoa dai shot neu nhap dang 3-10 hoac 03_10 -> 03-10
+        range_match = re.match(r'^(\d+)\s*[\-\_]\s*(\d+)$', s)
+        if range_match:
+            s1 = int(range_match.group(1))
+            s2 = int(range_match.group(2))
+            return "%02d-%02d" % (s1, s2)
+            
+        # Chuan hoa so shot don neu nhap dang 3 -> 03
+        if s.isdigit():
+            return "%02d" % int(s)
+            
         return s
 
     def parse_scene_name(self, filename):

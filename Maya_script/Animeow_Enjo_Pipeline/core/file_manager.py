@@ -47,7 +47,7 @@ class FileManager(object):
         self.project_root = project_root
 
     def clean_shot_code(self, ep_abbrev, shot_input):
-        """Lam sach shot input de tranh trung lap tien to va hau to task (vi du LL_BGOTL_V01_Shot_01_Anim -> 01)"""
+        """Lam sach shot input de tranh trung lap tien to va hau to task (vi du LL_BGOTL_V01_Shot_01_Anim -> 01 hoac 03-10)"""
         if not shot_input:
             return ""
         s = str(shot_input).strip()
@@ -59,6 +59,18 @@ class FileManager(object):
             idx = s.lower().find("shot_")
             s = s[idx + 5:]
         s = re.sub(r'_(Anim|Lay|anim|lay).*$', '', s)
+        
+        # Chuan hoa dai shot neu nhap dang 3-10 hoac 03_10 -> 03-10
+        range_match = re.match(r'^(\d+)\s*[\-\_]\s*(\d+)$', s)
+        if range_match:
+            s1 = int(range_match.group(1))
+            s2 = int(range_match.group(2))
+            return "%02d-%02d" % (s1, s2)
+            
+        # Chuan hoa so shot don neu nhap dang 3 -> 03
+        if s.isdigit():
+            return "%02d" % int(s)
+            
         return s
 
     def parse_scene_name(self, filename):
@@ -371,14 +383,6 @@ class FileManager(object):
         ep_abbrev = self.get_episode_abbreviation(project, episode)
         shot_code_str = self.clean_shot_code(ep_abbrev, shot_range_or_num)
         
-        # Dam bao so shot le dang 2 chu so (doi voi Animation)
-        if task_short == "Anim":
-            try:
-                shot_num_int = int(shot_code_str)
-                shot_code_str = "%02d" % shot_num_int
-            except ValueError:
-                pass
-            
         file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code_str)
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
@@ -416,13 +420,6 @@ class FileManager(object):
         ep_abbrev = self.get_episode_abbreviation(project, episode)
         shot_code_str = self.clean_shot_code(ep_abbrev, shot_range_or_num)
         
-        if task_short == "Anim":
-            try:
-                shot_num_int = int(shot_code_str)
-                shot_code_str = "%02d" % shot_num_int
-            except ValueError:
-                pass
-            
         file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code_str)
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
@@ -564,7 +561,7 @@ class FileManager(object):
                 )
             else:
                 valid_pattern = re.compile(
-                    r"^" + re.escape(ep_abbrev) + r"_Shot_(?P<shot>\d+)_" + re.escape(task_short) + r"_v(?P<ver>\d+)(?P<ext>\.m[ab])$", 
+                    r"^" + re.escape(ep_abbrev) + r"_Shot_(?P<shot>\d+(-\d+)?)_" + re.escape(task_short) + r"_v(?P<ver>\d+)(?P<ext>\.m[ab])$", 
                     re.IGNORECASE
                 )
                 
@@ -629,12 +626,6 @@ class FileManager(object):
                         proposed_shot = self.clean_shot_code(ep_abbrev, filename)
                         if not proposed_shot:
                             proposed_shot = "01" if t_dir == "Anim" else "01-10"
-                            
-                    if t_dir == "Anim":
-                        try:
-                            proposed_shot = "%02d" % int(proposed_shot)
-                        except ValueError:
-                            pass
                             
                     if not match:
                         current_max = max_ver_by_shot.get(proposed_shot, 0)
