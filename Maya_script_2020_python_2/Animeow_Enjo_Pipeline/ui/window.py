@@ -1750,10 +1750,10 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
         task_dir_name = "Layout" if current_task.lower() in ["layout", "lay"] else "Anim"
         
-        # Neu la Layout, Published co thu muc con cua tung shot
+        # Published co thu muc con cua tung shot
         # Tim shot dang chon de mo dung thu muc published cua shot do
         selected_items = self.shot_list.selectedItems() if hasattr(self, 'shot_list') else []
-        if selected_items and task_dir_name == "Layout":
+        if selected_items:
             shot_name = selected_items[0].text()
             pub_dir = os.path.join(self.project_root, current_proj, current_ep, "Published", task_dir_name, shot_name)
         else:

@@ -394,9 +394,8 @@ class FileManager(object):
         file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code_str)
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
-        if task_short == "Lay":
-            # Layout: luu vao thu muc con dat ten theo shot -> tiep tuc luu vao folder 'file'
-            work_dir = os.path.join(work_dir, file_prefix, "file")
+        # Luu tat ca file nhap (ca Layout va Anim) vao thu muc con dat ten theo shot -> thu muc 'file'
+        work_dir = os.path.join(work_dir, file_prefix, "file")
             
         if not os.path.exists(work_dir):
             os.makedirs(work_dir)
@@ -438,8 +437,8 @@ class FileManager(object):
         file_prefix = "%s_Shot_%s" % (ep_abbrev, shot_code_str)
         
         work_dir = os.path.join(self.project_root, project, episode, "WorkingFile", task_dir_name)
-        if task_short == "Lay":
-            work_dir = os.path.join(work_dir, file_prefix, "file")
+        # Luu tat ca file nhap (ca Layout va Anim) vao thu muc con dat ten theo shot -> thu muc 'file'
+        work_dir = os.path.join(work_dir, file_prefix, "file")
             
         if not os.path.exists(work_dir):
             os.makedirs(work_dir)
@@ -523,9 +522,8 @@ class FileManager(object):
         task_short = "Lay" if task_dir_name == "Layout" else "Anim"
         
         published_dir = os.path.join(self.project_root, project, episode, "Published", task_dir_name)
-        if task_short == "Lay":
-            # Layout: publish vao thu muc con dat ten theo shot
-            published_dir = os.path.join(published_dir, prefix)
+        # Publish vao thu muc con dat ten theo shot
+        published_dir = os.path.join(published_dir, prefix)
             
         if not os.path.exists(published_dir):
             os.makedirs(published_dir)
@@ -554,7 +552,7 @@ class FileManager(object):
                 cmds.file(to_sys_path(current_filepath), open=True, force=True)
 
     def check_episode_filenames_naming(self, project, episode):
-        """Quet toan bo file trong WorkingFile\Layout (ke ca thu muc con) va WorkingFile\Anim de tim file sai quy chuan"""
+        """Quet toan bo file trong WorkingFile\Layout va WorkingFile\Anim (bao gom thu muc con) de tim file sai quy chuan hoac sai thu muc"""
         if not self.project_root or not project or not episode:
             return []
             
@@ -568,17 +566,11 @@ class FileManager(object):
             if not os.path.exists(work_dir):
                 continue
                 
-            # Regex kiem tra file dung quy chuan thuc te
-            if t_dir == "Layout":
-                valid_pattern = re.compile(
-                    r"^" + re.escape(ep_abbrev) + r"_Shot_(?P<shot>\d+(-\d+)?)_" + re.escape(task_short) + r"_v(?P<ver>\d+)(?P<ext>\.m[ab])$", 
-                    re.IGNORECASE
-                )
-            else:
-                valid_pattern = re.compile(
-                    r"^" + re.escape(ep_abbrev) + r"_Shot_(?P<shot>\d+)_" + re.escape(task_short) + r"_v(?P<ver>\d+)(?P<ext>\.m[ab])$", 
-                    re.IGNORECASE
-                )
+            # Regex kiem tra file dung quy chuan thuc te (ap dung cho ca Layout va Anim, ho tro dai shot 01-10)
+            valid_pattern = re.compile(
+                r"^" + re.escape(ep_abbrev) + r"_Shot_(?P<shot>\d+(-\d+)?)_" + re.escape(task_short) + r"_v(?P<ver>\d+)(?P<ext>\.m[ab])$", 
+                re.IGNORECASE
+            )
                 
             # Thu thap cac file can kiem tra
             files_to_check = []
@@ -624,7 +616,7 @@ class FileManager(object):
                 match = valid_pattern.match(filename)
                 is_correct_location = True
                 
-                if match and t_dir == "Layout":
+                if match:
                     shot_val = match.group("shot")
                     proposed_prefix = "%s_Shot_%s" % (ep_abbrev, shot_val)
                     expected_dir = os.path.normpath(os.path.join(work_dir, proposed_prefix, "file"))
@@ -640,13 +632,7 @@ class FileManager(object):
                     else:
                         proposed_shot = self.clean_shot_code(ep_abbrev, filename)
                         if not proposed_shot:
-                            proposed_shot = "01" if t_dir == "Anim" else "01-10"
-                            
-                    if t_dir == "Anim":
-                        try:
-                            proposed_shot = "%02d" % int(proposed_shot)
-                        except ValueError:
-                            pass
+                            proposed_shot = "01"
                             
                     if not match:
                         current_max = max_ver_by_shot.get(proposed_shot, 0)
@@ -661,11 +647,8 @@ class FileManager(object):
                         shot_val = match.group("shot")
                         proposed_shot = shot_val
                     
-                    if t_dir == "Layout":
-                        proposed_prefix = "%s_Shot_%s" % (ep_abbrev, proposed_shot)
-                        proposed_dir = os.path.join(work_dir, proposed_prefix, "file")
-                    else:
-                        proposed_dir = work_dir
+                    proposed_prefix = "%s_Shot_%s" % (ep_abbrev, proposed_shot)
+                    proposed_dir = os.path.join(work_dir, proposed_prefix, "file")
                     
                     incorrect_files.append({
                         "task_dir": t_dir,
@@ -881,10 +864,7 @@ class FileManager(object):
             self.project_root, project, episode,
             "WorkingFile", task_dir_name
         )
-        if task_short == "Lay":
-            shot_dir = os.path.join(work_dir, file_prefix, "file")
-        else:
-            shot_dir = work_dir
+        shot_dir = os.path.join(work_dir, file_prefix, "file")
 
         filename = "%s_%s_v01.ma" % (file_prefix, task_short)
         filepath = os.path.normpath(os.path.join(shot_dir, filename))
