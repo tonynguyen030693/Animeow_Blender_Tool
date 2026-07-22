@@ -920,19 +920,29 @@ class FileManager(object):
         return os.path.normpath(os.path.join(combine_dir, filename))
 
     def organize_studio_library(self, project):
-        """Tu dong don dep va chuan hoa cau truc thu muc Studio Library cua du an"""
+        """Tu dong don dep, dua con vat ra ngoai va danh so toan bo thu muc trong Studio Library"""
         lib_dir = self.get_project_studiolibrary_dir(project)
         if not lib_dir or not os.path.exists(lib_dir):
             return False, u"Thu muc Studio Library khong ton tai: %s" % lib_dir
 
         import shutil
-        
+        import re
+
         def safe_move(src, dst):
             if not os.path.exists(src):
                 return False
+            if os.path.normpath(src).lower() == os.path.normpath(dst).lower():
+                if src != dst:
+                    temp_path = src + "_tmp_rename"
+                    os.rename(src, temp_path)
+                    os.rename(temp_path, dst)
+                    return True
+                return True
+
             dst_dir = os.path.dirname(dst)
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
+
             if os.path.exists(dst):
                 if os.path.isdir(src) and os.path.isdir(dst):
                     for item in os.listdir(src):
@@ -943,11 +953,32 @@ class FileManager(object):
                         pass
                     return True
                 return False
+
             try:
                 shutil.move(src, dst)
                 return True
             except Exception:
                 return False
+
+        def clean_name(name):
+            cleaned = re.sub(r'^\d+[\._\-\s]*', '', name).strip()
+            words = [w.capitalize() for w in re.split(r'[\s_\-]+', cleaned) if w]
+            return "_".join(words)
+
+        def number_subfolders(parent):
+            if not os.path.exists(parent):
+                return
+            subdirs = [
+                d for d in os.listdir(parent)
+                if not d.startswith('.') and not d.startswith('_')
+                and os.path.isdir(os.path.join(parent, d))
+                and not d.endswith(('.anim', '.pose', '.mirror', '.selection'))
+            ]
+            subdirs.sort(key=lambda s: s.lower())
+            for idx, old_name in enumerate(subdirs, 1):
+                c_name = clean_name(old_name)
+                new_name = "%02d_%s" % (idx, c_name)
+                safe_move(os.path.join(parent, old_name), os.path.join(parent, new_name))
 
         proj_lower = project.lower()
         if "kidsong" in proj_lower:
@@ -965,6 +996,27 @@ class FileManager(object):
                 "Library_ELEMENTIES": "99_Archive_Trash/Cross_Projects/Library_ELEMENTIES",
                 "Trash": "99_Archive_Trash/Trash", "Old": "99_Archive_Trash/Old",
             }
+            count = 0
+            for src_name, dst_rel in mapping.items():
+                if safe_move(os.path.join(lib_dir, src_name), os.path.join(lib_dir, dst_rel)):
+                    count += 1
+
+            # Unnest Animal folder inside 02_Animals if exists
+            animal_nested = os.path.join(lib_dir, "02_Animals", "Animal")
+            if os.path.exists(animal_nested):
+                for item in os.listdir(animal_nested):
+                    if not item.startswith('.'):
+                        safe_move(os.path.join(animal_nested, item), os.path.join(lib_dir, "02_Animals", item))
+                try:
+                    os.rmdir(animal_nested)
+                except Exception:
+                    pass
+
+            for cat in ["01_Characters", "02_Animals", "03_Props_Vehicles", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
+                number_subfolders(os.path.join(lib_dir, cat))
+
+            return True, u"Da tu dong dua cac con vat ra ngoai 02_Animals va danh so toan bo thu muc cho Kidsong!"
+
         elif "lolo" in proj_lower:
             mapping = {
                 "BABY LEO": "01_Characters/Baby_Leo", "LILLY THE BUNNY": "02_Animals/Lilly_Bunny",
@@ -973,15 +1025,16 @@ class FileManager(object):
                 "User": "05_User_Scratch/User", "Thien": "05_User_Scratch/User/Thien",
                 "Trash": "99_Archive_Trash/Trash",
             }
+            count = 0
+            for src_name, dst_rel in mapping.items():
+                if safe_move(os.path.join(lib_dir, src_name), os.path.join(lib_dir, dst_rel)):
+                    count += 1
+
+            for cat in ["01_Characters", "02_Animals", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
+                number_subfolders(os.path.join(lib_dir, cat))
+
+            return True, u"Da tu dong sap xep va danh so toan bo thu muc cho Lolo!"
+
         else:
             return False, u"Chua co cau hinh chuan hoa cho du an %s" % project
-
-        count = 0
-        for src_name, dst_rel in mapping.items():
-            s = os.path.join(lib_dir, src_name)
-            d = os.path.join(lib_dir, dst_rel)
-            if safe_move(s, d):
-                count += 1
-
-        return True, u"Da tu dong sap xep chuan hoa xong %d thu muc cho %s!" % (count, project)
 
