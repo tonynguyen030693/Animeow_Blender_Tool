@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, division
+from __future__ import print_function, division
 
 import os
 import sys
@@ -7,7 +7,8 @@ import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from Animeow_Enjo_Pipeline.core import file_manager, playblast_manager
+import Animeow_Enjo_Pipeline.core.file_manager as file_manager
+import Animeow_Enjo_Pipeline.core.playblast_manager as playblast_manager
 
 # --- Tu dong them duong dan thirdparty/studiolibrary/src vao sys.path ---
 _THIRDPARTY_SRC = os.path.normpath(
@@ -339,6 +340,11 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
         self.organize_btn.clicked.connect(self.on_organize_selected)
         btn_layout.addWidget(self.organize_btn)
         
+        self.format_num_btn = QtWidgets.QPushButton(u"🔢 Format 001 Item Numbers")
+        self.format_num_btn.setToolTip(u"Tu dong quet va doi ten tat ca cac item Studio Library (.pose, .anim...) sang 3 chu so (001, 002, 010...)")
+        self.format_num_btn.clicked.connect(self.on_format_num_selected)
+        btn_layout.addWidget(self.format_num_btn)
+        
         layout.addLayout(btn_layout)
         
     def populate_table(self):
@@ -400,6 +406,19 @@ class StudioLibraryManagerDialog(QtWidgets.QDialog):
             self.populate_table()
         else:
             QtWidgets.QMessageBox.warning(self, u"Thong bao", msg)
+
+    def on_format_num_selected(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.libraries):
+            row = 0
+        lib = self.libraries[row]
+        
+        ok, msg = self.main_ui.file_manager.format_studiolibrary_item_numbers(lib["path"])
+        if ok:
+            QtWidgets.QMessageBox.information(self, u"Định Dạng 3 Chữ Số Thành Công", msg)
+            self.populate_table()
+        else:
+            QtWidgets.QMessageBox.warning(self, u"Lỗi", msg)
 
 
 class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
@@ -465,6 +484,15 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         tab2_layout.setSpacing(10)
         self.tab_widget.addTab(tab2_widget, u"✂️ Tach / Gop Canh")
         self._build_tab2_split_merge(tab2_layout)
+
+        # --- TAB 3: Thu Vien Studio Library ---
+        tab3_widget = QtWidgets.QWidget()
+        tab3_layout = QtWidgets.QVBoxLayout(tab3_widget)
+        tab3_layout.setContentsMargins(5, 5, 5, 5)
+        tab3_layout.setSpacing(10)
+        self.tab_widget.addTab(tab3_widget, u"📚 Studio Library")
+        self._build_tab3_studio_library(tab3_layout)
+
 
     def _build_tab1_contents(self, parent_layout):
         """Xay dung noi dung Tab 1 - Quan Ly File & Playblast (giu nguyen giao dien cu)"""
@@ -2286,11 +2314,20 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         split_group_layout.setContentsMargins(12, 16, 12, 12)
         split_group_layout.setSpacing(10)
 
-        # Hang 1: Nut Quet Bookmarks tu Scene hien tai
+        # Hang 1: Nut Quet Bookmarks tu Scene hien tai & Xuat CSV
+        scan_row = QtWidgets.QHBoxLayout()
         self.sm_scan_btn = QtWidgets.QPushButton(u"🔍 Quet Bookmarks tu Scene hien tai")
         self.sm_scan_btn.setToolTip(u"Quet toan bo cac timeSliderBookmark danh so tu scene Maya dang mo")
         self.sm_scan_btn.clicked.connect(self.on_scan_bookmarks)
-        split_group_layout.addWidget(self.sm_scan_btn)
+
+        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat CSV Bookmarks")
+        self.sm_export_csv_btn.setToolTip(u"Xuat danh sach timeSliderBookmark cua scene hien tai thanh file CSV/Excel")
+        self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
+
+        scan_row.addWidget(self.sm_scan_btn, 2)
+        scan_row.addWidget(self.sm_export_csv_btn, 1)
+        split_group_layout.addLayout(scan_row)
+
 
         # Hang 2: Danh sach bookmark
         list_label_row = QtWidgets.QHBoxLayout()
@@ -2466,63 +2503,87 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         scroll_layout.addWidget(combine_group)
 
-        # ---- KHU VUC 3: Tien ich & Thu vien ----
-        util_group = QtWidgets.QGroupBox(u"Tien ich & Thu vien Studio Library")
-        util_layout = QtWidgets.QVBoxLayout(util_group)
-        util_layout.setContentsMargins(10, 12, 10, 10)
-        util_layout.setSpacing(8)
+        scroll_layout.addStretch()
 
-        # Hang 1: Nut mo nhanh Master Studio Library
-        stlib_btn_row = QtWidgets.QHBoxLayout()
-        stlib_btn_row.setSpacing(8)
+    # ================================================================
+    # TAB 3: Thu Vien Studio Library (Dedicated Tab)
+    # ================================================================
 
-        # Hang 1: Cac nut mo nhanh theo Danh muc (Characters, Animals, Props, Common)
+    def _build_tab3_studio_library(self, parent_layout):
+        """Xay dung noi dung Tab 3 - Thu Vien Studio Library dedicated"""
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        scroll_widget = QtWidgets.QWidget()
+        scroll_layout = QtWidgets.QVBoxLayout(scroll_widget)
+        scroll_layout.setContentsMargins(5, 5, 5, 5)
+        scroll_layout.setSpacing(10)
+        scroll.setWidget(scroll_widget)
+        parent_layout.addWidget(scroll)
+
+        # Group 1: Mo nhanh thu vien theo Danh muc
+        cat_group = QtWidgets.QGroupBox(u"📂 Mo Nhanh Thu Vien Theo Danh Muc (Categories)")
+        cat_layout = QtWidgets.QVBoxLayout(cat_group)
+        cat_layout.setContentsMargins(10, 14, 10, 10)
+        cat_layout.setSpacing(8)
+
         cat_btn_row = QtWidgets.QHBoxLayout()
         cat_btn_row.setSpacing(6)
 
-        self.sm_chars_stlib_btn = QtWidgets.QPushButton(u"👤 Characters")
+        self.sm_chars_stlib_btn = QtWidgets.QPushButton(u"👤 01_Characters")
         self.sm_chars_stlib_btn.setObjectName("accent_btn")
-        self.sm_chars_stlib_btn.setToolTip(u"Mo thu vien Nhan Vat:\nZ:\\Animeow_Production\\Enjo_Library\\01_Characters")
+        self.sm_chars_stlib_btn.setToolTip(u"Click chuot trai: Mo thu vien Characters Tong.\nChuot phai: Chon mo thu vien cu the cua 1 Nhan vat (Baby, Dad...).")
         self.sm_chars_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
             library_path=r"Z:\Animeow_Production\Enjo_Library\01_Characters",
             library_name=u"Characters Library"
         ))
+        self.sm_chars_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.sm_chars_stlib_btn.customContextMenuRequested.connect(
+            lambda pos: self.show_category_subfolder_context_menu(r"Z:\Animeow_Production\Enjo_Library\01_Characters", u"Characters", self.sm_chars_stlib_btn, pos))
 
-        self.sm_anim_stlib_btn = QtWidgets.QPushButton(u"🐾 Animals")
+        self.sm_anim_stlib_btn = QtWidgets.QPushButton(u"🐾 02_Animals")
         self.sm_anim_stlib_btn.setObjectName("accent_btn")
-        self.sm_anim_stlib_btn.setToolTip(u"Mo thu vien Dong Vat:\nZ:\\Animeow_Production\\Enjo_Library\\02_Animals")
+        self.sm_anim_stlib_btn.setToolTip(u"Click chuot trai: Mo thu vien Dong Vat Tong.\nChuot phai: Chon mo thu vien cu the cua 1 Dong Vat (Con_Bo, Dog, Cat...).")
         self.sm_anim_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
             library_path=r"Z:\Animeow_Production\Enjo_Library\02_Animals",
             library_name=u"Animals Library"
         ))
+        self.sm_anim_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.sm_anim_stlib_btn.customContextMenuRequested.connect(
+            lambda pos: self.show_category_subfolder_context_menu(r"Z:\Animeow_Production\Enjo_Library\02_Animals", u"Animals", self.sm_anim_stlib_btn, pos))
 
-        self.sm_props_stlib_btn = QtWidgets.QPushButton(u"🚗 Props & Vehicles")
+        self.sm_props_stlib_btn = QtWidgets.QPushButton(u"🚗 03_Props_Vehicles")
         self.sm_props_stlib_btn.setObjectName("accent_btn")
-        self.sm_props_stlib_btn.setToolTip(u"Mo thu vien Dao Cu & Xe Co:\nZ:\\Animeow_Production\\Enjo_Library\\03_Props_Vehicles")
+        self.sm_props_stlib_btn.setToolTip(u"Click chuot trai: Mo thu vien Dao Cu & Xe Co.\nChuot phai: Chon mo thu vien cu the cua Dao Cu/Xe.")
         self.sm_props_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
             library_path=r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles",
             library_name=u"Props & Vehicles Library"
         ))
+        self.sm_props_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.sm_props_stlib_btn.customContextMenuRequested.connect(
+            lambda pos: self.show_category_subfolder_context_menu(r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles", u"Props & Vehicles", self.sm_props_stlib_btn, pos))
 
-        self.sm_common_stlib_btn = QtWidgets.QPushButton(u"✋ Common Poses")
+        self.sm_common_stlib_btn = QtWidgets.QPushButton(u"✋ 04_Common_Library")
         self.sm_common_stlib_btn.setObjectName("accent_btn")
-        self.sm_common_stlib_btn.setToolTip(u"Mo thu vien Dangs & Biieu Cam Dung Chung:\nZ:\\Animeow_Production\\Enjo_Library\\04_Common_Library")
+        self.sm_common_stlib_btn.setToolTip(u"Click chuot trai: Mo thu vien Dung Chung.\nChuot phai: Chon mo thu vien con dung chung.")
         self.sm_common_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
             library_path=r"Z:\Animeow_Production\Enjo_Library\04_Common_Library",
             library_name=u"Common Library"
         ))
+        self.sm_common_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.sm_common_stlib_btn.customContextMenuRequested.connect(
+            lambda pos: self.show_category_subfolder_context_menu(r"Z:\Animeow_Production\Enjo_Library\04_Common_Library", u"Common Library", self.sm_common_stlib_btn, pos))
 
         cat_btn_row.addWidget(self.sm_chars_stlib_btn)
         cat_btn_row.addWidget(self.sm_anim_stlib_btn)
         cat_btn_row.addWidget(self.sm_props_stlib_btn)
         cat_btn_row.addWidget(self.sm_common_stlib_btn)
-        util_layout.addLayout(cat_btn_row)
+        cat_layout.addLayout(cat_btn_row)
 
-        # Hang 2: Cac nut tien ich va quan ly thu vien
-        other_util_row = QtWidgets.QHBoxLayout()
-        other_util_row.setSpacing(6)
+        cat_btn_row2 = QtWidgets.QHBoxLayout()
+        cat_btn_row2.setSpacing(6)
 
-        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Studio Library Tong")
+        self.sm_open_stlib_btn = QtWidgets.QPushButton(u"📖 Studio Library Tong (Enjo_Library)")
         self.sm_open_stlib_btn.setToolTip(u"Click chuot trai: Mo Studio Library Tong (Enjo_Library).\nChuot phai: Chon nhanh danh muc hoac Manager.")
         self.sm_open_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
             library_path=r"Z:\Animeow_Production\Enjo_Library",
@@ -2530,21 +2591,96 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ))
         self.sm_open_stlib_btn.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.sm_open_stlib_btn.customContextMenuRequested.connect(self.show_studiolibrary_context_menu)
-        other_util_row.addWidget(self.sm_open_stlib_btn)
 
-        self.sm_manage_stlib_btn = QtWidgets.QPushButton(u"⚙️ Studio Library Manager")
+        self.sm_user_stlib_btn = QtWidgets.QPushButton(u"🎨 05_User_Scratch")
+        self.sm_user_stlib_btn.clicked.connect(lambda: self.on_open_studio_library(
+            library_path=r"Z:\Animeow_Production\Enjo_Library\05_User_Scratch",
+            library_name=u"User Scratch Library"
+        ))
+
+        cat_btn_row2.addWidget(self.sm_open_stlib_btn, 2)
+        cat_btn_row2.addWidget(self.sm_user_stlib_btn, 1)
+        cat_layout.addLayout(cat_btn_row2)
+
+        scroll_layout.addWidget(cat_group)
+
+        # Group 2: Mo Thu Vien Con Cu The (Universal Sub-Library Opener)
+        char_group = QtWidgets.QGroupBox(u"🎯 Mo Thu Vien Con Cu The (Universal Sub-Library Opener)")
+        char_layout = QtWidgets.QVBoxLayout(char_group)
+        char_layout.setContentsMargins(10, 14, 10, 10)
+        char_layout.setSpacing(8)
+
+        # Hang 1: Chon Danh muc cap 1
+        cat_sel_row = QtWidgets.QHBoxLayout()
+        cat_sel_row.setSpacing(6)
+
+        lbl_cat_sel = QtWidgets.QLabel(u"1. Chon Danh muc:")
+        lbl_cat_sel.setStyleSheet("font-weight: bold;")
+        lbl_cat_sel.setFixedWidth(130)
+        cat_sel_row.addWidget(lbl_cat_sel)
+
+        self.sm_univ_cat_combo = QtWidgets.QComboBox()
+        self.sm_univ_cat_combo.setToolTip(u"Chon Danh muc chinh (Characters, Animals, Props...)")
+        self.sm_univ_cat_combo.addItem(u"👤 01_Characters", r"Z:\Animeow_Production\Enjo_Library\01_Characters")
+        self.sm_univ_cat_combo.addItem(u"🐾 02_Animals", r"Z:\Animeow_Production\Enjo_Library\02_Animals")
+        self.sm_univ_cat_combo.addItem(u"🚗 03_Props_Vehicles", r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles")
+        self.sm_univ_cat_combo.addItem(u"✋ 04_Common_Library", r"Z:\Animeow_Production\Enjo_Library\04_Common_Library")
+        self.sm_univ_cat_combo.addItem(u"🎨 05_User_Scratch", r"Z:\Animeow_Production\Enjo_Library\05_User_Scratch")
+        self.sm_univ_cat_combo.currentIndexChanged.connect(self.on_univ_category_changed)
+        cat_sel_row.addWidget(self.sm_univ_cat_combo, 1)
+
+        char_layout.addLayout(cat_sel_row)
+
+        # Hang 2: Chon Thu vien con cu the
+        char_select_row = QtWidgets.QHBoxLayout()
+        char_select_row.setSpacing(6)
+
+        lbl_char_sel = QtWidgets.QLabel(u"2. Chon Thu vien con:")
+        lbl_char_sel.setStyleSheet("font-weight: bold;")
+        lbl_char_sel.setFixedWidth(130)
+        char_select_row.addWidget(lbl_char_sel)
+
+        self.sm_char_combo = QtWidgets.QComboBox()
+        self.sm_char_combo.setToolTip(u"Chon Thu vien con cu the (Baby, Dad, Con_Bo, Dog, Car...) de mo Studio Library rieng")
+        char_select_row.addWidget(self.sm_char_combo, 1)
+
+        self.sm_open_char_btn = QtWidgets.QPushButton(u"🎯 Mo Thu Vien Cu The")
+        self.sm_open_char_btn.setObjectName("accent_btn")
+        self.sm_open_char_btn.setToolTip(u"Mo Studio Library rut gon CHI HIEN THI du lieu cua Thu vien con duoc chon")
+        self.sm_open_char_btn.clicked.connect(self.on_open_selected_character_library)
+        char_select_row.addWidget(self.sm_open_char_btn)
+
+        self.sm_refresh_char_btn = QtWidgets.QPushButton(u"🔄")
+        self.sm_refresh_char_btn.setFixedWidth(28)
+        self.sm_refresh_char_btn.setToolTip(u"Lam moi danh sach Thu vien con tu o Z:")
+        self.sm_refresh_char_btn.clicked.connect(self.on_univ_category_changed)
+        char_select_row.addWidget(self.sm_refresh_char_btn)
+
+        char_layout.addLayout(char_select_row)
+        scroll_layout.addWidget(char_group)
+
+        self.on_univ_category_changed()
+
+
+        # Group 3: Quan ly & Cong cu tien ich
+        manage_group = QtWidgets.QGroupBox(u"⚙️ Quan Ly Studio Library")
+        manage_layout = QtWidgets.QHBoxLayout(manage_group)
+        manage_layout.setContentsMargins(10, 14, 10, 10)
+        manage_layout.setSpacing(8)
+
+        self.sm_manage_stlib_btn = QtWidgets.QPushButton(u"⚙️ Studio Library Manager (Quan Ly Danh Sach Thu Vien Project)")
         self.sm_manage_stlib_btn.setToolTip(u"Quan ly danh sach cac Thu vien Studio Library cua du an")
         self.sm_manage_stlib_btn.clicked.connect(self.on_open_studiolibrary_manager)
-        other_util_row.addWidget(self.sm_manage_stlib_btn)
 
-        self.sm_export_csv_btn = QtWidgets.QPushButton(u"📄 Xuat CSV Bookmarks")
-        self.sm_export_csv_btn.clicked.connect(self.on_export_bookmarks_csv)
-        other_util_row.addWidget(self.sm_export_csv_btn)
+        manage_layout.addWidget(self.sm_manage_stlib_btn)
 
-        util_layout.addLayout(other_util_row)
 
-        scroll_layout.addWidget(util_group)
+        scroll_layout.addWidget(manage_group)
+
+        self.refresh_character_combo()
         scroll_layout.addStretch()
+
+
 
     # ================================================================
     # SU KIEN & LOGIC - Tab 2: Tach / Gop Canh
@@ -3173,6 +3309,86 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 u"Loi khi mo Studio Library UI:\n%s" % exception_to_unicode(e)
             )
 
+    def on_univ_category_changed(self):
+        """Quet tu dong va hien thi danh sach thu muc con tuong ung voi Danh muc duoc chon"""
+        if not hasattr(self, 'sm_char_combo') or not hasattr(self, 'sm_univ_cat_combo'):
+            return
+        self.sm_char_combo.clear()
+        
+        cat_path = self.sm_univ_cat_combo.currentData()
+        if cat_path and os.path.exists(cat_path):
+            sub_dirs = [d for d in os.listdir(cat_path) if os.path.isdir(os.path.join(cat_path, d)) and not d.startswith('.')]
+            sub_dirs.sort()
+            for d in sub_dirs:
+                self.sm_char_combo.addItem(u"🎯 %s" % d, os.path.join(cat_path, d))
+                
+        if self.sm_char_combo.count() == 0:
+            self.sm_char_combo.addItem(u"(Khong tim thay thu muc con)", cat_path if cat_path and os.path.exists(cat_path) else "")
+
+    def show_category_subfolder_context_menu(self, cat_root, cat_title, sender_btn, pos):
+        """Menu ngu canh danh sach thu muc con khi nhap chuot phai vao bat ky nut Danh muc nao"""
+        menu = QtWidgets.QMenu(self)
+        
+        act_all = menu.addAction(u"📁 Mo Thu Vien %s Tong" % cat_title)
+        menu.addSeparator()
+        
+        sub_actions = {}
+        if os.path.exists(cat_root):
+            for s_dir in sorted(os.listdir(cat_root)):
+                s_path = os.path.join(cat_root, s_dir)
+                if os.path.isdir(s_path) and not s_dir.startswith('.'):
+                    act = menu.addAction(u"🎯 Mo Library: %s" % s_dir)
+                    sub_actions[act] = (s_path, s_dir)
+                    
+        action = menu.exec_(sender_btn.mapToGlobal(pos))
+        if action == act_all:
+            self.on_open_studio_library(library_path=cat_root, library_name=cat_title)
+        elif action in sub_actions:
+            s_path, s_dir = sub_actions[action]
+            self.on_open_studio_library(library_path=s_path, library_name=u"Library - %s" % s_dir)
+
+    def refresh_character_combo(self):
+        """Forward sang on_univ_category_changed"""
+        self.on_univ_category_changed()
+
+
+    def on_open_selected_character_library(self):
+        """Mo Studio Library rieng cho Nhan vat dang duoc chon trong QComboBox"""
+        path = self.sm_char_combo.currentData()
+        text = self.sm_char_combo.currentText()
+        if path and os.path.exists(path):
+            clean_t = text.replace(u"🎭 ", u"")
+            self.on_open_studio_library(library_path=path, library_name=u"Library - %s" % clean_t)
+        else:
+            QtWidgets.QMessageBox.warning(
+                self, u"Thong bao",
+                u"Khong tim thay thu muc nhan vat:\n%s" % (path or "")
+            )
+
+    def show_character_library_context_menu(self, pos):
+        """Menu ngu canh danh sach Nhan vat khi nhap chuot phai vao nut Characters"""
+        menu = QtWidgets.QMenu(self)
+        
+        act_all = menu.addAction(u"📁 Mo Thu Vien Characters Tong (01_Characters)")
+        menu.addSeparator()
+        
+        char_root = r"Z:\Animeow_Production\Enjo_Library\01_Characters"
+        char_actions = {}
+        if os.path.exists(char_root):
+            for c_dir in sorted(os.listdir(char_root)):
+                c_path = os.path.join(char_root, c_dir)
+                if os.path.isdir(c_path) and not c_dir.startswith('.'):
+                    act = menu.addAction(u"🎭 Mo Library: %s" % c_dir)
+                    char_actions[act] = (c_path, c_dir)
+                    
+        sender_btn = self.sender() if hasattr(self, 'sender') and self.sender() else self.sm_chars_stlib_btn
+        action = menu.exec_(sender_btn.mapToGlobal(pos))
+        if action == act_all:
+            self.on_open_studio_library(library_path=char_root, library_name=u"Characters Library")
+        elif action in char_actions:
+            c_path, c_dir = char_actions[action]
+            self.on_open_studio_library(library_path=c_path, library_name=u"Library - %s" % c_dir)
+
     def show_studiolibrary_context_menu(self, pos):
         """Menu ngu canh cho nut Studio Library"""
         menu = QtWidgets.QMenu(self)
@@ -3180,6 +3396,18 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         act_root = menu.addAction(u"🎬 Mo Studio Library Tong (Enjo_Library)")
         menu.addSeparator()
         act_chars = menu.addAction(u"👤 Mo Library Characters (01_Characters)")
+        
+        # Submenu Nhan Vat cu the
+        char_menu = menu.addMenu(u"🎭 Mo Studio Library Theo Nhan Vat...")
+        char_root = r"Z:\Animeow_Production\Enjo_Library\01_Characters"
+        char_sub_actions = {}
+        if os.path.exists(char_root):
+            for c_dir in sorted(os.listdir(char_root)):
+                c_path = os.path.join(char_root, c_dir)
+                if os.path.isdir(c_path) and not c_dir.startswith('.'):
+                    sub_act = char_menu.addAction(u"🎭 %s" % c_dir)
+                    char_sub_actions[sub_act] = (c_path, c_dir)
+
         act_anim = menu.addAction(u"🐾 Mo Library Animals (02_Animals)")
         act_props = menu.addAction(u"🚗 Mo Library Props & Vehicles (03_Props_Vehicles)")
         act_common = menu.addAction(u"✋ Mo Library Common Poses (04_Common_Library)")
@@ -3193,10 +3421,14 @@ class AnimeowMayaToolkitUI(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library", library_name="Studio Library")
         elif action == act_chars:
             self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\01_Characters", library_name="Characters Library")
+        elif action in char_sub_actions:
+            c_path, c_dir = char_sub_actions[action]
+            self.on_open_studio_library(library_path=c_path, library_name=u"Library - %s" % c_dir)
         elif action == act_anim:
             self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\02_Animals", library_name="Animals Library")
         elif action == act_props:
             self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\03_Props_Vehicles", library_name="Props & Vehicles Library")
+
         elif action == act_common:
             self.on_open_studio_library(library_path=r"Z:\Animeow_Production\Enjo_Library\04_Common_Library", library_name="Common Library")
         elif action == act_user:

@@ -911,6 +911,11 @@ class FileManager(object):
         import shutil
         import re
 
+        print(u"\n[StudioLibraryOrganize] ==================================================")
+        print(u"[StudioLibraryOrganize] BAT DAU SAP XEP & CHUAN HOA THU MUC THU VIEN:")
+        print(u"[StudioLibraryOrganize] Target Path: %s" % lib_dir)
+        print(u"[StudioLibraryOrganize] ==================================================")
+
         def safe_move(src, dst):
             if not os.path.exists(src):
                 return False
@@ -939,8 +944,10 @@ class FileManager(object):
 
             try:
                 shutil.move(src, dst)
+                print(u"[StudioLibraryOrganize] [MOVE] %s  -->  %s" % (src, dst))
                 return True
-            except Exception:
+            except Exception as e:
+                print(u"[StudioLibraryOrganize] [LOI MOVE] %s: %s" % (src, str(e)))
                 return False
 
         def clean_name(name):
@@ -964,7 +971,7 @@ class FileManager(object):
             words = [w.capitalize() for w in re.split(r'[\s_\-]+', s) if w]
             return "_".join(words)
 
-        def number_subfolders(parent):
+        def number_subfolders_recursive(parent):
             if not os.path.exists(parent):
                 return
             subdirs = [
@@ -973,11 +980,88 @@ class FileManager(object):
                 and os.path.isdir(os.path.join(parent, d))
                 and not d.endswith(('.anim', '.pose', '.mirror', '.selection'))
             ]
-            subdirs.sort(key=lambda s: clean_name(s).lower())
-            for idx, old_name in enumerate(subdirs, 1):
+
+            def get_sort_key(dname):
+                c = clean_name(dname).lower()
+                if 'trash' in c or 'archive' in c:
+                    return 'zzzz_' + c
+                return c
+
+            subdirs.sort(key=get_sort_key)
+
+            updated_paths = []
+            non_trash_idx = 1
+            for old_name in subdirs:
                 c_name = clean_name(old_name)
-                new_name = "%02d_%s" % (idx, c_name)
-                safe_move(os.path.join(parent, old_name), os.path.join(parent, new_name))
+                if 'trash' in c_name.lower() or 'archive' in c_name.lower():
+                    new_name = "99_%s" % c_name
+                else:
+                    new_name = "%02d_%s" % (non_trash_idx, c_name)
+                    non_trash_idx += 1
+
+                old_full = os.path.join(parent, old_name)
+                new_full = os.path.join(parent, new_name)
+                if old_name != new_name:
+                    try:
+                        print(u"[StudioLibraryOrganize] [RENAME FOLDER] %s  -->  %s" % (os.path.relpath(old_full, lib_dir), new_name))
+                    except Exception:
+                        pass
+                    safe_move(old_full, new_full)
+                    updated_paths.append(new_full)
+
+                else:
+                    updated_paths.append(old_full)
+
+            for child_dir in updated_paths:
+                number_subfolders_recursive(child_dir)
+
+
+        def remap_legacy_character_folders(char_path):
+            """Tu dong gom cac folder ten cu (Animations, Expressions, Baby_Pose...) ve dung 01_Anim & 02_Pose"""
+            if not os.path.exists(char_path):
+                return
+            mapping = [
+                (r'.*anim(ation)?s?$', os.path.join(char_path, "01_Anim")),
+                (r'.*expression(s)?$', os.path.join(char_path, "02_Pose", "02_Expression")),
+                (r'.*pose_hand$', os.path.join(char_path, "02_Pose", "03_Finger")),
+                (r'.*hand(s)?$', os.path.join(char_path, "02_Pose", "03_Finger")),
+                (r'.*poses?$', os.path.join(char_path, "02_Pose", "01_Body")),
+            ]
+
+            subdirs = [
+                d for d in os.listdir(char_path)
+                if os.path.isdir(os.path.join(char_path, d))
+                and not d.startswith('.')
+                and d not in ("01_Anim", "02_Pose", "99_Trash")
+            ]
+
+            for old_d in subdirs:
+                old_full = os.path.join(char_path, old_d)
+                clean_d = clean_name(old_d).lower()
+
+                target_dst = None
+                for pattern, dst_folder in mapping:
+                    if re.match(pattern, clean_d, re.IGNORECASE):
+                        target_dst = dst_folder
+                        break
+
+                if target_dst:
+                    if not os.path.exists(target_dst):
+                        os.makedirs(target_dst)
+                    try:
+                        print(u"[StudioLibraryOrganize] [SMART REMAP] %s/%s  -->  %s" % (
+                            os.path.basename(char_path), old_d, os.path.relpath(target_dst, char_path)))
+                    except Exception:
+                        pass
+
+                    for item in os.listdir(old_full):
+                        if item == ".studiolibrary":
+                            continue
+                        safe_move(os.path.join(old_full, item), os.path.join(target_dst, item))
+                    try:
+                        shutil.rmtree(old_full)
+                    except Exception:
+                        pass
 
         # Direct main characters from 02_Animals to 01_Characters
         main_char_targets = ["Sammy_Bear", "Toby_Monkey", "Woofin", "Woofin_Wolf", "Lilly_Bunny"]
@@ -988,10 +1072,101 @@ class FileManager(object):
             for item in os.listdir(anim_dir):
                 cn = clean_name(item)
                 if cn in main_char_targets:
+                    print(u"[StudioLibraryOrganize] [CHUYEN NHAN VAT CHINH] %s -> 01_Characters" % item)
                     safe_move(os.path.join(anim_dir, item), os.path.join(char_dir, cn))
 
-        for cat in ["01_Characters", "02_Animals", "03_Props_Vehicles", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
-            number_subfolders(os.path.join(lib_dir, cat))
+        # Smart remap legacy character subfolders
+        if os.path.exists(char_dir):
+            for c_name in os.listdir(char_dir):
+                c_path = os.path.join(char_dir, c_name)
+                if os.path.isdir(c_path) and not c_name.startswith('.'):
+                    remap_legacy_character_folders(c_path)
 
-        return True, u"Da tu dong chuyen cac Nhan vat chinh ve 01_Characters va danh so lai toan bo Studio Library!"
+        for cat in ["01_Characters", "02_Animals", "03_Props_Vehicles", "04_Common_Library", "05_User_Scratch", "99_Archive_Trash"]:
+            print(u"[StudioLibraryOrganize] Đang kiểm tra danh mục %s..." % cat)
+            number_subfolders_recursive(os.path.join(lib_dir, cat))
+
+        self.format_studiolibrary_item_numbers(lib_dir)
+
+        print(u"[StudioLibraryOrganize] ==================================================\n")
+        return True, u"Da tu dong chuyen cac Nhan vat chinh ve 01_Characters, danh so thu muc va dinh dang 3 chu so (001) cho Studio Library!"
+
+    def format_studiolibrary_item_numbers(self, lib_dir=None, progress_callback=None):
+
+        """
+        Quet de quy va tu dong doi ten tat ca cac item Studio Library (.pose, .anim, .selection, .mirror)
+        co so thu tu 1 hoac 2 chu so sang dinh dang 3 chu so (zero-padded: 001, 002, 010...).
+        Co in log chi tiet va hien thi tien trinh debug.
+        """
+        if not lib_dir:
+            lib_dir = self.get_project_studiolibrary_dir()
+
+        if not lib_dir or not os.path.exists(lib_dir):
+            return False, u"Thu muc Studio Library khong ton tai: %s" % lib_dir
+
+        import re
+
+        print(u"\n[StudioLibraryFormat] ==================================================")
+        print(u"[StudioLibraryFormat] BAT DAU QUET & FORMAT 001 ITEM NUMBERS:")
+        print(u"[StudioLibraryFormat] Target Path: %s" % lib_dir)
+        print(u"[StudioLibraryFormat] ==================================================")
+
+        renamed_count = 0
+        scanned_items = 0
+
+        # Scan all items first to count total items for progress
+        all_dirs = []
+        for root, dirs, files in os.walk(lib_dir, topdown=False):
+            for d in dirs:
+                if d.endswith(('.pose', '.anim', '.selection', '.mirror')):
+                    all_dirs.append((root, d))
+
+        total_items = len(all_dirs)
+        print(u"[StudioLibraryFormat] Tim thay %d items Studio Library trong thu muc." % total_items)
+
+        for idx, (root, d) in enumerate(all_dirs, 1):
+            scanned_items += 1
+            full_path = os.path.join(root, d)
+            rel_dir = os.path.relpath(full_path, lib_dir)
+            new_name = None
+
+            # Pure number pattern: e.g. 1.pose, 12.anim -> 001.pose, 012.anim
+            m_pure = re.match(r"^(\d+)(\.(?:pose|anim|selection|mirror))$", d, re.IGNORECASE)
+            if m_pure:
+                num_str, ext = m_pure.group(1), m_pure.group(2)
+                if len(num_str) < 3:
+                    new_num_str = "%03d" % int(num_str)
+                    new_name = new_num_str + ext
+            else:
+                # Text prefix pattern: e.g. Stand_01.pose -> Stand_001.pose
+                m_text = re.match(r"^(.*[^\d])(\d{1,2})(\.(?:pose|anim|selection|mirror))$", d, re.IGNORECASE)
+                if m_text:
+                    prefix, num_str, ext = m_text.group(1), m_text.group(2), m_text.group(3)
+                    new_num_str = "%03d" % int(num_str)
+                    new_name = prefix + new_num_str + ext
+
+            if new_name and new_name != d:
+                new_full_path = os.path.join(root, new_name)
+                try:
+                    os.rename(full_path, new_full_path)
+                    renamed_count += 1
+                    msg_log = u"[StudioLibraryFormat] [%d/%d] [DOI TEN 3 CHU SO] %s  -->  %s" % (idx, total_items, rel_dir, new_name)
+                    print(msg_log)
+                except Exception as e:
+                    print(u"[StudioLibraryFormat] [LOI] Doi ten %s -> %s that bai: %s" % (d, new_name, str(e)))
+            else:
+                if total_items <= 30 or idx % 10 == 0:
+                    print(u"[StudioLibraryFormat] [%d/%d] [OK - Da chuan 3 chu so]: %s" % (idx, total_items, rel_dir))
+
+            if progress_callback:
+                progress_callback(idx, total_items, rel_dir)
+
+        print(u"[StudioLibraryFormat] ==================================================")
+        summary_msg = u"Hoan tat! Da quet %d items, doi ten %d items sang dinh dang 3 chu so (001)." % (total_items, renamed_count)
+        print(u"[StudioLibraryFormat] %s" % summary_msg)
+        print(u"[StudioLibraryFormat] ==================================================\n")
+
+        return True, summary_msg
+
+
 
